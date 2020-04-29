@@ -4,13 +4,20 @@
 \alias{readFasta2}
 \title{Read file of protein sequences in fasta format
   
-Read fasta formatted file (from Uniprot) to extract (protein) sequences and name.
-If \code{tableOut=TRUE} output may be organized as matrix for separating meta-annotationExtract, see also \href{https://www.uniprot.org/help/fasta-headers}{FASTA-headers}.}
+Read fasta formatted file (from \href{https://www.uniprot.org}{UniProt}) to extract (protein) sequences and name.
+If \code{tableOut=TRUE} output may be organized as matrix for separating meta-annotation (eg GeneName, OrganismName, ProteinName) in separate columns.}
 \usage{
-readFasta2(filename, delim = "|", databaseSign = c("sp", "tr",
-  "generic", "gi"), tableOut = FALSE, UniprSep = c("OS=", "OX=", "GN=",
-  "PE=", "SV="), cleanCols = TRUE, silent = FALSE, callFrom = NULL,
-  debug = FALSE)
+readFasta2(
+  filename,
+  delim = "|",
+  databaseSign = c("sp", "tr", "generic", "gi"),
+  tableOut = FALSE,
+  UniprSep = c("OS=", "OX=", "GN=", "PE=", "SV="),
+  cleanCols = TRUE,
+  silent = FALSE,
+  callFrom = NULL,
+  debug = FALSE
+)
 }
 \arguments{
 \item{filename}{(character) names fasta-file to be read}
@@ -21,7 +28,7 @@ readFasta2(filename, delim = "|", databaseSign = c("sp", "tr",
 
 \item{tableOut}{(logical) toggle to return named character-vector or matrix with enhaced parsing of fasta-header. The resulting matrix will contain the comumns 'database','uniqueIdentifier','entryName','proteinName','sequence' and further columns depending on argument \code{UniprSep}}
 
-\item{UniprSep}{(character) separators for further separating entry-fields if \code{tableOut=TRUE}, see also \href{https://www.uniprot.org/help/fasta-headers}{FASTA-headers}}
+\item{UniprSep}{(character) separators for further separating entry-fields if \code{tableOut=TRUE}, see also \href{https://www.uniprot.org/help/fasta-headers}{UniProt-FASTA-headers}}
 
 \item{cleanCols}{(logical) remove columns with all entries NA, if \code{tableOut=TRUE}}
 
@@ -37,10 +44,11 @@ return (based on 'tableOut') simple character vector (of sequence) with Uniprot 
 \description{
 Read file of protein sequences in fasta format
   
-Read fasta formatted file (from Uniprot) to extract (protein) sequences and name.
-If \code{tableOut=TRUE} output may be organized as matrix for separating meta-annotationExtract, see also \href{https://www.uniprot.org/help/fasta-headers}{FASTA-headers}.
+Read fasta formatted file (from \href{https://www.uniprot.org}{UniProt}) to extract (protein) sequences and name.
+If \code{tableOut=TRUE} output may be organized as matrix for separating meta-annotation (eg GeneName, OrganismName, ProteinName) in separate columns.
 }
 \examples{
+# tiny example with common contaminants 
 path1 <- system.file('extdata',package='wrProteo')
 fiNa <-  "conta1.fasta"
 fasta1 <- readFasta2(file.path(path1,fiNa))

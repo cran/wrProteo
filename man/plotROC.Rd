@@ -4,11 +4,25 @@
 \alias{plotROC}
 \title{Plot ROC curves}
 \usage{
-plotROC(dat, ..., useCol = 2:3, methNames = NULL, col = NULL,
-  pch = 1, bg = NULL, tit = NULL, point05 = 0.05, pointSi = 0.85,
-  nByMeth = NULL, colPanel = c(grDevices::grey(0.4), 2:5),
-  speciesOrder = NULL, txtLoc = c(0.4, 0.3, 0.04), legCex = 0.72,
-  silent = FALSE, callFrom = NULL)
+plotROC(
+  dat,
+  ...,
+  useCol = 2:3,
+  methNames = NULL,
+  col = NULL,
+  pch = 1,
+  bg = NULL,
+  tit = NULL,
+  point05 = 0.05,
+  pointSi = 0.85,
+  nByMeth = NULL,
+  colPanel = c(grDevices::grey(0.4), 2:5),
+  speciesOrder = NULL,
+  txtLoc = c(0.4, 0.3, 0.04),
+  legCex = 0.72,
+  silent = FALSE,
+  callFrom = NULL
+)
 }
 \arguments{
 \item{dat}{(matrix) from testing (eg  \code{\link{summarizeForROC}} )}

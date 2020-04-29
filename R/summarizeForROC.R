@@ -11,6 +11,7 @@
 #' @param tyThr (character,length=1) type of test-result to be used for sensitivity and specificity calculations (eg 'BH','lfdr' or 'p.value'), must be list-element of 'test'
 #' @param columnTest (character or integer) only in case 'tyThr' is matrix (as typically the case after \code{testRobustToNAimputation}) : which column of 'test$tyThr' should be used as test-result 
 #' @param spec (character) labels for species will be matched to column 'spec' of test$annot and used for sensitivity and specificity calculations. Important : 1st label for matrix (expected as constant) and subsequent labels for spike-ins (variable)
+#' @param annotCol (character) column name of \code{test$annot} to use to separate species
 #' @param tit (character) optinal custom title in graph 
 #' @param color (character or integer) color in graph
 #' @param plotROC (logical) toogle plot on or off  
@@ -27,7 +28,7 @@
 #' tail(roc1 <- summarizeForROC(test1,spec=c("a","b","c")))
 #' 
 #' @export
-summarizeForROC <- function(test,thr=NULL,tyThr="BH",columnTest=1,spec=c("H","E","S"),tit=NULL,color=1,plotROC=TRUE,pch=1,bg=NULL,overlPlot=FALSE,silent=FALSE,callFrom=NULL) {
+summarizeForROC <- function(test,thr=NULL,tyThr="BH",columnTest=1,spec=c("H","E","S"),annotCol="spec",tit=NULL,color=1,plotROC=TRUE,pch=1,bg=NULL,overlPlot=FALSE,silent=FALSE,callFrom=NULL) {
   ## summarize esting result by species (3rd is supposed as reference)
   argN <- deparse(substitute(test))
   fxNa <- wrMisc::.composeCallName(callFrom,newNa="summarizeForROC")
@@ -38,7 +39,7 @@ summarizeForROC <- function(test,thr=NULL,tyThr="BH",columnTest=1,spec=c("H","E"
     seq(0,1,length.out=50)^5,seq(0,1,length.out=50)^2,seq(0,1,length.out=61),4^(-2:-10),1.01),2)
   thr <- sort(unique(abs(wrMisc::naOmit(thr))))                                    # 151 -> 108 values for default
   pp <- matrix(nrow=length(thr),ncol=4,dimnames=list(NULL,c("TP","FP","FN","TN")))
-  spiSpec <- if(ncol(test$annot) >1) {test$annot[,"spec"] %in% spec[-1]} else {test$annot[,1] %in% spec[-1]} 
+  spiSpec <- if(ncol(test$annot) >1) {test$annot[,annotCol] %in% spec[-1]} else {test$annot[,1] %in% spec[-1]} 
   if(length(dim(test[[tyThr]])) ==2) if(ncol(test[[tyThr]])==2 & identical(colnames(test[[tyThr]])[1],"(Intercept)") & columnTest !=2) {
     message(fxNa," Value of argument 'columnTest' seems bizzare, setting to =2 !  (to avoid testing '(Intercept)')")
     columnTest <- 2 }
@@ -54,10 +55,10 @@ summarizeForROC <- function(test,thr=NULL,tyThr="BH",columnTest=1,spec=c("H","E"
     prec=as.numeric(pp[,"TP"]/(pp[,"FP"]+pp[,"TP"])), accur=as.numeric((pp[,"TP"]+pp[,"TN"])/rowSums(pp)), 
     FDR=as.numeric(pp[,"FP"]/(pp[,"TP"]+pp[,"FP"])))
   ## add no of lines/prot retained for each species
-  tmp3 <- test$annot[,"spec"] %in% spec[2]
+  tmp3 <- test$annot[,annotCol] %in% spec[2]
   tmp3 <- if(length(dim(test[[tyThr]])) >1) test[[tyThr]][which(tmp3),columnTest] else test[[tyThr]][which(tmp3)]       # pvalues for 1st spike-in species (eg E)
   if(length(spec) >2) {
-    tmp4 <- test$annot[,"spec"] %in% spec[3]
+    tmp4 <- test$annot[,annotCol] %in% spec[3]
     tmp4 <- if(length(dim(test[[tyThr]])) >1) test[[tyThr]][which(tmp4),columnTest] else test[[tyThr]][which(tmp4)] }      # pvalues for 2nd spike-in species (eg S)
   tmp3 <- cbind(Sp1Pos=pp[,"FP"], Sp2Pos=sapply(thr,function(x) sum(tmp3 <=x,na.rm=TRUE)),
     Sp3Pos=if(length(spec) >2) sapply(thr,function(x) sum(tmp4 <=x,na.rm=TRUE)) else NULL)
@@ -67,13 +68,13 @@ summarizeForROC <- function(test,thr=NULL,tyThr="BH",columnTest=1,spec=c("H","E"
     if(is.null(tit)) tit <- paste("ROC of ",argN)
     xLab <- "1 - Specificity"
     yLab <- "Sensitivity"
-    if(overlPlot) graphics::points(1-keyVal[,"spec"],keyVal[,"sens"],col=color,pch=pch,bg=NULL,type="S") else {
-      graphics::plot(1-keyVal[,"spec"],keyVal[,"sens"],col=color,pch=pch,bg=bg,type="S",main=tit,xlab=xLab,ylab=yLab,xlim=c(0,1),ylim=c(0,1))}
+    if(overlPlot) graphics::points(1-keyVal[,annotCol],keyVal[,"sens"],col=color,pch=pch,bg=NULL,type="S") else {
+      graphics::plot(1-keyVal[,annotCol],keyVal[,"sens"],col=color,pch=pch,bg=bg,type="S",main=tit,xlab=xLab,ylab=yLab,xlim=c(0,1),ylim=c(0,1))}
     cutP <- keyVal[which(keyVal[,1]==0.05),-1]
     newPch <- cbind(c(1,16,2,17, 7,15,5,6),new=c(21,21,24,24,22,22,23,25))                                   # transform open or plain filled points to color-filled
     if(pch %in% newPch[,1]){ pch2 <- newPch[which(newPch[,1]==pch),2]; bg <- color; col2 <- grDevices::grey(0.2)} else {pch2 <- pch; col2 <- color}   
-    col2 <- wrMisc::.convColorToTransp(col2,alph=0.9)
-    graphics::points(1-cutP["spec"],cutP["sens"],col=col2,pch=pch2,bg=bg,cex=1.4)  
+    col2 <- wrMisc::convColorToTransp(col2,alph=0.9)
+    graphics::points(1-cutP[annotCol],cutP["sens"],col=col2,pch=pch2,bg=bg,cex=1.4)  
   }
   keyVal }     
      

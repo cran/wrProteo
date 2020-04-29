@@ -4,10 +4,22 @@
 \alias{summarizeForROC}
 \title{Summarize statistical test result for plotting ROC-curves}
 \usage{
-summarizeForROC(test, thr = NULL, tyThr = "BH", columnTest = 1,
-  spec = c("H", "E", "S"), tit = NULL, color = 1, plotROC = TRUE,
-  pch = 1, bg = NULL, overlPlot = FALSE, silent = FALSE,
-  callFrom = NULL)
+summarizeForROC(
+  test,
+  thr = NULL,
+  tyThr = "BH",
+  columnTest = 1,
+  spec = c("H", "E", "S"),
+  annotCol = "spec",
+  tit = NULL,
+  color = 1,
+  plotROC = TRUE,
+  pch = 1,
+  bg = NULL,
+  overlPlot = FALSE,
+  silent = FALSE,
+  callFrom = NULL
+)
 }
 \arguments{
 \item{test}{(class \code{MArrayLM}, S3-object from limma) from testing (eg \code{\link{testRobustToNAimputation}} or \code{\link{test2grp}}}
@@ -19,6 +31,8 @@ summarizeForROC(test, thr = NULL, tyThr = "BH", columnTest = 1,
 \item{columnTest}{(character or integer) only in case 'tyThr' is matrix (as typically the case after \code{testRobustToNAimputation}) : which column of 'test$tyThr' should be used as test-result}
 
 \item{spec}{(character) labels for species will be matched to column 'spec' of test$annot and used for sensitivity and specificity calculations. Important : 1st label for matrix (expected as constant) and subsequent labels for spike-ins (variable)}
+
+\item{annotCol}{(character) column name of \code{test$annot} to use to separate species}
 
 \item{tit}{(character) optinal custom title in graph}
 

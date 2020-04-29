@@ -4,8 +4,16 @@
 \alias{test2grp}
 \title{t-test each line of 2 groups of data}
 \usage{
-test2grp(dat, questNo, useCol = NULL, grp = NULL, annot = NULL,
-  ROTSn = 0, silent = FALSE, callFrom = NULL)
+test2grp(
+  dat,
+  questNo,
+  useCol = NULL,
+  grp = NULL,
+  annot = NULL,
+  ROTSn = 0,
+  silent = FALSE,
+  callFrom = NULL
+)
 }
 \arguments{
 \item{dat}{(matrix or data.frame) main data (may contain NAs)}

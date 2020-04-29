@@ -4,18 +4,30 @@
 \alias{testRobustToNAimputation}
 \title{Test robust to NA-imputation}
 \usage{
-testRobustToNAimputation(dat, gr, annot = NULL, retnNA = TRUE,
-  avSdH = c(0.18, 0.5), avSdL = c(0.1, 0.5), plotHist = FALSE,
-  xLab = NULL, tit = NULL, seedNo = 2018, nLoop = 20,
-  lfdrInclude = TRUE, ROTSn = NULL, silent = FALSE,
-  callFrom = NULL)
+testRobustToNAimputation(
+  dat,
+  gr,
+  annot = NULL,
+  retnNA = TRUE,
+  avSdH = c(0.18, 0.5),
+  avSdL = c(0.1, 0.5),
+  plotHist = FALSE,
+  xLab = NULL,
+  tit = NULL,
+  seedNo = 2018,
+  nLoop = 20,
+  lfdrInclude = TRUE,
+  ROTSn = NULL,
+  silent = FALSE,
+  callFrom = NULL
+)
 }
 \arguments{
-\item{dat}{(matrix or data.frame) main data (may contain \code{NA})}
+\item{dat}{(matrix or data.frame) main data (may contain \code{NA}); if \code{dat} is list containing $quant and $annot as matrix, the element $quant will be used}
 
 \item{gr}{(character or factor) replicate association}
 
-\item{annot}{(matrix or data.frame) annotation (lines must match lines of data !)}
+\item{annot}{(matrix or data.frame) annotation (lines must match lines of data !), if \code{annot} is \code{NULL} and argument \code{dat} is a list containing both $quant and $annot, the element $annot will be used}
 
 \item{retnNA}{(logical) retain and report number of \code{NA}}
 
@@ -23,7 +35,7 @@ testRobustToNAimputation(dat, gr, annot = NULL, retnNA = TRUE,
 
 \item{avSdL}{(numeric) population characteristics (mean and sd) for >0 \code{NA} neighbours 'low' (per line)}
 
-\item{plotHist}{(logical) additional plot}
+\item{plotHist}{(logical) additional histogram of original, imputed and resultant distribution (made using \code{\link{matrixNAneighbourImpute}} )}
 
 \item{xLab}{(character) custom x-axis label}
 

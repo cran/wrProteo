@@ -1,0 +1,89 @@
+yourlist:M20200427A94466D2655679D1FD8953E075198DA87FE7E1E	isomap:M20200427A94466D2655679D1FD8953E075198DA87FE7E1E	Entry	Entry name	Status	Protein names	Gene names	Organism	Length
+enst00000410108		B8ZZS0	B8ZZS0_HUMAN	unreviewed	BET1-like protein	BET1L	Homo sapiens (Human)	152
+enst00000342878		Q8TD33	SG1C1_HUMAN	reviewed	Secretoglobin family 1C member 1 (Secretoglobin RYD5)	SCGB1C1	Homo sapiens (Human)	95
+enst00000325113,enst00000525282	enst00000525282 -> Q96PU9-3,enst00000325113 -> Q96PU9-1	Q96PU9	ODF3A_HUMAN	reviewed	Outer dense fiber protein 3 (Outer dense fiber of sperm tails protein 3) (Sperm tail protein SHIPPO 1) (Transcript induced in spermiogenesis protein 50)	ODF3 SHIPPO1 TISP50	Homo sapiens (Human)	254
+enst00000342593		F8W6Z3	F8W6Z3_HUMAN	unreviewed	Outer dense fiber protein 3	ODF3	Homo sapiens (Human)	127
+enst00000325147		A0A0C4DH16	A0A0C4DH16_HUMAN	unreviewed	BET1-like protein	BET1L	Homo sapiens (Human)	102
+enst00000382762		Q9NYM9	BET1L_HUMAN	reviewed	BET1-like protein (Golgi SNARE with a size of 15 kDa) (GOS-15) (GS15) (Vesicle transport protein GOS15)	BET1L GS15	Homo sapiens (Human)	111
+enst00000529614		E9PHY4	E9PHY4_HUMAN	unreviewed	BET1-like protein	BET1L	Homo sapiens (Human)	92
+enst00000332865		H7BXT7	H7BXT7_HUMAN	unreviewed	BET1-like protein	BET1L	Homo sapiens (Human)	58
+enst00000486280		E9PQJ6	E9PQJ6_HUMAN	unreviewed	BET1-like protein	BET1L	Homo sapiens (Human)	88
+enst00000528357		E9PI04	E9PI04_HUMAN	unreviewed	Synembryn-A (Fragment)	RIC8A	Homo sapiens (Human)	148
+enst00000530889		E9PSI0	E9PSI0_HUMAN	unreviewed	Synembryn-A (Fragment)	RIC8A	Homo sapiens (Human)	183
+enst00000526982,enst00000626818		E9PLE5	E9PLE5_HUMAN	unreviewed	Synembryn-A	RIC8A	Homo sapiens (Human)	52
+enst00000526104,enst00000325207,enst00000527696	enst00000526104 -> Q9NPQ8-1,enst00000325207 -> Q9NPQ8-3,enst00000527696 -> Q9NPQ8-2	Q9NPQ8	RIC8A_HUMAN	reviewed	Synembryn-A (Protein Ric-8A)	RIC8A	Homo sapiens (Human)	531
+enst00000527468		E9PMP0	E9PMP0_HUMAN	unreviewed	Synembryn-A (Fragment)	RIC8A	Homo sapiens (Human)	44
+enst00000527728		H0YEN0	H0YEN0_HUMAN	unreviewed	Synembryn-A (Fragment)	RIC8A	Homo sapiens (Human)	286
+enst00000524854		H0YE35	H0YE35_HUMAN	unreviewed	Synembryn-A (Fragment)	RIC8A	Homo sapiens (Human)	147
+enst00000529275		H0YC88	H0YC88_HUMAN	unreviewed	Synembryn-A (Fragment)	RIC8A	Homo sapiens (Human)	147
+enst00000529937		B7WNN4	B7WNN4_HUMAN	unreviewed	NAD-dependent protein deacetylase sirtuin-3, mitochondrial	SIRT3	Homo sapiens (Human)	134
+enst00000525319		E9PK80	E9PK80_HUMAN	unreviewed	NAD-dependent protein deacetylase (EC 2.3.1.286)	SIRT3	Homo sapiens (Human)	318
+enst00000524564		E9PN58	E9PN58_HUMAN	unreviewed	NAD-dependent protein deacetylase sirtuin-3, mitochondrial	SIRT3	Homo sapiens (Human)	353
+enst00000532956		E9PM75	E9PM75_HUMAN	unreviewed	NAD-dependent protein deacetylase sirtuin-3, mitochondrial	SIRT3	Homo sapiens (Human)	345
+enst00000382743,enst00000529382	enst00000529382 -> Q9NTG7-2,enst00000382743 -> Q9NTG7-1	Q9NTG7	SIR3_HUMAN	reviewed	NAD-dependent protein deacetylase sirtuin-3, mitochondrial (hSIRT3) (EC 2.3.1.286) (Regulatory protein SIR2 homolog 3) (SIR2-like protein 3)	SIRT3 SIR2L3	Homo sapiens (Human)	399
+enst00000526854		E9PJS6	E9PJS6_HUMAN	unreviewed	NAD-dependent protein deacetylase sirtuin-3, mitochondrial	SIRT3	Homo sapiens (Human)	95
+enst00000532837,enst00000529055,enst00000530067		E9PIT6	E9PIT6_HUMAN	unreviewed	NAD-dependent protein deacetylase sirtuin-3, mitochondrial	SIRT3	Homo sapiens (Human)	46
+enst00000528469		E9PNA0	E9PNA0_HUMAN	unreviewed	NAD-dependent protein deacetylase sirtuin-3, mitochondrial (Fragment)	SIRT3	Homo sapiens (Human)	93
+enst00000525776		E9PM52	E9PM52_HUMAN	unreviewed	NAD-dependent protein deacetylase sirtuin-3, mitochondrial (Fragment)	SIRT3	Homo sapiens (Human)	23
+enst00000525237		E9PR48	E9PR48_HUMAN	unreviewed	NAD-dependent protein deacetylase sirtuin-3, mitochondrial (Fragment)	SIRT3	Homo sapiens (Human)	18
+enst00000529372		E9PQG3	E9PQG3_HUMAN	unreviewed	26S proteasome non-ATPase regulatory subunit 13	PSMD13	Homo sapiens (Human)	113
+enst00000532097,enst00000431206	enst00000431206 -> Q9UNM6-2,enst00000532097 -> Q9UNM6-1	Q9UNM6	PSD13_HUMAN	reviewed	26S proteasome non-ATPase regulatory subunit 13 (26S proteasome regulatory subunit RPN9) (26S proteasome regulatory subunit S11) (26S proteasome regulatory subunit p40.5)	PSMD13	Homo sapiens (Human)	376
+enst00000528906		E9PL38	E9PL38_HUMAN	unreviewed	26S proteasome non-ATPase regulatory subunit 13 (Fragment)	PSMD13	Homo sapiens (Human)	263
+enst00000621534		A0A087WUL9	A0A087WUL9_HUMAN	unreviewed	26S proteasome non-ATPase regulatory subunit 13	PSMD13	Homo sapiens (Human)	377
+enst00000525665		E9PPD2	E9PPD2_HUMAN	unreviewed	26S proteasome non-ATPase regulatory subunit 13	PSMD13	Homo sapiens (Human)	70
+enst00000352303		J3KNQ3	J3KNQ3_HUMAN	unreviewed	26S proteasome non-ATPase regulatory subunit 13	PSMD13	Homo sapiens (Human)	349
+enst00000382671		F8W8J6	F8W8J6_HUMAN	unreviewed	26S proteasome non-ATPase regulatory subunit 13	PSMD13	Homo sapiens (Human)	72
+enst00000526783		H0YD73	H0YD73_HUMAN	unreviewed	26S proteasome non-ATPase regulatory subunit 13 (Fragment)	PSMD13	Homo sapiens (Human)	221
+enst00000534750,enst00000312165	enst00000312165 -> P59044-1,enst00000534750 -> P59044-2	P59044	NLRP6_HUMAN	reviewed	NACHT, LRR and PYD domains-containing protein 6 (Angiotensin II/vasopressin receptor) (PYRIN-containing APAF1-like protein 5)	NLRP6 NALP6 PYPAF5	Homo sapiens (Human)	892
+enst00000409548	enst00000409548 -> Q32M88-1	Q32M88	PGGHG_HUMAN	reviewed	Protein-glucosylgalactosylhydroxylysine glucosidase (EC 3.2.1.107) (Acid trehalase-like protein 1)	PGGHG ATHL1	Homo sapiens (Human)	737
+enst00000409655		B8ZZ60	B8ZZ60_HUMAN	unreviewed	Protein-glucosylgalactosylhydroxylysine glucosidase	PGGHG	Homo sapiens (Human)	489
+enst00000409479		E7EMA9	E7EMA9_HUMAN	unreviewed	Protein-glucosylgalactosylhydroxylysine glucosidase	PGGHG	Homo sapiens (Human)	764
+enst00000482937		H0YCL6	H0YCL6_HUMAN	unreviewed	Protein-glucosylgalactosylhydroxylysine glucosidase (Fragment)	PGGHG	Homo sapiens (Human)	203
+enst00000397660		H3BM00	H3BM00_HUMAN	unreviewed	Protein-glucosylgalactosylhydroxylysine glucosidase (Fragment)	PGGHG	Homo sapiens (Human)	193
+enst00000382614		A6NNB3	IFM5_HUMAN	reviewed	Interferon-induced transmembrane protein 5 (Bone-restricted interferon-induced transmembrane protein-like protein) (BRIL) (Dispanin subfamily A member 1) (DSPA1)	IFITM5	Homo sapiens (Human)	132
+enst00000616316,enst00000399817		Q01629	IFM2_HUMAN	reviewed	Interferon-induced transmembrane protein 2 (Dispanin subfamily A member 2c) (DSPA2c) (Interferon-inducible protein 1-8D)	IFITM2	Homo sapiens (Human)	132
+enst00000533141,enst00000602569		E9PQN9	E9PQN9_HUMAN	unreviewed	Interferon-induced transmembrane protein 2	IFITM2	Homo sapiens (Human)	112
+enst00000527146		H0YCL2	H0YCL2_HUMAN	unreviewed	Interferon-induced transmembrane protein 2 (Fragment)	IFITM2	Homo sapiens (Human)	55
+enst00000399815		H7BYV1	H7BYV1_HUMAN	unreviewed	Interferon-induced transmembrane protein 2 (Fragment)	IFITM2	Homo sapiens (Human)	74
+enst00000528780,enst00000328221,enst00000408968		P13164	IFM1_HUMAN	reviewed	Interferon-induced transmembrane protein 1 (Dispanin subfamily A member 2a) (DSPA2a) (Interferon-induced protein 17) (Interferon-inducible protein 9-27) (Leu-13 antigen) (CD antigen CD225)	IFITM1 CD225 IFI17	Homo sapiens (Human)	125
+enst00000399808		Q01628	IFM3_HUMAN	reviewed	Interferon-induced transmembrane protein 3 (Dispanin subfamily A member 2b) (DSPA2b) (Interferon-inducible protein 1-8U)	IFITM3	Homo sapiens (Human)	133
+enst00000531688		R4GNG9	R4GNG9_HUMAN	unreviewed	Interferon-induced transmembrane protein 3 (Fragment)	IFITM3	Homo sapiens (Human)	55
+enst00000526811,enst00000602735		E9PS44	E9PS44_HUMAN	unreviewed	Interferon-induced transmembrane protein 3	IFITM3	Homo sapiens (Human)	112
+enst00000329962		Q76KP1	B4GN4_HUMAN	reviewed	N-acetyl-beta-glucosaminyl-glycoprotein 4-beta-N-acetylgalactosaminyltransferase 1 (NGalNAc-T1) (EC 2.4.1.244) (Beta-1,4-N-acetylgalactosaminyltransferase IV) (Beta4GalNAc-T4) (Beta4GalNAcT4)	B4GALNT4	Homo sapiens (Human)	1039
+enst00000526584		H0YDW6	H0YDW6_HUMAN	unreviewed	N-acetyl-beta-glucosaminyl-glycoprotein 4-beta-N-acetylgalactosaminyltransferase 1 (Fragment)	B4GALNT4	Homo sapiens (Human)	26
+enst00000534778		H0YCU7	H0YCU7_HUMAN	unreviewed	N-acetyl-beta-glucosaminyl-glycoprotein 4-beta-N-acetylgalactosaminyltransferase 1 (Fragment)	B4GALNT4	Homo sapiens (Human)	53
+enst00000534401		E9PQ15	E9PQ15_HUMAN	unreviewed	Plakophilin-3 (Fragment)	PKP3	Homo sapiens (Human)	247
+enst00000533249		E9PKC4	E9PKC4_HUMAN	unreviewed	Plakophilin-3 (Fragment)	PKP3	Homo sapiens (Human)	197
+enst00000527442		E9PJR7	E9PJR7_HUMAN	unreviewed	Plakophilin-3 (Fragment)	PKP3	Homo sapiens (Human)	120
+enst00000528036		E9PRW6	E9PRW6_HUMAN	unreviewed	Plakophilin-3 (Fragment)	PKP3	Homo sapiens (Human)	156
+enst00000331563	enst00000331563 -> Q9Y446-1	Q9Y446	PKP3_HUMAN	reviewed	Plakophilin-3	PKP3	Homo sapiens (Human)	797
+enst00000531857		E9PK71	E9PK71_HUMAN	unreviewed	Plakophilin-3 (Fragment)	PKP3	Homo sapiens (Human)	212
+enst00000525642		H0YEY5	H0YEY5_HUMAN	unreviewed	Plakophilin-3 (Fragment)	PKP3	Homo sapiens (Human)	115
+enst00000528845		H0YDR5	H0YDR5_HUMAN	unreviewed	Single Ig IL-1-related receptor (Fragment)	SIGIRR	Homo sapiens (Human)	130
+enst00000526395		H0YDF8	H0YDF8_HUMAN	unreviewed	Single Ig IL-1-related receptor (Fragment)	SIGIRR	Homo sapiens (Human)	142
+enst00000431843,enst00000397632,enst00000332725	enst00000397632 -> Q6IA17-1,enst00000431843 -> Q6IA17-1,enst00000332725 -> Q6IA17-1	Q6IA17	SIGIR_HUMAN	reviewed	Single Ig IL-1-related receptor (Single Ig IL-1R-related molecule) (Single immunoglobulin domain-containing IL1R-related protein) (Toll/interleukin-1 receptor 8) (TIR8)	SIGIRR UNQ301/PRO342	Homo sapiens (Human)	410
+enst00000531205		C9JFX4	C9JFX4_HUMAN	unreviewed	Single Ig IL-1-related receptor	SIGIRR	Homo sapiens (Human)	504
+enst00000528209		E9PLG6	E9PLG6_HUMAN	unreviewed	Single Ig IL-1-related receptor (Fragment)	SIGIRR	Homo sapiens (Human)	189
+enst00000530494		E9PSD9	E9PSD9_HUMAN	unreviewed	Single Ig IL-1-related receptor (Fragment)	SIGIRR	Homo sapiens (Human)	143
+enst00000528058		E9PK23	E9PK23_HUMAN	unreviewed	Single Ig IL-1-related receptor (Fragment)	SIGIRR	Homo sapiens (Human)	57
+enst00000332826	enst00000332826 -> A1A5B4-1	A1A5B4	ANO9_HUMAN	reviewed	Anoctamin-9 (Transmembrane protein 16J) (Tumor protein p53-inducible protein 5) (p53-induced gene 5 protein)	ANO9 PIG5 TMEM16J TP53I5	Homo sapiens (Human)	782
+enst00000308020		Q9BVG9	PTSS2_HUMAN	reviewed	Phosphatidylserine synthase 2 (PSS-2) (PtdSer synthase 2) (EC 2.7.8.29) (Serine-exchange enzyme II)	PTDSS2 PSS2	Homo sapiens (Human)	487
+enst00000531520		E9PLE4	E9PLE4_HUMAN	unreviewed	Phosphatidylserine synthase 2	PTDSS2	Homo sapiens (Human)	81
+enst00000527479		E9PS47	E9PS47_HUMAN	unreviewed	Phosphatidylserine synthase 2	PTDSS2	Homo sapiens (Human)	60
+enst00000525701		E9PR82	E9PR82_HUMAN	unreviewed	Ribonuclease inhibitor	RNH1	Homo sapiens (Human)	35
+enst00000529768		H0YCR7	H0YCR7_HUMAN	unreviewed	Ribonuclease inhibitor (Fragment)	RNH1	Homo sapiens (Human)	285
+enst00000534797,enst00000397614,enst00000397615,enst00000354420,enst00000397604,enst00000533410,enst00000438658,enst00000356187		P13489	RINI_HUMAN	reviewed	Ribonuclease inhibitor (Placental ribonuclease inhibitor) (Placental RNase inhibitor) (Ribonuclease/angiogenin inhibitor 1) (RAI)	RNH1 PRI RNH	Homo sapiens (Human)	461
+enst00000524464		E9PMA9	E9PMA9_HUMAN	unreviewed	Ribonuclease inhibitor	RNH1	Homo sapiens (Human)	77
+enst00000529115		E9PMN0	E9PMN0_HUMAN	unreviewed	Ribonuclease inhibitor	RNH1	Homo sapiens (Human)	168
+enst00000527485		E9PIM9	E9PIM9_HUMAN	unreviewed	Ribonuclease inhibitor (Fragment)	RNH1	Homo sapiens (Human)	199
+enst00000529368		E9PLZ3	E9PLZ3_HUMAN	unreviewed	Ribonuclease inhibitor (Fragment)	RNH1	Homo sapiens (Human)	194
+enst00000529306		E9PMJ3	E9PMJ3_HUMAN	unreviewed	Ribonuclease inhibitor (Fragment)	RNH1	Homo sapiens (Human)	189
+enst00000531149		E9PIK5	E9PIK5_HUMAN	unreviewed	Ribonuclease inhibitor (Fragment)	RNH1	Homo sapiens (Human)	181
+enst00000532055		E9PMI1	E9PMI1_HUMAN	unreviewed	Ribonuclease inhibitor (Fragment)	RNH1	Homo sapiens (Human)	40
+enst00000531540		A0A0J9YXC4	A0A0J9YXC4_HUMAN	unreviewed	Ribonuclease inhibitor (Fragment)	RNH1	Homo sapiens (Human)	8
+enst00000397594,enst00000397596,enst00000493230,enst00000311189,enst00000417302,enst00000451590	enst00000451590 -> P01112-1,enst00000493230 -> P01112-2,enst00000397596 -> P01112-1,enst00000311189 -> P01112-1,enst00000417302 -> P01112-2,enst00000397594 -> P01112-2	P01112	RASH_HUMAN	reviewed	GTPase HRas (H-Ras-1) (Ha-Ras) (Transforming protein p21) (c-H-ras) (p21ras) [Cleaved into: GTPase HRas, N-terminally processed]	HRAS HRAS1	Homo sapiens (Human)	189
+enst00000270115		Q8IYG6	LRC56_HUMAN	reviewed	Leucine-rich repeat-containing protein 56	LRRC56	Homo sapiens (Human)	542
+enst00000329451		Q8IXW0	LMTD2_HUMAN	reviewed	Lamin tail domain-containing protein 2	LMNTD2 C11orf35	Homo sapiens (Human)	634
+enst00000441853		C9JV74	C9JV74_HUMAN	unreviewed	Lamin tail domain-containing protein 2 (Fragment)	LMNTD2	Homo sapiens (Human)	302
+enst00000486629		E9PJR3	E9PJR3_HUMAN	unreviewed	Lamin tail domain-containing protein 2 (Fragment)	LMNTD2	Homo sapiens (Human)	247
+enst00000431809	enst00000431809 -> Q02833-2	Q02833	RASF7_HUMAN	reviewed	Ras association domain-containing protein 7 (HRAS1-related cluster protein 1)	RASSF7 C11orf13 HRC1	Homo sapiens (Human)	373

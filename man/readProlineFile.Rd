@@ -4,43 +4,60 @@
 \alias{readProlineFile}
 \title{Read csv or txt files exported from MS-Angel and Proline}
 \usage{
-readProlineFile(fileNa, wdir = NULL, logConvert = TRUE,
-  quantCol = "^abundance_", annotCol = c("accession", "description",
-  "is_validated", "coverage", "X.sequences", "X.peptides",
-  "protein_set.score"), separateAnnot = TRUE, silent = FALSE,
-  callFrom = NULL)
+readProlineFile(
+  fileName,
+  path = NULL,
+  logConvert = TRUE,
+  quantCol = "^abundance_",
+  annotCol = c("accession", "description", "is_validated", "coverage", "X.sequences",
+    "X.peptides", "protein_set.score"),
+  refLi = NULL,
+  separateAnnot = TRUE,
+  plotGraph = TRUE,
+  graphTit = NULL,
+  silent = FALSE,
+  callFrom = NULL
+)
 }
 \arguments{
-\item{fileNa}{(character) name of file to read}
+\item{fileName}{(character) name of file to read}
 
-\item{wdir}{(character) optional path (note: Windows backslash sould be protected or written as '/')}
+\item{path}{(character) optional path (note: Windows backslash sould be protected or written as '/')}
 
 \item{logConvert}{(logical) convert numeric data as log2, will be placed in $quant}
 
-\item{quantCol}{(character) (character) exact col-names or if length=1 pattern to search among column-names for $quant}
+\item{quantCol}{(character or integer) exact col-names, or if length=1 content of \code{quantCol} will be used as pattern to search among column-names for $quant using \code{grep}}
 
 \item{annotCol}{(character) (character) exact col-names or if length=1 pattern to search among column-names for $annot}
 
+\item{refLi}{(integer) custom decide which line of data is main species, if single character entry it will be used to choose a group of species (eg 'mainSpe')}
+
 \item{separateAnnot}{(logical) separate annotation form numeric data (quantCol and annotCol must be defined)}
+
+\item{plotGraph}{(logical or matrix of integer) optional plot vioplot of initial data; if integer, it will be passed to \code{layout} when plotting}
+
+\item{graphTit}{(character) optional title to graph (if \code{plotGraph=TRUE})}
 
 \item{silent}{(logical) suppress messages}
 
-\item{callFrom}{(character) allow easier tracking of message produced}
+\item{callFrom}{(character) allow easier tracking of message(s) produced}
 }
 \value{
-list with \code{$annot}, \code{$abund} and optional \code{$quant}, or returns data.frame with entire content of file if \code{separateAnnot=FALSE}
+list with \code{$annot}, \code{$raw} and optional \code{$quant}, or returns data.frame with entire content of file if \code{separateAnnot=FALSE}
 }
 \description{
 Quantification results form MS-Angel and Proline \href{http://proline.profiproteomics.fr/}{Proline} should be first saved via Excel or LibreOffice as csv or tabulated txt. 
 Such files can be read by this function and relevant information be extracted. 
 The final output is a list containing 3 elements: \code{$annot}, \code{$abund} and optional \code{$quant}, or returns data.frame with entire content of file if \code{separateAnnot=FALSE}.
+Note: There is no normalization by default since quite frequently data produced by Proline are already sufficiently normalized. 
+In case of doubt the figure prouced using the argument \code{plotGraph=TRUE} may help judging if distribtions are aligned suffiently well.
 }
 \examples{
 path1 <- system.file("extdata",package="wrProteo")
 fiNa <- "exampleProlineABC.csv"
 dataABC <- readProlineFile(file.path(path1,fiNa))
-summary(dataABC$abund)
-matrixNAinspect(dataABC$quant,gr=as.factor(substr(colnames(dataABC$abund),1,1))) 
+summary(dataABC$quant)
+matrixNAinspect(dataABC$quant,gr=as.factor(substr(colnames(dataABC$quant),1,1))) 
 }
 \seealso{
 \code{\link[utils]{read.table}}

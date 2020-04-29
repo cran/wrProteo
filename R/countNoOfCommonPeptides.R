@@ -12,8 +12,8 @@
 #' @return list with $byPep as list of logical matrixes for each peptide (as line) and unique/shared/etc for each species; $byProt as list of matrixes with count data per proten (as line) for each species; $tab with simple summary-type count data   
 #' @seealso  \code{\link{readFasta2}} and/or  \code{\link[cleaver]{cleave-methods}}   
 #' @examples
-#' ## The example mimics a proteomics experiment where extracts form 
-#' ## E coli and Saccharomyces cerevisiae were mixed, thus not all peptdes may occur unique.  
+#' ## The example mimics a proteomics experiment where extracts form E coli and 
+#' ## Saccharomyces cerevisiae were mixed, thus not all peptdes may occur unique.  
 #' (mi2 = countNoOfCommonPeptides(Ec=list(E1=letters[1:4],E2=letters[c(3:7)],
 #'   E3=letters[c(4,8,13)],E4=letters[9]),Sc=list(S1=letters[c(2:3,6)], 
 #'   S2=letters[10:13],S3=letters[c(5,6,11)],S4=letters[c(11)],S5="n")))

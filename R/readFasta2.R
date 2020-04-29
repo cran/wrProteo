@@ -1,13 +1,13 @@
 #' Read file of protein sequences in fasta format
 #'   
-#' Read fasta formatted file (from Uniprot) to extract (protein) sequences and name.
-#' If \code{tableOut=TRUE} output may be organized as matrix for separating meta-annotationExtract, see also \href{https://www.uniprot.org/help/fasta-headers}{FASTA-headers}.
+#' Read fasta formatted file (from \href{https://www.uniprot.org}{UniProt}) to extract (protein) sequences and name.
+#' If \code{tableOut=TRUE} output may be organized as matrix for separating meta-annotation (eg GeneName, OrganismName, ProteinName) in separate columns.
 #'  
 #' @param filename (character) names fasta-file to be read
 #' @param delim (character) delimeter at header-line
 #' @param databaseSign (character) characters at beginning right afetr the '>' (typically specifying the data-base-origin), they will be excluded from the sequance-header
 #' @param tableOut (logical) toggle to return named character-vector or matrix with enhaced parsing of fasta-header. The resulting matrix will contain the comumns 'database','uniqueIdentifier','entryName','proteinName','sequence' and further columns depending on argument \code{UniprSep} 
-#' @param UniprSep (character) separators for further separating entry-fields if \code{tableOut=TRUE}, see also \href{https://www.uniprot.org/help/fasta-headers}{FASTA-headers}  
+#' @param UniprSep (character) separators for further separating entry-fields if \code{tableOut=TRUE}, see also \href{https://www.uniprot.org/help/fasta-headers}{UniProt-FASTA-headers}  
 #' @param cleanCols (logical) remove columns with all entries NA, if \code{tableOut=TRUE}
 #' @param debug (logical) supplemental messages for debugging
 #' @param silent (logical) suppress messages
@@ -15,6 +15,7 @@
 #' @return return (based on 'tableOut') simple character vector (of sequence) with Uniprot ID as name or matrix with columns: 'database','uniqueIdentifier','entryName','proteinName','sequence' and further columns depending on argument \code{UniprSep}
 #' @seealso  \code{\link[base]{scan}} or \code{\link[seqinr]{read.fasta}}  
 #' @examples
+#' # tiny example with common contaminants 
 #' path1 <- system.file('extdata',package='wrProteo')
 #' fiNa <-  "conta1.fasta"
 #' fasta1 <- readFasta2(file.path(path1,fiNa))

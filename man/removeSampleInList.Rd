@@ -7,8 +7,13 @@
 Remove samples (ie columns) from every instance of list of matrixes.
 Note: This function assumes same order of columns in list-elements 'listElem' !}
 \usage{
-removeSampleInList(dat, remSamp, listElem = c("abund", "quant"),
-  silent = FALSE, callFrom = NULL)
+removeSampleInList(
+  dat,
+  remSamp,
+  listElem = c("abund", "quant"),
+  silent = FALSE,
+  callFrom = NULL
+)
 }
 \arguments{
 \item{dat}{(list) main input to be filtered}

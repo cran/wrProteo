@@ -4,8 +4,16 @@
 \alias{matrixNAinspect}
 \title{Histogram of content of NAs in matrix}
 \usage{
-matrixNAinspect(dat, gr, retnNA = TRUE, xLab = NULL, tit = NULL,
-  xLim = NULL, silent = FALSE, callFrom = NULL)
+matrixNAinspect(
+  dat,
+  gr,
+  retnNA = TRUE,
+  xLab = NULL,
+  tit = NULL,
+  xLim = NULL,
+  silent = FALSE,
+  callFrom = NULL
+)
 }
 \arguments{
 \item{dat}{(matrix or data.frame) main numeric data}

@@ -4,9 +4,19 @@
 \alias{combineMultFilterNAimput}
 \title{Combine multiple filters on NA-imputed data}
 \usage{
-combineMultFilterNAimput(dat, imputed, grp, annDat = NULL,
-  abundThr = NULL, colRazNa = NULL, colTotNa = NULL, minSpeNo = 1,
-  minTotNo = 2, silent = FALSE, callFrom = NULL)
+combineMultFilterNAimput(
+  dat,
+  imputed,
+  grp,
+  annDat = NULL,
+  abundThr = NULL,
+  colRazNa = NULL,
+  colTotNa = NULL,
+  minSpeNo = 1,
+  minTotNo = 2,
+  silent = FALSE,
+  callFrom = NULL
+)
 }
 \arguments{
 \item{dat}{(matrix or data.frame) main data (may contain \code{NA})}

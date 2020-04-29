@@ -4,9 +4,13 @@
 \alias{extrSpeciesAnnot}
 \title{Extract species annotation}
 \usage{
-extrSpeciesAnnot(annot, spec = c("_CONT", "_HUMAN", "_YEAST", "_ECOLI"),
-  shortNa = c("cont", "H", "S", "E"), silent = FALSE,
-  callFrom = NULL)
+extrSpeciesAnnot(
+  annot,
+  spec = c("_CONT", "_HUMAN", "_YEAST", "_ECOLI"),
+  shortNa = c("cont", "H", "S", "E"),
+  silent = FALSE,
+  callFrom = NULL
+)
 }
 \arguments{
 \item{annot}{(character) vector with initial annotation}

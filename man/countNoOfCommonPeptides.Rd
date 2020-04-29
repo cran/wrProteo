@@ -8,8 +8,13 @@ Compare in-silico digested proteomes for unique and shared peptides, counts per 
 The in-silico digestion may be performed separately using the package \href{https://bioconductor.org/packages/release/bioc/html/cleaver.html}{cleaver}.
 Note: input must be list (or multiple names lists) of proteins with their respective peptides (eg by in-silico digestion).}
 \usage{
-countNoOfCommonPeptides(..., prefix = c("Hs", "Sc", "Ec"), sep = "_",
-  silent = FALSE, callFrom = NULL)
+countNoOfCommonPeptides(
+  ...,
+  prefix = c("Hs", "Sc", "Ec"),
+  sep = "_",
+  silent = FALSE,
+  callFrom = NULL
+)
 }
 \arguments{
 \item{...}{(list) multiple lists of (ini-silico) digested proteins (typically protein ID as names) with their respectice peptides (AA sequence), one entry for each species}
@@ -33,8 +38,8 @@ The in-silico digestion may be performed separately using the package \href{http
 Note: input must be list (or multiple names lists) of proteins with their respective peptides (eg by in-silico digestion).
 }
 \examples{
-## The example mimics a proteomics experiment where extracts form 
-## E coli and Saccharomyces cerevisiae were mixed, thus not all peptdes may occur unique.  
+## The example mimics a proteomics experiment where extracts form E coli and 
+## Saccharomyces cerevisiae were mixed, thus not all peptdes may occur unique.  
 (mi2 = countNoOfCommonPeptides(Ec=list(E1=letters[1:4],E2=letters[c(3:7)],
   E3=letters[c(4,8,13)],E4=letters[9]),Sc=list(S1=letters[c(2:3,6)], 
   S2=letters[10:13],S3=letters[c(5,6,11)],S4=letters[c(11)],S5="n")))

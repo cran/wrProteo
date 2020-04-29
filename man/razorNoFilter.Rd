@@ -4,8 +4,16 @@
 \alias{razorNoFilter}
 \title{Filter based on either number of total peptides and specific peptides or number of razor petides}
 \usage{
-razorNoFilter(annot, speNa = NULL, totNa = NULL, minRazNa = NULL,
-  minSpeNo = 1, minTotNo = 2, silent = FALSE, callFrom = NULL)
+razorNoFilter(
+  annot,
+  speNa = NULL,
+  totNa = NULL,
+  minRazNa = NULL,
+  minSpeNo = 1,
+  minTotNo = 2,
+  silent = FALSE,
+  callFrom = NULL
+)
 }
 \arguments{
 \item{annot}{(matrix or data.frame) main data (may contain NAs) with (PSM-) count values for each protein}

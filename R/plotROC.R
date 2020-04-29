@@ -49,7 +49,7 @@ plotROC <- function(dat,...,useCol=2:3,methNames=NULL,col=NULL,pch=1,bg=NULL,tit
   cutP <- dat[which(dat[,1]==point05),]
   if(length(stats::na.omit(point05))==1) { 
     newPch <- cbind(c(1,16,2,17, 7,15,5,6),new=c(21,21,24,24,22,22,23,25))                                   # transform open or plain filled points to color-filled
-    if(pch %in% newPch[,1]){ pch2 <- newPch[which(newPch[,1]==pch),2]; bg <- wrMisc::.convColorToTransp(col,0.1); col2 <- grDevices::grey(0.4)} else {pch2 <- pch; col2 <- col}   
+    if(pch %in% newPch[,1]){ pch2 <- newPch[which(newPch[,1]==pch),2]; bg <- wrMisc::convColorToTransp(col,0.1); col2 <- grDevices::grey(0.4)} else {pch2 <- pch; col2 <- col}   
     graphics::points(1-cutP[useCol[1]],cutP[useCol[2]],col=col2,pch=pch2,bg=col[1],cex=pointSi) }
   graphics::points(1-dat[,useCol[1]],dat[,useCol[2]],type="s",col=col[1],pch=pch,bg=bg)    # main curve
   coColN <- colnames(dat)[wrMisc::naOmit(grep("n\\.pos\\.",colnames(dat)))]            # more flexible (also to number of species/tags)

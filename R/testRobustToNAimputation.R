@@ -10,13 +10,13 @@
 #' It is necessary to define all groups of replicates in \code{gr} to obtain all possible pair-wise testing (multiple columns in $BH, $lfdr etc). 
 #' Testing by package \href{https://bioconductor.org/packages/release/bioc/html/ROTS.html}{ROTS} may optionaly be included.
 #' This function returns limma-like S3 list-object further enriched by additional fields/elements.
-#' @param dat (matrix or data.frame) main data (may contain \code{NA})
+#' @param dat (matrix or data.frame) main data (may contain \code{NA}); if \code{dat} is list containing $quant and $annot as matrix, the element $quant will be used
 #' @param gr (character or factor) replicate association
-#' @param annot (matrix or data.frame) annotation (lines must match lines of data !)
+#' @param annot (matrix or data.frame) annotation (lines must match lines of data !), if \code{annot} is \code{NULL} and argument \code{dat} is a list containing both $quant and $annot, the element $annot will be used 
 #' @param retnNA (logical) retain and report number of \code{NA}
 #' @param avSdH (numeric) population characteristics (mean and sd) for >1 \code{NA} neighbours 'high' (per line)
 #' @param avSdL (numeric) population characteristics (mean and sd) for >0 \code{NA} neighbours 'low' (per line)
-#' @param plotHist (logical) additional plot
+#' @param plotHist (logical) additional histogram of original, imputed and resultant distribution (made using \code{\link{matrixNAneighbourImpute}} )
 #' @param xLab (character) custom x-axis label 
 #' @param tit (character) custom title
 #' @param seedNo (integer) seed-value for normal random values
@@ -45,6 +45,9 @@
 #' @export
 testRobustToNAimputation <- function(dat,gr,annot=NULL,retnNA=TRUE,avSdH=c(0.18,0.5),avSdL=c(0.1,0.5),plotHist=FALSE,xLab=NULL,tit=NULL,seedNo=2018,nLoop=20,lfdrInclude=TRUE,ROTSn=NULL,silent=FALSE,callFrom=NULL){
   fxNa <- wrMisc::.composeCallName(callFrom,newNa="testRobustToNAimputation")
+  if(is.list(dat)) { if(all(c("quant","annot") %in% names(dat))) if(length(dim(dat$quant))==2 & length(dim(dat$annot)) ==2) {
+    if(length(annot) <1) { annot <- dat$annot} 
+    dat <- dat$quant }}
   if(length(dim(dat)) !=2) stop("'dat' must be matrix or data.frame with >1 columns")
   if(is.data.frame(dat)) dat <- as.matrix(dat)
   if(length(gr) != ncol(dat)) stop("Number of columns in 'dat' and number of (group-)elements in 'gr' do not match !")
@@ -63,9 +66,18 @@ testRobustToNAimputation <- function(dat,gr,annot=NULL,retnNA=TRUE,avSdH=c(0.18,
   datI <- matrixNAneighbourImpute(dat,gr,seedNo=seedNo,retnNA=retnNA,avSdH=avSdH,avSdL=avSdL,plotHist=plotHist,xLab=xLab,tit=tit)
   datFi <- combineMultFilterNAimput(dat=dat,imputed=datI,grp=gr,annDat=annot,abundThr=stats::quantile(dat,0.02,na.rm=TRUE))  # number of unique peptides unknown !
   ## done combineMultFilterNAimput
+  ## prepare for testing
+  if(lfdrInclude) {
+    chPa <- requireNamespace("fdrtool", quietly=TRUE)
+    if(!chPa) { message(fxNa,": package 'fdrtool' not installed, omit argument 'lfdrInclude'")
+      lfdrInclude <- FALSE }}  
   pwComb <- wrMisc::triCoord(length(levels(gr)))
   out <- wrMisc::moderTestXgrp(datFi$data,grp=gr,limmaOutput=TRUE,addResults="means")        #   ,anno=annot  # can't do question specific filtering w/o explicit loop 
   ## need to add $ROTS.p
+  if(length(stats::na.omit(ROTSn))==1) if(ROTSn >0) {  
+    chPa <- requireNamespace("ROTS", quietly=TRUE)
+    if(!chPa) { message(fxNa,": package 'RORS' not installed, omit argument 'ROTSn'")
+      ROTSn <- NULL }}  
   if(length(stats::na.omit(ROTSn))==1) if(ROTSn >0) {
     ## this requires package ROTS
     comp <- wrMisc::triCoord(length(levels(gr)))
@@ -85,15 +97,13 @@ testRobustToNAimputation <- function(dat,gr,annot=NULL,retnNA=TRUE,avSdH=c(0.18,
     datIm[,,1] <- datFi$data
     pValTab[,,1] <- out$p.value
     tValTab[,,1] <- out$t
-    #datIm[,,1] <- out$p.value
-    #pValTab[,,1] <- datFi$data
     if(length(stats::na.omit(ROTSn))==1) if(ROTSn >0) {
       pVaRotsTab <- array(NA,dim=c(nrow(dat),nrow(pwComb),min(10,nLoop)))
       pVaRotsTab[,,1] <- out$ROTS.p}
     for(i in 2:nLoop) {
       datX <- dat
       ## idea 17 oct change seed intiation ?
-      datX <- .imputeNA(dat,gr=gr,impParam=datI$randParam+c(0,0,i),exclNeg=TRUE)$data          
+      datX <- .imputeNA(dat,gr=gr,impParam=datI$randParam +c(0,0,0,i),exclNeg=TRUE)$data          
       fitX <- limma::eBayes(limma::contrasts.fit(limma::lmFit(datX[,],out$design),contrasts=out$contrasts))
       datIm[,,i] <- datX
       pValTab[,,i] <- fitX$p.value
