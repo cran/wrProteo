@@ -28,9 +28,9 @@ AAmass <- function(massTy="mono",inPept=TRUE,inclSpecAA=FALSE) {
     S=c(0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0),
     Se=c(0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1))
   rownames(aaComp) <- c("A","R","N","D","C","E","Q","G","H","I","L","K","M","F","P","S","T","W","Y","V","O","U")
-  if(!inPept) aaComp[,2:3] <- aaComp[,2:3] + matrix(rep(2:1,each=nrow(aaComp)),ncol=2)
+  if(!inPept) aaComp[,2:3] <- aaComp[,2:3] + matrix(rep(2:1, each=nrow(aaComp)), ncol=2)
   atoMass <- .atomicMasses()[,massTy]
-  AAmass <- aaComp*matrix(rep(atoMass[match(colnames(aaComp),names(atoMass))],each=nrow(aaComp)),nrow=nrow(aaComp))
+  AAmass <- aaComp*matrix(rep(atoMass[match(colnames(aaComp),names(atoMass))], each=nrow(aaComp)), nrow=nrow(aaComp))
   AAmass <- rowSums(AAmass)
   if(!inclSpecAA) AAmass <- AAmass[1:20]  # so far exclude ornithine O & selenocysteine U
   AAmass }

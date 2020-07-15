@@ -19,7 +19,7 @@ massDeFormula <- function(comp,massTy="mono",rmEmpty=FALSE,silent=FALSE,callFrom
   fxNa <- wrMisc::.composeCallName(callFrom,newNa="massDeFormula")
   if(length(wrMisc::naOmit(comp)) < length(comp)){
     if(!silent) message(fxNa,sum(is.na(comp))," entries of 'comp' are NA  (remove) !")
-    comp <- comp[wrMisc::naOmit(match(wrMisc::naOmit(comp),comp))] }
+    comp <- comp[wrMisc::naOmit(match(wrMisc::naOmit(comp), comp))] }
   ## rm NAsclean heading space, 
   comp <- gsub("^ +","",gsub(" +$","",comp))
   if(rmEmpty) {
@@ -30,24 +30,24 @@ massDeFormula <- function(comp,massTy="mono",rmEmpty=FALSE,silent=FALSE,callFrom
   msg <- "Can't find any element names (must start with caps,'e' or 'z')'"
   chEm <- nchar(comp) <1
   if(any(chEm)) comp[which(chEm)] <- "z" 
-  El <- up <- gregexpr("[[:upper:]]|e|z",comp)  #c("C;+12H, -2O & N|-Se/i P")))
-  chMaj <- sapply(up,function(x) any(x <1))
+  El <- up <- gregexpr("[[:upper:]]|e|z",comp)  
+  chMaj <- sapply(up, function(x) any(x <1))
   if(any(chMaj)) stop(msg," in ",comp[which(chMaj)])
-  ay <- gregexpr("[[:lower:]]",comp)
-  for(i in which(sapply(ay,function(x) any(x >0)))) {            # correct if upper followed by lower caps
+  ay <- gregexpr("[[:lower:]]", comp)
+  for(i in which(sapply(ay, function(x) any(x >0)))) {            # correct if upper followed by lower caps
     tmp <- which(El[[i]] %in% (ay[[i]]-1))
     El[[i]][tmp] <- El[[i]][tmp] +1 }
   form <- list()
   for(i in 1:length(El)) {
     begStr <- c(1,El[[i]][-length(El[[i]])] +1)           # beginning of string with number & element
-    y <- substring(comp[[i]],begStr,El[[i]])              # isolated series until capital/lower letter
+    y <- substring(comp[[i]], begStr,El[[i]])              # isolated series until capital/lower letter
     sig <- grep("-",y)
     num <- gsub("[[:alpha:]]|[[:blank:]]|[[:punct:]]","",y)
     num[which(num=="")] <- "1"
     num <- as.numeric(num)
     if(length(sig) >0) num[sig] <- -1*num[sig]
     if(length(sig) <length(y)) num[-1*sig] <- paste("+",num[-1*sig],sep="")  # add '+'
-    form[[i]] <- matrix(c(num,substring(comp[[i]],up[[i]],El[[i]])),ncol=2,dimnames=list(NULL,c("n","elem"))) }
+    form[[i]] <- matrix(c(num,substring(comp[[i]],up[[i]],El[[i]])), ncol=2, dimnames=list(NULL,c("n","elem"))) }
   names(form) <- comp
   ## convert extracted/cleaned sum formula in mass :
   atMa <- .atomicMasses()[,massTy=massTy]

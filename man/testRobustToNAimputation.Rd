@@ -54,7 +54,7 @@ testRobustToNAimputation(
 \item{callFrom}{(character) allows easier tracking of messages produced}
 }
 \value{
-matrix including imputed values or list of final and matrix with number of imputed by group. Various options of multiple testing ccorrection are implemented ('BY','lfdr','p.value' and 'ROTS.BH'
+limma-type S3 object of class 'MArrayLM' which can be accessed; multiple results of testing or multiple testing correction types may get included ('p.value','FDR','BY','lfdr' or 'ROTS.BH')
 }
 \description{
 \code{testRobustToNAimputation} replaces \code{NA} values based on group neigbours (based on grouping of columns in argument \code{gr}), following overall assumption of close to Gaussian distribution.
@@ -62,11 +62,12 @@ Furthermore, it is assumed that \code{NA}-values originate from experimental set
 In  such cases (eg in proteomics) it is current practice to replace \code{NA}-values by very low (random) values in order to be able to perform t-tests.
 However, random normal values used for replacing may in rare cases deviate from the average (the 'assumed' value) and in particular, if multiple \code{NA} replacements are above the average, 
 may look like induced biological data and be misinterpreted as so.      
+The statistical testing uses \code{eBayes} from Bioconductor package \href{https://bioconductor.org/packages/release/bioc/html/limma.html}{limma} for robust testing in the context of small numbers of replicates. 
 By repeating multiple times the process of replacing \code{NA}-values and subsequent testing the results can be sumarized afterwards by median over all repeated runs to remmove the stochastic effect of individual NA-imputation.
 Thus, one may gain stability towards random-character of \code{NA} imputations by repeating imputation & test 'nLoop' times and summarize p-values by median (results stabilized at 50-100 rounds).
 It is necessary to define all groups of replicates in \code{gr} to obtain all possible pair-wise testing (multiple columns in $BH, $lfdr etc). 
-Testing by package \href{https://bioconductor.org/packages/release/bioc/html/ROTS.html}{ROTS} may optionaly be included.
-This function returns limma-like S3 list-object further enriched by additional fields/elements.
+The modified testing-procedure of Bioconductor package \href{https://bioconductor.org/packages/release/bioc/html/ROTS.html}{ROTS} may optionaly be included, if desired.
+This function returns a \href{https://bioconductor.org/packages/release/bioc/html/limma.html}{limma}-like S3 list-object further enriched by additional fields/elements.
 }
 \examples{
 set.seed(2015); rand1 <- round(runif(600)+rnorm(600,1,2),3)
@@ -85,5 +86,5 @@ PLtestR1 <- testRobustToNAimputation(dat=dat1,gr=grp1,retnNA=TRUE,nLoop=100,ROTS
 names(PLtestR1)
 }
 \seealso{
-\code{\link[wrMisc]{moderTest2grp}}, \code{\link[wrMisc]{pVal2lfdr}}, \code{\link[limma]{eBayes}}, \code{\link[stats]{t.test}},\code{\link[ROTS]{ROTS}}
+\code{\link[wrMisc]{moderTest2grp}}, \code{\link[wrMisc]{pVal2lfdr}}, \code{eBayes} in Bioconductor package \href{https://bioconductor.org/packages/release/bioc/html/limma.html}{limma}, \code{\link[stats]{t.test}},\code{ROTS} of Bioconductor package \href{https://bioconductor.org/packages/release/bioc/html/ROTS.html}{ROTS}
 }

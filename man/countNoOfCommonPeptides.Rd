@@ -50,5 +50,5 @@ lapply(mi2$byProt,head)
 mi2$tab
 }
 \seealso{
-\code{\link{readFasta2}} and/or  \code{\link[cleaver]{cleave-methods}}
+\code{\link{readFasta2}} and/or \code{cleave-methods} in package \href{https://bioconductor.org/packages/release/bioc/html/cleaver.html}{cleaver}
 }

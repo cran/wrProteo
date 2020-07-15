@@ -13,7 +13,7 @@
 #' @param ROTSn (integer) number of iterations ROTS runs (stabilization of reseults may be seen with >300) 
 #' @param silent (logical) suppress messages
 #' @param callFrom (character) allow easier tracking of message produced
-#' @return limma-type MA-object (list) 
+#' @return limma-type S3 object of class 'MArrayLM' which can be accessed; multiple testing correction types or modified testing by ROTS may get included ('p.value','FDR','BY','lfdr' or 'ROTS.BH')
 #' @seealso  \code{\link[wrMisc]{moderTest2grp}}, \code{\link[wrMisc]{pVal2lfdr}}, \code{\link[stats]{t.test}},\code{\link[ROTS]{ROTS}}  
 #' @examples
 #' set.seed(2018);  datT8 <- matrix(round(rnorm(800)+3,1),nc=8,dimnames=list(paste(
@@ -40,14 +40,22 @@ test2grp <- function(dat,questNo,useCol=NULL,grp=NULL,annot=NULL,ROTSn=0,silent=
   out <- wrMisc::moderTest2grp(dat$data[which(dat$filt[,questNo]),unlist(useCol)],gr=grp,limmaOutput=TRUE,addResults=c("lfdr","FDR","Mval","means","nonMod"))
   out$BH <- apply(out$p.value,2,stats::p.adjust,method="BH")
   out$nonMod.BH <- stats::p.adjust(out$nonMod.p,method="BH")
-  out$nonMod.lfdr <- wrMisc::pVal2lfdr(out$nonMod.p)
+  chLfdr <- try(find.package("fdrtools"),silent=TRUE)
+  if("try-error" %in% class(chLfdr)) { 
+      message(fxNa,"package 'fdrtool' not found ! Please install for calculating lfdr-values ..") 
+  } else out$nonMod.lfdr <- wrMisc::pVal2lfdr(out$nonMod.p)
   ## need to add : (non-moderated test and) ROTS
-  if(length(stats::na.omit(ROTSn))==1) if(ROTSn >0) {
+  if(length(ROTSn==1)) if(ROTSn >0 & !is.na(ROTSn)) {
+    chPa <- try(find.package("ROTS"),silent=TRUE)
+    if("try-error" %in% class(chPa)) { ROTSn <- NULL
+      message(fxNa,"package 'ROTS' not found ! Please install first .. setting 'ROTSn'=0") }
+  } else ROTSn <- NULL      
+  if(length(ROTSn)==1) if(ROTSn >0) {
     ## this part requires ROTS
     tmp <- ROTS::ROTS(dat$data[which(dat$filt[,questNo]),unlist(useCol)], groups=as.numeric(as.factor(grp))-1, B=ROTSn)   # ,K=500  
     out$ROTS.p <- tmp$pvalue
     out$ROTS.BH <- stats::p.adjust(tmp$pvalue,method="BH") 
-    out$ROTS.lfdr <- wrMisc::pVal2lfdr(tmp$pvalue)
+    if(!"try-error" %in% class(chLfdr)) out$ROTS.lfdr <- wrMisc::pVal2lfdr(tmp$pvalue)
   }
   if(!is.null(annot)) out$annot <- as.matrix(annot[which(dat$filt[,questNo]),])
   out }

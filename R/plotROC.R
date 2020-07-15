@@ -1,39 +1,43 @@
 #' Plot ROC curves
 #'
 #' \code{plotROC} plots ROC curves based on results from \code{\link{summarizeForROC}}. 
-#' Does not return any data, plot only.
+#' Does not return any data, plot only. Allows printing simultaneously multiple ROC curves from different studies. 
+#' Was made for special consideration of 3 species mix as in proteomics benchmark
+
+#' In the simplest case data were prepared using \code{\link[wrMisc]{moderTest2grp}} 
 #'  
 #' @param dat (matrix) from testing (eg  \code{\link{summarizeForROC}} )
-#' @param ...  additional input (must be of same type of format as 'dat')
-#' @param useCol (integer or character) colors to be used
+#' @param ... optional additional data-sets to include as seprate ROC-curves to same plot (must be of same type of format as 'dat')
+#' @param useCol (integer or character, length=2) columns from \code{dat} to be used for pecificity and sensitivity
 #' @param methNames (character) names of methods (data-sets) to be displayed
-#' @param col (character) custom color
-#' @param pch (integer) type of symbol to be used (see \code{\link[graphics]{par}})
-#' @param bg (character) background color in plot (see \code{\link[graphics]{par}})
+#' @param col (character) custom colors for lines and text (choose one color for each different data-set)
+#' @param pch (integer) type of symbol to be used (see also \code{\link[graphics]{par}})
+#' @param bg (character) background color in plot (see also \code{\link[graphics]{par}})
 #' @param tit (character) custom title
 #' @param point05 (numeric) specific point to highlight in plot (typically at alpha=0.05) 
 #' @param pointSi (numeric) size of points (as expansion factor \code{cex}) 
 #' @param nByMeth (integer) value of n to display
-#' @param colPanel (character) custom colors
 #' @param speciesOrder (integer) custom order of species in legend
 #  @param speciesOrder (integer) optional custom order for counts per species (eg number of proteins) in legend (eg 'n.H/S/E')
 #' @param txtLoc (numeric) location for text
-#' @param legCex (numeric) cex expansion factor for legend
+#' @param legCex (numeric) cex expansion factor for legend (see also \code{\link[graphics]{par}})
+#' @param addSuplT (logical) add text with information about precision,accuracy and FDR
 #' @param silent (logical) suppress messages
 #' @param callFrom (character) allows easier tracking of messages produced
 #' @return plot only
-#' @seealso  \code{\link{summarizeForROC}}, \code{\link[wrMisc]{moderTest2grp}}  
+#' @seealso \code{\link[wrProteo]{summarizeForROC}}, \code{\link[wrMisc]{moderTest2grp}}  
 #' @examples
-#' set.seed(2019); test1 <- list(annot=cbind(spec=c(rep("b",35),letters[sample.int(n=3,
-#'   size=150,replace=TRUE)])),BH=matrix(c(runif(35,0,0.01),runif(150)),ncol=1))
-#' tail(roc1 <- summarizeForROC(test1,spec=c("a","b","c"),plotROC=FALSE))
-#' plotROC(roc1)
+#' roc0 <- cbind(alph=c(2e-6,4e-5,4e-4,2.7e-3,1.6e-2,4.2e-2,8.3e-2,1.7e-1,2.7e-1,4.1e-1,5.3e-1,
+#' 	 6.8e-1,8.3e-1,9.7e-1), spec=c(1,1,1,1,0.957,0.915,0.915,0.809,0.702,0.489,0.362,0.234,
+#'   0.128,0.0426), sens=c(0,0,0.145,0.942,2.54,2.68,3.33,3.99,4.71,5.87,6.67,8.04,8.77,
+#'   9.93)/10, n.pos.a=c(0,0,0,0,2,4,4,9,14,24,36,41) )
+#' plotROC(roc0)
 #' @export
 plotROC <- function(dat,...,useCol=2:3,methNames=NULL,col=NULL,pch=1,bg=NULL,tit=NULL,point05=0.05,pointSi=0.85,nByMeth=NULL,
-  colPanel=c(grDevices::grey(0.4),2:5),speciesOrder=NULL,txtLoc=c(0.4,0.3,0.04),legCex=0.72,silent=FALSE,callFrom=NULL) {
+  speciesOrder=NULL,txtLoc=c(0.4,0.3,0.04),legCex=0.72,addSuplT=TRUE,silent=FALSE,callFrom=NULL) {
+  ##
   fxNa <- wrMisc::.composeCallName(callFrom,newNa="plotROC")
   inpS <- list(...)
-  addSupl <- TRUE
   chInp <- lapply(c("dat","useCol","methNames","col","pch","bg","tit","point05","pointSi","nByMeth","txtLoc","legCex"),wrMisc::.seqCutStr,startFr=2,reverse=TRUE)
   chAr <- names(inpS) %in% unlist(chInp)
   if(any(chAr)) {
@@ -41,7 +45,7 @@ plotROC <- function(dat,...,useCol=2:3,methNames=NULL,col=NULL,pch=1,bg=NULL,tit
     inpS <- inpS[which(!chAr)]  
   }
   if(is.null(tit)) tit <- paste("ROC")
-  if(is.null(col)) col <- 1:(1+length(inpS))
+  if(is.null(col)) col <- if(length(inpS)==1) 1 else c(grDevices::grey(0.4),2:(1+length(inpS)))
   xLab <- "1 - Specificity"
   yLab <- "Sensitivity"
   graphics::plot(1-dat[,useCol[1]],dat[,useCol[2]],type="n",col=col[1],pch=pch,bg=bg,main=tit,xlab=xLab,ylab=yLab,xlim=c(0,1),ylim=c(0,1))
@@ -49,7 +53,8 @@ plotROC <- function(dat,...,useCol=2:3,methNames=NULL,col=NULL,pch=1,bg=NULL,tit
   cutP <- dat[which(dat[,1]==point05),]
   if(length(stats::na.omit(point05))==1) { 
     newPch <- cbind(c(1,16,2,17, 7,15,5,6),new=c(21,21,24,24,22,22,23,25))                                   # transform open or plain filled points to color-filled
-    if(pch %in% newPch[,1]){ pch2 <- newPch[which(newPch[,1]==pch),2]; bg <- wrMisc::convColorToTransp(col,0.1); col2 <- grDevices::grey(0.4)} else {pch2 <- pch; col2 <- col}   
+    if(pch %in% newPch[,1]) {pch2 <- newPch[which(newPch[,1]==pch),2]; bg <- wrMisc::convColorToTransp(col,0.1);
+      col2 <- grDevices::grey(0.4) } else {pch2 <- pch; col2 <- col}   
     graphics::points(1-cutP[useCol[1]],cutP[useCol[2]],col=col2,pch=pch2,bg=col[1],cex=pointSi) }
   graphics::points(1-dat[,useCol[1]],dat[,useCol[2]],type="s",col=col[1],pch=pch,bg=bg)    # main curve
   coColN <- colnames(dat)[wrMisc::naOmit(grep("n\\.pos\\.",colnames(dat)))]            # more flexible (also to number of species/tags)
@@ -59,11 +64,11 @@ plotROC <- function(dat,...,useCol=2:3,methNames=NULL,col=NULL,pch=1,bg=NULL,tit
   coColN <- coColN[speciesOrder]
   coColN1 <- sub("n\\.pos\\.","",coColN)
   coColN2 <- paste(" n.",paste(coColN1,sep="",collapse="/")," ",sep="")
-  if(addSupl) {       # add legend-like method-name/descr
+  if(addSuplT) {       # add legend-like method-name/descr
     txt <- if(is.null(nByMeth)) methNames[1] else paste(methNames[1]," (n.test=",nByMeth[1],") ",sep="")
     graphics::text(txtLoc[1]-txtLoc[3],txtLoc[2]+txtLoc[3],paste("Values at threshold of",point05,":"),cex=0.75,col=grDevices::grey(0.4),adj=0)   
     graphics::text(txtLoc[1],txtLoc[2],txt,cex=legCex+0.02,col=col[1],adj=1)    
-    graphics::text(txtLoc[1]+0.02,txtLoc[2],paste(paste(paste(c("prec=","accur=","FDR="),        #"n.E/S/H="
+    if(addSuplT) graphics::text(txtLoc[1]+0.02,txtLoc[2],paste(paste(paste(c("prec=","accur=","FDR="),        #"n.E/S/H="
       signif(cutP[c("prec","accur","FDR")],2)),collapse="  "),coColN2 ,cutP[coColN[1]],cutP[coColN[2]],
       if(length(coColN)>2) cutP[coColN[3]]),cex=legCex,col=col[1],adj=0) }  
   if(length(inpS) >0) {
@@ -71,7 +76,7 @@ plotROC <- function(dat,...,useCol=2:3,methNames=NULL,col=NULL,pch=1,bg=NULL,tit
       cutP <- inpS[[i]][which(inpS[[i]][,1]==point05),]
       if(point05) graphics::points(1-cutP[useCol[1]],cutP[useCol[2]],col=col2,pch=pch2[1],bg=col[i+1],cex=pointSi)
       graphics::points(1-inpS[[i]][,useCol[1]],inpS[[i]][,useCol[2]],type="s",col=col[i+1],pch=pch,bg=bg[i+1])
-      if(TRUE) {
+      if(addSuplT) {
         txt <- if(is.null(nByMeth)) methNames[i+1] else paste(methNames[i+1]," (n.test=",nByMeth[i+1],") ",sep="")
         graphics::text(txtLoc[1],txtLoc[2]-txtLoc[3]*i,txt,cex=legCex+0.02,col=col[i+1],adj=1)  
         graphics::text(txtLoc[1]+0.02,txtLoc[2]-txtLoc[3]*i,paste(paste(paste(c("prec=","accur=","FDR="),

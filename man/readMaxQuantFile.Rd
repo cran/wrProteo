@@ -14,6 +14,7 @@ readMaxQuantFile(
   extrColNames = c("Majority.protein.IDs", "Fasta.headers", "Number.of.proteins"),
   specPref = c(conta = "conta|CON_|LYSC_CHICK", mainSpecies = "OS=Homo sapiens", spike
     = "HUMAN_UPS"),
+  tit = NULL,
   separateAnnot = TRUE,
   plotGraph = TRUE,
   silent = FALSE,
@@ -37,6 +38,8 @@ readMaxQuantFile(
 
 \item{specPref}{(character) prefix to identifiers allowing to separate i) recognize contamination database, ii) species of main identifications and iii) spike-in species}
 
+\item{tit}{(character) custom title to plot}
+
 \item{separateAnnot}{(logical) if \code{TRUE} output will be organized as list with \code{$annot}, \code{$abund} for initial/raw abundance values and \code{$quant} with final normalized quantitations}
 
 \item{plotGraph}{(logical) optional plot vioplot of initial and normalized data (using \code{normalizeMeth}); alternatively the argument may contain numeric details that will be passed to \code{layout} when plotting}
@@ -55,12 +58,12 @@ This function has been developed using MaxQuant version 1.6.10.x, the format of 
 }
 \examples{
 path1 <- system.file("extdata",package="wrProteo")
-# Here we'll load a short/trimmed example file (thus not MawQuant default name) 
+# Here we'll load a short/trimmed example file (thus not MaxQuant default name) 
 fiNa <- "proteinGroupsMaxQuantUps1.txt"
-specPref1=c(conta="conta|CON_|LYSC_CHICK",mainSpecies="YEAST",spike="HUMAN_UPS")
-dataMQ <- readMaxQuantFile(path1,file=fiNa,specPref=specPref1)
+specPref1 <- c(conta="conta|CON_|LYSC_CHICK", mainSpecies="YEAST",spike="HUMAN_UPS")
+dataMQ <- readMaxQuantFile(path1, file=fiNa, specPref=specPref1)
 summary(dataMQ$quant)
-matrixNAinspect(dataMQ$quant,gr=gl(3,3)) 
+matrixNAinspect(dataMQ$quant, gr=gl(3,3)) 
 }
 \seealso{
 \code{\link[utils]{read.table}}, \code{\link[wrMisc]{normalizeThis}}) , \code{\link{readProlineFile}}

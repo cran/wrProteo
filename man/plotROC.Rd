@@ -16,10 +16,10 @@ plotROC(
   point05 = 0.05,
   pointSi = 0.85,
   nByMeth = NULL,
-  colPanel = c(grDevices::grey(0.4), 2:5),
   speciesOrder = NULL,
   txtLoc = c(0.4, 0.3, 0.04),
   legCex = 0.72,
+  addSuplT = TRUE,
   silent = FALSE,
   callFrom = NULL
 )
@@ -27,17 +27,17 @@ plotROC(
 \arguments{
 \item{dat}{(matrix) from testing (eg  \code{\link{summarizeForROC}} )}
 
-\item{...}{additional input (must be of same type of format as 'dat')}
+\item{...}{optional additional data-sets to include as seprate ROC-curves to same plot (must be of same type of format as 'dat')}
 
-\item{useCol}{(integer or character) colors to be used}
+\item{useCol}{(integer or character, length=2) columns from \code{dat} to be used for pecificity and sensitivity}
 
 \item{methNames}{(character) names of methods (data-sets) to be displayed}
 
-\item{col}{(character) custom color}
+\item{col}{(character) custom colors for lines and text (choose one color for each different data-set)}
 
-\item{pch}{(integer) type of symbol to be used (see \code{\link[graphics]{par}})}
+\item{pch}{(integer) type of symbol to be used (see also \code{\link[graphics]{par}})}
 
-\item{bg}{(character) background color in plot (see \code{\link[graphics]{par}})}
+\item{bg}{(character) background color in plot (see also \code{\link[graphics]{par}})}
 
 \item{tit}{(character) custom title}
 
@@ -47,13 +47,13 @@ plotROC(
 
 \item{nByMeth}{(integer) value of n to display}
 
-\item{colPanel}{(character) custom colors}
-
 \item{speciesOrder}{(integer) custom order of species in legend}
 
 \item{txtLoc}{(numeric) location for text}
 
-\item{legCex}{(numeric) cex expansion factor for legend}
+\item{legCex}{(numeric) cex expansion factor for legend (see also \code{\link[graphics]{par}})}
+
+\item{addSuplT}{(logical) add text with information about precision,accuracy and FDR}
 
 \item{silent}{(logical) suppress messages}
 
@@ -64,14 +64,17 @@ plot only
 }
 \description{
 \code{plotROC} plots ROC curves based on results from \code{\link{summarizeForROC}}. 
-Does not return any data, plot only.
+Does not return any data, plot only. Allows printing simultaneously multiple ROC curves from different studies. 
+Was made for special consideration of 3 species mix as in proteomics benchmark
+In the simplest case data were prepared using \code{\link[wrMisc]{moderTest2grp}}
 }
 \examples{
-set.seed(2019); test1 <- list(annot=cbind(spec=c(rep("b",35),letters[sample.int(n=3,
-  size=150,replace=TRUE)])),BH=matrix(c(runif(35,0,0.01),runif(150)),ncol=1))
-tail(roc1 <- summarizeForROC(test1,spec=c("a","b","c"),plotROC=FALSE))
-plotROC(roc1)
+roc0 <- cbind(alph=c(2e-6,4e-5,4e-4,2.7e-3,1.6e-2,4.2e-2,8.3e-2,1.7e-1,2.7e-1,4.1e-1,5.3e-1,
+	 6.8e-1,8.3e-1,9.7e-1), spec=c(1,1,1,1,0.957,0.915,0.915,0.809,0.702,0.489,0.362,0.234,
+  0.128,0.0426), sens=c(0,0,0.145,0.942,2.54,2.68,3.33,3.99,4.71,5.87,6.67,8.04,8.77,
+  9.93)/10, n.pos.a=c(0,0,0,0,2,4,4,9,14,24,36,41) )
+plotROC(roc0)
 }
 \seealso{
-\code{\link{summarizeForROC}}, \code{\link[wrMisc]{moderTest2grp}}
+\code{\link[wrProteo]{summarizeForROC}}, \code{\link[wrMisc]{moderTest2grp}}
 }

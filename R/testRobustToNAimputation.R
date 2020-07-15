@@ -5,11 +5,12 @@
 #' In  such cases (eg in proteomics) it is current practice to replace \code{NA}-values by very low (random) values in order to be able to perform t-tests.
 #' However, random normal values used for replacing may in rare cases deviate from the average (the 'assumed' value) and in particular, if multiple \code{NA} replacements are above the average, 
 #' may look like induced biological data and be misinterpreted as so.      
+#' The statistical testing uses \code{eBayes} from Bioconductor package \href{https://bioconductor.org/packages/release/bioc/html/limma.html}{limma} for robust testing in the context of small numbers of replicates. 
 #' By repeating multiple times the process of replacing \code{NA}-values and subsequent testing the results can be sumarized afterwards by median over all repeated runs to remmove the stochastic effect of individual NA-imputation.
 #' Thus, one may gain stability towards random-character of \code{NA} imputations by repeating imputation & test 'nLoop' times and summarize p-values by median (results stabilized at 50-100 rounds).
 #' It is necessary to define all groups of replicates in \code{gr} to obtain all possible pair-wise testing (multiple columns in $BH, $lfdr etc). 
-#' Testing by package \href{https://bioconductor.org/packages/release/bioc/html/ROTS.html}{ROTS} may optionaly be included.
-#' This function returns limma-like S3 list-object further enriched by additional fields/elements.
+#' The modified testing-procedure of Bioconductor package \href{https://bioconductor.org/packages/release/bioc/html/ROTS.html}{ROTS} may optionaly be included, if desired.
+#' This function returns a \href{https://bioconductor.org/packages/release/bioc/html/limma.html}{limma}-like S3 list-object further enriched by additional fields/elements.
 #' @param dat (matrix or data.frame) main data (may contain \code{NA}); if \code{dat} is list containing $quant and $annot as matrix, the element $quant will be used
 #' @param gr (character or factor) replicate association
 #' @param annot (matrix or data.frame) annotation (lines must match lines of data !), if \code{annot} is \code{NULL} and argument \code{dat} is a list containing both $quant and $annot, the element $annot will be used 
@@ -25,8 +26,8 @@
 #' @param ROTSn (integer) number of repeats by \code{ROTS}, if \code{NULL} \code{ROTS} will not be called
 #' @param silent (logical) suppress messages
 #' @param callFrom (character) allows easier tracking of messages produced
-#' @return matrix including imputed values or list of final and matrix with number of imputed by group. Various options of multiple testing ccorrection are implemented ('BY','lfdr','p.value' and 'ROTS.BH'
-#' @seealso  \code{\link[wrMisc]{moderTest2grp}}, \code{\link[wrMisc]{pVal2lfdr}}, \code{\link[limma]{eBayes}}, \code{\link[stats]{t.test}},\code{\link[ROTS]{ROTS}}  
+#' @return limma-type S3 object of class 'MArrayLM' which can be accessed; multiple results of testing or multiple testing correction types may get included ('p.value','FDR','BY','lfdr' or 'ROTS.BH')
+#' @seealso \code{\link[wrMisc]{moderTest2grp}}, \code{\link[wrMisc]{pVal2lfdr}}, \code{eBayes} in Bioconductor package \href{https://bioconductor.org/packages/release/bioc/html/limma.html}{limma}, \code{\link[stats]{t.test}},\code{ROTS} of Bioconductor package \href{https://bioconductor.org/packages/release/bioc/html/ROTS.html}{ROTS}   
 #' @examples
 #' set.seed(2015); rand1 <- round(runif(600)+rnorm(600,1,2),3)
 #' dat1 <- matrix(rand1,ncol=6) + matrix(rep((1:100)/20,6),ncol=6)
@@ -68,17 +69,19 @@ testRobustToNAimputation <- function(dat,gr,annot=NULL,retnNA=TRUE,avSdH=c(0.18,
   ## done combineMultFilterNAimput
   ## prepare for testing
   if(lfdrInclude) {
-    chPa <- requireNamespace("fdrtool", quietly=TRUE)
-    if(!chPa) { message(fxNa,": package 'fdrtool' not installed, omit argument 'lfdrInclude'")
-      lfdrInclude <- FALSE }}  
+    chLfdr <- try(find.package("fdrtool"),silent=TRUE)
+    if("try-error" %in% class(chLfdr)) { 
+      message(fxNa,"Package 'fdrtool' not found ! Please install first from CRAN for calculating lfdr-values. Omitting argument 'lfdrInclude' ..")
+      lfdrInclude <- FALSE } }
   pwComb <- wrMisc::triCoord(length(levels(gr)))
   out <- wrMisc::moderTestXgrp(datFi$data,grp=gr,limmaOutput=TRUE,addResults="means")        #   ,anno=annot  # can't do question specific filtering w/o explicit loop 
   ## need to add $ROTS.p
-  if(length(stats::na.omit(ROTSn))==1) if(ROTSn >0) {  
+  if(length(ROTSn)==1) if(ROTSn >0 & !is.na(ROTSn)) {  
     chPa <- requireNamespace("ROTS", quietly=TRUE)
-    if(!chPa) { message(fxNa,": package 'RORS' not installed, omit argument 'ROTSn'")
-      ROTSn <- NULL }}  
-  if(length(stats::na.omit(ROTSn))==1) if(ROTSn >0) {
+    if(!chPa) { message(fxNa,": package 'RORS' not found/installed, omit argument 'ROTSn'")
+      ROTSn <- 0 }
+  } else ROTSn <- NULL
+  if(length(ROTSn)==1) if(ROTSn >0) {
     ## this requires package ROTS
     comp <- wrMisc::triCoord(length(levels(gr)))
     rownames(comp) <- paste(levels(gr)[comp[,1]],levels(gr)[comp[,2]],sep="-")
@@ -97,7 +100,7 @@ testRobustToNAimputation <- function(dat,gr,annot=NULL,retnNA=TRUE,avSdH=c(0.18,
     datIm[,,1] <- datFi$data
     pValTab[,,1] <- out$p.value
     tValTab[,,1] <- out$t
-    if(length(stats::na.omit(ROTSn))==1) if(ROTSn >0) {
+    if(length(ROTSn)==1) if(ROTSn >0) {
       pVaRotsTab <- array(NA,dim=c(nrow(dat),nrow(pwComb),min(10,nLoop)))
       pVaRotsTab[,,1] <- out$ROTS.p}
     for(i in 2:nLoop) {
@@ -108,16 +111,18 @@ testRobustToNAimputation <- function(dat,gr,annot=NULL,retnNA=TRUE,avSdH=c(0.18,
       datIm[,,i] <- datX
       pValTab[,,i] <- fitX$p.value
       tValTab[,,i] <- fitX$t
-      if(length(stats::na.omit(ROTSn))==1) if(ROTSn >0 & i < min(10,nLoop)) {    # test using ROTS (TAKES MUCH TIME !!)
+      if(length(ROTSn)==1) if(ROTSn >0 & i < min(10,nLoop)) {    # test using ROTS (TAKES MUCH TIME !!)
         for(i in 1:nrow(comp)) tmRO[which(datFi$filt[,i]),i] <- ROTS::ROTS(datFi$data[which(datFi$filt[,i]),which(useCol[,i])], groups=as.numeric(as.factor(gr[which(useCol[,i])])), B=ROTSn)$pvalue   # ,K=500  
         pVaRotsTab[,,i] <- tmRO } }
-    out$datImp <- as.matrix(apply(datIm,1:2,mean,na.rm=TRUE))
+    out$datImp <- as.matrix(apply(datIm,1:2, mean, na.rm=TRUE))
     out$p.value <- as.matrix(apply(pValTab,1:2,stats::median,na.rm=TRUE))
     out$t.value <- as.matrix(apply(tValTab,1:2,stats::median,na.rm=TRUE))
     ## when converting t-value to p how to consider n due to nLoop ??
   } else out$datImp <- datFi$data
   out$annot <- annot
-    ## integrate column specific filtering
+  ## update dimnames of out$datImp
+  dimnames(out$datImp) <- list(rownames(out$t),colnames(dat))
+  ## integrate column specific filtering
   if(any(!datFi$filt)) out$p.value[which(!datFi$filt)] <- NA 
   if(lfdrInclude) {out$lfdr <- as.matrix(apply(out$p.value,2,wrMisc::pVal2lfdr)) 
     colnames(out$lfdr) <- colnames(out$contrasts)} 
@@ -125,7 +130,7 @@ testRobustToNAimputation <- function(dat,gr,annot=NULL,retnNA=TRUE,avSdH=c(0.18,
     colnames(out$BH) <- colnames(out$contrasts)} 
   if(length(dat) >0) {out$BY <- as.matrix(apply(out$p.value,2,stats::p.adjust,method="BY"))
     colnames(out$BY) <- colnames(out$contrasts)} 
-  if(length(stats::na.omit(ROTSn))==1) if(ROTSn >0 & chNA & nLoop >1){
+  if(length(ROTSn)==1) if(ROTSn >0 & chNA & nLoop >1){
     out$ROTS.p <- apply(pVaRotsTab,1:2,stats::median,na.rm=TRUE)
     if(any(!datFi$filt)) out$ROTS.p[which(!datFi$filt)] <- NA    
     out$ROTS.BH <- as.matrix(as.matrix(apply(out$ROTS.p,2,stats::p.adjust,method="BH")))
@@ -133,4 +138,4 @@ testRobustToNAimputation <- function(dat,gr,annot=NULL,retnNA=TRUE,avSdH=c(0.18,
     if(lfdrInclude) {out$ROTS.lfdr <- as.matrix(as.matrix(apply(out$ROTS.p,2,wrMisc::pVal2lfdr)))
       colnames(out$ROTS.lfdr) <-colnames(out$contrasts)} }
   out }
-
+   

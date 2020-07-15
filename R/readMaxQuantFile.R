@@ -14,23 +14,23 @@
 #' @param refLi (integer) custom decide which line of data is main species, if single character entry it will be used to choose a group of species (eg 'mainSpe')
 #' @param separateAnnot (logical) if \code{TRUE} output will be organized as list with \code{$annot}, \code{$abund} for initial/raw abundance values and \code{$quant} with final normalized quantitations
 #' @param plotGraph (logical) optional plot vioplot of initial and normalized data (using \code{normalizeMeth}); alternatively the argument may contain numeric details that will be passed to \code{layout} when plotting
+#' @param tit (character) custom title to plot
 #' @param silent (logical) suppress messages
 #' @param callFrom (character) allow easier tracking of message produced
 #' @return list with \code{$annot}, \code{$raw} for initial abundance values and \code{$quant} with final normalized quantitations, or returns data.frame with annot and quant if \code{separateAnnot=FALSE}
 #' @seealso \code{\link[utils]{read.table}}, \code{\link[wrMisc]{normalizeThis}}) , \code{\link{readProlineFile}} 
 #' @examples
 #' path1 <- system.file("extdata",package="wrProteo")
-#' # Here we'll load a short/trimmed example file (thus not MawQuant default name) 
+#' # Here we'll load a short/trimmed example file (thus not MaxQuant default name) 
 #' fiNa <- "proteinGroupsMaxQuantUps1.txt"
-#' specPref1=c(conta="conta|CON_|LYSC_CHICK",mainSpecies="YEAST",spike="HUMAN_UPS")
-#' dataMQ <- readMaxQuantFile(path1,file=fiNa,specPref=specPref1)
+#' specPref1 <- c(conta="conta|CON_|LYSC_CHICK", mainSpecies="YEAST",spike="HUMAN_UPS")
+#' dataMQ <- readMaxQuantFile(path1, file=fiNa, specPref=specPref1)
 #' summary(dataMQ$quant)
-#' matrixNAinspect(dataMQ$quant,gr=gl(3,3)) 
+#' matrixNAinspect(dataMQ$quant, gr=gl(3,3)) 
 #' @export
 readMaxQuantFile <- function(path,fileName="proteinGroups.txt",normalizeMeth="median", quantCol="LFQ.intensity",uniqPepPat="Razor...unique.peptides",refLi=NULL,
   extrColNames=c("Majority.protein.IDs","Fasta.headers","Number.of.proteins"), specPref=c(conta="conta|CON_|LYSC_CHICK",mainSpecies="OS=Homo sapiens",spike="HUMAN_UPS"),
-  separateAnnot=TRUE, plotGraph=TRUE, silent=FALSE,callFrom=NULL) {
-  ## "OS=Saccharomyces cerevisiae"
+  tit=NULL, separateAnnot=TRUE, plotGraph=TRUE, silent=FALSE,callFrom=NULL) {
   ## prepare  
   fxNa <- wrMisc::.composeCallName(callFrom,newNa="readMaxQuantFile")
   opar <- graphics::par(no.readonly=TRUE)      
@@ -38,6 +38,8 @@ readMaxQuantFile <- function(path,fileName="proteinGroups.txt",normalizeMeth="me
   chFi <- file.exists(file.path(path,fileName))
   if(!chFi) stop(" file  ",fileName," was NOT found in path ",path," !")
   if(length(grep("\\.txt$",fileName)) <1) message(fxNa," Trouble ahead, this function was designed for reading tabulated text files (as MaxQuant usualy produces) !!")
+  chPa <- try(find.package("utils"),silent=TRUE)
+  if("try-error" %in% class(chPa)) stop("package 'utils' not found ! Please install first")   
   ## initial read MaxQuant
   tmp <- utils::read.delim(file.path(path,fileName),stringsAsFactors=FALSE)
   chCol <- extrColNames %in% colnames(tmp)
@@ -74,6 +76,7 @@ readMaxQuantFile <- function(path,fileName="proteinGroups.txt",normalizeMeth="me
   ## further extracting : annotation
   useACol <- wrMisc::naOmit(c(match(extrColNames,colnames(tmp)), grep(uniqPepPat,colnames(tmp)),grep("Peptides\\.",colnames(tmp))))
   MQann <- as.matrix(tmp[,useACol])
+  if(length(specPref) <1) warning(fxNa," Trouble ahead: argument 'specPref' missing")
   specMQ0 <- list(conta=grep(specPref[1],MQann[,extrColNames[1]]),
     mainSpe=grep(specPref[2],MQann[,extrColNames[2]]),
     spike= grep(specPref[3],MQann[,extrColNames[1]] ))
@@ -98,15 +101,30 @@ readMaxQuantFile <- function(path,fileName="proteinGroups.txt",normalizeMeth="me
   if(is.character(refLi) & length(refLi)==1) refLi <- which(MQann[,"Spec"]==refLi)   # may be "mainSpe"  
   abundN <- wrMisc::normalizeThis(log2(abund),meth=normalizeMeth,refLi=refLi,callFrom=fxNa) #
   ## plot distribution of intensities
-  if(length(plotGraph) >0) {if(is.numeric(plotGraph)) {custLay <- plotGraph; plotGraph <- TRUE} else  {plotGraph <- as.logical(plotGraph)}}
+  custLay <- NULL
+  if(length(plotGraph) >0) {if(is.numeric(plotGraph)) {custLay <- plotGraph; plotGraph <- TRUE
+    } else  {plotGraph <- as.logical(plotGraph[1])}}
   if(plotGraph){
+    if(length(custLay) >0) graphics::layout(custLay) else graphics::layout(1:2)
     graphics::par(mar=c(3, 3, 3, 1))                          # mar: bot,le,top,ri
-    graphics::layout(1:2)
-    graphics::boxplot(log2(abund),main="MQ (initial)",las=1,outline=FALSE)
-     graphics::abline(h=round(stats::median(log2(abund),na.rm=TRUE))+(-1:1),lty=2,col=grDevices::grey(0.6)) 
-    ## now normalized
-    graphics::boxplot(abundN,main="MQ normalized",las=1,outline=FALSE)
-    graphics::abline(h=round(stats::median(abundN,na.rm=TRUE))+(-1:1),lty=2,col=grDevices::grey(0.6))
+    chGr <- try(find.package("wrGraph"),silent=TRUE)
+    chSm <- try(find.package("sm"),silent=TRUE)
+    misPa <- c("try-error" %in% class(chGr),"try-error" %in% class(chSm))
+    if(any(misPa)) { 
+      if(!silent) message(fxNa," missing package ",wrMisc::pasteC(c("wrGraph","sm")[which(misPa)],quoteC="'")," for drawing vioplots")
+      ## wrGraph not available : simple boxplot  
+      graphics::boxplot(log2(abund), main=paste(tit," MQ (initial)"),las=1,outline=FALSE)
+      graphics::abline(h=round(stats::median(log2(abund),na.rm=TRUE))+(-1:1),lty=2,col=grDevices::grey(0.6)) 
+      ## now normalized
+      graphics::boxplot(abundN,main=paste(tit," MQ normalized"),las=1,outline=FALSE)
+      graphics::abline(h=round(stats::median(abundN,na.rm=TRUE))+(-1:1),lty=2,col=grDevices::grey(0.6))
+    } else {                                            # wrGraph and sm are available
+      wrGraph::vioplotW(log2(abund), tit=paste(tit," MQ (initial)")) 
+      graphics::abline(h=round(stats::median(log2(abund),na.rm=TRUE))+(-1:1),lty=2,col=grDevices::grey(0.6)) 
+      ## now normalized
+      wrGraph::vioplotW((abundN), tit=paste(tit," MQ normalized"))
+      graphics::abline(h=round(stats::median(abundN,na.rm=TRUE))+(-1:1),lty=2,col=grDevices::grey(0.6))    
+    }
     on.exit(graphics::par(opar)) }   #
   ## prepare for final output
   colnames(abundN) <- sub(paste(extrColNames[1],"\\.",sep="") ,"",sub("_[[:digit:]]","_",colnames(abund)))  

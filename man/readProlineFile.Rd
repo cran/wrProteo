@@ -14,6 +14,7 @@ readProlineFile(
   refLi = NULL,
   separateAnnot = TRUE,
   plotGraph = TRUE,
+  tit = NULL,
   graphTit = NULL,
   silent = FALSE,
   callFrom = NULL
@@ -36,7 +37,9 @@ readProlineFile(
 
 \item{plotGraph}{(logical or matrix of integer) optional plot vioplot of initial data; if integer, it will be passed to \code{layout} when plotting}
 
-\item{graphTit}{(character) optional title to graph (if \code{plotGraph=TRUE})}
+\item{tit}{(character) custom title to plot}
+
+\item{graphTit}{(character) (depreciated custom title to plot), please use 'tit'}
 
 \item{silent}{(logical) suppress messages}
 
@@ -53,11 +56,11 @@ Note: There is no normalization by default since quite frequently data produced 
 In case of doubt the figure prouced using the argument \code{plotGraph=TRUE} may help judging if distribtions are aligned suffiently well.
 }
 \examples{
-path1 <- system.file("extdata",package="wrProteo")
+path1 <- system.file("extdata", package="wrProteo")
 fiNa <- "exampleProlineABC.csv"
 dataABC <- readProlineFile(file.path(path1,fiNa))
 summary(dataABC$quant)
-matrixNAinspect(dataABC$quant,gr=as.factor(substr(colnames(dataABC$quant),1,1))) 
+matrixNAinspect(dataABC$quant, gr=as.factor(substr(colnames(dataABC$quant),1,1))) 
 }
 \seealso{
 \code{\link[utils]{read.table}}

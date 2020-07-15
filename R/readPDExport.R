@@ -12,7 +12,8 @@
 #' @param quantCol (character or integer) exact col-names, or if length=1 content of \code{quantCol} will be used as pattern to search among column-names for $quant using \code{grep} 
 #' @param refLi (integer) custom decide which line of data is main species
 #' @param separateAnnot (logical) if \code{TRUE} output will be organized as list with \code{$annot}, \code{$abund} for initial/raw abundance values and \code{$quant} with final normalized quantitations 
-#' @param graphTit (character) custom title to plot
+#' @param tit (character) custom title to plot
+#' @param graphTit (character) (depreciated custom title to plot), please use 'tit'
 #' @param specPref (character) define characteristic text for recognizing the 3 (main) groups of species (contaminants,mainSpecies,spike)
 #' @param separateAnnot (logical) if \code{TRUE} output will be organized as list with \code{$annot}, \code{$abund} for initial/raw abundance values and \code{$quant} with final normalized quantitations
 #' @param plotGraph (logical) optional plot of type vioplot of initial and normalized data (using \code{normalizeMeth}); if integer, it will be passed to \code{layout} when plotting
@@ -21,20 +22,22 @@
 #' @return list with \code{$annot}, \code{$raw} for initial/raw abundance values and \code{$quant} with final normalized quantitations, or returns data.frame with annot and quant if \code{separateAnnot=FALSE}
 #' @seealso \code{\link[utils]{read.table}}, \code{\link[wrMisc]{normalizeThis}}) , \code{\link{readProlineFile}} 
 #' @examples
-#' path1 <- system.file("extdata",package="wrProteo")
+#' path1 <- system.file("extdata", package="wrProteo")
 #' fiNa <- "exampleProtDiscov1.txt"
-#' dataPD <- readPDExport(file=fiNa,path=path1)
+#' dataPD <- readPDExport(file=fiNa, path=path1)
 #' summary(dataPD$quant)
-#' matrixNAinspect(dataPD$quant,gr=gl(2,3)) 
+#' matrixNAinspect(dataPD$quant, gr=gl(2,3)) 
 #' 
 #' @export
-readPDExport <- function(fileName,path=NULL,normalizeMeth="median",
+readPDExport <- function(fileName, path=NULL, normalizeMeth="median",
   annotCol=c("Accession","Description","Gene","Sum.PEP.Score","Coverage....","X..Peptides","X..PSMs","X..Unique.Peptides", "X..AAs","MW..kDa."),
-  quantCol="^S", refLi=NULL, separateAnnot=TRUE,plotGraph=TRUE, graphTit ="Proteome Discoverer",
-  specPref=c(conta="CON_|LYSC_CHICK",mainSpecies="OS=Saccharomyces cerevisiae",spike="HUMAN_UPS"), silent=FALSE,callFrom=NULL) {
+  quantCol="^S", refLi=NULL, separateAnnot=TRUE, plotGraph=TRUE, tit="Proteome Discoverer", graphTit=NULL,
+  specPref=c(conta="CON_|LYSC_CHICK",mainSpecies="OS=Saccharomyces cerevisiae",spike="HUMAN_UPS"), silent=FALSE, callFrom=NULL) {
   ## read ProteomeDiscoverer exported txt
   fxNa <- wrMisc::.composeCallName(callFrom,newNa="readPDExport")
   opar <- graphics::par(no.readonly=TRUE)
+  chPa <- try(find.package("utils"),silent=TRUE)
+  if("try-error" %in% class(chPa)) stop("package 'utils' not found ! Please install first")   
   ## check & read file
   chPa <- length(grep("/",fileName)) >0 | length(grep("\\\\",fileName)) >0       # check for path already in fileName "
   if(length(path) <1) path <- "."
@@ -59,7 +62,7 @@ readPDExport <- function(fileName,path=NULL,normalizeMeth="median",
   annot <- as.matrix(tmp[,wrMisc::naOmit(annotColNo)])
   chUniq <- apply(annot,2,function(x) sum(duplicated(x)))
   tmp <- tmp[,-wrMisc::naOmit(annotColNo)]
-  IDs <- if(any(chUniq <1)) annot[,which.max(chUniq <1)] else wrMisc::correctToUnique(annot[,which.min(chUniq)])
+  IDs <- if(any(chUniq <1)) annot[,which.max(chUniq <1)] else wrMisc::correctToUnique(annot[,which.min(chUniq)],callFrom=fxNa)
   if(all(chUniq >0)) {
     if(!silent) message(fxNa,"could not find any unique column content for direct use as ID !!")}
   rownames(tmp) <- rownames(annot) <- IDs  
@@ -82,20 +85,48 @@ readPDExport <- function(fileName,path=NULL,normalizeMeth="median",
   chNum <- is.numeric(abund)
   if(!chNum) {abund <- apply(tmp[,quantCol],2,wrMisc::convToNum,convert="allChar",callFrom=fxNa)}
   if(is.character(refLi) & length(refLi)==1) refLi <- which(annot[,"Spec"]==refLi)   # may be "mainSpe"
+  ## remove heading 'X..' from headers (only if header won't get duplicated
+  chXCol <- grep("^X\\.\\.",colnames(annot))
+  if(length(chXCol) >0) {
+    newNa <- sub("^X\\.\\.","",colnames(annot)[chXCol])
+    chDu <- duplicated(c(newNa,colnames(annot)),fromLast=TRUE)
+    if(any(chDu)) newNa[which(chDu)] <- colnames(annot)[chXCol][which(chDu)]
+    colnames(annot)[chXCol] <- newNa }
+  ## remove heading/tailing spaces (first look which columns might be subject to this treatment)
+  ch1 <- list(A=grep("^ +",annot[1,]), B=grep("^ +",annot[2,]), C=grep("^ +",annot[floor(mean(nrow(annot))),]), D=grep("^ +",annot[nrow(annot),]) )
+  chCo <- unique(unlist(ch1))
+  annot[,chCo] <- sub("^ +","",sub(" +$","",annot[,chCo]))   # remove heading/tailing spaces
+  ## make log2 & normalize
   quant <- wrMisc::normalizeThis(log2(abund),meth=normalizeMeth,refLi=refLi,callFrom=fxNa) 
   ## plot distribution of intensities
+  custLay <- NULL
   if(length(plotGraph) >0) {if(is.numeric(plotGraph)) {custLay <- plotGraph; plotGraph <- TRUE
     } else  {plotGraph <- as.logical(plotGraph[1])}}
-  if(plotGraph){
+  if(plotGraph) {
+    if(length(custLay) >0) graphics::layout(custLay) else graphics::layout(1:2)
     graphics::par(mar=c(3, 3, 3, 1))                          # mar: bot,le,top,ri
-    graphics::layout(1:2)
-    graphics::boxplot(log2(abund),main=paste(graphTit,"(initial)",sep=" "),las=1,outline=FALSE) 
-    graphics::abline(h=round(log2(stats::median(abund,na.rm=TRUE)))+c(-1,0,1),lty=2,col=grDevices::grey(0.6)) 
-    ## plot normalized
-    graphics::boxplot(quant,main=paste(graphTit,"(normalized)",sep=" "),las=1,outline=FALSE) 
-    graphics::abline(h=round(stats::median(quant,na.rm=TRUE))+c(-1,0,1),lty=2,col=grDevices::grey(0.6)) 
-    on.exit(graphics::par(opar)) 
+    if(length(graphTit) >0) message(fxNa,"argument 'graphTit' is depreciated, please rather use 'tit'")
+    if(is.null(tit) & !is.null(graphTit)) tit <- graphTit
+    if(is.null(tit)) tit <- "Distribution of quantification values"
+    chGr <- try(find.package("wrGraph"), silent=TRUE)
+    chSm <- try(find.package("sm"), silent=TRUE)
+    misPa <- c("try-error" %in% class(chGr),"try-error" %in% class(chSm))
+    if(any(misPa)) { 
+      if(!silent) message(fxNa," missing package ",wrMisc::pasteC(c("wrGraph","sm")[which(misPa)],quoteC="'")," for drawing vioplots")
+      ## wrGraph not available : simple boxplot  
+      graphics::boxplot(log2(abund),main=paste(tit,"(initial)",sep=" "),las=1,outline=FALSE) 
+      graphics::abline(h=round(log2(stats::median(abund,na.rm=TRUE)))+c(-1,0,1),lty=2,col=grDevices::grey(0.6)) 
+      ## plot normalized
+      graphics::boxplot(quant,main=paste(tit,"(normalized)",sep=" "),las=1,outline=FALSE) 
+      graphics::abline(h=round(stats::median(quant,na.rm=TRUE))+c(-1,0,1),lty=2,col=grDevices::grey(0.6)) 
+    } else {                                            # wrGraph and sm are available
+      wrGraph::vioplotW(log2(abund),tit=paste(tit,"(initial)",sep=" "), callFrom=fxNa) 
+      graphics::abline(h=round(stats::median(log2(abund),na.rm=TRUE))+(-1:1),lty=2,col=grDevices::grey(0.6)) 
+      ## now normalized
+      wrGraph::vioplotW(quant,tit=paste(tit,"(normalized)",sep=" "), callFrom=fxNa) 
+      graphics::abline(h=round(stats::median(quant,na.rm=TRUE))+(-1:1),lty=2,col=grDevices::grey(0.6))    
     }
+    on.exit(graphics::par(opar)) }   #
   if(separateAnnot) list(raw=abund,quant=quant,annot=annot) else data.frame(quant,annot)  
 }
     

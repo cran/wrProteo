@@ -33,7 +33,7 @@ test2grp(
 \item{callFrom}{(character) allow easier tracking of message produced}
 }
 \value{
-limma-type MA-object (list)
+limma-type S3 object of class 'MArrayLM' which can be accessed; multiple testing correction types or modified testing by ROTS may get included ('p.value','FDR','BY','lfdr' or 'ROTS.BH')
 }
 \description{
 \code{test2grp} performs t-test on two groups of data using \href{https://bioconductor.org/packages/release/bioc/html/limma.html}{limma},

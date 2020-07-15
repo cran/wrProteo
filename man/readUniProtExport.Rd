@@ -16,7 +16,7 @@ readUniProtExport(
 \arguments{
 \item{UniProtFileNa}{(character) name (and path) of file exported from Uniprot (tabulated text file inlcuding headers)}
 
-\item{deUcsc}{(data.frame) object produced by \code{readUCSCgtf} to be combined with data from \code{UniProtFileNa}}
+\item{deUcsc}{(data.frame) object produced by \code{readUCSCtable} to be combined with data from \code{UniProtFileNa}}
 
 \item{targRegion}{(character or list) optional marking of chromosomal locations to be part of a given chromosomal target region, may be given as character like \code{chr11:1-135,086,622} or as \code{list} with a firts component chracterizing the chromosome and a integer-vector with start- and end- sites}
 
@@ -31,29 +31,31 @@ data.frame (with columns $EnsID, $Entry, $Entry.name, $Status, $Protein.names, $
 }
 \description{
 This function allows reading and importing protein-ID conversion results from \href{https://www.uniprot.org/uploadlists/}{UniProt}.
-To do so, first copy/paste your query IDs into UniProt 'Retrieve/ID mapping' field called '1. Provide your identifiers' (or upload as file), verify '2. Select options'.
+To do so, first copy/paste your query IDs into \href{https://www.uniprot.org/uploadlists/}{UniProt} 'Retrieve/ID mapping' field called '1. Provide your identifiers' (or upload as file), verify '2. Select options'.
 In a typical case of 'enst000xxx' IDs  you may leave default settings, ie 'Ensemble Transcript' as input and 'UniProt KB' as output. Then, 'Submit' your search and retreive results via 
-'Download', you need to specify a 'Tab-separated' format ! If you download as 'Compressed' you need to decompress the .gz file before running the function \code{readUCSCgtf} 
-In addition, a file with UCSC annotation (Ensrnot accessions and chromosomic locations, obtained using \code{\link{readUCSCgtf}}) can be integrated.
+'Download', you need to specify a 'Tab-separated' format ! If you download as 'Compressed' you need to decompress the .gz file before running the function \code{readUCSCtable} 
+In addition, a file with UCSC annotation (Ensrnot accessions and chromosomic locations, obtained using \code{\link{readUCSCtable}}) can be integrated.
 }
 \details{
-In a typicall use case, first chromosomic loacation annotation is extracted from UCSC for the species of interest and imported to R using  \code{\link{readUCSCgtf}} . 
+In a typicall use case, first chromosomic loacation annotation is extracted from UCSC for the species of interest and imported to R using  \code{\link{readUCSCtable}} . 
 However, the tables provided by UCSC don't contain Uniprot IDs. Thus, an additional (batch-)conversion step needs to get added. 
-For this reason \code{\link{readUCSCgtf}} allows writing a file with Ensemble transcript IDs which can be converted tu UniProt IDs at the site of  \href{https://www.uniprot.org/uploadlists/}{UniProt}. 
+For this reason \code{\link{readUCSCtable}} allows writing a file with Ensemble transcript IDs which can be converted tu UniProt IDs at the site of  \href{https://www.uniprot.org/uploadlists/}{UniProt}. 
 Then, UniProt annotation (downloaded as tab-separated) can be imported and combined with the genomic annotation using this function.
 }
 \examples{
 path1 <- system.file("extdata",package="wrProteo")
 deUniProtFi <- file.path(path1,"deUniProt_hg38chr11extr.tab")
 deUniPr1a <- readUniProtExport(deUniProtFi) 
+str(deUniPr1a)
 ## with including chromosomic location extracted via Ucsc gtf files
 gtfFi <- file.path(path1,"UCSC_hg38_chr11extr.gtf")
-## Here we won't write the file for UniProt since the the results of the
+## Here we won't write the file for UniProt since the results of the
 ##   conversion at Uniprot are already vailable as file "deUniProt_hg38chr11extr.tab"
-UcscAnnot1 <- readUCSCgtf(gtfFi,exportFileNa=NULL)
+UcscAnnot1 <- readUCSCtable(gtfFi,exportFileNa=NULL)
 deUniPr1 <- readUniProtExport(deUniProtFi,deUcsc=UcscAnnot1,
-  targRegion="chr11:1-135,086,622")  
+  targRegion="chr11:1-135,086,622")
+str(deUniPr1)
 }
 \seealso{
-\code{\link{readUCSCgtf}}
+\code{\link{readUCSCtable}}
 }

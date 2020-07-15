@@ -37,8 +37,10 @@ matrixNAinspect <- function(dat,gr,retnNA=TRUE,xLab=NULL,tit=NULL,xLim=NULL,sile
   if(is.data.frame(dat)) dat <- as.matrix(dat)
   if(length(gr) != ncol(dat)) stop("Number of columns in 'dat' and number of (group-)elements in 'gr' do not match !")
   if(!is.factor(gr)) gr <- as.factor(gr)
-  if(is.null(xLab)) xLab <- "values"            
-  quaCol <- if(requireNamespace("RColorBrewer", quietly=TRUE))  RColorBrewer::brewer.pal(4,"Set1")[c(3,2,4)] else c(3:4,2) 
+  if(is.null(xLab)) xLab <- "values"
+  chRColB <- try(find.package("limma"),silent=TRUE)
+  if("try-error" %in% class(chRColB)) message(fxNa," More/better colors may be displayed with package 'RColorBrewer' installed; consider installing it !")
+  quaCol <- if(!"try-error" %in% class(chRColB))  RColorBrewer::brewer.pal(4,"Set1")[c(3,2,4)] else c(3:4,2) 
   if(is.null(tit)) tit <- "Distribution of values and NA-neighbours"
   cexMain <- if(nchar(tit) < 25) 1.8 else 1.2
   ## main

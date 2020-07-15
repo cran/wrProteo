@@ -1,34 +1,36 @@
 #' Read export from UniProt batch-conversion
 #'
 #' This function allows reading and importing protein-ID conversion results from \href{https://www.uniprot.org/uploadlists/}{UniProt}.
-#' To do so, first copy/paste your query IDs into UniProt 'Retrieve/ID mapping' field called '1. Provide your identifiers' (or upload as file), verify '2. Select options'.
+#' To do so, first copy/paste your query IDs into \href{https://www.uniprot.org/uploadlists/}{UniProt} 'Retrieve/ID mapping' field called '1. Provide your identifiers' (or upload as file), verify '2. Select options'.
 #' In a typical case of 'enst000xxx' IDs  you may leave default settings, ie 'Ensemble Transcript' as input and 'UniProt KB' as output. Then, 'Submit' your search and retreive results via 
-#' 'Download', you need to specify a 'Tab-separated' format ! If you download as 'Compressed' you need to decompress the .gz file before running the function \code{readUCSCgtf} 
-#' In addition, a file with UCSC annotation (Ensrnot accessions and chromosomic locations, obtained using \code{\link{readUCSCgtf}}) can be integrated.
+#' 'Download', you need to specify a 'Tab-separated' format ! If you download as 'Compressed' you need to decompress the .gz file before running the function \code{readUCSCtable} 
+#' In addition, a file with UCSC annotation (Ensrnot accessions and chromosomic locations, obtained using \code{\link{readUCSCtable}}) can be integrated.
 #' @details
-#' In a typicall use case, first chromosomic loacation annotation is extracted from UCSC for the species of interest and imported to R using  \code{\link{readUCSCgtf}} . 
+#' In a typicall use case, first chromosomic loacation annotation is extracted from UCSC for the species of interest and imported to R using  \code{\link{readUCSCtable}} . 
 #' However, the tables provided by UCSC don't contain Uniprot IDs. Thus, an additional (batch-)conversion step needs to get added. 
-#' For this reason \code{\link{readUCSCgtf}} allows writing a file with Ensemble transcript IDs which can be converted tu UniProt IDs at the site of  \href{https://www.uniprot.org/uploadlists/}{UniProt}. 
+#' For this reason \code{\link{readUCSCtable}} allows writing a file with Ensemble transcript IDs which can be converted tu UniProt IDs at the site of  \href{https://www.uniprot.org/uploadlists/}{UniProt}. 
 #' Then, UniProt annotation (downloaded as tab-separated) can be imported and combined with the genomic annotation using this function.  
 #' @param UniProtFileNa (character) name (and path) of file exported from Uniprot (tabulated text file inlcuding headers) 
-#' @param deUcsc (data.frame) object produced by \code{readUCSCgtf} to be combined with data from \code{UniProtFileNa}
+#' @param deUcsc (data.frame) object produced by \code{readUCSCtable} to be combined with data from \code{UniProtFileNa}
 #' @param targRegion (character or list) optional marking of chromosomal locations to be part of a given chromosomal target region, may be given as character like \code{chr11:1-135,086,622} or as \code{list} with a firts component chracterizing the chromosome and a integer-vector with start- and end- sites 
 #' @param useUniPrCol (character) optional declaration which colums from UniProt exported file should be used/imported (default 'EnsID','Entry','Entry.name','Status','Protein.names','Gene.names','Length').
 #' @param silent (logical) suppress messages
 #' @param callFrom (character) allows easier tracking of message(s) produced
 #' @return data.frame (with columns $EnsID, $Entry, $Entry.name, $Status, $Protein.names, $Gene.names, $Length; if \code{deUcsc} is integrated plus: $chr, $type, $start, $end, $score, $strand, $Ensrnot, $avPos) 
-#' @seealso \code{\link{readUCSCgtf}}
+#' @seealso \code{\link{readUCSCtable}}
 #' @examples
 #' path1 <- system.file("extdata",package="wrProteo")
 #' deUniProtFi <- file.path(path1,"deUniProt_hg38chr11extr.tab")
 #' deUniPr1a <- readUniProtExport(deUniProtFi) 
+#' str(deUniPr1a)
 #' ## with including chromosomic location extracted via Ucsc gtf files
 #' gtfFi <- file.path(path1,"UCSC_hg38_chr11extr.gtf")
-#' ## Here we won't write the file for UniProt since the the results of the
+#' ## Here we won't write the file for UniProt since the results of the
 #' ##   conversion at Uniprot are already vailable as file "deUniProt_hg38chr11extr.tab"
-#' UcscAnnot1 <- readUCSCgtf(gtfFi,exportFileNa=NULL)
+#' UcscAnnot1 <- readUCSCtable(gtfFi,exportFileNa=NULL)
 #' deUniPr1 <- readUniProtExport(deUniProtFi,deUcsc=UcscAnnot1,
-#'   targRegion="chr11:1-135,086,622")  
+#'   targRegion="chr11:1-135,086,622")
+#' str(deUniPr1)
 #' @export
 readUniProtExport <- function(UniProtFileNa,deUcsc=NULL,targRegion=NULL,useUniPrCol=NULL,silent=FALSE,callFrom=NULL) {         
   ## read annotation exported from https://www.uniprot.org/uploadlists/  upload  Ensemble Transcript => UniprotKB => export 
@@ -37,23 +39,63 @@ readUniProtExport <- function(UniProtFileNa,deUcsc=NULL,targRegion=NULL,useUniPr
   if(length(UniProtFileNa) >1) UniProtFileNa <- UniProtFileNa[1] else {if(length(UniProtFileNa) < 1) stop(" argument 'UniProtFileNa' seems empty")}
   chFi <- file.exists(UniProtFileNa)
   if(!chFi) stop(" file '",UniProtFileNa,"' not found !")
-  chExt <- length(grep("\\.gz$",UniProtFileNa)) >0
-  if(chExt & !silent) message(fxNa," Beware, reading of compressed files may pose problems" ) 
+  chExt <- length(grep("\\.gz$",UniProtFileNa)) >0  
+  chPa <- try(find.package("utils"),silent=TRUE)
+  if("try-error" %in% class(chPa)) stop("package 'utils' not found ! Please install first")   
   ## main  
-  deUniProt <- try(utils::read.delim(if(chExt) unz(UniProtFileNa) else UniProtFileNa,stringsAsFactors=FALSE))
-  if("try-error" %in% class(deUniProt)) stop("Can't read file '",UniProtFileNa,"' - please check format !")
-  if(ncol(deUniProt) <7) stop("file seems not to be in UniProt 'tab-separated' format (does not contain sufficent number of columns) !")  
-  colnames(deUniProt)[1:2] <- c("EnsID",sapply(colnames(deUniProt)[2],function(x) sub("\\.[[:upper:]][[:alnum:]]+","",x)))
+  deUniProt <- try(utils::read.delim(UniProtFileNa,stringsAsFactors=FALSE), silent=TRUE)
+  errMsg1 <- " seems not to be in UniProt 'tab-separated' format (does not contain sufficent number of columns) !"
+  if("try-error" %in% class(deUniProt)) { 
+    deUniProt <- try(wrMisc::readVarColumns(if(chExt) unz(UniProtFileNa) else UniProtFileNa,callFrom=fxNa), silent=TRUE)
+    if("try-error" %in% class(deUniProt)) stop("Can't read file '",UniProtFileNa,"' - please check format !") else {
+      if(!silent) message(fxNa," Managed to read file using readVarColumns()") }
+    if(ncol(deUniProt) <9) stop("file ",UniProtFileNa,errMsg1)  
+    colnames(deUniProt)[1:9] <- c("EnsTraID","xx","UniprotID",colnames(deUniProt)[c(2:7)])  # initial colnames by readVarColumns are shifted    
+  } 
+  if(ncol(deUniProt) <7) stop("file ",UniProtFileNa,errMsg1)     # check if (in)sufficient numer of columns
   if(nrow(deUniProt) <2 & !silent) message(fxNa," CAUTION, file '",UniProtFileNa,"' contains only ",nrow(deUniProt)," lines !") 
+  ## correct colnames
+  chCol <- c(grep("yourlist.",colnames(deUniProt)[1]) >0, grep("isomap.",colnames(deUniProt)[2]) >0, "Entry" %in% colnames(deUniProt))
+  if(chCol[1]) colnames(deUniProt)[1] <- "EnsTraID"
+  if(chCol[2]) colnames(deUniProt)[2] <- "xx"                 # this column contains almost no information
+  colnames(deUniProt)[3] <- "UniProtID"  
   ## combine with data initially/previously read from Ucsc
   multID <- NULL
-  if(length(useUniPrCol) <1) useUniPrCol <- c("EnsID","Entry","Entry.name","Status","Protein.names","Gene.names","Length")
+  colnames(deUniProt) <- sub(" ",".",colnames(deUniProt))
+  if(length(useUniPrCol) <1) useUniPrCol <- c("EnsTraID","UniProtID","Entry.name","Status","Protein.names","Gene.names","Length")
   useUniPrCo <- wrMisc::extrColsDeX(deUniProt,useUniPrCol,doExtractCols=FALSE,callFrom=fxNa,silent=silent)
+  ##  treat multi-Ensemble entries : need to replicate lines of table for multiple concatenated (eg ENSRNOT00000031808,ENSRNOT00000093745)
+  splitExtendConcat <- function(mat,useCol=1,sep=",",sep2="[[:digit:]],[[:alpha:]]+"){
+    ## extend matrix or data.frame by additional lines if column 'useCol' contains multiple concatenated terms (content of other columns will be duplicated)
+    ## 'sep' used with strsplit() and grep() to identify lines and split, also used to construct (generic) term for keeping just first 
+    ## 'sep2' optional custom pattern used with grep() to identify lines; will be used instead of 'generic' sep to identify entries to split lateron 
+    ## main
+    chMult <- grep(if(length(sep2) >0) sep2 else sep, mat[,useCol])
+    if(length(chMult) >0)  {
+      ##
+      spl1 <- strsplit(mat[chMult,useCol],sep)
+      spl2 <- unlist(lapply(spl1, function(x) x[-1]), use.names=FALSE)
+      toLine <- rep(chMult, sapply(spl1,length) -1)
+      mat[,useCol] <- sub(paste(sep,"[[:print:]]*$",sep=""),"",mat[,useCol])
+      mat2 <-  cbind(spl2,mat[c(toLine),-1])
+      colnames(mat2)[1] <- colnames(mat)[1]
+      mat <- rbind(mat,mat2)
+    }
+    mat }
+  deUniProt <- splitExtendConcat(deUniProt,sep=",",sep2="[[:digit:]],[[:upper:]]+")   
   if(length(deUcsc) >0) {
-    matchUniprInUcsc <- match(deUniProt[,1], deUcsc$Ensrnot)
+    deUcsc[,"gene_id"] <- sub("\\.[[:digit:]]+$","",deUcsc[,"gene_id"])
+    useUcCol <- wrMisc::naOmit(match(c("gene_id","chr","start","end","strand","frame"),colnames(deUcsc)))
+    deUcsc <- wrMisc::convMatr2df(deUcsc[,useUcCol], addIniNa=FALSE, callFrom=fxNa,silent=silent)    
+    matchUniprInUcsc <- match(deUniProt[,1], deUcsc[,"gene_id"])
+    if(sum(!is.na(matchUniprInUcsc)) <4) { 
+      if(!silent) message(fxNa," low yield matching ",wrMisc::pasteC(deUniProt[1:3,1],quoteC="'")," and ",
+        wrMisc::pasteC(deUcsc[1:3,"gene_id"],quoteC="'"), " convert all to lower case and remove version numbers ('xxx.2') for better matching")    
+      matchUniprInUcsc <- match(sub("\\.[[:digit:]]+$","", tolower(deUniProt[,1])), sub("\\.[[:digit:]]+$","", tolower(deUcsc[,"gene_id"])))
+      if(sum(!is.na(matchUniprInUcsc)) <4) warning(fxNa," Matching failed : Very few or no matches between UniProtFile and deUcsc !")} 
     if(!silent) message(fxNa," intergrating genomic information for ",length(matchUniprInUcsc)," entries (",sum(is.na(matchUniprInUcsc))," not found)")
     ## add chrom Loc to deUniProt => combined DB
-    combAllChrDB <- cbind(deUniProt[,useUniPrCo], deUcsc[matchUniprInUcsc,c(1,3:5,7,10)])       ## add Ensrnot
+    combAllChrDB <- cbind(deUniProt[,useUniPrCo], deUcsc[matchUniprInUcsc,])       ## add Ensrnot   c(1,3:5,7,10)
     if(!silent) message(fxNa," ",nrow(combAllChrDB)," IDs in output")
     combAllChrDB <- cbind(combAllChrDB,avPos=if(all(c("start","end") %in% colnames(combAllChrDB))) {
       round(rowMeans(combAllChrDB[,c("start","end")])) } else NA)    # add mean gene-position for easier sorting
@@ -69,5 +111,7 @@ readUniProtExport <- function(UniProtFileNa,deUcsc=NULL,targRegion=NULL,useUniPr
   chFa <- rep(NA,ncol(combAllChrDB))
   for(i in 1:ncol(combAllChrDB)) chFa[i] <- is.factor(combAllChrDB[,i])
   if(any(chFa)) for(i in which(chFa)) combAllChrDB[,i] <- as.character(combAllChrDB[,i])
-  combAllChrDB }    
+  chEnsID <- "gene_id" %in% colnames(combAllChrDB)
+  if(chEnsID)  combAllChrDB <- combAllChrDB[,-1*which(colnames(combAllChrDB)=="gene_id")]
+  combAllChrDB }   
   

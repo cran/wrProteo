@@ -14,7 +14,8 @@ readPDExport(
   refLi = NULL,
   separateAnnot = TRUE,
   plotGraph = TRUE,
-  graphTit = "Proteome Discoverer",
+  tit = "Proteome Discoverer",
+  graphTit = NULL,
   specPref = c(conta = "CON_|LYSC_CHICK", mainSpecies = "OS=Saccharomyces cerevisiae",
     spike = "HUMAN_UPS"),
   silent = FALSE,
@@ -38,7 +39,9 @@ readPDExport(
 
 \item{plotGraph}{(logical) optional plot of type vioplot of initial and normalized data (using \code{normalizeMeth}); if integer, it will be passed to \code{layout} when plotting}
 
-\item{graphTit}{(character) custom title to plot}
+\item{tit}{(character) custom title to plot}
+
+\item{graphTit}{(character) (depreciated custom title to plot), please use 'tit'}
 
 \item{specPref}{(character) define characteristic text for recognizing the 3 (main) groups of species (contaminants,mainSpecies,spike)}
 
@@ -56,11 +59,11 @@ The final output is a list containing 3 elements: \code{$annot}, \code{$raw} and
 This function has been developed using MaxQuant version Thermo ProteomeDiscoverer2.4, the format of resulting file is typically well conserved.
 }
 \examples{
-path1 <- system.file("extdata",package="wrProteo")
+path1 <- system.file("extdata", package="wrProteo")
 fiNa <- "exampleProtDiscov1.txt"
-dataPD <- readPDExport(file=fiNa,path=path1)
+dataPD <- readPDExport(file=fiNa, path=path1)
 summary(dataPD$quant)
-matrixNAinspect(dataPD$quant,gr=gl(2,3)) 
+matrixNAinspect(dataPD$quant, gr=gl(2,3)) 
 
 }
 \seealso{
