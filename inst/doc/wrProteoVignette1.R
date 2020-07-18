@@ -16,8 +16,13 @@ packageVersion("wrProteo")
 massDeFormula(c("12H12O", "HO", " 2H 1 Se, 6C 2N", "HSeCN", " ", "e"))
 # Note, that empty/invalid entries will be returned as a mass of 0.0 .
 
+# Ignore empty/invalid entries
+massDeFormula(c("12H12O", "HO", " 2H 1 Se, 6C 2N", "HSeCN"), rmEmpty=TRUE)
+
+
 ## ----ChemFormMolMass2, echo=TRUE----------------------------------------------
 massDeFormula(c("12H12O", "HO", " 2H 1 Se, 6C 2N", "HSeCN"), massTy="aver")
+
 
 ## ----AAseqMolMass, echo=TRUE--------------------------------------------------
 AAmass()

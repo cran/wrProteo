@@ -2,7 +2,7 @@
 % Please edit documentation in R/readUniProtExport.R
 \name{readUniProtExport}
 \alias{readUniProtExport}
-\title{Read export from UniProt batch-conversion}
+\title{Read protein annotation as exported from UniProt batch-conversion}
 \usage{
 readUniProtExport(
   UniProtFileNa,
@@ -18,7 +18,8 @@ readUniProtExport(
 
 \item{deUcsc}{(data.frame) object produced by \code{readUCSCtable} to be combined with data from \code{UniProtFileNa}}
 
-\item{targRegion}{(character or list) optional marking of chromosomal locations to be part of a given chromosomal target region, may be given as character like \code{chr11:1-135,086,622} or as \code{list} with a firts component chracterizing the chromosome and a integer-vector with start- and end- sites}
+\item{targRegion}{(character or list) optional marking of chromosomal locations to be part of a given chromosomal target region, 
+may be given as character like \code{chr11:1-135,086,622} or as \code{list} with a first component characterizing the chromosome and a integer-vector with start- and end- sites}
 
 \item{useUniPrCol}{(character) optional declaration which colums from UniProt exported file should be used/imported (default 'EnsID','Entry','Entry.name','Status','Protein.names','Gene.names','Length').}
 
@@ -37,7 +38,7 @@ In a typical case of 'enst000xxx' IDs  you may leave default settings, ie 'Ensem
 In addition, a file with UCSC annotation (Ensrnot accessions and chromosomic locations, obtained using \code{\link{readUCSCtable}}) can be integrated.
 }
 \details{
-In a typicall use case, first chromosomic loacation annotation is extracted from UCSC for the species of interest and imported to R using  \code{\link{readUCSCtable}} . 
+In a typicall use case, first chromosomic location annotation is extracted from UCSC for the species of interest and imported to R using  \code{\link{readUCSCtable}} . 
 However, the tables provided by UCSC don't contain Uniprot IDs. Thus, an additional (batch-)conversion step needs to get added. 
 For this reason \code{\link{readUCSCtable}} allows writing a file with Ensemble transcript IDs which can be converted tu UniProt IDs at the site of  \href{https://www.uniprot.org/uploadlists/}{UniProt}. 
 Then, UniProt annotation (downloaded as tab-separated) can be imported and combined with the genomic annotation using this function.
@@ -47,13 +48,16 @@ path1 <- system.file("extdata",package="wrProteo")
 deUniProtFi <- file.path(path1,"deUniProt_hg38chr11extr.tab")
 deUniPr1a <- readUniProtExport(deUniProtFi) 
 str(deUniPr1a)
-## with including chromosomic location extracted via Ucsc gtf files
+
+## Workflow starting with UCSC annotation (gtf) files :
 gtfFi <- file.path(path1,"UCSC_hg38_chr11extr.gtf")
-## Here we won't write the file for UniProt since the results of the
-##   conversion at Uniprot are already vailable as file "deUniProt_hg38chr11extr.tab"
-UcscAnnot1 <- readUCSCtable(gtfFi,exportFileNa=NULL)
+UcscAnnot1 <- readUCSCtable(gtfFi)
+## Results of conversion at UniProt are already available (file "deUniProt_hg38chr11extr.tab")
+myTargRegion <- list("chr1", pos=c(198110001,198570000))
+myTargRegion2 <-"chr11:1-135,086,622"      # works equally well
 deUniPr1 <- readUniProtExport(deUniProtFi,deUcsc=UcscAnnot1,
-  targRegion="chr11:1-135,086,622")
+  targRegion=myTargRegion)
+## Now UniProt IDs and genomic locations are both available :
 str(deUniPr1)
 }
 \seealso{

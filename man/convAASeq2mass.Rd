@@ -15,9 +15,9 @@ convAASeq2mass(
 \arguments{
 \item{x}{(character) aminoacid sequence (single upper case letters for describing a peptide/protein)}
 
-\item{massTy}{(character) 'mono' or 'average'}
+\item{massTy}{(character) default 'mono' for mono-isotopic masses (alternative 'average')}
 
-\item{seqName}{(logical) to use content of 'x' (ie aa seq) as name (always if 'x' has no names)}
+\item{seqName}{(logical) optional (alternative) names for the content of 'x' (ie aa seq) as name (always if 'x' has no names)}
 
 \item{silent}{(logical) suppress messages}
 
@@ -27,7 +27,7 @@ convAASeq2mass(
 vector with masses for all amino-acids (argument 'massTy' to switch form mono-isotopic to average mass)
 }
 \description{
-Calculate molecular mass based on atomic composition
+This function calculates the molecular mass of one-letter code amion-acid sequences.
 }
 \examples{
 convAASeq2mass(c("PEPTIDE","fPROTEINES"))
@@ -35,5 +35,5 @@ pep1 <- c(aa="AAAA",de="DEFDEF")
 convAASeq2mass(pep1,seqN=FALSE)
 }
 \seealso{
-\code{\link{massDeFormula}}, \code{\link[wrMisc]{convToNum}}
+\code{\link{massDeFormula}}, \code{\link{AAmass}}, \code{\link[wrMisc]{convToNum}}
 }

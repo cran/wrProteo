@@ -1,4 +1,4 @@
-#' Read export from UniProt batch-conversion
+#' Read protein annotation as exported from UniProt batch-conversion
 #'
 #' This function allows reading and importing protein-ID conversion results from \href{https://www.uniprot.org/uploadlists/}{UniProt}.
 #' To do so, first copy/paste your query IDs into \href{https://www.uniprot.org/uploadlists/}{UniProt} 'Retrieve/ID mapping' field called '1. Provide your identifiers' (or upload as file), verify '2. Select options'.
@@ -6,13 +6,14 @@
 #' 'Download', you need to specify a 'Tab-separated' format ! If you download as 'Compressed' you need to decompress the .gz file before running the function \code{readUCSCtable} 
 #' In addition, a file with UCSC annotation (Ensrnot accessions and chromosomic locations, obtained using \code{\link{readUCSCtable}}) can be integrated.
 #' @details
-#' In a typicall use case, first chromosomic loacation annotation is extracted from UCSC for the species of interest and imported to R using  \code{\link{readUCSCtable}} . 
+#' In a typicall use case, first chromosomic location annotation is extracted from UCSC for the species of interest and imported to R using  \code{\link{readUCSCtable}} . 
 #' However, the tables provided by UCSC don't contain Uniprot IDs. Thus, an additional (batch-)conversion step needs to get added. 
 #' For this reason \code{\link{readUCSCtable}} allows writing a file with Ensemble transcript IDs which can be converted tu UniProt IDs at the site of  \href{https://www.uniprot.org/uploadlists/}{UniProt}. 
 #' Then, UniProt annotation (downloaded as tab-separated) can be imported and combined with the genomic annotation using this function.  
 #' @param UniProtFileNa (character) name (and path) of file exported from Uniprot (tabulated text file inlcuding headers) 
 #' @param deUcsc (data.frame) object produced by \code{readUCSCtable} to be combined with data from \code{UniProtFileNa}
-#' @param targRegion (character or list) optional marking of chromosomal locations to be part of a given chromosomal target region, may be given as character like \code{chr11:1-135,086,622} or as \code{list} with a firts component chracterizing the chromosome and a integer-vector with start- and end- sites 
+#' @param targRegion (character or list) optional marking of chromosomal locations to be part of a given chromosomal target region, 
+#'   may be given as character like \code{chr11:1-135,086,622} or as \code{list} with a first component characterizing the chromosome and a integer-vector with start- and end- sites 
 #' @param useUniPrCol (character) optional declaration which colums from UniProt exported file should be used/imported (default 'EnsID','Entry','Entry.name','Status','Protein.names','Gene.names','Length').
 #' @param silent (logical) suppress messages
 #' @param callFrom (character) allows easier tracking of message(s) produced
@@ -23,13 +24,16 @@
 #' deUniProtFi <- file.path(path1,"deUniProt_hg38chr11extr.tab")
 #' deUniPr1a <- readUniProtExport(deUniProtFi) 
 #' str(deUniPr1a)
-#' ## with including chromosomic location extracted via Ucsc gtf files
+#' 
+#' ## Workflow starting with UCSC annotation (gtf) files :
 #' gtfFi <- file.path(path1,"UCSC_hg38_chr11extr.gtf")
-#' ## Here we won't write the file for UniProt since the results of the
-#' ##   conversion at Uniprot are already vailable as file "deUniProt_hg38chr11extr.tab"
-#' UcscAnnot1 <- readUCSCtable(gtfFi,exportFileNa=NULL)
+#' UcscAnnot1 <- readUCSCtable(gtfFi)
+#' ## Results of conversion at UniProt are already available (file "deUniProt_hg38chr11extr.tab")
+#' myTargRegion <- list("chr1", pos=c(198110001,198570000))
+#' myTargRegion2 <-"chr11:1-135,086,622"      # works equally well
 #' deUniPr1 <- readUniProtExport(deUniProtFi,deUcsc=UcscAnnot1,
-#'   targRegion="chr11:1-135,086,622")
+#'   targRegion=myTargRegion)
+#' ## Now UniProt IDs and genomic locations are both available :
 #' str(deUniPr1)
 #' @export
 readUniProtExport <- function(UniProtFileNa,deUcsc=NULL,targRegion=NULL,useUniPrCol=NULL,silent=FALSE,callFrom=NULL) {         
@@ -63,7 +67,7 @@ readUniProtExport <- function(UniProtFileNa,deUcsc=NULL,targRegion=NULL,useUniPr
   multID <- NULL
   colnames(deUniProt) <- sub(" ",".",colnames(deUniProt))
   if(length(useUniPrCol) <1) useUniPrCol <- c("EnsTraID","UniProtID","Entry.name","Status","Protein.names","Gene.names","Length")
-  useUniPrCo <- wrMisc::extrColsDeX(deUniProt,useUniPrCol,doExtractCols=FALSE,callFrom=fxNa,silent=silent)
+  useUniPrCo <- wrMisc::extrColsDeX(deUniProt, useUniPrCol, doExtractCols=FALSE, callFrom=fxNa, silent=silent)
   ##  treat multi-Ensemble entries : need to replicate lines of table for multiple concatenated (eg ENSRNOT00000031808,ENSRNOT00000093745)
   splitExtendConcat <- function(mat,useCol=1,sep=",",sep2="[[:digit:]],[[:alpha:]]+"){
     ## extend matrix or data.frame by additional lines if column 'useCol' contains multiple concatenated terms (content of other columns will be duplicated)
@@ -82,8 +86,10 @@ readUniProtExport <- function(UniProtFileNa,deUcsc=NULL,targRegion=NULL,useUniPr
       mat <- rbind(mat,mat2)
     }
     mat }
-  deUniProt <- splitExtendConcat(deUniProt,sep=",",sep2="[[:digit:]],[[:upper:]]+")   
+  deUniProt <- splitExtendConcat(deUniProt, sep=",", sep2="[[:digit:]],[[:upper:]]+")   
   if(length(deUcsc) >0) {
+    chGeneId <- which(colnames(deUcsc) =="gene_id")
+    if(length(chGeneId) <1) stop("Invalid file-content: The file '",,"' does not conatain a column 'gene_id' ! Please check the input file")
     deUcsc[,"gene_id"] <- sub("\\.[[:digit:]]+$","",deUcsc[,"gene_id"])
     useUcCol <- wrMisc::naOmit(match(c("gene_id","chr","start","end","strand","frame"),colnames(deUcsc)))
     deUcsc <- wrMisc::convMatr2df(deUcsc[,useUcCol], addIniNa=FALSE, callFrom=fxNa,silent=silent)    

@@ -1,5 +1,5 @@
 Package: wrProteo
-Version: 1.1.2
+Version: 1.1.3
 Title: Proteomics Data Analysis Functions
 Authors@R: person("Wolfgang", "Raffelsberger", email = "w.raffelsberger@unistra.fr", role = c("aut", "cre"))
 Author: Wolfgang Raffelsberger [aut, cre]
@@ -12,15 +12,15 @@ Description: Data analysis of proteomics experiments by mass spectrometry is sup
     Multi-species samples, as frequently used in benchmark-tests (eg Navarro et al 2016 <doi:10.1038/nbt.3685>, Ramus et al 2016 <doi:10.1016/j.jprot.2015.11.011>), can be run with special options separating the data into sub-groups during normalization and testing. 
     Subsequently, ROC curves (Hand and Till 2001 <doi:10.1023/A:1010920819831>) can be constructed to compare multiple analysis approaches.
 Depends: R (>= 3.1.0)
-VignetteBuilder: knitr, rmarkdown
-Imports: grDevices, graphics, limma, rmarkdown, stats, wrMisc
-Suggests: fdrtool, knitr, MASS, RColorBrewer, ROTS, R.utils, sm, utils,
+Imports: grDevices, graphics, limma, knitr, stats, rmarkdown, wrMisc
+Suggests: fdrtool, MASS, RColorBrewer, ROTS, R.utils, sm, utils,
         wrGraph
 License: GPL-3
 Encoding: UTF-8
+VignetteBuilder: knitr, rmarkdown
 LazyData: true
 RoxygenNote: 7.1.1
 NeedsCompilation: no
-Packaged: 2020-07-15 14:36:46 UTC; wraff
+Packaged: 2020-07-17 08:59:29 UTC; wraff
 Repository: CRAN
-Date/Publication: 2020-07-15 15:50:02 UTC
+Date/Publication: 2020-07-18 05:40:02 UTC

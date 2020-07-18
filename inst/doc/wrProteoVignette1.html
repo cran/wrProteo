@@ -12,7 +12,7 @@
 
 <meta name="author" content="Wolfgang Raffelsberger" />
 
-<meta name="date" content="2020-07-15" />
+<meta name="date" content="2020-07-17" />
 
 <title>Getting started with wrProteo</title>
 
@@ -369,7 +369,7 @@ code > span.er { color: #a61717; background-color: #e3d2d2; }
 
 <h1 class="title toc-ignore">Getting started with wrProteo</h1>
 <h4 class="author">Wolfgang Raffelsberger</h4>
-<h4 class="date">2020-07-15</h4>
+<h4 class="date">2020-07-17</h4>
 
 
 <div id="TOC">
@@ -402,19 +402,25 @@ code > span.er { color: #a61717; background-color: #e3d2d2; }
 <div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1"></a><span class="kw">library</span>(<span class="st">&quot;wrProteo&quot;</span>)</span>
 <span id="cb1-2"><a href="#cb1-2"></a><span class="co"># This is wrProteo version no :</span></span>
 <span id="cb1-3"><a href="#cb1-3"></a><span class="kw">packageVersion</span>(<span class="st">&quot;wrProteo&quot;</span>)</span>
-<span id="cb1-4"><a href="#cb1-4"></a><span class="co">#&gt; [1] &#39;1.1.2&#39;</span></span></code></pre></div>
+<span id="cb1-4"><a href="#cb1-4"></a><span class="co">#&gt; [1] &#39;1.1.3&#39;</span></span></code></pre></div>
 </div>
 <div id="calculating-molecular-masses-from-composition-formulas" class="section level2">
 <h2>Calculating Molecular Masses From Composition Formulas</h2>
-<p>Please note that molecular masses may be given in two falvours : Monoisotopic mass and average mass. Please refer eg to <a href="https://en.wikipedia.org/wiki/Monoisotopic_mass">Wikipedia: monoisotopic mass</a> for details.</p>
+<p>Please note that molecular masses may be given in two flavours : Monoisotopic mass and average mass. Please refer eg to <a href="https://en.wikipedia.org/wiki/Monoisotopic_mass">Wikipedia: monoisotopic mass</a> for details.</p>
 <div id="molecular-masses-based-on-summed-chemical-formulas" class="section level3">
 <h3>Molecular masses based on (summed) chemical formulas</h3>
-<p>At this level (summed) atomic compositions are evaluated. The mass of an electron can be assigned using ‘e’.</p>
+<p>At this level (summed) atomic compositions are evaluated. Here, the number of atoms has to be written <em>before</em> the atom. Thus, ‘2C’ means two atoms carbon. Empty or invalid entries will be by default returned as mass=0.0, a message will comment such issues.</p>
+<p>The mass of an electron can be assigned using ‘e’.</p>
 <div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1"></a><span class="kw">massDeFormula</span>(<span class="kw">c</span>(<span class="st">&quot;12H12O&quot;</span>, <span class="st">&quot;HO&quot;</span>, <span class="st">&quot; 2H 1 Se, 6C 2N&quot;</span>, <span class="st">&quot;HSeCN&quot;</span>, <span class="st">&quot; &quot;</span>, <span class="st">&quot;e&quot;</span>))</span>
 <span id="cb2-2"><a href="#cb2-2"></a><span class="co">#&gt;  -&gt; massDeFormula :  can&#39;t find &#39; &#39; .. setting to 0 mass</span></span>
 <span id="cb2-3"><a href="#cb2-3"></a><span class="co">#&gt;       12H12O         1H1O  2H1Se1e6C2N  1H1Se1e1C1N                        1e </span></span>
 <span id="cb2-4"><a href="#cb2-4"></a><span class="co">#&gt; 2.040329e+02 1.700274e+01 1.819389e+02 1.069280e+02 0.000000e+00 5.485799e-04</span></span>
-<span id="cb2-5"><a href="#cb2-5"></a><span class="co"># Note, that empty/invalid entries will be returned as a mass of 0.0 .</span></span></code></pre></div>
+<span id="cb2-5"><a href="#cb2-5"></a><span class="co"># Note, that empty/invalid entries will be returned as a mass of 0.0 .</span></span>
+<span id="cb2-6"><a href="#cb2-6"></a></span>
+<span id="cb2-7"><a href="#cb2-7"></a><span class="co"># Ignore empty/invalid entries</span></span>
+<span id="cb2-8"><a href="#cb2-8"></a><span class="kw">massDeFormula</span>(<span class="kw">c</span>(<span class="st">&quot;12H12O&quot;</span>, <span class="st">&quot;HO&quot;</span>, <span class="st">&quot; 2H 1 Se, 6C 2N&quot;</span>, <span class="st">&quot;HSeCN&quot;</span>), <span class="dt">rmEmpty=</span><span class="ot">TRUE</span>)</span>
+<span id="cb2-9"><a href="#cb2-9"></a><span class="co">#&gt;      12H12O        1H1O 2H1Se1e6C2N 1H1Se1e1C1N </span></span>
+<span id="cb2-10"><a href="#cb2-10"></a><span class="co">#&gt;   204.03288    17.00274   181.93887   106.92797</span></span></code></pre></div>
 <p>Using the argument <em>massTy</em> one can switch this and similar functions from this package from default monoisotopic mass to average mass mode :</p>
 <div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1"></a><span class="kw">massDeFormula</span>(<span class="kw">c</span>(<span class="st">&quot;12H12O&quot;</span>, <span class="st">&quot;HO&quot;</span>, <span class="st">&quot; 2H 1 Se, 6C 2N&quot;</span>, <span class="st">&quot;HSeCN&quot;</span>), <span class="dt">massTy=</span><span class="st">&quot;aver&quot;</span>)</span>
 <span id="cb3-2"><a href="#cb3-2"></a><span class="co">#&gt;      12H12O        1H1O 2H1Se1e6C2N 1H1Se1e1C1N </span></span>
@@ -462,7 +468,7 @@ code > span.er { color: #a61717; background-color: #e3d2d2; }
 <p>In most ‘Omics’ acitivities getting additional annotation may get a bit tricky. In Proteomics most mass-spectrometry software will use the informaton provided in the Fasta-file as annotation (as provided from UniProt). But this lacks for example chromosomal location information. There are are many repositories with genome-, gene- and protein-annotation and most of them are linked, but sometimes the links get broken when data-base updates are not done everywhere or are not followed by new re-matching. The Fasta-files used initially for mass-spectrometry peak-identification may be (slightly) not up to date (sometimes gene-or protein IDs do change or may even disappear) and thus will contribute to a certain percentage of entries hard to link.</p>
 <p>In the context of adding chromosomal annotation to a list of proteins here the following concept is developed : Annotation-tables from <a href="https://genome.ucsc.edu/cgi-bin/hgTables">UCSC</a> are available for a good number of species and can be downloaded for conventient off-line search. Howwever, in the context of less common species we realized that the UniProt tables from UCSC had many times low yield in final matching. For this reason we propose the slightly more complicated route that provided finally a much higher success-rate to find chromosomal locations for a list of UniProt IDs. First one needs to download from <a href="https://genome.ucsc.edu/cgi-bin/hgTables">UCSC</a> the table corresponding to the species of question fields <em>‘clade’,‘genome’,‘assembly’</em>). For <em>‘group’</em> choose ‘Genes and Gene Predictions’ and for <em>‘track’</em> choose ‘Ensembl Genes’, as table choose ‘ensGene’. In addition, it is possible to select either the entire genome-annotation or user-specified regions. In terms of ‘output-format’ one may choose ‘GTF’ (slightly more condensed, no headers) or ‘all filds from selected table’.</p>
 <p>The strategy presented here :</p>
-<p>export organism annotation from UCSC (<em>readUCSCtable()</em>) -&gt; from R export (non-redundant) ‘enst’-IDs (<em>readUCSCtable()</em>), get UniProt-IDs at UniProt site, save as file and import result (<em>readUniProtExport()</em>) -&gt; combine with initial UCSC table (<em>readUniProtExport()</em>)</p>
+<p>Locate &amp; download organism annotation from UCSC, read into R (<em>readUCSCtable()</em>) -&gt; from R export (non-redundant) ‘enst’-IDs (still <em>readUCSCtable()</em> ), get corresponding UniProt-IDs at UniProt site, save as file and import result into R (<em>readUniProtExport()</em> ) -&gt; (in R) combine with initial UCSC table (<em>readUniProtExport()</em> )</p>
 <p>The function <em>readUCSCtable()</em> is able to read such files downloaded from UCSC, compressed .gz files can be read, too. In the example below we’ll just look at chromosome 11 of the human genome - to keep files small.</p>
 <div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1"></a>path1 &lt;-<span class="st"> </span><span class="kw">system.file</span>(<span class="st">&quot;extdata&quot;</span>, <span class="dt">package=</span><span class="st">&quot;wrProteo&quot;</span>)</span>
 <span id="cb7-2"><a href="#cb7-2"></a>gtfFi &lt;-<span class="st"> </span><span class="kw">file.path</span>(path1, <span class="st">&quot;UCSC_hg38_chr11extr.gtf&quot;</span>)</span>
@@ -487,7 +493,7 @@ code > span.er { color: #a61717; background-color: #e3d2d2; }
 <span id="cb8-5"><a href="#cb8-5"></a><span class="co">#&gt;  -&gt; readUCSCtable :  File &#39;UCSC_hg38_chr11extr.gtf&#39; is gtf : TRUE</span></span>
 <span id="cb8-6"><a href="#cb8-6"></a><span class="co">#&gt;  -&gt; readUCSCtable :  simplifed from 2000 to 223 non-redundant gene_id</span></span>
 <span id="cb8-7"><a href="#cb8-7"></a><span class="co">#&gt;  -&gt; readUCSCtable :  Write to file : ENST00000270115, ENST00000308020, ENST00000311189, ENST00000312165 ...</span></span>
-<span id="cb8-8"><a href="#cb8-8"></a><span class="co">#&gt;  -&gt; readUCSCtable :  Exporting file  &#39;C:\Users\wraff\AppData\Local\Temp\Rtmpg921vh/deUcscForUniProt2.txt&#39;  for conversion on https://www.uniprot.org/uploadlists</span></span></code></pre></div>
+<span id="cb8-8"><a href="#cb8-8"></a><span class="co">#&gt;  -&gt; readUCSCtable :  Exporting file  &#39;C:/Users/wraff/AppData/Local/Temp/RtmpKk1Gi1/deUcscForUniProt2.txt&#39;  for conversion on https://www.uniprot.org/uploadlists</span></span></code></pre></div>
 <p>Now everything is ready to go to <a href="https://www.uniprot.org/uploadlists/">UniProt</a> for retreiving the corresponding UniProt-IDs. Since we exported Ensemble transcript IDs (ENSTxxx), select converting from ‘Ensembl Transcript’ to ‘UniProtKB’. Then, when downloading the conversion results, choose tab-separated file format (compression is recommended), this may take several seconds (depening on the size).</p>
 <p>It is suggested to rename the downloaded file so one can easily understand it’s content. Note, that the function <em>readUniProtExport()</em> can also read .gz compressed files. To continue this vignette we’ll use a result which has been downloaded from <a href="https://www.uniprot.org/uploadlists/">UniProt</a> and renamed to ‘deUniProt_hg38chr11extr.tab’. One may also optionally define a specific genomic region of interest using the argument ‘targRegion’, here the entire chromosome 11 was chosen.</p>
 <div class="sourceCode" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1"></a>deUniProtFi &lt;-<span class="st"> </span><span class="kw">file.path</span>(path1, <span class="st">&quot;deUniProt_hg38chr11extr.tab&quot;</span>)</span>
@@ -732,7 +738,7 @@ Next to stringent filtering (previous section of this vignette) the shrinkage wh
 #&gt; [1] stats     graphics  grDevices utils     datasets  methods   base     
 #&gt; 
 #&gt; other attached packages:
-#&gt; [1] wrProteo_1.1.2 wrMisc_1.2.4  
+#&gt; [1] wrProteo_1.1.3 wrMisc_1.2.4  
 #&gt; 
 #&gt; loaded via a namespace (and not attached):
 #&gt;  [1] digest_0.6.25      R.methodsS3_1.8.0  magrittr_1.5       evaluate_0.14     
