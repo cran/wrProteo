@@ -13,6 +13,7 @@ plotROC(
   pch = 1,
   bg = NULL,
   tit = NULL,
+  xlim = NULL,
   point05 = 0.05,
   pointSi = 0.85,
   nByMeth = NULL,
@@ -41,6 +42,8 @@ plotROC(
 
 \item{tit}{(character) custom title}
 
+\item{xlim}{(numeric, length=2) custom x-limits}
+
 \item{point05}{(numeric) specific point to highlight in plot (typically at alpha=0.05)}
 
 \item{pointSi}{(numeric) size of points (as expansion factor \code{cex})}
@@ -49,7 +52,7 @@ plotROC(
 
 \item{speciesOrder}{(integer) custom order of species in legend}
 
-\item{txtLoc}{(numeric) location for text}
+\item{txtLoc}{(numeric, length=3) location for text (x, y and proportional factor for line-offset, default is c(0.4,0.3,0.04))}
 
 \item{legCex}{(numeric) cex expansion factor for legend (see also \code{\link[graphics]{par}})}
 

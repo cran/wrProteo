@@ -9,12 +9,13 @@ readMaxQuantFile(
   fileName = "proteinGroups.txt",
   normalizeMeth = "median",
   quantCol = "LFQ.intensity",
+  contamCol = "Potential.contaminant",
   uniqPepPat = "Razor...unique.peptides",
   refLi = NULL,
   extrColNames = c("Majority.protein.IDs", "Fasta.headers", "Number.of.proteins"),
-  specPref = c(conta = "conta|CON_|LYSC_CHICK", mainSpecies = "OS=Homo sapiens", spike
-    = "HUMAN_UPS"),
+  specPref = c(conta = "conta|CON_|LYSC_CHICK", mainSpecies = "OS=Homo sapiens"),
   tit = NULL,
+  wex = 1.6,
   separateAnnot = TRUE,
   plotGraph = TRUE,
   silent = FALSE,
@@ -30,15 +31,19 @@ readMaxQuantFile(
 
 \item{quantCol}{(character or integer) exact col-names, or if length=1 content of \code{quantCol} will be used as pattern to search among column-names for $quant using \code{grep}}
 
+\item{contamCol}{(character or integer, length=1) which columns should be used for contaminants marked by ProteomeDiscoverer}
+
 \item{uniqPepPat}{(character, length=1) pattern to search for columns with unique (razor) peptides using \code{grep}, default set to read unique razor-peptides}
 
-\item{refLi}{(integer) custom decide which line of data is main species, if single character entry it will be used to choose a group of species (eg 'mainSpe')}
+\item{refLi}{(character or integer) custom specify which line of data is main species, if character (eg 'mainSpe'), the column 'SpecType' in $annot will be searched for exact match of the (single) term given}
 
 \item{extrColNames}{(character) column names to be read (1: prefix for LFQ quantitation, default 'LFQ.intensity'; 2: column name for protein-IDs, default 'Majority.protein.IDs'; 3: column names of fasta-headers, default 'Fasta.headers', 4: column name for number of protein IDs matching, default 'Number.of.proteins')}
 
 \item{specPref}{(character) prefix to identifiers allowing to separate i) recognize contamination database, ii) species of main identifications and iii) spike-in species}
 
 \item{tit}{(character) custom title to plot}
+
+\item{wex}{(numeric)  relative expansion factor of the violin in plot}
 
 \item{separateAnnot}{(logical) if \code{TRUE} output will be organized as list with \code{$annot}, \code{$abund} for initial/raw abundance values and \code{$quant} with final normalized quantitations}
 

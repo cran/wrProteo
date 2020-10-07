@@ -1,6 +1,6 @@
 #' Read csv or txt files exported from MS-Angel and Proline
 #'
-#' Quantification results form MS-Angel and Proline \href{http://proline.profiproteomics.fr/}{Proline} should be first saved via Excel or LibreOffice as csv or tabulated txt. 
+#' Quantification results form MS-Angel and Proline \href{http://www.profiproteomics.fr/proline/}{Proline} should be first saved via Excel or LibreOffice as csv or tabulated txt. 
 #' Such files can be read by this function and relevant information be extracted. 
 #' The final output is a list containing 3 elements: \code{$annot}, \code{$abund} and optional \code{$quant}, or returns data.frame with entire content of file if \code{separateAnnot=FALSE}.
 #' Note: There is no normalization by default since quite frequently data produced by Proline are already sufficiently normalized. 
@@ -30,7 +30,7 @@
 readProlineFile <- function(fileName,path=NULL,logConvert=TRUE,quantCol="^abundance_",annotCol=c("accession","description","is_validated","coverage","X.sequences","X.peptides","protein_set.score"), 
   refLi=NULL,separateAnnot=TRUE,plotGraph=TRUE,tit=NULL,graphTit=NULL,silent=FALSE,callFrom=NULL){
   ## 'quantCol', 'annotCol' (character) exact col-names or if length=1 pattern to search among col-names for $quant or $annot
-  fxNa <- wrMisc::.composeCallName(callFrom,newNa="readProlineFile")
+  fxNa <- wrMisc::.composeCallName(callFrom, newNa="readProlineFile")
   opar <- graphics::par(no.readonly=TRUE)
   ## check & read file
   chPa <- length(grep("/",fileName)) >0 | length(grep("\\\\",fileName)) >0      # check for path already in fileName "
@@ -39,24 +39,26 @@ readProlineFile <- function(fileName,path=NULL,logConvert=TRUE,quantCol="^abunda
   chFi <- file.exists(paFi)
   if(!chFi) stop(" file ",fileName," was NOT found ",if(length(path) >0) paste(" in path ",path)," !")
   if(length(grep("\\.xlsx$",fileName)) >0) message(fxNa," Trouble ahead, extracting out of Excel should be done via saving as csv or txt !!")
+  ## try to find out which input format; read 3x and choose the one with most columns 
   tmp <- list()
-  if(length(grep("\\.txt$",fileName)) >0) tmp[[1]] <- try(utils::read.delim(paFi,stringsAsFactors=FALSE),silent=TRUE)             # read tabulated text-file
-  if(length(grep("\\.csv$",fileName)) >0) tmp[[2]] <- try(utils::read.csv(paFi,stringsAsFactors=FALSE),silent=TRUE)               # read US csv-file
-  if(length(grep("\\.csv$",fileName)) >0) tmp[[3]] <- try(utils::read.csv2(paFi,stringsAsFactors=FALSE),silent=TRUE)              # read Euro csv-file
+  if(length(grep("\\.txt$",fileName)) >0) tmp[[1]] <- try(utils::read.delim(paFi, stringsAsFactors=FALSE), silent=TRUE)             # read tabulated text-file
+  if(length(grep("\\.csv$",fileName)) >0) tmp[[2]] <- try(utils::read.csv(paFi, stringsAsFactors=FALSE), silent=TRUE)               # read US csv-file
+  if(length(grep("\\.csv$",fileName)) >0) tmp[[3]] <- try(utils::read.csv2(paFi, stringsAsFactors=FALSE), silent=TRUE)              # read Euro csv-file
   chCl <- sapply(tmp,class) =="try-error" 
   if(length(chCl) <1) stop("Failed to recognize file extensions of input data (unknown format)")
   if(any(chCl)) {if(all(chCl)) stop(" Failed to extract data (unknown format) from ",fileName)}
-  nCol <- sapply(tmp,function(x) if(length(x) >0) {if(class(x) != "try-error") ncol(x) else NA} else NA)
+  nCol <- sapply(tmp, function(x) if(length(x) >0) {if(class(x) != "try-error") ncol(x) else NA} else NA)
   bestT <- which.max(nCol)
   out <- tmp[[bestT]]
-  if(any(c(length(quantCol),length(annotCol)) <1)) separateAnnot <- FALSE else {
-    if(any(all(is.na(quantCol)),all(is.na(annotCol)))) separateAnnot <- FALSE
+  if(any(c(length(quantCol), length(annotCol)) <1)) separateAnnot <- FALSE else {
+    if(any(all(is.na(quantCol)), all(is.na(annotCol)))) separateAnnot <- FALSE
   }
-  metaCo <- wrMisc::naOmit(if(length(annotCol) >1) wrMisc::extrColsDeX(out,extrCol=annotCol,doExtractCols=FALSE,callFrom=fxNa) else grep(annotCol,colnames(out)))
+  
+  metaCo <- wrMisc::naOmit(if(length(annotCol) >1) wrMisc::extrColsDeX(out, extrCol=annotCol, doExtractCols=FALSE, callFrom=fxNa) else grep(annotCol,colnames(out)))
   ## locate & extract abundance/quantitation data
-  if(length(quantCol) >1) { abund <- as.matrix(wrMisc::extrColsDeX(out,extrCol=quantCol,doExtractCols=TRUE,callFrom=fxNa))
+  if(length(quantCol) >1) { abund <- as.matrix(wrMisc::extrColsDeX(out, extrCol=quantCol, doExtractCols=TRUE, callFrom=fxNa))
   } else {
-    quantCol <- grep(quantCol,colnames(out)) 
+    quantCol <- grep(quantCol, colnames(out)) 
     chNa <- is.na(quantCol)
     if(all(chNa)) stop("Could not find any of of the columns specified in argument 'quantCol' !")
     if(any(chNa)) { 
@@ -65,9 +67,9 @@ readProlineFile <- function(fileName,path=NULL,logConvert=TRUE,quantCol="^abunda
     abund <- as.matrix(out[,quantCol]) }           # abundance val
   ## check abundance/quantitation data
   chNum <- is.numeric(abund)
-  if(!chNum) {abund <- apply(out[,quantCol],2,wrMisc::convToNum,convert="allChar",callFrom=fxNa)}    
+  if(!chNum) {abund <- apply(out[,quantCol], 2, wrMisc::convToNum, convert="allChar", callFrom=fxNa)}    
   if(is.character(refLi) & length(refLi)==1) refLi <- which(out[,"Spec"]==refLi)   # may be "mainSpe"
-  ## don't normalize here by default since data are typically sufficielntly normalized  
+  ## don't normalize here by default since data are typically sufficiently normalized  
   colnames(abund) <- wrMisc::.trimFromStart(wrMisc::.trimFromEnd(colnames(abund)))
   ## plot distribution of intensities
   custLay <- NULL
@@ -85,17 +87,20 @@ readProlineFile <- function(fileName,path=NULL,logConvert=TRUE,quantCol="^abunda
     if(any(misPa)) { 
       if(!silent) message(fxNa," missing package ",wrMisc::pasteC(c("wrGraph","sm")[which(misPa)],quoteC="'")," for drawing vioplots")
       ## wrGraph not available : simple boxplot  
-      graphics::boxplot(log2(abund),main=tit,las=1,outline=FALSE) 
-      graphics::abline(h=round(log2(stats::median(abund,na.rm=TRUE)))+c(-1:1),lty=2,col=grDevices::grey(0.6))      
+      graphics::boxplot(log2(abund), main=tit, las=1, outline=FALSE) 
+      graphics::abline(h=round(log2(stats::median(abund, na.rm=TRUE))) +c(-1:1), lty=2, col=grDevices::grey(0.6))      
     } else {                                          # wrGraph & sm are available
-      wrGraph::vioplotW(log2(abund),tit=paste(tit," (initial)",sep=" ")) 
-      graphics::abline(h=round(stats::median(abund,na.rm=TRUE))+(-1:1),lty=2,col=grDevices::grey(0.6))           
+      wrGraph::vioplotW(log2(abund), tit=paste(tit," (initial)",sep=" ")) 
+      graphics::abline(h=round(stats::median(abund, na.rm=TRUE)) +(-1:1), lty=2, col=grDevices::grey(0.6))           
     }
-    on.exit(graphics::par(opar)) }   #
+    on.exit(graphics::par(opar)) }                         #
+  ## meta-data
+  notes <- c(qmethod="Proline", normalizeMeth="none", call=match.call(), created=as.character(Sys.time()), 
+    wrProteo.version=utils::packageVersion("wrProteo"), machine=Sys.info()["nodename"])
   ##
   if(separateAnnot) {
     if(!is.numeric(abund) & logConvert) {message(fxNa," Problem: Abundance data seem not numeric, can't transform log2 !")}
-    out <- list(raw=abund,quant=abund,annot=as.matrix(out[,metaCo]))
+    out <- list(raw=abund, quant=abund, annot=as.matrix(out[,metaCo]), notes=notes)
     if(logConvert) {
       ch0 <- which(out$quant <=0)
       out$quant <- abund

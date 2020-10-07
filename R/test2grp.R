@@ -14,7 +14,7 @@
 #' @param silent (logical) suppress messages
 #' @param callFrom (character) allow easier tracking of message produced
 #' @return limma-type S3 object of class 'MArrayLM' which can be accessed; multiple testing correction types or modified testing by ROTS may get included ('p.value','FDR','BY','lfdr' or 'ROTS.BH')
-#' @seealso  \code{\link[wrMisc]{moderTest2grp}}, \code{\link[wrMisc]{pVal2lfdr}}, \code{\link[stats]{t.test}},\code{\link[ROTS]{ROTS}}  
+#' @seealso  \code{\link[wrMisc]{moderTest2grp}}, \code{\link[wrMisc]{pVal2lfdr}}, \code{\link[stats]{t.test}}, \code{ROTS} from the Bioconductor package \href{https://www.bioconductor.org/packages/release/bioc/html/ROTS.html}{ROTS}  
 #' @examples
 #' set.seed(2018);  datT8 <- matrix(round(rnorm(800)+3,1),nc=8,dimnames=list(paste(
 #'   "li",1:100,sep=""),paste(rep(LETTERS[1:3],c(3,3,2)),letters[18:25],sep="")))
@@ -34,13 +34,13 @@ test2grp <- function(dat,questNo,useCol=NULL,grp=NULL,annot=NULL,ROTSn=0,silent=
   if(nrow(dat$filt) != nrow(dat$data)) stop(msg)
   questNa <- colnames(dat$filt)[questNo]
   questNa <- unlist(strsplit(questNa,"-"))
-  if(is.null(useCol)) useCol <- lapply(questNa,grep,colnames(dat$data))
-  if(is.null(grp)) {grp <- rep(questNa,sapply(useCol,length))
+  if(is.null(useCol)) useCol <- lapply(questNa, grep, colnames(dat$data))
+  if(is.null(grp)) {grp <- rep(questNa,sapply(useCol, length))
     if(!silent) message("  groups set automatic to ",wrMisc::pasteC(grp,quoteC="'")) }
-  out <- wrMisc::moderTest2grp(dat$data[which(dat$filt[,questNo]),unlist(useCol)],gr=grp,limmaOutput=TRUE,addResults=c("lfdr","FDR","Mval","means","nonMod"))
-  out$BH <- apply(out$p.value,2,stats::p.adjust,method="BH")
-  out$nonMod.BH <- stats::p.adjust(out$nonMod.p,method="BH")
-  chLfdr <- try(find.package("fdrtools"),silent=TRUE)
+  out <- wrMisc::moderTest2grp(dat$data[which(dat$filt[,questNo]), unlist(useCol)], gr=grp, limmaOutput=TRUE, addResults=c("lfdr","FDR","Mval","means","nonMod"))
+  out$BH <- apply(out$p.value, 2, stats::p.adjust, method="BH")
+  out$nonMod.BH <- stats::p.adjust(out$nonMod.p, method="BH")
+  chLfdr <- try(find.package("fdrtools"), silent=TRUE)
   if("try-error" %in% class(chLfdr)) { 
       message(fxNa,"package 'fdrtool' not found ! Please install for calculating lfdr-values ..") 
   } else out$nonMod.lfdr <- wrMisc::pVal2lfdr(out$nonMod.p)
@@ -52,9 +52,9 @@ test2grp <- function(dat,questNo,useCol=NULL,grp=NULL,annot=NULL,ROTSn=0,silent=
   } else ROTSn <- NULL      
   if(length(ROTSn)==1) if(ROTSn >0) {
     ## this part requires ROTS
-    tmp <- ROTS::ROTS(dat$data[which(dat$filt[,questNo]),unlist(useCol)], groups=as.numeric(as.factor(grp))-1, B=ROTSn)   # ,K=500  
+    tmp <- ROTS::ROTS(dat$data[which(dat$filt[,questNo]), unlist(useCol)], groups=as.numeric(as.factor(grp))-1, B=ROTSn)   # ,K=500  
     out$ROTS.p <- tmp$pvalue
-    out$ROTS.BH <- stats::p.adjust(tmp$pvalue,method="BH") 
+    out$ROTS.BH <- stats::p.adjust(tmp$pvalue, method="BH") 
     if(!"try-error" %in% class(chLfdr)) out$ROTS.lfdr <- wrMisc::pVal2lfdr(tmp$pvalue)
   }
   if(!is.null(annot)) out$annot <- as.matrix(annot[which(dat$filt[,questNo]),])

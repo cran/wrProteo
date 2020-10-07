@@ -1,13 +1,23 @@
 ## ---- include = FALSE---------------------------------------------------------
 knitr::opts_chunk$set(collapse=TRUE, comment = "#>")
 
+## ----install, echo=TRUE, eval=FALSE-------------------------------------------
+#  ## if you need to install the packages 'wrMisc','wrProteo' and 'wrGraph' from CRAN :
+#  install.packages("wrMisc")
+#  install.packages("wrProteo")
+#  ## The package 'wrGraph' is not obligatory, but it allows making better graphs
+#  install.packages("wrGraph")
+
 ## ----setup, echo=FALSE, messages=FALSE, warnings=FALSE------------------------
 suppressPackageStartupMessages({
     library(wrMisc)
     library(wrProteo)
-})
+    library(knitr)
+    library(rmarkdown) 
+}) 
 
 ## ----setup2-------------------------------------------------------------------
+library("wrMisc")
 library("wrProteo")
 # This is wrProteo version no :
 packageVersion("wrProteo")
@@ -39,9 +49,9 @@ fiNa <-  "conta1.fasta"
 fasta1 <- readFasta2(file.path(path1,fiNa))
 str(fasta1)
 
-## now let's read and further separate annotation-fields
-fasta2 <- readFasta2(file.path(path1,fiNa), tableOut=TRUE)
-str(fasta2)
+## now let's read and further separate details in annotation-fields
+fasta1det <- readFasta2(file.path(path1,fiNa), tableOut=TRUE)
+str(fasta1det)
 
 ## ----readUCSC1, echo=TRUE-----------------------------------------------------
 path1 <- system.file("extdata", package="wrProteo")
@@ -52,20 +62,20 @@ UcscAnnot1 <- readUCSCtable(gtfFi)
 head(UcscAnnot1)
 
 ## ----readUCSC2, echo=TRUE-----------------------------------------------------
-# Here we'll read the UCSC table and immediatley write the file for UniProt conversion 
-#  (here to tempdir() to keep things tidy)
+# Here we'll redo reading the UCSC table, plus immediatley write the file for UniProt conversion 
+#  (in this vignette we write to tempdir() to keep things tidy)
 expFi <- file.path(tempdir(),"deUcscForUniProt2.txt")
 UcscAnnot1 <- readUCSCtable(gtfFi, exportFileNa=expFi)
 
-## ----readUCSC3, echo=TRUE-----------------------------------------------------
+## ----readUniProt1, echo=TRUE--------------------------------------------------
 deUniProtFi <- file.path(path1, "deUniProt_hg38chr11extr.tab")
-deUniPr1 <- readUniProtExport(deUniProtFi, deUcsc=UcscAnnot1, targRegion="chr11:1-135,086,622")
+deUniPr1 <- readUniProtExport(UniP=deUniProtFi, deUcsc=UcscAnnot1, targRegion="chr11:1-135,086,622")
 str(deUniPr1)
 
 ## ----readProteomeDiscoverer, echo=TRUE----------------------------------------
 path1 <- system.file("extdata", package="wrProteo")
 fiNaPd <- "exampleProtDiscov1.txt"
-dataPD <- readPDExport(file=fiNaPd, path=path1)
+dataPD <- readPDExport(file=fiNaPd, path=path1, normalizeMeth="median")
 ## a summary of the quantitation data
 summary(dataPD$quant)
 
@@ -73,14 +83,15 @@ summary(dataPD$quant)
 path1 <- system.file("extdata", package="wrProteo")
 fiNaMa <- "proteinGroupsMaxQuantUps1.txt"
 specPref1 <- c(conta="conta|CON_|LYSC_CHICK", mainSpecies="YEAST", spike="HUMAN_UPS")
-dataMQ <- readMaxQuantFile(path1, file=fiNaMa, specPref=specPref1)
+dataMQ <- readMaxQuantFile(path1, file=fiNaMa, specPref=specPref1, normalizeMeth="median")
 ## a summary of the quantitation data
 summary(dataMQ$quant)
 
 ## ----readProline, echo=TRUE---------------------------------------------------
+normalizeMeth <- NULL
 path1 <- system.file("extdata", package="wrProteo")
 fiNaPl <- "exampleProlineABC.csv"
-dataPL <- readProlineFile(file.path(path1,fiNaPl))
+dataPL <- readProlineFile(file.path(path1,fiNaPl) )
 ## a summary of the quantitation data
 summary(dataPL$quant)
 

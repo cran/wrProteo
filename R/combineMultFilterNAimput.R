@@ -41,7 +41,7 @@ combineMultFilterNAimput <- function(dat,imputed,grp,annDat=NULL,abundThr=NULL,c
   datFi <- wrMisc::presenceFilt(dat,grp=grp,maxGrpM=1,ratMa=0.8)
   if(!silent) cat(fxNa,"   at presenceFilt:  ",colSums(datFi),"  out of ",nrow(dat),"\n")
   if(length(colRazNa) >0 & length(annDat) >0) {
-    razFilt <- razorNoFilter(annot=annDat,totNa=colTotNa,minRazNa=colRazNa,minSpeNo=minSpeNo,minTotNo=minTotNo)
+    razFilt <- razorNoFilter(annot=annDat, totNa=colTotNa, minRazNa=colRazNa, minSpeNo=minSpeNo, minTotNo=minTotNo)
     datFi[which(!razFilt),] <- rep(FALSE,ncol(datFi)) 
     if(!silent) cat(fxNa,"   at razorNoFilter: ",colSums(datFi),"\n")    
     }
@@ -58,7 +58,7 @@ combineMultFilterNAimput <- function(dat,imputed,grp,annDat=NULL,abundThr=NULL,c
   for(i in 1:nrow(pwComb)) {
     critNAGrp <- table(grp)[colnames(grpMeans)[pwComb[i,]]]
     critNAGrp <- critNAGrp/2 -0.1                                                          # potentially filter when min 50% of data NA
-    chLi <- imputed$nNA[,pwComb[i,]] > matrix(rep(critNAGrp,each=nrow(grpMeans)),ncol=2)   # use imputed$nNA; return T when need to filter
+    chLi <- imputed$nNA[,pwComb[i,]] > matrix(rep(critNAGrp, each=nrow(grpMeans)), ncol=2)   # use imputed$nNA; return T when need to filter
     if(any(chLi)) {
       chLi2 <- cbind(chLi[,1] & grpMeans[,pwComb[i,1]] > grpMeans[,pwComb[i,2]], chLi[,2] & grpMeans[,pwComb[i,2]] > grpMeans[,pwComb[i,1]]) # is T if bad
       datFi[,i] <- datFi[,i] & !chLi[,1] & !chLi[,2] }

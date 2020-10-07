@@ -52,5 +52,5 @@ testAvB0 <- wrMisc::moderTest2grp(datT8[,1:6],gl(2,3))
 testAvB <- test2grp(datL,questNo=1)
 }
 \seealso{
-\code{\link[wrMisc]{moderTest2grp}}, \code{\link[wrMisc]{pVal2lfdr}}, \code{\link[stats]{t.test}},\code{\link[ROTS]{ROTS}}
+\code{\link[wrMisc]{moderTest2grp}}, \code{\link[wrMisc]{pVal2lfdr}}, \code{\link[stats]{t.test}}, \code{ROTS} from the Bioconductor package \href{https://www.bioconductor.org/packages/release/bioc/html/ROTS.html}{ROTS}
 }

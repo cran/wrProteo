@@ -49,7 +49,7 @@ readProlineFile(
 list with \code{$annot}, \code{$raw} and optional \code{$quant}, or returns data.frame with entire content of file if \code{separateAnnot=FALSE}
 }
 \description{
-Quantification results form MS-Angel and Proline \href{http://proline.profiproteomics.fr/}{Proline} should be first saved via Excel or LibreOffice as csv or tabulated txt. 
+Quantification results form MS-Angel and Proline \href{http://www.profiproteomics.fr/proline/}{Proline} should be first saved via Excel or LibreOffice as csv or tabulated txt. 
 Such files can be read by this function and relevant information be extracted. 
 The final output is a list containing 3 elements: \code{$annot}, \code{$abund} and optional \code{$quant}, or returns data.frame with entire content of file if \code{separateAnnot=FALSE}.
 Note: There is no normalization by default since quite frequently data produced by Proline are already sufficiently normalized. 

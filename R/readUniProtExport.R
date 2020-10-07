@@ -43,7 +43,7 @@ readUniProtExport <- function(UniProtFileNa,deUcsc=NULL,targRegion=NULL,useUniPr
   if(length(UniProtFileNa) >1) UniProtFileNa <- UniProtFileNa[1] else {if(length(UniProtFileNa) < 1) stop(" argument 'UniProtFileNa' seems empty")}
   chFi <- file.exists(UniProtFileNa)
   if(!chFi) stop(" file '",UniProtFileNa,"' not found !")
-  chExt <- length(grep("\\.gz$",UniProtFileNa)) >0  
+  chExt <- length(grep("\\.gz$", UniProtFileNa, fixed=FALSE, perl=FALSE)) >0  
   chPa <- try(find.package("utils"),silent=TRUE)
   if("try-error" %in% class(chPa)) stop("package 'utils' not found ! Please install first")   
   ## main  
@@ -74,13 +74,13 @@ readUniProtExport <- function(UniProtFileNa,deUcsc=NULL,targRegion=NULL,useUniPr
     ## 'sep' used with strsplit() and grep() to identify lines and split, also used to construct (generic) term for keeping just first 
     ## 'sep2' optional custom pattern used with grep() to identify lines; will be used instead of 'generic' sep to identify entries to split lateron 
     ## main
-    chMult <- grep(if(length(sep2) >0) sep2 else sep, mat[,useCol])
+    chMult <- grep(if(length(sep2) >0) sep2 else sep, mat[,useCol], fixed=FALSE, perl=FALSE)
     if(length(chMult) >0)  {
       ##
-      spl1 <- strsplit(mat[chMult,useCol],sep)
+      spl1 <- strsplit(mat[chMult,useCol],sep, fixed=FALSE, perl=FALSE)
       spl2 <- unlist(lapply(spl1, function(x) x[-1]), use.names=FALSE)
       toLine <- rep(chMult, sapply(spl1,length) -1)
-      mat[,useCol] <- sub(paste(sep,"[[:print:]]*$",sep=""),"",mat[,useCol])
+      mat[,useCol] <- sub(paste(sep,"[[:print:]]*$",sep=""),"",mat[,useCol], fixed=FALSE, perl=FALSE)
       mat2 <-  cbind(spl2,mat[c(toLine),-1])
       colnames(mat2)[1] <- colnames(mat)[1]
       mat <- rbind(mat,mat2)
@@ -89,7 +89,7 @@ readUniProtExport <- function(UniProtFileNa,deUcsc=NULL,targRegion=NULL,useUniPr
   deUniProt <- splitExtendConcat(deUniProt, sep=",", sep2="[[:digit:]],[[:upper:]]+")   
   if(length(deUcsc) >0) {
     chGeneId <- which(colnames(deUcsc) =="gene_id")
-    if(length(chGeneId) <1) stop("Invalid file-content: The file '",,"' does not conatain a column 'gene_id' ! Please check the input file")
+    if(length(chGeneId) <1) stop("Invalid file-content: The file '",UniProtFileNa,"' does not conatain a column 'gene_id' ! Please check the input file")
     deUcsc[,"gene_id"] <- sub("\\.[[:digit:]]+$","",deUcsc[,"gene_id"])
     useUcCol <- wrMisc::naOmit(match(c("gene_id","chr","start","end","strand","frame"),colnames(deUcsc)))
     deUcsc <- wrMisc::convMatr2df(deUcsc[,useUcCol], addIniNa=FALSE, callFrom=fxNa,silent=silent)    

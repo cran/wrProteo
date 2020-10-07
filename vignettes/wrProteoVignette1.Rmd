@@ -27,15 +27,26 @@ Furthermore, the Bioconductor package [limma](https://bioconductor.org/packages/
 knitr::opts_chunk$set(collapse=TRUE, comment = "#>")
 ```
 
+```{r install, echo=TRUE, eval=FALSE}
+## if you need to install the packages 'wrMisc','wrProteo' and 'wrGraph' from CRAN :
+install.packages("wrMisc")
+install.packages("wrProteo")
+## The package 'wrGraph' is not obligatory, but it allows making better graphs
+install.packages("wrGraph")
+```
+
 
 ```{r setup, echo=FALSE, messages=FALSE, warnings=FALSE}
 suppressPackageStartupMessages({
     library(wrMisc)
     library(wrProteo)
-})
+    library(knitr)
+    library(rmarkdown) 
+}) 
 ```
 
 ```{r setup2}
+library("wrMisc")
 library("wrProteo")
 # This is wrProteo version no :
 packageVersion("wrProteo")
@@ -47,11 +58,15 @@ packageVersion("wrProteo")
 
 Please note that molecular masses may be given in two flavours : Monoisotopic mass and average mass.
 Please refer eg to [Wikipedia: monoisotopic mass](https://en.wikipedia.org/wiki/Monoisotopic_mass) for details. 
+Monoisotopic masses commonly are used in mass-spectrometry and will be used by default in this package.
+
+Molecular (mono-isotopic) masses of the atomes used here were taken from [Unimod](http://www.unimod.org/masses.html). They can be easily updated, if in the future, (mono-isotopic) molecular masses will be determined with higher precision (ie more digits).
+
 
 ### Molecular masses based on (summed) chemical formulas
 
 At this level (summed) atomic compositions are evaluated.
-Here, the number of atoms has to be written _before_ the atom. Thus, '2C' means two atoms carbon.
+Here, the number of atoms has to be written _before_ the atom. Thus, '2C' means two atoms of carbon.
 Empty or invalid entries will be by default returned as mass=0.0, a message will comment such issues. 
  
 The mass of an electron can be assigned using 'e'.
@@ -95,9 +110,9 @@ fiNa <-  "conta1.fasta"
 fasta1 <- readFasta2(file.path(path1,fiNa))
 str(fasta1)
 
-## now let's read and further separate annotation-fields
-fasta2 <- readFasta2(file.path(path1,fiNa), tableOut=TRUE)
-str(fasta2)
+## now let's read and further separate details in annotation-fields
+fasta1det <- readFasta2(file.path(path1,fiNa), tableOut=TRUE)
+str(fasta1det)
 ```
 
 ## Annotation
@@ -135,8 +150,8 @@ head(UcscAnnot1)
 However, this annotation does not provide protein IDs. In order to obtain the corresponding protein IDs an additional step is required : Here we will use the batch seach/conversion tool from [UniProt](https://www.uniprot.org/uploadlists/). In order to do so, we can export directly from _readUCSCtable()_ a small text-file which can the be fed into the UniProt batch-search tool.
 
 ```{r readUCSC2, echo=TRUE}
-# Here we'll read the UCSC table and immediatley write the file for UniProt conversion 
-#  (here to tempdir() to keep things tidy)
+# Here we'll redo reading the UCSC table, plus immediatley write the file for UniProt conversion 
+#  (in this vignette we write to tempdir() to keep things tidy)
 expFi <- file.path(tempdir(),"deUcscForUniProt2.txt")
 UcscAnnot1 <- readUCSCtable(gtfFi, exportFileNa=expFi)
 ```
@@ -150,9 +165,9 @@ Note, that the function _readUniProtExport()_ can also read .gz compressed files
 To continue this vignette we'll use a result which has been downloaded from [UniProt](https://www.uniprot.org/uploadlists/) and renamed to 'deUniProt_hg38chr11extr.tab'.
 One may also optionally define a specific genomic region of interest using the argument 'targRegion', here the entire chromosome 11 was chosen.
 
-```{r readUCSC3, echo=TRUE}
+```{r readUniProt1, echo=TRUE}
 deUniProtFi <- file.path(path1, "deUniProt_hg38chr11extr.tab")
-deUniPr1 <- readUniProtExport(deUniProtFi, deUcsc=UcscAnnot1, targRegion="chr11:1-135,086,622")
+deUniPr1 <- readUniProtExport(UniP=deUniProtFi, deUcsc=UcscAnnot1, targRegion="chr11:1-135,086,622")
 str(deUniPr1)
 ```
 
@@ -168,7 +183,7 @@ Finally, it should be added, that of course other ways of retreiving annotation 
 ## Importing and Treating Data From Quantitative Proteomics
 
 This package provides support for importing quantitation results from [Proteome Discoverer](https://www.thermofisher.com/order/catalog/product/OPTON-30812),
- [MaxQuant](https://www.maxquant.org) and [Proline](http://proline.profiproteomics.fr/). All quantitation import functions offer special features for separating species
+ [MaxQuant](https://www.maxquant.org) and [Proline](http://www.profiproteomics.fr/proline/). All quantitation import functions offer special features for separating species
  for optional different treatment. 
 Normalization aims to eliminate/reduce variablity introduced to the data not linked to the original biological question.
 Of course, a well designed experiment with sufficent replicates is crucial for performing efficient normalization.  
@@ -192,21 +207,21 @@ and initial quantitation (raw).
  
 ### Read data from Proteome Discoverer
 
-[Proteome Discoverer](https://www.thermofisher.com/order/catalog/product/OPTON-30812) is commercial software from [ThermoFisher](https://www.thermofisher.com/).
+[Proteome Discoverer](https://www.thermofisher.com/order/catalog/product/OPTON-30812) is commercial software from [ThermoFisher](https://www.thermofisher.com/de/de/home.html).
 In [Proteome Discoverer](https://www.thermofisher.com/order/catalog/product/OPTON-30812) quantitation data on level of consensus-proteins should be exported to tabulated text files, which can be treated by this function.
 Note, for this vignette we have only extracted a few hundred lines to make the data-set easier to manipulate.
 
 ```{r readProteomeDiscoverer, echo=TRUE}
 path1 <- system.file("extdata", package="wrProteo")
 fiNaPd <- "exampleProtDiscov1.txt"
-dataPD <- readPDExport(file=fiNaPd, path=path1)
+dataPD <- readPDExport(file=fiNaPd, path=path1, normalizeMeth="median")
 ## a summary of the quantitation data
 summary(dataPD$quant)
 ```
  
 ### Read data from MaxQuant
 
-[MaxQuant](https://www.maxquant.org) is free software provided by the [Max-Planck-Insutute](https://www.biochem.mpg.de/), 
+[MaxQuant](https://www.maxquant.org) is free software provided by the [Max-Planck-Insutute](https://www.biochem.mpg.de/de), 
 see [Tyanova et al 2016](https://www.nature.com/articles/nprot.2016.136) (doi: 10.1093/bioinformatics/btaa118). 
 Typically [MaxQuant](https://www.maxquant.org) exports by default quantitation data on level of consensus-proteins as a folder called txt with a file called proteinGroups.txt .
 So in a standard case one needs only to provide the path to this file. However, for this vignette we have only extracted a few hundred lines to make
@@ -218,22 +233,23 @@ the data-set easier to manipulate, and thus it has gotten a different name.
 path1 <- system.file("extdata", package="wrProteo")
 fiNaMa <- "proteinGroupsMaxQuantUps1.txt"
 specPref1 <- c(conta="conta|CON_|LYSC_CHICK", mainSpecies="YEAST", spike="HUMAN_UPS")
-dataMQ <- readMaxQuantFile(path1, file=fiNaMa, specPref=specPref1)
+dataMQ <- readMaxQuantFile(path1, file=fiNaMa, specPref=specPref1, normalizeMeth="median")
 ## a summary of the quantitation data
 summary(dataMQ$quant)
 ```
 
 ### Read data from Proline
 
-[Proline](http://proline.profiproteomics.fr/) is free software provided by the [Profi-consortium](http://www.profiproteomics.fr/),
+[Proline](http://www.profiproteomics.fr/proline/) is free software provided by the Profi-consortium, 
 see [Bouyssié et al 2020](https://academic.oup.com/bioinformatics/article/36/10/3148/5756203) (doi: 10.1038/nprot.2016.136).
-In [Proline](http://proline.profiproteomics.fr/) quantitation data on level of consensus-proteins can be exported to csv or tabulated text files, which can be treated by this function.
+In [Proline](http://www.profiproteomics.fr/proline/) quantitation data on level of consensus-proteins can be exported to csv or tabulated text files, which can be treated by this function.
 Note, for this vignette we have only extracted a few hundred lines to make the data-set easier to manipulate.
 
 ```{r readProline, echo=TRUE}
+normalizeMeth <- NULL
 path1 <- system.file("extdata", package="wrProteo")
 fiNaPl <- "exampleProlineABC.csv"
-dataPL <- readProlineFile(file.path(path1,fiNaPl))
+dataPL <- readProlineFile(file.path(path1,fiNaPl) )
 ## a summary of the quantitation data
 summary(dataPL$quant)
 ```

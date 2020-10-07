@@ -45,7 +45,7 @@
 #' names(PLtestR1)
 #' @export
 testRobustToNAimputation <- function(dat,gr,annot=NULL,retnNA=TRUE,avSdH=c(0.18,0.5),avSdL=c(0.1,0.5),plotHist=FALSE,xLab=NULL,tit=NULL,seedNo=2018,nLoop=20,lfdrInclude=TRUE,ROTSn=NULL,silent=FALSE,callFrom=NULL){
-  fxNa <- wrMisc::.composeCallName(callFrom,newNa="testRobustToNAimputation")
+  fxNa <- wrMisc::.composeCallName(callFrom, newNa="testRobustToNAimputation")
   if(is.list(dat)) { if(all(c("quant","annot") %in% names(dat))) if(length(dim(dat$quant))==2 & length(dim(dat$annot)) ==2) {
     if(length(annot) <1) { annot <- dat$annot} 
     dat <- dat$quant }}
@@ -54,27 +54,27 @@ testRobustToNAimputation <- function(dat,gr,annot=NULL,retnNA=TRUE,avSdH=c(0.18,
   if(length(gr) != ncol(dat)) stop("Number of columns in 'dat' and number of (group-)elements in 'gr' do not match !")
   if(!is.factor(gr)) gr <- as.factor(gr)
   if(is.null(xLab)) xLab <- "values"            
-  if(length(annot) <1) annot <- matrix(NA,nrow=nrow(dat),ncol=1,dimnames=list(rownames(dat),"rowNa"))
+  if(length(annot) <1) annot <- matrix(NA, nrow=nrow(dat), ncol=1, dimnames=list(rownames(dat),"rowNa"))
   ## main
   isNA <- is.na(dat)
   chNA <- any(isNA)
-  nNAmat <- matrix(0,nrow=nrow(dat),ncol=length(levels(gr)),dimnames=list(NULL,levels(gr)))
+  nNAmat <- matrix(0, nrow=nrow(dat), ncol=length(levels(gr)), dimnames=list(NULL,levels(gr)))
   seedNo <- as.integer(seedNo)[1]
   gr <- as.factor(gr)
   callFro <- try(as.factor(gr)) 
   if(class(callFro) == "try-error") message("+++++\n",fxNa," MAJOR PROBLEM with argument 'gr' !!  (possibly not sufficient level-names ?) \n+++++")
   ## 1st pass
-  datI <- matrixNAneighbourImpute(dat,gr,seedNo=seedNo,retnNA=retnNA,avSdH=avSdH,avSdL=avSdL,plotHist=plotHist,xLab=xLab,tit=tit)
-  datFi <- combineMultFilterNAimput(dat=dat,imputed=datI,grp=gr,annDat=annot,abundThr=stats::quantile(dat,0.02,na.rm=TRUE))  # number of unique peptides unknown !
+  datI <- matrixNAneighbourImpute(dat, gr, seedNo=seedNo, retnNA=retnNA ,avSdH=avSdH, avSdL=avSdL, plotHist=plotHist, xLab=xLab, tit=tit, silent=silent, callFrom=fxNa)
+  datFi <- combineMultFilterNAimput(dat=dat, imputed=datI, grp=gr, annDat=annot, abundThr=stats::quantile(dat,0.02,na.rm=TRUE), silent=silent, callFrom=fxNa)  # number of unique peptides unknown !
   ## done combineMultFilterNAimput
   ## prepare for testing
   if(lfdrInclude) {
-    chLfdr <- try(find.package("fdrtool"),silent=TRUE)
+    chLfdr <- try(find.package("fdrtool"), silent=TRUE)
     if("try-error" %in% class(chLfdr)) { 
       message(fxNa,"Package 'fdrtool' not found ! Please install first from CRAN for calculating lfdr-values. Omitting argument 'lfdrInclude' ..")
       lfdrInclude <- FALSE } }
   pwComb <- wrMisc::triCoord(length(levels(gr)))
-  out <- wrMisc::moderTestXgrp(datFi$data,grp=gr,limmaOutput=TRUE,addResults="means")        #   ,anno=annot  # can't do question specific filtering w/o explicit loop 
+  out <- wrMisc::moderTestXgrp(datFi$data, grp=gr, limmaOutput=TRUE, addResults="means", silent=silent, callFrom=fxNa)   # can't do question specific filtering w/o explicit loop 
   ## need to add $ROTS.p
   if(length(ROTSn)==1) if(ROTSn >0 & !is.na(ROTSn)) {  
     chPa <- requireNamespace("ROTS", quietly=TRUE)
@@ -85,38 +85,39 @@ testRobustToNAimputation <- function(dat,gr,annot=NULL,retnNA=TRUE,avSdH=c(0.18,
     ## this requires package ROTS
     comp <- wrMisc::triCoord(length(levels(gr)))
     rownames(comp) <- paste(levels(gr)[comp[,1]],levels(gr)[comp[,2]],sep="-")
-    tmRO <- matrix(nrow=nrow(datFi$data),ncol=nrow(comp))
-    comPair <- matrix(unlist(strsplit(rownames(comp),"-")),ncol=nrow(comp))
-    useCol <- apply(comPair,2,function(x) gr %in% x)
-    for(i in 1:nrow(comp)) tmRO[which(datFi$filt[,i]),i] <- ROTS::ROTS(datFi$data[which(datFi$filt[,i]),which(useCol[,i])], groups=as.numeric(as.factor(gr[which(useCol[,i])]))-1, B=ROTSn)$pvalue   # ,K=500  
+    tmRO <- matrix(nrow=nrow(datFi$data), ncol=nrow(comp))
+    comPair <- matrix(unlist(strsplit(rownames(comp),"-")), ncol=nrow(comp))
+    useCol <- apply(comPair, 2, function(x) gr %in% x)
+    for(i in 1:nrow(comp)) tmRO[which(datFi$filt[,i]),i] <- ROTS::ROTS(datFi$data[which(datFi$filt[,i]), 
+      which(useCol[,i])], groups=as.numeric(as.factor(gr[which(useCol[,i])]))-1, B=ROTSn)$pvalue        # K=500  
     out$ROTS.p <- tmRO
-    out$ROTS.BH <- apply(tmRO,2,stats::p.adjust,method="BH") 
-    if(lfdrInclude) out$ROTS.lfdr <- apply(tmRO,2,wrMisc::pVal2lfdr) 
+    out$ROTS.BH <- apply(tmRO, 2, stats::p.adjust, method="BH") 
+    if(lfdrInclude) out$ROTS.lfdr <- apply(tmRO, 2, wrMisc::pVal2lfdr) 
   }   
   ## subsequent rounds of NA-imputation  
   if(chNA & nLoop >1) { 
-    pValTab <- tValTab <- array(NA,dim=c(nrow(dat),nrow(pwComb),nLoop))
-    datIm <- array(NA,dim=c(nrow(dat),ncol(dat),nLoop))
+    pValTab <- tValTab <- array(NA, dim=c(nrow(dat),nrow(pwComb),nLoop))
+    datIm <- array(NA, dim=c(nrow(dat),ncol(dat),nLoop))
     datIm[,,1] <- datFi$data
     pValTab[,,1] <- out$p.value
     tValTab[,,1] <- out$t
     if(length(ROTSn)==1) if(ROTSn >0) {
-      pVaRotsTab <- array(NA,dim=c(nrow(dat),nrow(pwComb),min(10,nLoop)))
+      pVaRotsTab <- array(NA, dim=c(nrow(dat),nrow(pwComb),min(10,nLoop)))
       pVaRotsTab[,,1] <- out$ROTS.p}
     for(i in 2:nLoop) {
       datX <- dat
       ## idea 17 oct change seed intiation ?
-      datX <- .imputeNA(dat,gr=gr,impParam=datI$randParam +c(0,0,0,i),exclNeg=TRUE)$data          
-      fitX <- limma::eBayes(limma::contrasts.fit(limma::lmFit(datX[,],out$design),contrasts=out$contrasts))
+      datX <- .imputeNA(dat, gr=gr, impParam=datI$randParam +c(0,0,0,i), exclNeg=TRUE)$data          
+      fitX <- limma::eBayes(limma::contrasts.fit(limma::lmFit(datX[,], out$design), contrasts=out$contrasts))
       datIm[,,i] <- datX
       pValTab[,,i] <- fitX$p.value
       tValTab[,,i] <- fitX$t
       if(length(ROTSn)==1) if(ROTSn >0 & i < min(10,nLoop)) {    # test using ROTS (TAKES MUCH TIME !!)
         for(i in 1:nrow(comp)) tmRO[which(datFi$filt[,i]),i] <- ROTS::ROTS(datFi$data[which(datFi$filt[,i]),which(useCol[,i])], groups=as.numeric(as.factor(gr[which(useCol[,i])])), B=ROTSn)$pvalue   # ,K=500  
         pVaRotsTab[,,i] <- tmRO } }
-    out$datImp <- as.matrix(apply(datIm,1:2, mean, na.rm=TRUE))
-    out$p.value <- as.matrix(apply(pValTab,1:2,stats::median,na.rm=TRUE))
-    out$t.value <- as.matrix(apply(tValTab,1:2,stats::median,na.rm=TRUE))
+    out$datImp <- as.matrix(apply(datIm, 1:2, mean, na.rm=TRUE))
+    out$p.value <- as.matrix(apply(pValTab, 1:2, stats::median, na.rm=TRUE))
+    out$t.value <- as.matrix(apply(tValTab, 1:2, stats::median, na.rm=TRUE))
     ## when converting t-value to p how to consider n due to nLoop ??
   } else out$datImp <- datFi$data
   out$annot <- annot
@@ -124,18 +125,18 @@ testRobustToNAimputation <- function(dat,gr,annot=NULL,retnNA=TRUE,avSdH=c(0.18,
   dimnames(out$datImp) <- list(rownames(out$t),colnames(dat))
   ## integrate column specific filtering
   if(any(!datFi$filt)) out$p.value[which(!datFi$filt)] <- NA 
-  if(lfdrInclude) {out$lfdr <- as.matrix(apply(out$p.value,2,wrMisc::pVal2lfdr)) 
+  if(lfdrInclude) {out$lfdr <- as.matrix(apply(out$p.value, 2, wrMisc::pVal2lfdr)) 
     colnames(out$lfdr) <- colnames(out$contrasts)} 
-  if(length(dat) >0) {out$BH <- as.matrix(apply(out$p.value,2,stats::p.adjust,method="BH"))
+  if(length(dat) >0) {out$BH <- as.matrix(apply(out$p.value, 2, stats::p.adjust,method="BH"))
     colnames(out$BH) <- colnames(out$contrasts)} 
-  if(length(dat) >0) {out$BY <- as.matrix(apply(out$p.value,2,stats::p.adjust,method="BY"))
+  if(length(dat) >0) {out$BY <- as.matrix(apply(out$p.value, 2, stats::p.adjust,method="BY"))
     colnames(out$BY) <- colnames(out$contrasts)} 
   if(length(ROTSn)==1) if(ROTSn >0 & chNA & nLoop >1){
-    out$ROTS.p <- apply(pVaRotsTab,1:2,stats::median,na.rm=TRUE)
+    out$ROTS.p <- apply(pVaRotsTab, 1:2, stats::median, na.rm=TRUE)
     if(any(!datFi$filt)) out$ROTS.p[which(!datFi$filt)] <- NA    
-    out$ROTS.BH <- as.matrix(as.matrix(apply(out$ROTS.p,2,stats::p.adjust,method="BH")))
+    out$ROTS.BH <- as.matrix(as.matrix(apply(out$ROTS.p, 2, stats::p.adjust,method="BH")))
     colnames(out$ROTS.BH) <- colnames(out$contrasts) 
-    if(lfdrInclude) {out$ROTS.lfdr <- as.matrix(as.matrix(apply(out$ROTS.p,2,wrMisc::pVal2lfdr)))
+    if(lfdrInclude) {out$ROTS.lfdr <- as.matrix(as.matrix(apply(out$ROTS.p, 2, wrMisc::pVal2lfdr)))
       colnames(out$ROTS.lfdr) <-colnames(out$contrasts)} }
   out }
    

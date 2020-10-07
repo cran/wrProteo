@@ -8,16 +8,18 @@ readPDExport(
   fileName,
   path = NULL,
   normalizeMeth = "median",
-  annotCol = c("Accession", "Description", "Gene", "Sum.PEP.Score", "Coverage....",
-    "X..Peptides", "X..PSMs", "X..Unique.Peptides", "X..AAs", "MW..kDa."),
-  quantCol = "^S",
+  sampleNames = NULL,
+  read0asNA = TRUE,
+  annotCol = NULL,
+  quantCol = "^Abundances",
+  contamCol = "Contaminant",
   refLi = NULL,
   separateAnnot = TRUE,
   plotGraph = TRUE,
   tit = "Proteome Discoverer",
   graphTit = NULL,
-  specPref = c(conta = "CON_|LYSC_CHICK", mainSpecies = "OS=Saccharomyces cerevisiae",
-    spike = "HUMAN_UPS"),
+  wex = 1.6,
+  specPref = c(conta = "CON_|LYSC_CHICK", mainSpecies = "OS=Homo sapiens"),
   silent = FALSE,
   callFrom = NULL
 )
@@ -29,11 +31,17 @@ readPDExport(
 
 \item{normalizeMeth}{(character) normalization method (will be sent to  \code{\link[wrMisc]{normalizeThis}})}
 
-\item{annotCol}{(character) column names to be read}
+\item{sampleNames}{(character) new column-names for quantification data (ProteomeDiscoverer does not automatically use file-names from spectra)}
+
+\item{read0asNA}{(logical) decide if initial quntifications at 0 should be transformed to NA}
+
+\item{annotCol}{(character) column names to be read/extracted for the annotation section (default  c("Accession","Description","Gene","Contaminant","Sum.PEP.Score","Coverage....","X..Peptides","X..PSMs","X..Unique.Peptides", "X..AAs","MW..kDa.") )}
 
 \item{quantCol}{(character or integer) exact col-names, or if length=1 content of \code{quantCol} will be used as pattern to search among column-names for $quant using \code{grep}}
 
-\item{refLi}{(integer) custom decide which line of data is main species}
+\item{contamCol}{(character or integer, length=1) which columns should be used for contaminants marked by ProteomeDiscoverer}
+
+\item{refLi}{(character or integer) custom specify which line of data is main species, if character (eg 'mainSpe'), the column 'SpecType' in $annot will be searched for exact match of the (single) term given}
 
 \item{separateAnnot}{(logical) if \code{TRUE} output will be organized as list with \code{$annot}, \code{$abund} for initial/raw abundance values and \code{$quant} with final normalized quantitations}
 
@@ -43,7 +51,9 @@ readPDExport(
 
 \item{graphTit}{(character) (depreciated custom title to plot), please use 'tit'}
 
-\item{specPref}{(character) define characteristic text for recognizing the 3 (main) groups of species (contaminants,mainSpecies,spike)}
+\item{wex}{(integer) relative expansion factor of the violin-plot (will be passed to \code{\link[wrGraph]{vioplotW}})}
+
+\item{specPref}{(character) define characteristic text for recognizing (main) groups of species (1st for comtaminants - will be marked as 'conta', 2nd for main species- marked as 'mainSpe', and optional following ones for supplemental tags/species - maked as 'species2','species3',...)}
 
 \item{silent}{(logical) suppress messages}
 

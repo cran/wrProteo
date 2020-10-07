@@ -54,37 +54,38 @@ matrixNAneighbourImpute <- function(dat,gr,retnNA=TRUE,avSdH=c(0.18,0.5),avSdL=c
   ## main
   isNA <- is.na(dat)
   chNA <- any(isNA)
-  nNAmat <- matrix(0,nrow=nrow(dat),ncol=length(levels(gr)),dimnames=list(NULL,levels(gr)))
+  nNAmat <- matrix(0, nrow=nrow(dat), ncol=length(levels(gr)), dimnames=list(NULL,unique(wrMisc::naOmit(gr))))
   if(!chNA) {
-    if(plotHist) {graphics::hist(dat,br="FD",border=grDevices::grey(0.85),col=grDevices::grey(0.92),xlab=xLab,las=1,main=tit)
+    if(plotHist) {graphics::hist(dat, br="FD", border=grDevices::grey(0.85), col=grDevices::grey(0.92), xlab=xLab, las=1, main=tit)
       graphics::mtext("no NA-replacement needed  ",adj=1,cex=0.6,line=-0.3)    
       graphics::mtext(paste("  n=",length(dat)),side=3,line=-0.3,cex=0.55,adj=0,col=grDevices::grey(0.3))}
     return(if(retnNA) list(data=dat,nNA=nNAmat) else dat)
   } else {
-    NAneig <- NAneig2 <- numeric()  
-    for(i in c(1:length(levels(gr)))) {
-      curCol <- which(gr==levels(gr)[i]) 
+    NAneig <- NAneig2 <- numeric() 
+    grLev <- unique(wrMisc::naOmit(gr))
+    for(i in c(1:length(grLev))) {
+      curCol <- which(gr==grLev[i]) 
       nNAmat[,i] <- rowSums(isNA[,curCol])     
       maxCol <- length(curCol)
       useLi <- which(nNAmat[,i] >0 & nNAmat[,i] < maxCol-1)           # 1 or more NA
       useL2 <- which(nNAmat[,i] >1 & nNAmat[,i] < maxCol-1)           # min 2 NAs
-      if(length(useLi) >0) NAneig <- c(NAneig,wrMisc::naOmit(as.numeric(dat[useLi,curCol])))
-      if(length(useL2) >0) NAneig2 <- c(NAneig2,wrMisc::naOmit(as.numeric(dat[useL2,curCol])))
+      if(length(useLi) >0) NAneig <- c(NAneig, wrMisc::naOmit(as.numeric(dat[useLi,curCol])))
+      if(length(useL2) >0) NAneig2 <- c(NAneig2, wrMisc::naOmit(as.numeric(dat[useL2,curCol])))
     }
     ## need to optimize : the higher NA% the higher aver to model  
     randParam <- if(length(NAneig2) >300) c(stats::quantile(NAneig2,avSdH[1]), stats::sd(NAneig2)*avSdH[2]) else c(stats::quantile(NAneig,avSdL[1]), stats::sd(NAneig)*avSdL[2])
-    randParam <- c(mean=signif(randParam[1],4),sd=signif(randParam[2],4),impQuant=NA,seed=seedNo)
-    randParam[3] <- signif(which.min(abs(dat-randParam[1]))/sum(!isNA),4)       # recalculate quantile
-    dat1 <- .imputeNA(dat,gr=gr,impParam=randParam,exclNeg=TRUE)
+    randParam <- c(mean=signif(randParam[1],4), sd=signif(randParam[2],4), impQuant=NA,seed=seedNo)
+    randParam[3] <- signif(which.min(abs(dat -randParam[1]))/sum(!isNA),4)       # recalculate quantile
+    dat1 <- .imputeNA(dat, gr=gr, impParam=randParam, exclNeg=TRUE)
     lowValMod <- dat1$lowValMod
     dat1 <- dat1$data
-    ranPar2 <- if(length(NAneig2) >300) c(n=length(NAneig2),avSdH,2) else c(n=length(NAneig),avSdL,1)
+    ranPar2 <- if(length(NAneig2) >300) c(n=length(NAneig2), avSdH, 2) else c(n=length(NAneig), avSdL, 1)
     msg <- list(c(" n.woNA=",sum(!isNA)," n.NA =",sum(isNA)), 
       c("model",100*ranPar2[2],"%-tile of (min",ranPar2[4],"NA/grp)",ranPar2[1],"NA-neighbour values"),
       c("imputation: mean=",signif(randParam[1],3),"  sd=",signif(randParam[2],2)))
     if(!silent) message(fxNa,paste(sapply(msg,paste,collapse=" "),collapse="\n    "))  
     if(plotHist) {
-      ranPar2 <- if(length(NAneig2) >300) c(n=length(NAneig2),avSdH,2) else c(n=length(NAneig),avSdL,1)
+      ranPar2 <- if(length(NAneig2) >300) c(n=length(NAneig2), avSdH,2) else c(n=length(NAneig), avSdL, 1)
       hi1 <- graphics::hist(dat1,br="FD",col=grDevices::grey(0.9),border=grDevices::grey(0.8),xlab=xLab,las=1,main=paste(tit,"at NA-replacement"))  # grey cols (final distr)
       if(FALSE) graphics::abline(v=stats::quantile(dat,0.03,na.rm=TRUE),lty=2,col="red")                                                     # 3% quantile as red line
       graphics::hist(dat,breaks=hi1$breaks,border=grDevices::grey(0.75),col=grDevices::rgb(0.1,1,0.1,0.15),add=TRUE)                          # orig data in green
@@ -100,8 +101,8 @@ matrixNAneighbourImpute <- function(dat,gr,retnNA=TRUE,avSdH=c(0.18,0.5),avSdL=c
   ## 'impParam' .. (numeric) 1st for mean; 2nd for sd; 3rd for seed
   isNa <- is.na(dat)
   if(length(impParam) >3) set.seed(as.integer(impParam[4]))
-  lowValMod <- stats::rnorm(round(1.5*sum(isNa)),mean=impParam[1],sd=impParam[2])
+  lowValMod <- stats::rnorm(round(1.5*sum(isNa)), mean=impParam[1], sd=impParam[2])
   if(exclNeg) lowValMod <- lowValMod[which(lowValMod >0)]
   dat[which(isNa)] <- lowValMod[1:sum(isNa)]
-  if(inclLowValMod) list(data=dat,lowValMod=lowValMod) else dat }
+  if(inclLowValMod) list(data=dat, lowValMod=lowValMod) else dat }
    

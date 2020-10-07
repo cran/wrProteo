@@ -34,7 +34,7 @@ matrix, optionally the file 'exportFileNa' may be written
 }
 \description{
 This function allows reading and importing genomic \href{https://genome.ucsc.edu/cgi-bin/hgTables}{UCSC-annotation} data.
-Files can be read as default UCSC exprt or as GTF-format. 
+Files can be read as default UCSC exprot or as GTF-format. 
 In the context of proteomics we noticed that sometimes UniProt tables from UCSC are hard to match to identifiers from UniProt Fasta-files, ie many protein-identifiers won't match.
 For this reason additional support is given to reading 'Genes and Gene Predictions': Since this table does not include protein-identifiers, a non-redundant list of ENSxxx transcript identifiers 
 can be exprted as file for an additional stop of conversion, eg using a batch conversion tool at the site of \href{https://www.uniprot.org/uploadlists/}{UniProt}. 
@@ -42,15 +42,15 @@ The initial genomic annotation can then be complemented using \code{\link{readUn
 Using this more elaborate route, we found higher coverage when trying to add genomic annotation to protein-identifiers to proteomics results with annnotation based on an initial Fasta-file.
 }
 \examples{
-path1 <- system.file("extdata",package="wrProteo")
-gtfFi <- file.path(path1,"UCSC_hg38_chr11extr.gtf")
+path1 <- system.file("extdata", package="wrProteo")
+gtfFi <- file.path(path1, "UCSC_hg38_chr11extr.gtf")
 # here we'll write the file for UniProt conversion to tempdir() to keep things tidy
-expFi <- file.path(tempdir(),"deUcscForUniProt2.txt")
-UcscAnnot1 <- readUCSCtable(gtfFi,exportFileNa=expFi)
+expFi <- file.path(tempdir(), "deUcscForUniProt2.txt")
+UcscAnnot1 <- readUCSCtable(gtfFi, exportFileNa=expFi)
 
 ## results can be further combined with readUniProtExport() 
-deUniProtFi <- file.path(path1,"deUniProt_hg38chr11extr.tab")
-deUniPr1 <- readUniProtExport(deUniProtFi,deUcsc=UcscAnnot1,
+deUniProtFi <- file.path(path1, "deUniProt_hg38chr11extr.tab")
+deUniPr1 <- readUniProtExport(deUniProtFi, deUcsc=UcscAnnot1,
   targRegion="chr11:1-135,086,622")  
 deUniPr1[1:5,-5] 
 }
