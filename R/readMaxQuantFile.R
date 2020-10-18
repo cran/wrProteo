@@ -33,14 +33,13 @@
 readMaxQuantFile <- function(path,fileName="proteinGroups.txt",normalizeMeth="median", quantCol="LFQ.intensity",contamCol="Potential.contaminant",uniqPepPat="Razor...unique.peptides", refLi=NULL,
   extrColNames=c("Majority.protein.IDs","Fasta.headers","Number.of.proteins"), specPref=c(conta="conta|CON_|LYSC_CHICK",mainSpecies="OS=Homo sapiens"),
   tit=NULL, wex=1.6, separateAnnot=TRUE, plotGraph=TRUE, silent=FALSE,callFrom=NULL) {
-  # 
   ## prepare  
   fxNa <- wrMisc::.composeCallName(callFrom,newNa="readMaxQuantFile")
   opar <- graphics::par(no.readonly=TRUE)      
   if(!file.exists(path)) stop(" Can't find path '",path,"'")
   chFi <- file.exists(file.path(path,fileName))
   if(!chFi) stop(" file  ",fileName," was NOT found in path ",path," !")
-  if(length(grep("\\.txt$",fileName)) <1) message(fxNa," Trouble ahead, this function was designed for reading tabulated text files (as MaxQuant usualy produces) !!")
+  if(length(unlist(sapply(c("\\.txt$","\\.txt.gz$"), grep, fileName))) <1) message(fxNa," Suspicious filename, this function was designed for reading tabulated text files produced by MaxQuant")
   chPa <- try(find.package("utils"),silent=TRUE)
   if("try-error" %in% class(chPa)) stop("package 'utils' not found ! Please install first")   
   ## initial read MaxQuant

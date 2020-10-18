@@ -75,6 +75,7 @@ testRobustToNAimputation <- function(dat,gr,annot=NULL,retnNA=TRUE,avSdH=c(0.18,
       lfdrInclude <- FALSE } }
   pwComb <- wrMisc::triCoord(length(levels(gr)))
   out <- wrMisc::moderTestXgrp(datFi$data, grp=gr, limmaOutput=TRUE, addResults="means", silent=silent, callFrom=fxNa)   # can't do question specific filtering w/o explicit loop 
+  rownames(pwComb) <- colnames(out$t) 
   ## need to add $ROTS.p
   if(length(ROTSn)==1) if(ROTSn >0 & !is.na(ROTSn)) {  
     chPa <- requireNamespace("ROTS", quietly=TRUE)
@@ -117,7 +118,8 @@ testRobustToNAimputation <- function(dat,gr,annot=NULL,retnNA=TRUE,avSdH=c(0.18,
         pVaRotsTab[,,i] <- tmRO } }
     out$datImp <- as.matrix(apply(datIm, 1:2, mean, na.rm=TRUE))
     out$p.value <- as.matrix(apply(pValTab, 1:2, stats::median, na.rm=TRUE))
-    out$t.value <- as.matrix(apply(tValTab, 1:2, stats::median, na.rm=TRUE))
+    out$t <- as.matrix(apply(tValTab, 1:2, stats::median, na.rm=TRUE))
+    colnames(out$p.value) <- colnames(out$t) <- rownames(pwComb)
     ## when converting t-value to p how to consider n due to nLoop ??
   } else out$datImp <- datFi$data
   out$annot <- annot

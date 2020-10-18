@@ -12,7 +12,7 @@
 
 <meta name="author" content="Wolfgang Raffelsberger" />
 
-<meta name="date" content="2020-10-07" />
+<meta name="date" content="2020-10-18" />
 
 <title>Getting started with wrProteo</title>
 
@@ -45,6 +45,77 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 });
 </script>
+
+<style type="text/css">
+  code{white-space: pre-wrap;}
+  span.smallcaps{font-variant: small-caps;}
+  span.underline{text-decoration: underline;}
+  div.column{display: inline-block; vertical-align: top; width: 50%;}
+  div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+  ul.task-list{list-style: none;}
+      pre > code.sourceCode { white-space: pre; position: relative; }
+      pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+      pre > code.sourceCode > span:empty { height: 1.2em; }
+      code.sourceCode > span { color: inherit; text-decoration: inherit; }
+      div.sourceCode { margin: 1em 0; }
+      pre.sourceCode { margin: 0; }
+      @media screen {
+      div.sourceCode { overflow: auto; }
+      }
+      @media print {
+      pre > code.sourceCode { white-space: pre-wrap; }
+      pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+      }
+      pre.numberSource code
+        { counter-reset: source-line 0; }
+      pre.numberSource code > span
+        { position: relative; left: -4em; counter-increment: source-line; }
+      pre.numberSource code > span > a:first-child::before
+        { content: counter(source-line);
+          position: relative; left: -1em; text-align: right; vertical-align: baseline;
+          border: none; display: inline-block;
+          -webkit-touch-callout: none; -webkit-user-select: none;
+          -khtml-user-select: none; -moz-user-select: none;
+          -ms-user-select: none; user-select: none;
+          padding: 0 4px; width: 4em;
+          color: #aaaaaa;
+        }
+      pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+      div.sourceCode
+        {   }
+      @media screen {
+      pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+      }
+      code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+      code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+      code span.at { color: #7d9029; } /* Attribute */
+      code span.bn { color: #40a070; } /* BaseN */
+      code span.bu { } /* BuiltIn */
+      code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+      code span.ch { color: #4070a0; } /* Char */
+      code span.cn { color: #880000; } /* Constant */
+      code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+      code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+      code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+      code span.dt { color: #902000; } /* DataType */
+      code span.dv { color: #40a070; } /* DecVal */
+      code span.er { color: #ff0000; font-weight: bold; } /* Error */
+      code span.ex { } /* Extension */
+      code span.fl { color: #40a070; } /* Float */
+      code span.fu { color: #06287e; } /* Function */
+      code span.im { } /* Import */
+      code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+      code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+      code span.op { color: #666666; } /* Operator */
+      code span.ot { color: #007020; } /* Other */
+      code span.pp { color: #bc7a00; } /* Preprocessor */
+      code span.sc { color: #4070a0; } /* SpecialChar */
+      code span.ss { color: #bb6688; } /* SpecialString */
+      code span.st { color: #4070a0; } /* String */
+      code span.va { color: #19177c; } /* Variable */
+      code span.vs { color: #4070a0; } /* VerbatimString */
+      code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+    </style>
 
 
 <style type="text/css">code{white-space: pre;}</style>
@@ -369,7 +440,7 @@ code > span.er { color: #a61717; background-color: #e3d2d2; }
 
 <h1 class="title toc-ignore">Getting started with wrProteo</h1>
 <h4 class="author">Wolfgang Raffelsberger</h4>
-<h4 class="date">2020-10-07</h4>
+<h4 class="date">2020-10-18</h4>
 
 
 <div id="TOC">
@@ -408,7 +479,7 @@ code > span.er { color: #a61717; background-color: #e3d2d2; }
 <span id="cb2-2"><a href="#cb2-2"></a><span class="kw">library</span>(<span class="st">&quot;wrProteo&quot;</span>)</span>
 <span id="cb2-3"><a href="#cb2-3"></a><span class="co"># This is wrProteo version no :</span></span>
 <span id="cb2-4"><a href="#cb2-4"></a><span class="kw">packageVersion</span>(<span class="st">&quot;wrProteo&quot;</span>)</span>
-<span id="cb2-5"><a href="#cb2-5"></a><span class="co">#&gt; [1] &#39;1.1.4&#39;</span></span></code></pre></div>
+<span id="cb2-5"><a href="#cb2-5"></a><span class="co">#&gt; [1] &#39;1.2.0&#39;</span></span></code></pre></div>
 </div>
 <div id="calculating-molecular-masses-from-composition-formulas" class="section level2">
 <h2>Calculating Molecular Masses From Composition Formulas</h2>
@@ -500,7 +571,7 @@ code > span.er { color: #a61717; background-color: #e3d2d2; }
 <span id="cb9-5"><a href="#cb9-5"></a><span class="co">#&gt;  -&gt; readUCSCtable :  File &#39;UCSC_hg38_chr11extr.gtf&#39; is gtf : TRUE</span></span>
 <span id="cb9-6"><a href="#cb9-6"></a><span class="co">#&gt;  -&gt; readUCSCtable :  simplifed from 2000 to 223 non-redundant gene_id</span></span>
 <span id="cb9-7"><a href="#cb9-7"></a><span class="co">#&gt;  -&gt; readUCSCtable :  Write to file : ENST00000270115, ENST00000308020, ENST00000311189, ENST00000312165 ...</span></span>
-<span id="cb9-8"><a href="#cb9-8"></a><span class="co">#&gt;  -&gt; readUCSCtable :  Exporting file  &#39;C:/Users/wraff/AppData/Local/Temp/RtmpWcnrtd/deUcscForUniProt2.txt&#39;  for conversion on https://www.uniprot.org/uploadlists</span></span></code></pre></div>
+<span id="cb9-8"><a href="#cb9-8"></a><span class="co">#&gt;  -&gt; readUCSCtable :  Exporting file  &#39;C:/Users/wraff/AppData/Local/Temp/Rtmp2JSXk1/deUcscForUniProt2.txt&#39;  for conversion on https://www.uniprot.org/uploadlists</span></span></code></pre></div>
 <p>Now everything is ready to go to <a href="https://www.uniprot.org/uploadlists/">UniProt</a> for retreiving the corresponding UniProt-IDs. Since we exported Ensemble transcript IDs (ENSTxxx), select converting from ‘Ensembl Transcript’ to ‘UniProtKB’. Then, when downloading the conversion results, choose tab-separated file format (compression is recommended), this may take several seconds (depening on the size).</p>
 <p>It is suggested to rename the downloaded file so one can easily understand it’s content. Note, that the function <em>readUniProtExport()</em> can also read .gz compressed files. To continue this vignette we’ll use a result which has been downloaded from <a href="https://www.uniprot.org/uploadlists/">UniProt</a> and renamed to ‘deUniProt_hg38chr11extr.tab’. One may also optionally define a specific genomic region of interest using the argument ‘targRegion’, here the entire chromosome 11 was chosen.</p>
 <div class="sourceCode" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1"></a>deUniProtFi &lt;-<span class="st"> </span><span class="kw">file.path</span>(path1, <span class="st">&quot;deUniProt_hg38chr11extr.tab&quot;</span>)</span>
@@ -733,7 +804,7 @@ Next to stringent filtering (previous section of this vignette) the shrinkage wh
 </div>
 <div id="session-info" class="section level2">
 <h2>Session-Info</h2>
-<pre><code>#&gt; R version 4.0.2 (2020-06-22)
+<pre><code>#&gt; R version 4.0.3 (2020-10-10)
 #&gt; Platform: x86_64-w64-mingw32/x64 (64-bit)
 #&gt; Running under: Windows 10 x64 (build 18363)
 #&gt; 
@@ -748,14 +819,14 @@ Next to stringent filtering (previous section of this vignette) the shrinkage wh
 #&gt; [1] stats     graphics  grDevices utils     datasets  methods   base     
 #&gt; 
 #&gt; other attached packages:
-#&gt; [1] rmarkdown_2.3  knitr_1.29     wrProteo_1.1.4 wrMisc_1.3.1  
+#&gt; [1] rmarkdown_2.4  knitr_1.30     wrProteo_1.2.0 wrMisc_1.4.0  
 #&gt; 
 #&gt; loaded via a namespace (and not attached):
 #&gt;  [1] digest_0.6.25      R.methodsS3_1.8.1  magrittr_1.5       evaluate_0.14     
-#&gt;  [5] sm_2.2-5.6         rlang_0.4.7        stringi_1.4.6      wrGraph_1.0.5     
+#&gt;  [5] sm_2.2-5.6         rlang_0.4.8        stringi_1.5.3      wrGraph_1.0.6     
 #&gt;  [9] limma_3.44.3       R.oo_1.24.0        R.utils_2.10.1     RColorBrewer_1.1-2
-#&gt; [13] tools_4.0.2        stringr_1.4.0      xfun_0.16          yaml_2.2.1        
-#&gt; [17] compiler_4.0.2     tcltk_4.0.2        htmltools_0.5.0</code></pre>
+#&gt; [13] tools_4.0.3        stringr_1.4.0      xfun_0.18          yaml_2.2.1        
+#&gt; [17] compiler_4.0.3     tcltk_4.0.3        htmltools_0.5.0</code></pre>
 </div>
 
 <script type="text/javascript">
