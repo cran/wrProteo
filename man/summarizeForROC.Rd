@@ -69,5 +69,5 @@ tail(roc1 <- summarizeForROC(test1,spec=c("a","b","c")))
 
 }
 \seealso{
-replot the figure \code{\link[wrProteo]{plotROC}}, robust test for preparing tables \code{\link{testRobustToNAimputation}}, \code{\link[wrMisc]{moderTest2grp}}, \code{\link{test2grp}}, \code{eBayes} in package \href{https://bioconductor.org/packages/release/bioc/html/limma.html}{limma}, \code{\link[stats]{t.test}}
+replot the figure \code{\link{plotROC}}, calculate AUC using \code{\link{AucROC}}, robust test for preparing tables \code{\link{testRobustToNAimputation}}, \code{\link[wrMisc]{moderTest2grp}}, \code{\link{test2grp}}, \code{eBayes} in package \href{https://bioconductor.org/packages/release/bioc/html/limma.html}{limma}, \code{\link[stats]{t.test}}
 }

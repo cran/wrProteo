@@ -10,8 +10,8 @@ readPDExport(
   normalizeMeth = "median",
   sampleNames = NULL,
   read0asNA = TRUE,
+  quantCol = "^Abundances*",
   annotCol = NULL,
-  quantCol = "^Abundances",
   contamCol = "Contaminant",
   refLi = NULL,
   separateAnnot = TRUE,
@@ -35,9 +35,9 @@ readPDExport(
 
 \item{read0asNA}{(logical) decide if initial quntifications at 0 should be transformed to NA}
 
-\item{annotCol}{(character) column names to be read/extracted for the annotation section (default  c("Accession","Description","Gene","Contaminant","Sum.PEP.Score","Coverage....","X..Peptides","X..PSMs","X..Unique.Peptides", "X..AAs","MW..kDa.") )}
-
 \item{quantCol}{(character or integer) exact col-names, or if length=1 content of \code{quantCol} will be used as pattern to search among column-names for $quant using \code{grep}}
+
+\item{annotCol}{(character) column names to be read/extracted for the annotation section (default  c("Accession","Description","Gene","Contaminant","Sum.PEP.Score","Coverage....","X..Peptides","X..PSMs","X..Unique.Peptides", "X..AAs","MW..kDa.") )}
 
 \item{contamCol}{(character or integer, length=1) which columns should be used for contaminants marked by ProteomeDiscoverer}
 
@@ -49,24 +49,30 @@ readPDExport(
 
 \item{tit}{(character) custom title to plot}
 
-\item{graphTit}{(character) (depreciated custom title to plot), please use 'tit'}
+\item{graphTit}{(character) depreciated custom title to plot, please use 'tit'}
 
 \item{wex}{(integer) relative expansion factor of the violin-plot (will be passed to \code{\link[wrGraph]{vioplotW}})}
 
-\item{specPref}{(character) define characteristic text for recognizing (main) groups of species (1st for comtaminants - will be marked as 'conta', 2nd for main species- marked as 'mainSpe', and optional following ones for supplemental tags/species - maked as 'species2','species3',...)}
+\item{specPref}{(character or list) define characteristic text for recognizing (main) groups of species (1st for comtaminants - will be marked as 'conta', 2nd for main species- marked as 'mainSpe', 
+and optional following ones for supplemental tags/species - maked as 'species2','species3',...); 
+if list and list-element has multiple values they will be used for exact matching of accessions (ie 2nd of argument \code{annotCol})}
 
 \item{silent}{(logical) suppress messages}
 
 \item{callFrom}{(character) allow easier tracking of message(s) produced}
 }
 \value{
-list with \code{$annot}, \code{$raw} for initial/raw abundance values and \code{$quant} with final normalized quantitations, or returns data.frame with annot and quant if \code{separateAnnot=FALSE}
+list with \code{$raw} (initial/raw abundance values), \code{$quant} with final normalized quantitations, \code{$annot}, \code{$counts} an array with number of peptides, \code{$quantNotes} and \code{$notes}; or if \code{separateAnnot=FALSE} the function returns a data.frame with annotation and quantitation only
 }
 \description{
 Quantification results form \href{https://www.thermofisher.com/order/catalog/product/OPTON-30812}{Thermo ProteomeDiscoverer} 
 exported as tabulated text can be imported and relevant information extracted. 
 The final output is a list containing 3 elements: \code{$annot}, \code{$raw} and optional \code{$quant}, or returns data.frame with entire content of file if \code{separateAnnot=FALSE}.
-This function has been developed using MaxQuant version Thermo ProteomeDiscoverer2.4, the format of resulting file is typically well conserved.
+}
+\details{
+This function has been developed using Thermo ProteomeDiscoverer versions 2.2 to 2.4.
+The format of resulting files at export also depends which columns are chosen as visible inside ProteomeDiscoverer and subsequently get chosen for export.
+Please make sure that 'RawAbundance' is chosen, too.
 }
 \examples{
 path1 <- system.file("extdata", package="wrProteo")

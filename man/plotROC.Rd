@@ -14,12 +14,14 @@ plotROC(
   bg = NULL,
   tit = NULL,
   xlim = NULL,
+  ylim = NULL,
   point05 = 0.05,
   pointSi = 0.85,
   nByMeth = NULL,
   speciesOrder = NULL,
-  txtLoc = c(0.4, 0.3, 0.04),
+  txtLoc = NULL,
   legCex = 0.72,
+  las = 1,
   addSuplT = TRUE,
   silent = FALSE,
   callFrom = NULL
@@ -42,7 +44,9 @@ plotROC(
 
 \item{tit}{(character) custom title}
 
-\item{xlim}{(numeric, length=2) custom x-limits}
+\item{xlim}{(numeric, length=2) custom x-axis limits}
+
+\item{ylim}{(numeric, length=2) custom y-axis limits}
 
 \item{point05}{(numeric) specific point to highlight in plot (typically at alpha=0.05)}
 
@@ -55,6 +59,8 @@ plotROC(
 \item{txtLoc}{(numeric, length=3) location for text (x, y and proportional factor for line-offset, default is c(0.4,0.3,0.04))}
 
 \item{legCex}{(numeric) cex expansion factor for legend (see also \code{\link[graphics]{par}})}
+
+\item{las}{(numeric) factor for text-orientation (see also \code{\link[graphics]{par}})}
 
 \item{addSuplT}{(logical) add text with information about precision,accuracy and FDR}
 

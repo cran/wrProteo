@@ -3,6 +3,8 @@
 export(.atomicMasses)
 export(.imputeNA)
 export(AAmass)
+export(AucROC)
+export(cleanListCoNames)
 export(combineMultFilterNAimput)
 export(convAASeq2mass)
 export(corColumnOrder)

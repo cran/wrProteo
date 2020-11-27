@@ -7,15 +7,21 @@
 readProlineFile(
   fileName,
   path = NULL,
+  normalizeMeth = NULL,
   logConvert = TRUE,
+  sampleNames = NULL,
   quantCol = "^abundance_",
-  annotCol = c("accession", "description", "is_validated", "coverage", "X.sequences",
-    "X.peptides", "protein_set.score"),
+  annotCol = c("accession", "description", "is_validated", "protein_set_score",
+    "X.peptides", "X.specific_peptides"),
+  pepCountCol = c("^psm_count_", "^peptides_count_"),
+  trimColnames = FALSE,
   refLi = NULL,
   separateAnnot = TRUE,
   plotGraph = TRUE,
   tit = NULL,
   graphTit = NULL,
+  wex = 2,
+  specPref = c(conta = "_conta\\\\|", mainSpecies = "OS=Homo sapiens"),
   silent = FALSE,
   callFrom = NULL
 )
@@ -25,11 +31,19 @@ readProlineFile(
 
 \item{path}{(character) optional path (note: Windows backslash sould be protected or written as '/')}
 
+\item{normalizeMeth}{(character) normalization method (will be sent to  \code{\link[wrMisc]{normalizeThis}})}
+
 \item{logConvert}{(logical) convert numeric data as log2, will be placed in $quant}
 
-\item{quantCol}{(character or integer) exact col-names, or if length=1 content of \code{quantCol} will be used as pattern to search among column-names for $quant using \code{grep}}
+\item{sampleNames}{(character) new column-names for quantification data (ProteomeDiscoverer does not automatically use file-names from spectra); Please use with care since order of samples might be different as you expect}
 
-\item{annotCol}{(character) (character) exact col-names or if length=1 pattern to search among column-names for $annot}
+\item{quantCol}{(character or integer) colums with main quantitation-data : precise colnames to extract, or if length=1 content of \code{quantCol} will be used as pattern to search among column-names for $quant using \code{grep}}
+
+\item{annotCol}{(character) precise colnames or if length=1 pattern to search among column-names for $annot}
+
+\item{pepCountCol}{(character) pattern to search among column-names for count data of PSM and NoOfPeptides}
+
+\item{trimColnames}{(logical) optional trimming of column-names of any redundant characters from beginning and end}
 
 \item{refLi}{(integer) custom decide which line of data is main species, if single character entry it will be used to choose a group of species (eg 'mainSpe')}
 
@@ -41,19 +55,31 @@ readProlineFile(
 
 \item{graphTit}{(character) (depreciated custom title to plot), please use 'tit'}
 
+\item{wex}{(integer) relative expansion factor of the violin-plot (will be passed to \code{\link[wrGraph]{vioplotW}})}
+
+\item{specPref}{(character or list) define characteristic text for recognizing (main) groups of species (1st for comtaminants - will be marked as 'conta', 2nd for main species- marked as 'mainSpe', 
+and optional following ones for supplemental tags/species - maked as 'species2','species3',...); 
+if list and list-element has multiple values they will be used for exact matching of accessions (ie 2nd of argument \code{annotCol})}
+
 \item{silent}{(logical) suppress messages}
 
 \item{callFrom}{(character) allow easier tracking of message(s) produced}
 }
 \value{
-list with \code{$annot}, \code{$raw} and optional \code{$quant}, or returns data.frame with entire content of file if \code{separateAnnot=FALSE}
+list with \code{$raw} (initial/raw abundance values), \code{$quant} with final normalized quantitations, \code{$annot} (columns ), \code{$counts} an array with 'PSM' and 'NoOfPeptides', \code{$quantNotes} and \code{$notes}; or a data.frame with quantitation and annotation if \code{separateAnnot=FALSE}
 }
 \description{
-Quantification results form MS-Angel and Proline \href{http://www.profiproteomics.fr/proline/}{Proline} should be first saved via Excel or LibreOffice as csv or tabulated txt. 
-Such files can be read by this function and relevant information be extracted. 
-The final output is a list containing 3 elements: \code{$annot}, \code{$abund} and optional \code{$quant}, or returns data.frame with entire content of file if \code{separateAnnot=FALSE}.
+Quantification results form MS-Angel and Proline \href{http://www.profiproteomics.fr/proline/}{Proline} exported as xlsx format can be read directly.
+Besides, files in csv (European and US format), tsv or tabulated txt can be read, too.
+Then relevant information gets extracted, the data can optionally normalized and displayed as boxplot or vioplot. 
+The final output is a list containing 6 elements: \code{$raw}, \code{$quant},  \code{$annot}, \code{$counts}, \code{$quantNotes} and \code{$notes}. 
+Alternatively, a data.frame with annotation and quantitation data may be returned if \code{separateAnnot=FALSE}.
 Note: There is no normalization by default since quite frequently data produced by Proline are already sufficiently normalized. 
-In case of doubt the figure prouced using the argument \code{plotGraph=TRUE} may help judging if distribtions are aligned suffiently well.
+The figure produced using the argument \code{plotGraph=TRUE} may help judging if the data appear sufficiently normalized (distribtions should align).
+}
+\details{
+This function has been developed using Proline version 1.6.1 coupled with MS-Angel 1.6.1. 
+The format of the exported file depends on the columns chosen for export, default settings from Proline and MS-Angel work fine.
 }
 \examples{
 path1 <- system.file("extdata", package="wrProteo")

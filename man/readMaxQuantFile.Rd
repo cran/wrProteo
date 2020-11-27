@@ -2,7 +2,7 @@
 % Please edit documentation in R/readMaxQuantFile.R
 \name{readMaxQuantFile}
 \alias{readMaxQuantFile}
-\title{Read csv or txt files exported from MS-Angel and Proline}
+\title{Read xlsx, csv or tsv files exported from MS-Angel and Proline}
 \usage{
 readMaxQuantFile(
   path,
@@ -10,13 +10,15 @@ readMaxQuantFile(
   normalizeMeth = "median",
   quantCol = "LFQ.intensity",
   contamCol = "Potential.contaminant",
-  uniqPepPat = "Razor...unique.peptides",
+  pepCountCol = c("Peptides.", "Razor...unique.peptides."),
+  uniqPepPat = NULL,
   refLi = NULL,
   extrColNames = c("Majority.protein.IDs", "Fasta.headers", "Number.of.proteins"),
   specPref = c(conta = "conta|CON_|LYSC_CHICK", mainSpecies = "OS=Homo sapiens"),
+  remRev = TRUE,
+  separateAnnot = TRUE,
   tit = NULL,
   wex = 1.6,
-  separateAnnot = TRUE,
   plotGraph = TRUE,
   silent = FALSE,
   callFrom = NULL
@@ -33,7 +35,9 @@ readMaxQuantFile(
 
 \item{contamCol}{(character or integer, length=1) which columns should be used for contaminants marked by ProteomeDiscoverer}
 
-\item{uniqPepPat}{(character, length=1) pattern to search for columns with unique (razor) peptides using \code{grep}, default set to read unique razor-peptides}
+\item{pepCountCol}{(character) pattern to search among column-names for count data of PSM and NoOfPeptides}
+
+\item{uniqPepPat}{(character, length=1) depreciated, please use \code{pepCountCol} instead}
 
 \item{refLi}{(character or integer) custom specify which line of data is main species, if character (eg 'mainSpe'), the column 'SpecType' in $annot will be searched for exact match of the (single) term given}
 
@@ -41,11 +45,13 @@ readMaxQuantFile(
 
 \item{specPref}{(character) prefix to identifiers allowing to separate i) recognize contamination database, ii) species of main identifications and iii) spike-in species}
 
+\item{remRev}{(logical) option to remove all protein-identifications based on reverse-peptides}
+
+\item{separateAnnot}{(logical) if \code{TRUE} output will be organized as list with \code{$annot}, \code{$abund} for initial/raw abundance values and \code{$quant} with final normalized quantitations}
+
 \item{tit}{(character) custom title to plot}
 
 \item{wex}{(numeric)  relative expansion factor of the violin in plot}
-
-\item{separateAnnot}{(logical) if \code{TRUE} output will be organized as list with \code{$annot}, \code{$abund} for initial/raw abundance values and \code{$quant} with final normalized quantitations}
 
 \item{plotGraph}{(logical) optional plot vioplot of initial and normalized data (using \code{normalizeMeth}); alternatively the argument may contain numeric details that will be passed to \code{layout} when plotting}
 
@@ -54,12 +60,15 @@ readMaxQuantFile(
 \item{callFrom}{(character) allow easier tracking of message produced}
 }
 \value{
-list with \code{$annot}, \code{$raw} for initial abundance values and \code{$quant} with final normalized quantitations, or returns data.frame with annot and quant if \code{separateAnnot=FALSE}
+list with  \code{$raw} (initial/raw abundance values), \code{$quant} with final normalized quantitations, \code{$annot} (columns ), \code{$counts} an array with 'PSM' and 'NoOfRazorPeptides', \code{$quantNotes} and \code{$notes}; or a data.frame with quantitation and annotation if \code{separateAnnot=FALSE}
 }
 \description{
 Quantification results form \href{https://www.maxquant.org/}{MaxQuant} can be read using this function and relevant information extracted. 
-The final output is a list containing 3 elements: \code{$annot}, \code{$abund} and optional \code{$quant}, or returns data.frame with entire content of file if \code{separateAnnot=FALSE}.
-This function has been developed using MaxQuant version 1.6.10.x, the format of resulting file 'proteinGroups.txt' is typically well conserved.
+The final output is a list containing these elements: \code{$raw}, \code{$quant}, \code{$annot}, \code{$counts}, \code{$quantNotes}, \code{$notes}, or (if \code{separateAnnot=FALSE}) data.frame 
+  with annotation- and main quantification-content.
+}
+\details{
+This function has been developed using MaxQuant versions 1.6.10.x to 1.6.17.x, the format of resulting file 'proteinGroups.txt' is typically well conserved.
 }
 \examples{
 path1 <- system.file("extdata",package="wrProteo")

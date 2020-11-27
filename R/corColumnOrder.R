@@ -33,18 +33,21 @@ corColumnOrder <- function(dat, sampNames, useListElem=c("quant","raw"), silent=
     useListElem <- useListElem[which(chLE)]
     newO <- lapply(useListElem, function(x) match(sampNames, colnames(dat[[x]])))
     names(newO) <- useListElem
-    if(all(newO[[1]] == 1:ncol(dat[[useListElem[1]]]))) message(fxNa," order already correct !") else {
-      if(any(is.na(newO[[1]])) & !silent) message(fxNa," Note : ",sum(is.na(newO[[1]])),
-        " (out of ",ncol(dat[[useListElem[1]]]),") column-names not found !  (ignoring)")    
-      names(newO) <- useListElem
-      for(i in useListElem) dat[[i]] <- dat[[i]][, newO[[i]]] }
+    if(!all(sapply(newO,is.na))) {
+      if(all(newO[[1]] == 1:ncol(dat[[useListElem[1]]]))) { if(!silent) message(fxNa,"Order already correct")
+      } else {
+        if(any(is.na(newO[[1]])) & !silent) message(fxNa," Note : ",sum(is.na(newO[[1]])),
+          " (out of ",ncol(dat[[useListElem[1]]]),") column-names not found !  (ignoring)")    
+        names(newO) <- useListElem
+        for(i in useListElem) dat[[i]] <- dat[[i]][, newO[[i]]] }
+      } else if(!silent) message(fxNa,"No matches found -nothing to do !! (check input ?)")
   } else {
     ## for simple matrix
-    newO <- match(sampNames, colnames(dat)) 
-    if(all(newO == 1:ncol(dat))) message(fxNa," order already correct !") else {
-      if(any(is.na(newO)) & !silent) message(fxNa," Note : ",sum(is.na(newO))," (out of ",ncol(dat),") column-names not found !  (ignoring)")
-      dat <- dat[,wrMisc::naOmit(newO)]  }      
-    } 
+    newO <- match(sampNames, colnames(dat))
+    if(!all(is.na(newO))) { 
+      if(all(newO == 1:ncol(dat))) {if(!silent) message(fxNa," order already correct !")} else {
+        if(any(is.na(newO)) & !silent) message(fxNa," Note : ",sum(is.na(newO))," (out of ",ncol(dat),") column-names not found !  (ignoring)")
+        dat <- dat[,wrMisc::naOmit(newO)]  }      
+      } else if(!silent) message(fxNa,"No matches found -nothing to do !! (check input ?)") } 
   dat }
-#example
- 
+    

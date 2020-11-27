@@ -14,7 +14,8 @@
 #' @param pch (integer) type of symbol to be used (see also \code{\link[graphics]{par}})
 #' @param bg (character) background color in plot (see also \code{\link[graphics]{par}})
 #' @param tit (character) custom title
-#' @param xlim (numeric, length=2) custom x-limits
+#' @param xlim (numeric, length=2) custom x-axis limits
+#' @param ylim (numeric, length=2) custom y-axis limits
 #' @param point05 (numeric) specific point to highlight in plot (typically at alpha=0.05) 
 #' @param pointSi (numeric) size of points (as expansion factor \code{cex}) 
 #' @param nByMeth (integer) value of n to display
@@ -22,6 +23,7 @@
 #  @param speciesOrder (integer) optional custom order for counts per species (eg number of proteins) in legend (eg 'n.H/S/E')
 #' @param txtLoc (numeric, length=3) location for text (x, y and proportional factor for line-offset, default is c(0.4,0.3,0.04))
 #' @param legCex (numeric) cex expansion factor for legend (see also \code{\link[graphics]{par}})
+#' @param las (numeric) factor for text-orientation (see also \code{\link[graphics]{par}})
 #' @param addSuplT (logical) add text with information about precision,accuracy and FDR
 #' @param silent (logical) suppress messages
 #' @param callFrom (character) allows easier tracking of messages produced
@@ -34,8 +36,8 @@
 #'   9.93)/10, n.pos.a=c(0,0,0,0,2,4,4,9,14,24,36,41) )
 #' plotROC(roc0)
 #' @export
-plotROC <- function(dat,...,useCol=2:3, methNames=NULL, col=NULL, pch=1, bg=NULL, tit=NULL, xlim=NULL, point05=0.05, pointSi=0.85, nByMeth=NULL,
-  speciesOrder=NULL, txtLoc=c(0.4,0.3,0.04), legCex=0.72, addSuplT=TRUE, silent=FALSE, callFrom=NULL) {
+plotROC <- function(dat,...,useCol=2:3, methNames=NULL, col=NULL, pch=1, bg=NULL, tit=NULL, xlim=NULL, ylim=NULL, point05=0.05, pointSi=0.85, nByMeth=NULL,
+  speciesOrder=NULL, txtLoc=NULL, legCex=0.72, las=1, addSuplT=TRUE, silent=FALSE, callFrom=NULL) {
   ##
   fxNa <- wrMisc::.composeCallName(callFrom, newNa="plotROC")
   inpS <- list(...)
@@ -50,8 +52,7 @@ plotROC <- function(dat,...,useCol=2:3, methNames=NULL, col=NULL, pch=1, bg=NULL
   xLab <- "1 - Specificity"
   yLab <- "Sensitivity"
   if(!is.numeric(xlim) | length(xlim) !=2) xlim <- c(0,1)
-  graphics::plot(1 -dat[,useCol[1]], dat[,useCol[2]], type="n", col=col[1], pch=pch, bg=bg, main=tit, xlab=xLab, ylab=yLab, xlim=xlim, ylim=c(0,1))
-   #cat("zz0\n"); zz0 <<- list(useCol=useCol,inpS=inpS,point05=point05,xLab=xLab,yLab=yLab,pch=pch,col=col,bg=bg,addSuplT=addSuplT,dat=dat,txtLoc=txtLoc,pointSi=pointSi,nByMeth=nByMeth,methNames=methNames)
+  graphics::plot(1 -dat[,useCol[1]], dat[,useCol[2]], type="n", col=col[1], pch=pch, bg=bg, main=tit, xlab=xLab, ylab=yLab, xlim=xlim, ylim=if(length(ylim)==2) ylim else c(0,1),las=las)
   col2 <- col
   cutP <- dat[which(dat[,1]==point05),]
   if(length(stats::na.omit(point05))==1) { 
@@ -67,7 +68,9 @@ plotROC <- function(dat,...,useCol=2:3, methNames=NULL, col=NULL, pch=1, bg=NULL
   coColN <- coColN[speciesOrder]
   coColN1 <- sub("n\\.pos\\.","",coColN)
   coColN2 <- paste(" n.",paste(coColN1,sep="",collapse="/")," ",sep="")
-   #cat("zz1\n"); zz1 <<- list(inpS=inpS,point05=point05,addSuplT=addSuplT,dat=dat,txtLoc=txtLoc,legCex=legCex,useCol=useCol,xLab=xLab,yLab=yLab,pch=pch,col=col,bg=bg, col2=col2,pch2=pch2,pointSi=pointSi,coColN=coColN,nByMeth=nByMeth,methNames=methNames)
+  if(length(txtLoc) !=3) txtLoc <- graphics::par("usr")
+  if(length(txtLoc) !=3) { figDim <- signif(graphics::par("usr"),3)
+    txtLoc <- c(x=figDim[1] +0.42*(figDim[2] -figDim[1]), y=figDim[3] + (0.3 +length(inpS))*(figDim[4] -figDim[3])/30, fac=0.035*(figDim[4] -figDim[3])) }
    
   if(addSuplT) {            # add legend-like method-name/descr
     txt <- if(is.null(nByMeth)) methNames[1] else paste(methNames[1]," (n.test=",nByMeth[1],") ",sep="")
@@ -75,7 +78,7 @@ plotROC <- function(dat,...,useCol=2:3, methNames=NULL, col=NULL, pch=1, bg=NULL
     graphics::text(txtLoc[1], txtLoc[2], txt, cex=legCex+0.02, col=col[1], adj=1)    
     if(addSuplT) graphics::text(txtLoc[1] +0.02, txtLoc[2], paste(paste(paste(c("prec=","accur=","FDR="),        #"n.E/S/H="
       signif(cutP[c("prec","accur","FDR")],2)),collapse="  "),coColN2 ,cutP[coColN[1]],cutP[coColN[2]],
-      if(length(coColN)>2) cutP[coColN[3]]),cex=legCex,col=col[1],adj=0) }  
+      if(length(coColN)>2) cutP[coColN[3]]), cex=legCex, col=col[1], adj=0) }  
   if(length(inpS) >0) {
     for(i in 1:length(inpS)) {
       if(length(inpS[[i]]) >0) if(nrow(inpS[[i]]) >0) {
@@ -87,7 +90,7 @@ plotROC <- function(dat,...,useCol=2:3, methNames=NULL, col=NULL, pch=1, bg=NULL
           graphics::text(txtLoc[1], txtLoc[2]-txtLoc[3]*i,txt, cex=legCex+0.02, col=col[i+1], adj=1)                     # first block
           graphics::text(txtLoc[1]+0.02, txtLoc[2]-txtLoc[3]*i, paste(paste(paste(c("prec=","accur=","FDR="),
             signif(cutP[c("prec","accur","FDR")],2)),collapse="  "),coColN2,cutP[coColN[1]],cutP[coColN[2]],            # first block (with counting data)
-            if(length(coColN)>2) cutP[coColN[3]]),cex=legCex,col=col[i+1],adj=0)
+            if(length(coColN)>2) cutP[coColN[3]]), cex=legCex, col=col[i+1], adj=0)
         }   
     } } }
 }

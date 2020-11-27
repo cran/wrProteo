@@ -37,12 +37,12 @@ matrixNAinspect <- function(dat,gr,retnNA=TRUE,xLab=NULL,tit=NULL,xLim=NULL,sile
   if(is.data.frame(dat)) dat <- as.matrix(dat)
   if(length(gr) != ncol(dat)) stop("Number of columns in 'dat' and number of (group-)elements in 'gr' do not match !")
   if(!is.factor(gr)) gr <- as.factor(gr)
-  if(is.null(xLab)) xLab <- "values"
+  if(is.null(xLab)) xLab <- "(log2) Abundance"
   chRColB <- try(find.package("limma"),silent=TRUE)
   if("try-error" %in% class(chRColB)) message(fxNa," More/better colors may be displayed with package 'RColorBrewer' installed; consider installing it !")
   quaCol <- if(!"try-error" %in% class(chRColB))  RColorBrewer::brewer.pal(4,"Set1")[c(3,2,4)] else c(3:4,2) 
   if(is.null(tit)) tit <- "Distribution of values and NA-neighbours"
-  cexMain <- if(nchar(tit) < 25) 1.8 else 1.2
+  cexMain <- if(nchar(tit) < 25) 1.4 else 1.1
   ## main
   NAneig <- NAneig2 <- numeric() 
   isNA <- is.na(dat)
@@ -61,8 +61,8 @@ matrixNAinspect <- function(dat,gr,retnNA=TRUE,xLab=NULL,tit=NULL,xLim=NULL,sile
       }
     n <- c(sum(!is.na(dat)),length(NAneig),length(NAneig2))
     perc <- c("",paste(" (",round(100*n[2:3]/n[1],1),"%)"))
-    hi1 <- graphics::hist(dat,breaks="FD",plot=FALSE)
-    if(is.null(xLim)) graphics::plot(hi1,border=grDevices::grey(0.85),col=grDevices::grey(0.92),xlab=xLab,las=1,main=tit,cex.main=cexMain) else {
+    hi1 <- graphics::hist(dat, breaks="FD", plot=FALSE)
+    if(is.null(xLim)) graphics::plot(hi1, border=grDevices::grey(0.85), col=grDevices::grey(0.92), xlab=xLab, las=1, main=tit, cex.main=cexMain) else {
       graphics::plot(hi1,border=grDevices::grey(0.85),col=grDevices::grey(0.92),xlab=xLab,las=1,main=tit,xlim=xLim,cex.main=cexMain)}
     graphics::abline(v=stats::quantile(dat,c(0.03,0.05,0.1),na.rm=TRUE),col=quaCol,lty=2)
     graphics::mtext(paste(c(" (bar) all data",paste(" (box) ",c("any","min 2")," NA-neighbour values"))," n=",n,perc),col=colPanel[1:3],cex=0.65,adj=0,line=c(0.6,-0.1,-0.7),side=3)

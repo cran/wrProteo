@@ -23,7 +23,7 @@
 #' @param silent (logical) suppress messages
 #' @param callFrom (character) allows easier tracking of message(s) produced
 #' @return matrix including imputed values or list of final and matrix with number of imputed by group (plus optional plot)
-#' @seealso replot the figure \code{\link[wrProteo]{plotROC}}, robust test for preparing tables \code{\link{testRobustToNAimputation}}, \code{\link[wrMisc]{moderTest2grp}}, \code{\link{test2grp}}, \code{eBayes} in package \href{https://bioconductor.org/packages/release/bioc/html/limma.html}{limma}, \code{\link[stats]{t.test}}  
+#' @seealso replot the figure \code{\link{plotROC}}, calculate AUC using \code{\link{AucROC}}, robust test for preparing tables \code{\link{testRobustToNAimputation}}, \code{\link[wrMisc]{moderTest2grp}}, \code{\link{test2grp}}, \code{eBayes} in package \href{https://bioconductor.org/packages/release/bioc/html/limma.html}{limma}, \code{\link[stats]{t.test}}  
 #' @examples
 #' set.seed(2019); test1 <- list(annot=cbind(spec=c(rep("b",35),letters[sample.int(n=3,
 #'   size=150,replace=TRUE)])),BH=matrix(c(runif(35,0,0.01),runif(150)),ncol=1))
@@ -55,7 +55,6 @@ summarizeForROC <- function(test,thr=NULL,tyThr="BH",columnTest=1,spec=c("H","E"
     message(fxNa," PROBLEM :\n  ***  None of the elements annotated as 'positive' species to search for has any valid testing results ! Unable to construct TP ! ***")
     keyVal <- NULL
   } else {
-   #cat("su1\n"); su1 <<- list(test=test,tyThr=tyThr,columnTest=columnTest,spec=spec,annotCol=annotCol, thr=thr,pp=pp,spiSpec=spiSpec,tmp1=tmp1,tmp2=tmp2)
     pp <- cbind(
       TP= sapply(thr,function(x) sum(tmp1 <=x,na.rm=TRUE)),
       FP= sapply(thr,function(x) sum(tmp2 <=x,na.rm=TRUE)),
@@ -70,14 +69,12 @@ summarizeForROC <- function(test,thr=NULL,tyThr="BH",columnTest=1,spec=c("H","E"
     if(any(chNaN)) keyVal[,which(chNaN)] <- 0
     ## add no of lines/prot retained for each species
     tmp3 <- test$annot[,annotCol] %in% spec[2]
-    tmp3 <- if(length(dim(test[[tyThr]])) >1) test[[tyThr]][which(tmp3),columnTest] else test[[tyThr]][which(tmp3)]       # pvalues for 1st spike-in species (eg E)
-  
-     #cat("su2\n"); su2 <<- list(test=test,thr=thr,pp=pp,keyVal=keyVal,spiSpec=spiSpec,tmp1=tmp1,tmp2=tmp2,tmp3=tmp3)
+    tmp3 <- if(length(dim(test[[tyThr]])) >1) test[[tyThr]][which(tmp3),columnTest] else test[[tyThr]][which(tmp3)]        # pvalues for 1st spike-in species (eg E)
   
     if(length(spec) >2) {
       tmp4 <- test$annot[,annotCol] %in% spec[3]
-      tmp4 <- if(length(dim(test[[tyThr]])) >1) test[[tyThr]][which(tmp4),columnTest] else test[[tyThr]][which(tmp4)] }      # pvalues for 2nd spike-in species (eg S)
-    tmp3 <- cbind(Sp1Pos=pp[,"FP"], Sp2Pos=sapply(thr,function(x) sum(tmp3 <=x,na.rm=TRUE)),
+      tmp4 <- if(length(dim(test[[tyThr]])) >1) test[[tyThr]][which(tmp4),columnTest] else test[[tyThr]][which(tmp4)] }    # pvalues for 2nd spike-in species (eg S)
+    tmp3 <- cbind(Sp1Pos=pp[,"FP"], Sp2Pos=sapply(thr, function(x) sum(tmp3 <=x,na.rm=TRUE)),
       Sp3Pos=if(length(spec) >2) sapply(thr,function(x) sum(tmp4 <=x,na.rm=TRUE)) else NULL)
     colnames(tmp3) <- paste("n.pos",spec,sep=".")  
     keyVal <- cbind(keyVal,tmp3)  
@@ -85,13 +82,14 @@ summarizeForROC <- function(test,thr=NULL,tyThr="BH",columnTest=1,spec=c("H","E"
       if(is.null(tit)) tit <- paste("ROC of ",argN)
       xLab <- "1 - Specificity"
       yLab <- "Sensitivity"
-      if(overlPlot) graphics::points(1-keyVal[,"spec"],keyVal[,"sens"],col=color,pch=pch,bg=NULL,type="S") else {
-        graphics::plot(1-keyVal[,"spec"],keyVal[,"sens"],col=color,pch=pch,bg=bg,type="S",main=tit,xlab=xLab,ylab=yLab,xlim=c(0,1),ylim=c(0,1))}
+      if(overlPlot) graphics::points(1-keyVal[,"spec"], keyVal[,"sens"], col=color,pch=pch,bg=NULL,type="s") else {
+        graphics::plot(1-keyVal[,"spec"], keyVal[,"sens"], col=color,pch=pch,bg=bg,type="s",main=tit,xlab=xLab,ylab=yLab,xlim=c(0,1), ylim=c(0,1), las=1)}
       cutP <- keyVal[which(keyVal[,1]==0.05),-1]
-      newPch <- cbind(c(1,16,2,17, 7,15,5,6),new=c(21,21,24,24,22,22,23,25))                                   # transform open or plain filled points to color-filled
+      newPch <- cbind(c(1,16,2,17, 7,15,5,6), new=c(21,21,24,24,22,22,23,25))                                   # transform open or plain filled points to color-filled
       if(pch %in% newPch[,1]){ pch2 <- newPch[which(newPch[,1]==pch),2]; bg <- color; col2 <- grDevices::grey(0.2)} else {pch2 <- pch; col2 <- color}   
-      col2 <- wrMisc::convColorToTransp(col2,alph=0.9)
-      graphics::points(1-cutP["spec"],cutP["sens"],col=col2,pch=pch2,bg=bg,cex=1.4)  
+      col2 <- wrMisc::convColorToTransp(col2, alph=0.9)
+      graphics::points(1-cutP["spec"],cutP["sens"], col=col2, pch=pch2, bg=bg, cex=1.4) 
+      graphics::mtext(paste("AUC = ",signif(AucROC(keyVal),3)), side=3, cex=0.8,adj=0)
   } }
   keyVal }     
-     
+    

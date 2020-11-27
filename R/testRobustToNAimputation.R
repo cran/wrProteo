@@ -46,8 +46,8 @@
 #' @export
 testRobustToNAimputation <- function(dat,gr,annot=NULL,retnNA=TRUE,avSdH=c(0.18,0.5),avSdL=c(0.1,0.5),plotHist=FALSE,xLab=NULL,tit=NULL,seedNo=2018,nLoop=20,lfdrInclude=TRUE,ROTSn=NULL,silent=FALSE,callFrom=NULL){
   fxNa <- wrMisc::.composeCallName(callFrom, newNa="testRobustToNAimputation")
-  if(is.list(dat)) { if(all(c("quant","annot") %in% names(dat))) if(length(dim(dat$quant))==2 & length(dim(dat$annot)) ==2) {
-    if(length(annot) <1) { annot <- dat$annot} 
+  if(is.list(dat)) { if(all(c("quant","annot") %in% names(dat))) {
+    if(length(dim(dat$annot)) ==2 & length(annot) <1) annot <- dat$annot    # recover$annot if not given separately
     dat <- dat$quant }}
   if(length(dim(dat)) !=2) stop("'dat' must be matrix or data.frame with >1 columns")
   if(is.data.frame(dat)) dat <- as.matrix(dat)
@@ -117,6 +117,7 @@ testRobustToNAimputation <- function(dat,gr,annot=NULL,retnNA=TRUE,avSdH=c(0.18,
         for(i in 1:nrow(comp)) tmRO[which(datFi$filt[,i]),i] <- ROTS::ROTS(datFi$data[which(datFi$filt[,i]),which(useCol[,i])], groups=as.numeric(as.factor(gr[which(useCol[,i])])), B=ROTSn)$pvalue   # ,K=500  
         pVaRotsTab[,,i] <- tmRO } }
     out$datImp <- as.matrix(apply(datIm, 1:2, mean, na.rm=TRUE))
+    rownames(out$datImp) <- if(is.null(rownames(dat))) rownames(annot) else rownames(dat)
     out$p.value <- as.matrix(apply(pValTab, 1:2, stats::median, na.rm=TRUE))
     out$t <- as.matrix(apply(tValTab, 1:2, stats::median, na.rm=TRUE))
     colnames(out$p.value) <- colnames(out$t) <- rownames(pwComb)
@@ -124,21 +125,22 @@ testRobustToNAimputation <- function(dat,gr,annot=NULL,retnNA=TRUE,avSdH=c(0.18,
   } else out$datImp <- datFi$data
   out$annot <- annot
   ## update dimnames of out$datImp
-  dimnames(out$datImp) <- list(rownames(out$t),colnames(dat))
+  dimnames(out$datImp) <- list(if(is.null(rownames(out$lods))) rownames(out$annot) else rownames(out$lods), colnames(dat))
+  rownames(out$t) <- rownames(out$p.value) <- rownames(out$datImp)
   ## integrate column specific filtering
   if(any(!datFi$filt)) out$p.value[which(!datFi$filt)] <- NA 
   if(lfdrInclude) {out$lfdr <- as.matrix(apply(out$p.value, 2, wrMisc::pVal2lfdr)) 
-    colnames(out$lfdr) <- colnames(out$contrasts)} 
+    dimnames(out$lfdr) <- list(rownames(out$lods), colnames(out$contrasts))} 
   if(length(dat) >0) {out$BH <- as.matrix(apply(out$p.value, 2, stats::p.adjust,method="BH"))
-    colnames(out$BH) <- colnames(out$contrasts)} 
+    dimnames(out$BH) <- list(rownames(out$lods), colnames(out$contrasts))} 
   if(length(dat) >0) {out$BY <- as.matrix(apply(out$p.value, 2, stats::p.adjust,method="BY"))
-    colnames(out$BY) <- colnames(out$contrasts)} 
+    dimnames(out$BY) <- list(rownames(out$lods), colnames(out$contrasts))} 
   if(length(ROTSn)==1) if(ROTSn >0 & chNA & nLoop >1){
     out$ROTS.p <- apply(pVaRotsTab, 1:2, stats::median, na.rm=TRUE)
     if(any(!datFi$filt)) out$ROTS.p[which(!datFi$filt)] <- NA    
     out$ROTS.BH <- as.matrix(as.matrix(apply(out$ROTS.p, 2, stats::p.adjust,method="BH")))
-    colnames(out$ROTS.BH) <- colnames(out$contrasts) 
+    dimnames(out$ROTS.BH) <- list(rownames(out$lods), colnames(out$contrasts) )
     if(lfdrInclude) {out$ROTS.lfdr <- as.matrix(as.matrix(apply(out$ROTS.p, 2, wrMisc::pVal2lfdr)))
-      colnames(out$ROTS.lfdr) <-colnames(out$contrasts)} }
+      dimnames(out$ROTS.lfdr) <- list(rownames(out$lods), colnames(out$contrasts))} }
   out }
    
