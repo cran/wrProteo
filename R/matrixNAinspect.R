@@ -59,19 +59,27 @@ matrixNAinspect <- function(dat,gr,retnNA=TRUE,xLab=NULL,tit=NULL,xLim=NULL,sile
       if(length(useLi) >0) NAneig <- c(NAneig,wrMisc::naOmit(as.numeric(dat[useLi,curCol])))
       if(length(useL2) >0) NAneig2 <- c(NAneig2,wrMisc::naOmit(as.numeric(dat[useL2,curCol])))
       }
-    n <- c(sum(!is.na(dat)),length(NAneig),length(NAneig2))
+    n <- c(sum(!is.na(dat)), length(NAneig), length(NAneig2))
     perc <- c("",paste(" (",round(100*n[2:3]/n[1],1),"%)"))
     hi1 <- graphics::hist(dat, breaks="FD", plot=FALSE)
     if(is.null(xLim)) graphics::plot(hi1, border=grDevices::grey(0.85), col=grDevices::grey(0.92), xlab=xLab, las=1, main=tit, cex.main=cexMain) else {
       graphics::plot(hi1,border=grDevices::grey(0.85),col=grDevices::grey(0.92),xlab=xLab,las=1,main=tit,xlim=xLim,cex.main=cexMain)}
-    graphics::abline(v=stats::quantile(dat,c(0.03,0.05,0.1),na.rm=TRUE),col=quaCol,lty=2)
+    graphics::abline(v=stats::quantile(dat,c(0.05,0.1,0.15),na.rm=TRUE), col=c(quaCol[-1],"tomato3"), lty=2)
     graphics::mtext(paste(c(" (bar) all data",paste(" (box) ",c("any","min 2")," NA-neighbour values"))," n=",n,perc),col=colPanel[1:3],cex=0.65,adj=0,line=c(0.6,-0.1,-0.7),side=3)
-    graphics::mtext(paste(" - -",c(3,5,10),"%-quantile"),col=quaCol,cex=0.6,adj=0,line=c(-1.4,-2,-2.6),side=3)
-    if(chNA) graphics::hist(NAneig,breaks=hi1$breaks,border=grDevices::grey(0.75),col=grDevices::rgb(0.1,1,0.1,0.15),add=TRUE);                        # in green
-    if(chNA) graphics::hist(NAneig2,breaks=hi1$breaks,border=grDevices::grey(0.75),col=grDevices::rgb(0,0,0.7,0.2),add=TRUE);                          # in purple
-  } else {graphics::hist(dat,breaks="FD",border=grDevices::grey(0.85),col=grDevices::grey(0.92),xlab=xLab,las=1,main=tit,cex.main=cexMain)
-    graphics::mtext(paste(" (bar) all data  n=",length(dat)),col=colPanel[1],cex=0.7,adj=0,line=0.6,side=3)
-    graphics::abline(v=stats::quantile(dat,c(0.03,0.05,0.1),na.rm=TRUE),col=quaCol,lty=2) 
-    graphics::mtext(paste(" - -",c(3,5,10),"%-quantile"),col=quaCol,cex=0.6,adj=0,line=c(-1.4,-2,-2.6),side=3)}
+    graphics::mtext(paste(" - -",c(5,10,15),"%-quantile (all data)"), col=c(quaCol[-1],"tomato3"), cex=0.6, adj=0, line=c(-1.5,-2.1,-2.7), side=3)
+    if(length(NAneig) >10) {    # display mode
+      yLim <- signif(graphics::par("usr")[3:4], 3)             # current y-limits
+      mod <- signif(wrMisc::stableMode(if(length(NAneig2) >300) NAneig2 else NAneig, method="density"), 3)
+      graphics::mtext(paste(" (arrow) mode of",if(length(NAneig2) >300) "2-"," NA-neighbours"), col="sienna2", cex=0.7, adj=0, line=-3.4, side=3)
+      graphics::arrows(mod, yLim[1]+(yLim[2]-yLim[1])*0.4, mod, yLim[1]+(yLim[2]-yLim[1])/4, length=0.1, col="sienna2", lwd=2)
+    }    
+    graphics::hist(NAneig,breaks=hi1$breaks,border=grDevices::grey(0.75), col=grDevices::rgb(0.1,1,0.1,0.15), add=TRUE);                    # in green
+    graphics::hist(NAneig2,breaks=hi1$breaks,border=grDevices::grey(0.75), col=grDevices::rgb(0,0,0.7,0.2), add=TRUE);                      # in purple
+    
+  } else {
+    graphics::hist(dat, breaks="FD",border=grDevices::grey(0.85),col=grDevices::grey(0.92),xlab=xLab,las=1,main=tit,cex.main=cexMain)
+    graphics::mtext(paste(" (bar) all data  n=",length(dat)),col=colPanel[1], cex=0.7, adj=0, line=0.6, side=3)
+    graphics::abline(v=stats::quantile(dat,c(0.05,0.1,0.15),na.rm=TRUE), col=c(quaCol[-1],"tomato3"), lty=2) 
+    graphics::mtext(paste(" - -",c(5,10,15),"%-quantile (all data)"), col=c(quaCol[-1],"tomato3"), cex=0.6, adj=0, line=c(-1.5,-2.1,-2.7), side=3)}
 }
    

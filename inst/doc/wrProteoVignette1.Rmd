@@ -21,7 +21,15 @@ This package contains a collection of various tools for Proteomics used at the [
 To get started, we need to load the packages "[wrMisc](https://CRAN.R-project.org/package=wrMisc)" and 
 this package ([wrProteo](https://CRAN.R-project.org/package=wrProteo)), both are available from CRAN.
 The packages [wrGraph](https://CRAN.R-project.org/package=wrGraph) and [RColorBrewer](https://CRAN.R-project.org/package=RColorBrewer) get used internally by some of the functions from this package for (optional/improved) figures.
-Furthermore, the Bioconductor package [limma](https://bioconductor.org/packages/release/bioc/html/limma.html) will be used internally for statistical testing
+Furthermore, the Bioconductor package [limma](https://bioconductor.org/packages/release/bioc/html/limma.html) will be used internally for statistical testing.
+
+If you are not familiar with [R](https://www.r-project.org/) you may find many introductory documents on the official R-site 
+in [contributed documents](https://cran.r-project.org/other-docs.html) or under [Documentation/Manuals](https://cran.r-project.org/manuals.html).
+Of course, numerous other documents/sites with tutorials exit.
+
+The aim of package-vignettes is to provide additional information how the R-package concerned may be used, thus complementing the documentation given with _help()_ for each of the functions of the package. In terms of examples, frequent standard types of problems are preferred in a vignette. 
+Nevertheless, most functions can be used in many other ways, for this you may have to check the various arguments via calling _help_ on the function of interest.
+All R-code in this vigentte can be directly repeated by the user, all data used is provided with the package.
 
 ```{r, include = FALSE}
 knitr::opts_chunk$set(collapse=TRUE, comment = "#>")
@@ -33,56 +41,66 @@ install.packages("wrMisc")
 install.packages("wrProteo")
 ## The package 'wrGraph' is not obligatory, but it allows making better graphs
 install.packages("wrGraph")
-```
 
+# Installation of limma 
+if(!requireNamespace("BiocManager", quietly=TRUE)) install.packages("BiocManager")
+BiocManager::install("limma")
+```
 
 ```{r setup, echo=FALSE, messages=FALSE, warnings=FALSE}
 suppressPackageStartupMessages({
     library(wrMisc)
     library(wrProteo)
+    library(wrGraph)
     library(knitr)
     library(rmarkdown) 
 }) 
 ```
 
 ```{r setup2}
+## Get started by loading the packages
 library("wrMisc")
 library("wrProteo")
+library("wrGraph")
 # This is wrProteo version no :
 packageVersion("wrProteo")
 ```
 
+This way you can browse all vignettes available to this package :
+```{r setup32, echo=TRUE, eval=FALSE}
+browseVignettes("wrProteo")
+```
+There you can find another vignette dedicated to the analysis of heterogenous spike-in experiments.
 
 
 ## Calculating Molecular Masses From Composition Formulas
 
 Please note that molecular masses may be given in two flavours : Monoisotopic mass and average mass.
-Please refer eg to [Wikipedia: monoisotopic mass](https://en.wikipedia.org/wiki/Monoisotopic_mass) for details. 
+For details you may refer to [Wikipedia: monoisotopic mass](https://en.wikipedia.org/wiki/Monoisotopic_mass). 
 Monoisotopic masses commonly are used in mass-spectrometry and will be used by default in this package.
 
-Molecular (mono-isotopic) masses of the atomes used here were taken from [Unimod](http://www.unimod.org/masses.html). They can be easily updated, if in the future, (mono-isotopic) molecular masses will be determined with higher precision (ie more digits).
+Molecular (mono-isotopic) masses of the atomes integrated in this package were taken from [Unimod](http://www.unimod.org/masses.html). 
+They can be easily updated, if in the future, (mono-isotopic) molecular masses will be determined with higher precision (ie more digits).
 
 
 ### Molecular masses based on (summed) chemical formulas
 
 At this level (summed) atomic compositions are evaluated.
 Here, the number of atoms has to be written _before_ the atom. Thus, '2C' means two atoms of carbon.
-Empty or invalid entries will be by default returned as mass=0.0, a message will comment such issues. 
+Empty or invalid entries will be by default returned as mass=0, a message will comment such issues. 
  
 The mass of an electron can be assigned using 'e'.
 ```{r ChemFormMolMass1, echo=TRUE}
 massDeFormula(c("12H12O", "HO", " 2H 1 Se, 6C 2N", "HSeCN", " ", "e"))
-# Note, that empty/invalid entries will be returned as a mass of 0.0 .
 
 # Ignore empty/invalid entries
 massDeFormula(c("12H12O", "HO", " 2H 1 Se, 6C 2N", "HSeCN"), rmEmpty=TRUE)
 
 ```
 
-Using the argument _massTy_ one can switch this and similar functions from this package from default monoisotopic mass to average mass mode :
+Using the argument _massTy_ one can switch from default _monoisotopic mass_ to _average mass_ :
 ```{r ChemFormMolMass2, echo=TRUE}
 massDeFormula(c("12H12O", "HO", " 2H 1 Se, 6C 2N", "HSeCN"), massTy="aver")
-
 ```
 
 ### Molecular masses based on amino-acid sequence
@@ -115,14 +133,302 @@ fasta1det <- readFasta2(file.path(path1,fiNa), tableOut=TRUE)
 str(fasta1det)
 ```
 
-## Annotation
+.
+
+***
+
+# Example : Analyzing Label-free Quantitative Proteomics Data
+
+### Label-free Quantitative Proteomics Introduction
+
+Multiple algorithms and software implementations have been developed for quantitation label-free proteomics experiments (LFQ), 
+in particular for extracted ion chromatograms (XIC). For more background information you may look at
+[Wikipedia labell-free Proteomics](https://en.wikipedia.org/wiki/Label-free_quantification).
+
+The tools presented here are designed for use with label-free XIC (ie LFQ) data. 
+Several of the programs for extracting initial quantitations also allow getting spectral counting (PSM) data which can also get imported into R,
+however their use is not further discussed in this vignette. 
+In general it is preferable to use XIC for comparing peptde of protein quantities between different protein extracts/samples.
+
+
+This package provides support for importing quantitation results from [Proteome Discoverer](https://www.thermofisher.com/order/catalog/product/OPTON-30812),
+ [MaxQuant](https://www.maxquant.org) and [Proline](http://www.profiproteomics.fr/proline/). 
+All quantitation import functions offer special features for further separating annotation related information, like species, for later use.
+
+In most common real-world cases people typically analyze data using only one quantitation algorithm/software.
+Below in this vignette, we'll use only the quantitation data generated using MaxQuant (ProteomeDiscoverer, Proline and OpenMS are supported, too). 
+The other vignette to this package ("UPS-1 spike-in Experiments") shows in detail the import functions available for ProteomeDiscoverer and Proline
+and how further comparsions can be performed in bench-mark studies. 
+All these import functions generate an equivalent output format, separating (selected) annotation data (\$annot) from normalized log2-quantitation data (\$quant)
+and initial quantitation (\$raw).
+
+Normalization (discussed below in more detail) is an important part of 'preparing' the data for subsequant analysis.
+The import functions in this package allow performin an initial normalization step (with choice among multiple algorithims), too.
+As further information about the proteins identifed can be considered during normalization it is, eg, possible to exclude contaminants.
+In proteomics experiments it is very common to find contaminants like keratins among the higher abundant proteins which may introduce bias at normalization.
+
+Technical replicates are very frequently produced in proteomics, they allow to assess the variability linked to repeated injection of the same material.
+Biological replicates, however, make additional information accessible, allowing an interpretation of experiments in a more general way.
+
+
+### Read Data From MaxQuant
+
+[MaxQuant](https://www.maxquant.org) is free software provided by the [Max-Planck-Institute](https://www.biochem.mpg.de/de), 
+see [Tyanova et al 2016](https://doi.org/10.1038/nprot.2016.136). 
+Typically [MaxQuant](https://www.maxquant.org) exports by default quantitation data on level of consensus-proteins as a folder called txt with a file always called 'proteinGroups.txt'. 
+Data exported from [MaxQuant](https://www.maxquant.org) can get imported (and normalized) using `readMaxQuantFile()`,
+in a standard case one needs only to provide the path to the file 'proteinGroups.txt' which can be found the _combined/txt/_ folder produced by MaxQuant. 
+Gz-compressed files can be read, too (as in the example below the file 'proteinGroups.txt.gz'). 
+
+```{r readMaxQuant1, fig.height=8, fig.width=9.5, fig.align="center", echo=TRUE}
+path1 <- system.file("extdata", package="wrProteo")
+dataMQ <- readMaxQuantFile(path1, specPref=NULL, normalizeMeth="median")
+```
+
+The data were imported and median-normalized, the protein annotation was parsed, IDs, protein-names and species information automatically extracted.
+
+```{r readMaxQuant2,  echo=TRUE}
+## the number of lines and colums
+dim(dataMQ$quant)
+## a summary of the quantitation data
+summary(dataMQ$quant[,1:8])        # the first 8 cols
+```
+
+To treat the data from this experiment we also need to declare who is replicate of whom.
+In this case we'll use the UPS1 concentrations used when making the serial dilution as names for the groups of replicates.
+
+```{r sampNa1,  echo=TRUE}
+UPSconc <- c(50,125,250,500,2500,5000,12500,25000,50000)  
+sampNa <- paste0(rep(UPSconc, each=3),"amol_",rep(1:3,length(UPSconc))) 
+grp9 <- paste0(rep(UPSconc,each=3),"amol") 
+head(grp9)
+```
+
+
+#### Read Data From ProteomeDiscoverer
+
+[Proteome Discoverer](https://www.thermofisher.com/order/catalog/product/OPTON-30812) is commercial software from ThermoFisher (www.thermofisher.com).
+Data exported from [Proteome Discoverer](https://www.thermofisher.com/order/catalog/product/OPTON-30812) can get imported (typically the xx_allProteins.txt file) using `readProtDiscovFile()`, for details please see the vignette "UPS-1 spike-in Experiments" to this package. 
+
+
+#### Read Data From Proline
+
+[Proline](http://www.profiproteomics.fr/proline/) is free software provided by the Profi-consortium, 
+see [Bouyssie et al 2020](https://doi.org/10.1016/j.jprot.2015.11.011).
+Data exported from [Proline](http://www.profiproteomics.fr/proline/) (xlsx or tsv format) can get imported using `readProlineFile()`, for details please see the  vignette "UPS-1 spike-in Experiments" to this package. 
+
+
+#### Read Data From OpenMS
+
+[OpenMS](https://www.openms.de/) is free software provided by the deNBI Center for integrative Bioinformatics, 
+see [Rost et al 2016](https://doi.org/10.1038/nmeth.3959).
+Data exported as csv get summarized from peptide to protein level and further normalized using `readOpenMSFile()`, for details please see the help-page to this function. 
+
+
+## Normalization
+
+As mentioned, the aim of normalization is to remove bias in data not linked to the original (biological) question.
+The import functions presented above do already by default run global median normalization.
+When choosing a normalization procedure one should reflect what additional information may be available to guide normalization.
+For example, it may be very useful to exclude classical protein contaminants since they typically do not reflect the original biolocial material.
+In overall, it is important to inspect results from normalization, graphical display of histograms, boxplots or violin-plots to compare distributions.
+Multiple options exist for normalizing data, please look at the documentation provided with the import-functions introduced above.
+Plese note, that enrichment experiments (like IP) can quickly pose major problems to the choice of normalization approaches.
+The function `normalizeThis()` from the package [wrMisc](https://CRAN.R-project.org/package=wrMisc) can be used to run additional normalization, if needed.
+
+Different normalization procedures intervene with different 'aggressiveness', ie also with different capacity to change the initial data. 
+In general, it is suggested to start normalizing using 'milder' procedures, like global median and switch to more intervening methods if initial results seem not satisfactory.
+Beware, heavy normalization procedures may also alter the main information you want to analyze. 
+Ie, some biologically true positive changes may start to fade or disappear when inappropriate normalization gets performed. 
+Please note, that normalization should be performed before NA-imputation to avoid introducing new bias in the group of imputed values.
+
+
+## Imputation of NA-values
+
+In proteomics the quantitation of very low abundances is very challenging. 
+Proteins which are absent or very low abundances typically appear in the results as 0 or NA.
+Frequantly this may be linked to the fact that no peak is detected in a MS-1 chromatogram (for a given LC elution-time) while other samples had a strong peak 
+at the respective place which led to successful MS-2 identification. 
+Please note, that the match-between-runs option in the various softwar options allows to considerably reduce the number of NAs.
+To simplify the treatment all 0 values are transformed to NA, anyway they would not allow log2 transformation either.
+
+Before replacing NA-values it is important to verify that such values may be associated to absent or very low abundances. 
+To do so, we suggest to inspect groups of replicate-measurements using `matrixNAinspect()`. 
+In particular, with multiple technical replicates of the same sample it is supposed that any variability observed is not linked to the sample itself.
+So for each NA that occurs in the data we suggest to 
+look what was reported for the same protein with the other (technical) replicates. 
+This brings us to the term of 'NA-neighbours' (quantifications for the same protein in replicates).
+When drawing histograms of NA-neighbours one can visually inspect and verify that NA-neighbours are typically low abundance values, 
+however, but not necessarily the lowest values observed in the entire data-set.
+
+```{r NA_MaxQuant, echo=TRUE}
+## Let's inspect NA values as graphic
+matrixNAinspect(dataMQ$quant, gr=grp9, tit="Data from MaxQuant") 
+```
+
+So only if the hypothesis of NA-neighbours as typically low abundance values gets confirmed by visual inspection of the histograms, 
+one may safely proceed to replacing them by low random values. 
+
+If one uses a unique (very) low value for NA-replacements, this will quickly pose a problem 
+at the level of t-tests to look for proteins changing abundance between two or more groups of samples.
+Therefore it is common practice to draw random values from a Normal distribution representing this lower end of abundance values.
+Nevertheless, the choice of the parameters of this Normal distribution is very delicate. 
+
+This package proposes several related strategies/options for NA-imputation.
+First, the classical imputation of NA-values using Normal distributed random data is presented. 
+The mean value for the Normal data can be taken from the median or mode of the NA-neighbour values, 
+since (in case of technical replicetes) NA-neighbours tell us what these values might have been and thus we model a distribution around.
+Later in this vignette, a more elaborate version based on repeated implementations to obtain more robust results will be presented.
+
+The function `matrixNAneighbourImpute()` proposed in this package offers automatic selection of these parameters, which have been tested in a number of different projects.
+However, this choice should be checked by critically inspecting the histograms of 'NA-neighbours' (ie successful quantitation in other 
+replicate samples of the same protein) and the final resulting distribution. Initially all NA-neighbours are extracted. 
+It is also worth mentioning that in the majority of data-sets encountered, such NA-neighbours form skewed distributions. 
+
+The successful quantitation of instances with more than one NA-values per group may be considered even more representative, but of course less sucessfully quntified values remain.
+Thus a primary choice is made: If the selection of (min) 2 NA-values per group has more than 300 values, this distribution will be used as base to model 
+the distribution for drawing random values. In this case, by default the 0.18 quantile of the 2 NA-neighbour distribution will be used as mean for 
+the new Normal distribution used for NA-replacements. If the number of 2 NA-neighbours is >= 300, (by default) the 0.1 quantile all NA-neighbour values will used. 
+Of course, the user has also the possibility to use custom choices for these parameters.
+
+The final replacement is done on all NA values. This also includes proteins with are all NA in a given condition as well a instances of mixed successful quantitation and NA values.
+
+```{r NArepl_MaxQuant, echo=TRUE}
+## MaxQuant simple NA-imputation (single round)
+dataMQimp <- matrixNAneighbourImpute(dataMQ$quant, gr=grp9, tit="Example from MaxQuant") 
+```
+
+However, imputing using normal distributed random data also brings the risk of occasional extreme values.
+In the extreme case it may happen that a given protein is all NA in one group, and by chance the random values turn out be rather high.
+Then, the final group mean of imputed values may be even higher than the mean of another group with successful quantitations.
+Of course in this case it would be a bad interpretation to consider the protein in question upregulated in a sample where all values for this protein were NA.
+To circumvent this problem there are 2 options : 1) one may use special filtering schemes to exclude such constellations from final results or 2)
+one could repeat replacement of NA-values numerous times.
+
+Filtering can be performed using presenceFilt (package [wrMisc](https://CRAN.R-project.org/package=wrMisc)).
+
+The function _testRobustToNAimputation()_ allows such repeated replacement of NA-values. For details, see also the following section.
+
+
+## Statistical Testing
+
+The [t-test](https://en.wikipedia.org/wiki/Student%27s_t-test) remains the main statistical test used, as in many other coases of omics, too.
+Statistical testing in the context of proteomics data poses challenges similar to transcriptomics : 
+Many times the number of replicate-samples is fairly low and the inter-measurement variability quite high.
+In some unfortunate cases proteins with rather constant quantities may appear as false positives when searching for proteins who's abundance changes between two groups of samples : If the apparent variability is by chance too low, the respective standard-deviations will be low and a plain t-test may give very enthusiastic p-values.  
+Next to stringent filtering (previous section of this vignette) the shrinkage when estimating the intra-group/replicate variance from the Bioconductor package [limma](https://bioconductor.org/packages/release/bioc/html/limma.html) turns out very helpful, 
+see [Ritchie et al 2015](https://doi.org/10.1093/nar/gkv007). 
+In this package the function _eBayes()_ has been used and adopted to proteomics.
+
+The function `testRobustToNAimputation()` allows running multiple cycles of NA-imputation and statistical testing with the aim of providing stable imputation and testing results. 
+It performs NA-imputation and statistical testing (after repeated imputation) between all groups of samples the same time (as it would be inefficient to separate these two tasks). The tests underneath apply shrinkage from the empirical Bayes procedure from the bioconductor package [limma](https://bioconductor.org/packages/release/bioc/html/limma.html).  In addition, various formats of multiple test correction can be directly added to the results : Benjamini-Hochberg FDR, local false discovery rate (lfdr, using the package [fdrtool](https://CRAN.R-project.org/package=fdrtool), see [Strimmer 2008](https://doi.org/10.1093/bioinformatics/btn209) doi: 10.1093/bioinformatics/btn209), or modified testing by [ROTS](https://bioconductor.org/packages/release/bioc/html/ROTS.html), etc ...
+
+The fact that a single round of NA-imputation may provoke false positives as well as false negatives, made it necessary to combine this (iterative) process of NA-imputation and subsequent testing in one single function. 
+
+
+```{r testRobustToNAimputation_MQ1, echo=TRUE}
+## Impute NA-values repeatedly and run statistical testing after each round of imputations
+testMQ <- testRobustToNAimputation(dataMQ, gr=grp9) 
+
+## the data after repeated NA-imputation
+head(testMQ$datImp[,1:8])
+```
+
+## PCA
+
+Brielfy, principal components analysis ([PCA](https://en.wikipedia.org/wiki/Principal_component_analysis)) searches to decompose the data along all the axises defined by all samples. Then, the axis-combinations with the highest degree of correlation are searched.
+In principle one could also run PCA along the rows, ie the proteins, but their number is typically so high that the resultant plots get too crowded. 
+
+In the context of high throughput experiments, like proteomics, PCA allows to distinguish important information how the different samples are related (ie similar). This covers of course the real differences between different biological conditions, but also additional bias introduced as (technical) artifacts. Thus, such plots serve as well for quality control (in particular to identify outlyer-samples, eg due to degraded material) as well as for the biological interpretation.
+
+
+```{r PCA1MQ, fig.height=12, fig.width=9.5, fig.align="center", echo=TRUE}
+# limit to UPS1 
+plotPCAw(testMQ$datImp, sampleGrp=grp9, tit="PCA on MaxQuant (NAs imputed)", rowTyName="proteins", useSymb2=0)
+```
+
+Please note, the vignette dedicated to spike-in experiments ("UPS-1 spike-in Experiments") presents a slightly different way how to make PCA-plots for this specific type of experiment/data-set.
+
+
+## Volcano-Plot
+
+A [Volcano-plot](https://en.wikipedia.org/wiki/Volcano_plot_(statistics)) allows to compare the simple fold-change (FC) opposed to the outcome of a statistcal test.
+Frequently we can obsereve, that a some proteins show very small FC but enthousiastic p-values and subsequently enthousiastic FDR-values.
+However, generally such proteins with so small FC don't get considered as reliable results, therefore it is common practice to add an additional FC-threshold,
+typically a 1.5 or 2 fold-change. 
+
+The number of proteins retained by pair-wise comparison :
+```{r VolcanoPlot1MQ, fig.height=7, fig.width=9.5, fig.align="center", echo=TRUE}
+## by default the first pairwise comparison is taken
+## using the argument 'namesNBest' we can add names from the annotation
+VolcanoPlotW2(testMQ, namesNBest="passThr")
+```
+
+Additional Note : Vlcano-plots may also help identifying bias in the data, in particular, to the question if normalization gave satisfactory results. 
+Based on the hypothesis of no global change used for normalization, normally, one would expect about the same number of down-regulated as up-regulated proteins.
+
+In fact, this experiment is somehow unusual since one set of samples got a strong increase in abundance for 48 UPS1 proteins while the other proteins remained constant.
+Thus, on the global scale there may be a (small) imbalance of abundances and the global median will reflect this, which can create some bias.
+So, in this special case it might be better to perform normalization only based on the yeast proteins (which are assumed as constant), 
+as it has been performed in the vignette 'UPS-1 spike-in Experiments', a vignette which is entirely dedicated to UPS1 spike-in experiments.
+
+
+## Reporting Results
+
+Tables with results can be either directed created using _VolcanoPlotW()_ or, as shown below, using `extractTestingResults()`.
+
+For this example the moderated t-test expressed as Benjamini-Hochberg FDR gave `r sum(testMQ$BH[,1] < 0.05,na.rm=TRUE)` proteins with
+FDR < 0.05 (however, many of them with low FC) for the comparison `r colnames(testMQ$BH)[1]`.
+So one should add an additional filter for too low FC values.
+
+```{r results1, echo=TRUE}
+res1 <- extractTestingResults(testMQ, compNo=1, thrsh=0.05, FCthrs=2)
+```
+After FC-filtering for 2-fold (ie change to double or half) `r nrow(res1)` proteins remain.
+
+```{r results2, echo=TRUE}
+knitr::kable(res1[,-1], caption="5%-FDR (BH) Significant results for 1st pairwise set", align="c")
+```
+Please note that the column-name 'BH' referrs to Benjamini-Hochberg FDR (several other options of multiple testing correction exist, too).
+We can see that many UPS1 proteins are, as expected, among the best-ranking differential changes.
+However, not all UPS1 proteins do show up in the results as expected, and furthermore, a number of yeast proteins 
+(however expected to remain constant !) were reported as differential, too.
+
+The function _extractTestingResults()_ also allows to write the data shown above directly to a csv-file.
+
+## Further Steps
+
+In case of standard projects one typically would like to find out more about the biological context of the proteins retained at statistical analysis, their function and their interactors.
+Such a list of significant proteins from a given project could be tested lateron for enrichment of [GO-functions](http://geneontology.org/) or for their inter-connectivity in PPI networks like [String](https://string-db.org/).
+There are multiple tools available on [Bioconductor](https://www.bioconductor.org/) and [CRAN](https://cran.r-project.org/) as well as outside of R to perform such analysis tasks.
+
+In case of UPS1 spike-in experiments the subsequent analysis is different. 
+Suggestions for in depth-analysis of UPS1 spike-in are shown in the vignette 'UPS-1 spike-in Experiments' of [this package](https://CRAN.R-project.org/package=wrProteo).
+ 
+.
+
+***
+
+
+# Protein Annotation
 
 In most 'Omics' acitivities getting additional annotation may get a bit tricky.
-In Proteomics most mass-spectrometry software will use the informaton provided in the Fasta-file as annotation (as provided from UniProt).
+In Proteomics most mass-spectrometry software will use the informaton provided in the Fasta-file as annotation (typically as provided from UniProt).
 But this lacks for example chromosomal location information.
 There are are many repositories with genome-, gene- and protein-annotation and most of them are linked, but sometimes the links get broken when 
 data-base updates are not done everywhere or are not followed by new re-matching. The Fasta-files used initially for mass-spectrometry peak-identification
-may be (slightly) not up to date (sometimes gene-or protein IDs do change or may even disappear) and thus will contribute to a certain percentage of entries hard to link.
+may be (slightly) not up to date (sometimes gene- or protein-IDs do change or may even disappear) and thus will contribute to a certain percentage of entries hard to link.
+
+Globally two families of strategies for adding annotation exist :
+
+a) Strategies using online-based ressources for getting the most up-to-date information/annotation. 
+Depite the advantage of most up-to-date information there may be some downsides :
+This may require quite some time to run all queries via interet-connections and this strategy is vulnerable to broken links (eg linked to the delay of updates between different types of databases that may need to get combined). Furthermore, the results typically change a bit when the queries get repeated.
+When combining multiple interconnected ressources it may be very difficult to document the precise version of all individual ressources used.
+
+b) Strategies based on using (local copies of) defined versions of databases. Frequently, these databases can get downloaded/installed locally and thus allow faster queries and guarantee of repeatability and comparability to other tools or studies. 
+Despite the disadvantage, that some information might be slightly not up-to-date the ability to completely control the query process and repeatability are reasonable arguments.
+
 
 In the context of adding chromosomal annotation to a list of proteins here the following concept is developed :
 Annotation-tables from [UCSC](https://genome.ucsc.edu/cgi-bin/hgTables) are available for a good number of species and can be downloaded for conventient off-line search. Howwever, in the context of less common species we realized that the UniProt tables from UCSC had many times low yield in final matching.
@@ -130,17 +436,17 @@ For this reason we propose the slightly more complicated route that provided fin
 In addition, it is possible to select either the entire genome-annotation or user-specified regions. 
 In terms of 'output-format' one may choose 'GTF' (slightly more condensed, no headers) or 'all filds from selected table'.
 
-The strategy presented here :
+The strategy for adding genomic location data presented here :
 
-Locate & download organism annotation from UCSC, read into R (_readUCSCtable()_) ->  from R export (non-redundant) 'enst'-IDs (still _readUCSCtable()_ ), 
-get corresponding UniProt-IDs at UniProt site, save as file and import result into R (_readUniProtExport()_ ) -> (in R) combine with initial UCSC table (_readUniProtExport()_ )
+Locate & download organism annotation from UCSC, read into R (_readUCSCtable()_ ) ->  from R export (non-redundant) 'enst'-IDs (still _readUCSCtable()_ ), 
+get corresponding UniProt-IDs at UniProt site, save as file and import result into R (_readUniProtExport()_ ) -> (in R) combine with initial UCSC table (_readUniProtExport()_ ) .
 
-The function _readUCSCtable()_ is able to read such files downloaded from UCSC, compressed .gz files can be read, too. 
-In the example below we'll just look at chromosome 11 of the human genome - to keep files small.
+The function `readUCSCtable()` is able to read such files downloaded from UCSC, compressed .gz files can be read, too (like in the example below). 
+In the example below we'll just look at chromosome 11 of the human genome - to keep this example small.
 
 ```{r readUCSC1, echo=TRUE}
 path1 <- system.file("extdata", package="wrProteo")
-gtfFi <- file.path(path1, "UCSC_hg38_chr11extr.gtf")
+gtfFi <- file.path(path1, "UCSC_hg38_chr11extr.gtf.gz")
 UcscAnnot1 <- readUCSCtable(gtfFi)
 
 # The Ensemble transcript identifyers and their chromosomal locations :
@@ -161,7 +467,7 @@ Since we exported Ensemble transcript IDs (ENSTxxx), select converting from 'Ens
 Then, when downloading the conversion results, choose tab-separated file format (compression is recommended), this may take several seconds (depending on the size).
 
 It is suggested to rename the downloaded file so one can easily understand its content.
-Note, that the function _readUniProtExport()_ can also read .gz compressed files. 
+Note, that the function `readUniProtExport()` can also read .gz compressed files. 
 To continue this vignette we'll use a result which has been downloaded from [UniProt](https://www.uniprot.org/uploadlists/) and renamed to 'deUniProt_hg38chr11extr.tab'.
 One may also optionally define a specific genomic region of interest using the argument 'targRegion', here the entire chromosome 11 was chosen.
 
@@ -177,216 +483,22 @@ Obviously, using recent Fasta-files from UniProt for protein-identification will
 You may note that sometimes Ensemble transcript IDs are written as 'enst00000410108' whereas at other places it may be written as 'ENST00000410108.5'.
 The function _readUniProtExport()_ switches to a more flexible search mode stripping of version-numbers and reading all as lower-caps, if initial direct matching reveals less than 4 hits.
 
-Finally, it should be added, that of course other ways of retrieving annotation exist, in particular using the annotation-packages provided by [Bioconductor](https://www.bioconductor.org/).
+Finally, it should be added, that of course several other ways of retrieving annotation exist, in particular, using the annotation-packages provided by [Bioconductor](https://www.bioconductor.org/).
  
 
-## Importing and Treating Data From Quantitative Proteomics
-
-This package provides support for importing quantitation results from [Proteome Discoverer](https://www.thermofisher.com/order/catalog/product/OPTON-30812),
- [MaxQuant](https://www.maxquant.org) and [Proline](http://www.profiproteomics.fr/proline/). All quantitation import functions offer special features for separating species
- for optional different treatment. 
-Normalization aims to eliminate/reduce variability introduced to the data not linked to the original biological question.
-Of course, a well-designed experiment with sufficient  replicates is crucial for performing efficient normalization.  
-Technical replicates are very frequently found in proteomics, they allow to assess the influence of repeated injection of the same material.
-Biological replicates allow interpreting experiments in a more general way. 
-Multiple options for normalization are available in the package [wrMisc](https://CRAN.R-project.org/package=wrMisc) and can be called when importing data.
-Global median or global mean normalization have proved to provide robust results in numerous settings. However, they depend on the hypothesis that there are no global changes.
-This implies that the number of proteins changing abundance in a strong way should be small.
-
-Typical contaminants in proteomics like keratins are very abundant and thus may influence global mean normalization. 
-The import functions from this package lets the user to choose if all proteins or a subset should be considered when determining normalization factors.
-For example, you may want to exclude contaminants from normalization since their dynamics may reflect other cofactors than the biological question.
-In the case of benchmark-tests it is very common to different species, like the human spike-in set [UPS-1](https://www.sigmaaldrich.com/life-science/proteomics/mass-spectrometry/ups1-and-ups2-proteomic.html).  
-In such cases you may orient normalization on a primary species to avoid having high concentrations of 
-spike-in standards influencing the normalization.
-
-All import functions generate lists separating (selected) annotation data (annot) from normalized log2-quantitation data (quant)
-and initial quantitation (raw).
-
-
- 
-### Read data from Proteome Discoverer
-
-[Proteome Discoverer](https://www.thermofisher.com/order/catalog/product/OPTON-30812) is commercial software from ThermoFisher (www.thermofisher.com).
-In [Proteome Discoverer](https://www.thermofisher.com/order/catalog/product/OPTON-30812) quantitation data on level of consensus-proteins should be exported to tabulated text files, which can be treated by this function.
-Note, for this vignette we have only extracted a few hundred lines to make the data-set easier to manipulate.
-
-```{r readProteomeDiscoverer, echo=TRUE}
-path1 <- system.file("extdata", package="wrProteo")
-fiNaPd <- "exampleProtDiscov1.txt"
-dataPD <- readPDExport(file=fiNaPd, path=path1, normalizeMeth="median")
-## a summary of the quantitation data
-summary(dataPD$quant)
-```
- 
-### Read data from MaxQuant
-
-[MaxQuant](https://www.maxquant.org) is free software provided by the [Max-Planck-Insutute](https://www.biochem.mpg.de/de), 
-see [Tyanova et al 2016](https://www.nature.com/articles/nprot.2016.136) (doi: 10.1093/bioinformatics/btaa118). 
-Typically [MaxQuant](https://www.maxquant.org) exports by default quantitation data on level of consensus-proteins as a folder called txt with a file called proteinGroups.txt .
-So in a standard case one needs only to provide the path to this file. However, for this vignette we have only extracted a few hundred lines to make
-the data-set easier to manipulate, and thus it has gotten a different name.
-
-
-
-```{r readMaxQuant, echo=TRUE}
-path1 <- system.file("extdata", package="wrProteo")
-fiNaMa <- "proteinGroupsMaxQuantUps1.txt"
-specPref1 <- c(conta="conta|CON_|LYSC_CHICK", mainSpecies="YEAST", spike="HUMAN_UPS")
-dataMQ <- readMaxQuantFile(path1, file=fiNaMa, specPref=specPref1, normalizeMeth="median")
-## a summary of the quantitation data
-summary(dataMQ$quant)
-```
-
-### Read data from Proline
-
-[Proline](http://www.profiproteomics.fr/proline/) is free software provided by the Profi-consortium, 
-see [Bouyssié et al 2020](https://academic.oup.com/bioinformatics/article/36/10/3148/5756203) (doi: 10.1038/nprot.2016.136).
-In [Proline](http://www.profiproteomics.fr/proline/) quantitation data on level of consensus-proteins can be exported to csv or tabulated text files, which can be treated by this function.
-Note, for this vignette we have only extracted a few hundred lines to make the data-set easier to manipulate.
-
-```{r readProline, echo=TRUE}
-normalizeMeth <- NULL
-path1 <- system.file("extdata", package="wrProteo")
-fiNaPl <- "exampleProlineABC.csv"
-dataPL <- readProlineFile(file.path(path1,fiNaPl) )
-## a summary of the quantitation data
-summary(dataPL$quant)
-```
-
-
-## Normalization
-
-As mentioned, the aim of normalization is to remove bias in data not linked to the original (biological) question.
-The import functions presented above do already by default global median normalization.
-In overall it is important to inspect results from normalization, graphical display of histograms, boxplots or violin-plots usually work well to compare distributions.
-Multiple options exist for normalizing data, for example the function normalizeThis from the package [wrMisc](https://CRAN.R-project.org/package=wrMisc) can be used to run additional normalization.
-
-Different normalization procedures intervene with different 'aggressiveness', ie capacity of deforming the initial data. 
-In general we suggest to start normalizing using 'milder' procedures, like global median and switch to more intervening methods if initial results seem not satisfactory.
-Beware, heavy normalization procedures may also alter the main information you want to analyze. 
-Ie, some biologically true positive changes may start to fade or disappear when inappropriate normalization gets performed. 
-Please note, that normalization should be performed before NA-imputation to avoid introducing new bias in the group of imputed values.
-
-
-## Imputation of NA-values
-
-In Proteomics the quantitation of very low abundances is very challenging and typically absent or very low abundances appear in the results as 0 or NA.
-Typically this may be linked to the fact that no peak is detected in a MS-1 chromatogram (for a given LC elution-time) where other samples had a strong peak 
-with successful MS-2 identification. Data treated with MaxQuant have typically a higher degree of NA values.
-To simplify the treatment all 0 values are transformed to NA, anyway they would not allow log2 transformation either.
-
-Before replacing NA-values it is important to verify that such values may be associated to absent or very low abundances. 
-To do so, we suggest to inspect groups of replicate-measurements. In particular with multiple technical replicates of the same sample 
-it is supposed that any variability observed is not linked to the sample itself. So for each NA that occurs in the data we suggest to 
-look what was reported for the same protein with the other (technical) replicates. 
-This brings us to the term of 'NA-neighbours' (quantifications for the same protein in replicates).
-When drawing histograms of NA-neighbours one can visually inspect and verify that NA-neighbours are typically low abundance values, 
-however, but not necessarily the lowest values observed in the entire data-set.
-
-This package proposes two related strategies for NA-imputation.
-First, the classical imputation of NA-values using Normal distributed random data is presented.
-Then, a more elaborate version based on repeated implementations to obtain more robust results is presented.
-
-```{r NA_ProteomeDiscoverer, echo=TRUE}
-## Let's inspect NA values as graphic
-matrixNAinspect(dataPD$quant, gr=gl(2,3), tit="Tiny example data from ProteomeDiscoverer") 
-```
-
-```{r NA_MaxQuant, echo=TRUE}
-## Let's inspect NA values as graphic
-matrixNAinspect(dataMQ$quant, gr=gl(3,3), tit="Tiny example data from MaxQuant") 
-```
-
-```{r NA_Proline, echo=TRUE}
-## Let's inspect NA values as graphic
-matrixNAinspect(dataPL$quant, gr=as.factor(substr(colnames(dataPL$quant),1,1)),
-  tit="Tiny example data from Proline") 
-```
-
-So only if the hypothesis of NA-neighbours as typically low abundance values gets confirmed by visual inspection of the histograms, 
-one may proceed to replacing them by low random values. If one uses a unique (very) low value for NA-replacements, this
-will easily pose a problem when t-tests should be employed to look for proteins changing abundance between two or more groups of samples.
-Therefore it is common practice to draw random values from a Normal distribution representing this lower end of abundance values.
-Nevertheless, the choice of the parameters of this Normal distribution is very delicate. 
-
-The functions proposed here offer automatic selection of these parameters, which have been tested in a number of different projects.
-However, this choice should be checked by critically inspecting the histograms of 'NA-neighbours' (ie successful quantitation in other 
-replicate samples of the same protein) and the final resulting distribution. Initially all NA-neighbours are extracted. 
-It is also worth mentioning that in the majority of  data-sets we encountered, such NA-neighbours form skewed distributions. 
-Occasionally one may also find instances where 2 out of 3 (or more replicates) are NA.
-The successful quantitation of such instances with 2 NA-values per group are considered even more representative, but of course much less observed values remain.
-Thus a primary choice is made: If the selection of (min) 2 NA-values per group has more than 300 values, this distribution will be used as base to model 
-the distribution for drawing random values. In this case, by default the 0.18 quantile of the 2 NA-neighbour distribution will be used as mean for 
-the new Normal distribution used for NA-replacements. If the number of 2 NA-neighbours is >= 300, (by default) the 0.1 quantile all NA-neighbour values will used. 
-Of course, the user has also the possibility to use custom choices for these parameters.
-
-The final replacement is done on all NA values. This also includes proteins with are all NA in a given condition as well a instances of mixed successful quantitation and NA values.
-
-```{r NArepl_ProteomeDiscoverer, echo=TRUE}
-## ProteomeDiscoverer
-dataPD$NArepl <- matrixNAneighbourImpute(dataPD$quant,gr=gl(2,3),
-  tit="Tiny example from ProteomeDiscoverer") 
-```
-
-```{r NArepl_MaxQuant, echo=TRUE}
-## MaxQuant
-dataMQ$NArepl <- matrixNAneighbourImpute(dataMQ$quant,gr=gl(3,3),tit="Tiny example from MaxQuant") 
-```
-
-```{r NArepl_Proline, echo=TRUE}
-## Proline
-dataPL$NArepl <- matrixNAneighbourImpute(dataPL$quant,gr=gl(3,4),tit="Tiny example from Proline") 
-```
-
-However, imputing using normal distributed random data also brings the risk of occasional extreme values.
-In the extreme case it may happen that a given protein is all NA in one group, and by chance the random values turn out be rather high.
-Then the final group mean of imputed values may be even higher than the mean of another group with successful quantitations.
-Of course in this case it would be a bad interpretation to consider the protein in question upregulated in the sample where initially all values were NA.
-To circumvent this problem there are 2 options : Firstly, one may use special filtering schemes to exclude such constellations from final results or secondly,
-one could repeat replacement of NA-values numerous times.
-
-This type of filtering can be performed using presenceFilt (package [wrMisc](https://CRAN.R-project.org/package=wrMisc)).
-
-The function _testRobustToNAimputation()_ allows also such repeated replacement of NA-values. See also the following section.
-
-
-## Statistical Testing
-
-Statistical testing in the context of proteomics data poses challenges similar to transcriptomics : 
-Many times the number of replicate-samples is fairly low and the inter-measurement variability quite high.
-In some unfortunate cases proteins with rather constant quantities may appear as false positives when searching for proteins who's abundance changes between two groups of samples : If the apparent variability is by chance too low, the respective standard-deviations will be low and a plain t-test may give very enthusiastic p-values.  
-Next to stringent filtering (previous section of this vignette) the shrinkage when estimating the intra-group/replicate variance from the Bioconductor package [limma](https://bioconductor.org/packages/release/bioc/html/limma.html) turns out very helpful, 
-see [Ritchie et al 2015](https://academic.oup.com/nar/article/43/7/e47/2414268) (doi: 10.1093/nar/gkv007). 
-In this package the function _eBayes()_ has been used an it's use adopted to proteomics.
-
-The function _testRobustToNAimputation()_ performs NA-imputation and statistical testing (after repeated imputation) between all groups of samples the same time (as it would be inefficient to separate these two tasks). The tests underneath apply shrinkage from the empirical Bayes procedure from the bioconductor package [limma](https://bioconductor.org/packages/release/bioc/html/limma.html).  In addition, various formats of multiple test correction can be directly added to the results : Benjamini-Hochberg FDR, local false discovery rate (lfdr, using the package [fdrtool](https://CRAN.R-project.org/package=fdrtool), see [Strimmer 2008](https://academic.oup.com/bioinformatics/article/24/12/1461/196272) doi: 10.1093/bioinformatics/btn209), or modified testing by [ROTS](https://bioconductor.org/packages/release/bioc/html/ROTS.html), etc ...
-
-The fact that a single round of NA-imputation may provoke false positives as well as false negatives, made it necessary to combine this (iterative) process of NA-imputation and subsequent testing in one single function. 
-
-
-```{r testRobustToNAimputation_PL1, echo=TRUE}
-## Impute NA-values repeatedly and run statistical testing after each round of imputations
-testPL <- testRobustToNAimputation(dataPL$quant, gr=gl(3,4), lfdrInclude=FALSE) 
-## Note, this example is too small for reliable lfdr estimation (would give warning)
-
-## test results: classical BH FDR
-head(testPL$BH)
-sum(testPL$BH[,1] < 0.05, na.rm=TRUE)
-
-## the data after repeated NA-imputation
-head(testPL$datImp)
-
-```
 
 ## Acknowledgements
-The author wants to acknowledge the support by the [IGBMC](http://www.igbmc.fr/) (CNRS UMR 7104, Inserm U 1258), [CNRS](http://www.cnrs.fr/), [IGBMC](http://www.igbmc.fr/), [Université de Strasbourg](https://www.unistra.fr) and [Inserm](https://www.inserm.fr/).
-My collegues from the [proteomics platform](http://proteomics.igbmc.fr/) at the IGBMC work very commited to provide high quality mass-spectrometry data (including some of those used here).
-Furthermore, many very fruitful discussions with colleages on national and international level have helped to improve and disseminate the tools presented here.
+
+The author would like to acknowledge the support by the [IGBMC](http://www.igbmc.fr/) (CNRS UMR 7104, Inserm U 1258), [CNRS](http://www.cnrs.fr/), [Universite de Strasbourg](https://www.unistra.fr) and [Inserm](https://www.inserm.fr/).
+All collegues from the [proteomics platform](http://proteomics.igbmc.fr/) at the IGBMC work very commited to provide high quality mass-spectrometry data (including some of those used here).
+The author wishes to thank the [CRAN-staff](https://CRAN.R-project.org) for all their help with new entries and their efforts in maintaining this repository of R-packages.
+Furthermore, many very fruitful discussions with colleages on national and international level have helped to improve the tools presented here.
 
 
 
 ## Session-Info
+
+For completeness :
 
 ```{r sessionInfo, echo=FALSE}
 sessionInfo()

@@ -1,7 +1,7 @@
-#' Read csv or txt files exported from MS-Angel and Proline
+#' Read csv or txt files exported from Proline and MS-Angel
 #'
 #' Quantification results form MS-Angel and Proline \href{http://www.profiproteomics.fr/proline/}{Proline} exported as xlsx format can be read directly.
-#' Besides, files in csv (European and US format), tsv or tabulated txt can be read, too.
+#' Besides, files in tsv, csv (European and US format) or tabulated txt can be read, too.
 #' Then relevant information gets extracted, the data can optionally normalized and displayed as boxplot or vioplot. 
 #' The final output is a list containing 6 elements: \code{$raw}, \code{$quant},  \code{$annot}, \code{$counts}, \code{$quantNotes} and \code{$notes}. 
 #' Alternatively, a data.frame with annotation and quantitation data may be returned if \code{separateAnnot=FALSE}.
@@ -12,13 +12,14 @@
 #' This function has been developed using Proline version 1.6.1 coupled with MS-Angel 1.6.1. 
 #' The format of the exported file depends on the columns chosen for export, default settings from Proline and MS-Angel work fine. 
 #' 
-#' @param fileName (character) name of file to read
+#' @param fileName (character) name of file to read; .xlsx-, .csv-, .txt- and .tsv can be read (csv, txt and tsv may be gz-compressed). Reading xlsx requires package 'readxl'. 
 #' @param path (character) optional path (note: Windows backslash sould be protected or written as '/')
-#' @param normalizeMeth (character) normalization method (will be sent to  \code{\link[wrMisc]{normalizeThis}}) 
+#' @param normalizeMeth (character) normalization method (for details and options see \code{\link[wrMisc]{normalizeThis}}) 
 #' @param logConvert (logical) convert numeric data as log2, will be placed in $quant
 #' @param sampleNames (character) new column-names for quantification data (ProteomeDiscoverer does not automatically use file-names from spectra); Please use with care since order of samples might be different as you expect
 #' @param quantCol (character or integer) colums with main quantitation-data : precise colnames to extract, or if length=1 content of \code{quantCol} will be used as pattern to search among column-names for $quant using \code{grep} 
 #' @param annotCol (character) precise colnames or if length=1 pattern to search among column-names for $annot
+#' @param remStrainNo (logical) if \code{TRUE}, the organism annotation will be trimmed to uppercaseWord+space+lowercaseWord (eg Homo sapiens)
 #' @param pepCountCol (character) pattern to search among column-names for count data of PSM and NoOfPeptides
 #' @param trimColnames (logical) optional trimming of column-names of any redundant characters from beginning and end 
 #' @param refLi (integer) custom decide which line of data is main species, if single character entry it will be used to choose a group of species (eg 'mainSpe')
@@ -36,14 +37,14 @@
 #' @seealso \code{\link[utils]{read.table}} 
 #' @examples
 #' path1 <- system.file("extdata", package="wrProteo")
-#' fiNa <- "exampleProlineABC.csv"
-#' dataABC <- readProlineFile(file.path(path1,fiNa))
+#' fiNa <- "exampleProlineABC.csv.gz"
+#' dataABC <- readProlineFile(file.path(path1, fiNa))
 #' summary(dataABC$quant)
-#' matrixNAinspect(dataABC$quant, gr=as.factor(substr(colnames(dataABC$quant),1,1))) 
 #' @export
 readProlineFile <- function(fileName, path=NULL, normalizeMeth=NULL, logConvert=TRUE, sampleNames=NULL, quantCol="^abundance_", 
-  annotCol=c("accession","description","is_validated","protein_set_score","X.peptides","X.specific_peptides"), pepCountCol=c("^psm_count_","^peptides_count_"), 
-  trimColnames=FALSE, refLi=NULL,separateAnnot=TRUE,plotGraph=TRUE,tit=NULL,graphTit=NULL,wex=2, specPref=c(conta="_conta\\|", mainSpecies="OS=Homo sapiens"), silent=FALSE,callFrom=NULL){
+  annotCol=c("accession","description","is_validated","protein_set_score","X.peptides","X.specific_peptides"), remStrainNo=TRUE,
+  pepCountCol=c("^psm_count_","^peptides_count_"), trimColnames=FALSE, refLi=NULL, separateAnnot=TRUE,
+  plotGraph=TRUE, tit=NULL, graphTit=NULL, wex=2, specPref=c(conta="_conta\\|", mainSpecies="OS=Homo sapiens"), silent=FALSE,callFrom=NULL){
   ## 'quantCol', 'annotCol' (character) exact col-names or if length=1 pattern to search among col-names for $quant or $annot
   fxNa <- wrMisc::.composeCallName(callFrom, newNa="readProlineFile")
   opar <- graphics::par(no.readonly=TRUE)
@@ -80,11 +81,11 @@ readProlineFile <- function(fileName, path=NULL, normalizeMeth=NULL, logConvert=
   } else {
     ## try to find out which input format; read according to extension multiple times and choose the one with most columns 
     tmp <- list()
-    if(length(grep("\\.txt$",fileName)) >0) tmp[[1]] <- try(utils::read.delim(paFi, stringsAsFactors=FALSE), silent=TRUE)             # read tabulated text-file
-    if(length(grep("\\.csv$",fileName)) >0) tmp[[2]] <- try(utils::read.csv(paFi, stringsAsFactors=FALSE), silent=TRUE)               # read US csv-file
-    if(length(grep("\\.csv$",fileName)) >0) tmp[[3]] <- try(utils::read.csv2(paFi, stringsAsFactors=FALSE), silent=TRUE)              # read Euro csv-file
-    if(length(grep("\\.tsv$",fileName)) >0) tmp[[4]] <- try(utils::read.csv(file=paFi, stringsAsFactors=FALSE, sep='\t', header=TRUE)) # read US comma tsv-file
-    chCl <- sapply(tmp,class) =="try-error" 
+    if(length(c(grep("\\.txt$",fileName), grep("\\.txt\\.z$",fileName))) >0) tmp[[1]] <- try(utils::read.delim(paFi, stringsAsFactors=FALSE), silent=TRUE)             # read tabulated text-file
+    if(length(c(grep("\\.csv$",fileName), grep("\\.csv\\.gz$",fileName))) >0) tmp[[2]] <- try(utils::read.csv(paFi, stringsAsFactors=FALSE), silent=TRUE)               # read US csv-file
+    if(length(c(grep("\\.csv$",fileName), grep("\\.csv\\.gz$",fileName))) >0) tmp[[3]] <- try(utils::read.csv2(paFi, stringsAsFactors=FALSE), silent=TRUE)              # read Euro csv-file
+    if(length(c(grep("\\.tsv$",fileName), grep("\\.tsv\\.gz$",fileName))) >0) tmp[[4]] <- try(utils::read.csv(file=paFi, stringsAsFactors=FALSE, sep='\t', header=TRUE)) # read US comma tsv-file
+    chCl <- sapply(tmp, class) =="try-error" 
     if(length(chCl) <1) stop("Failed to recognize file extensions of input data (unknown format)")
     if(any(chCl)) {if(all(chCl)) stop(" Failed to extract data (unknown format) from ",fileName)}
     nCol <- sapply(tmp, function(x) if(length(x) >0) {if(class(x) != "try-error") ncol(x) else NA} else NA)
@@ -98,7 +99,7 @@ readProlineFile <- function(fileName, path=NULL, normalizeMeth=NULL, logConvert=
     quanConfFile <- if(length(fileName) >1 & !is.na(fileName[2])) fileName[2] else "Quant config.tsv"
     paFi <- if(chPa) {  # extract & use path out of fileName
       if(is.null(grep(dirname(fileName[1]),quanConfFile))) file.path(path[1],quanConfFile) else file.path(dirname(fileName),quanConfFile) # use path of fileName -if present, otherwise add path    
-    } else file.path(path[1],quanConfFile)
+    } else file.path(path[1], quanConfFile)
     if(file.exists(paFi)) {
       quantConf <- try(utils::read.csv(file=paFi, stringsAsFactors=FALSE, sep='\t', header=TRUE))
       if("try-error" %in% class(quantConf)) quantConf <- NULL else {
@@ -109,7 +110,7 @@ readProlineFile <- function(fileName, path=NULL, normalizeMeth=NULL, logConvert=
     } else quantConf <- NULL
     ## adopt annotCol
     annotCol <- sub("^#","X.",annotCol) 
-  }  
+  }
   ## look for separate annotation columns ?
   if(any(c(length(quantCol), length(annotCol)) <1)) separateAnnot <- FALSE else {
     if(any(all(is.na(quantCol)), all(is.na(annotCol)))) separateAnnot <- FALSE
@@ -120,17 +121,19 @@ readProlineFile <- function(fileName, path=NULL, normalizeMeth=NULL, logConvert=
   annot <- as.matrix(out[,metaCo])
   chSep <- nchar(utils::head(annot[,annotCol[1]])) - nchar(gsub("\\|","",utils::head(annot[,annotCol[1]])))
   tmp <- if(any(chSep >1)) sub("^[[:alpha:]]+\\||^[[:alpha:]]+_[[:alpha:]]+\\|","", annot[,annotCol[1]])        # presume presence of database origin-tag -> remove  (eg sp|...)
-  tmp3 <- sub("^[[:alpha:]]+\\|[[:alnum:]]+\\|{0,1}[[:alnum:]]*\\_{0,1}[[:upper:]]*\\ ","",annot[,annotCol[2]]) # without db|accession|EntryName
-  tmp2 <- cbind(Accession=sub("\\|[[:print:]]+$","",tmp), EntryName=sub("^[[:alnum:]]+\\|","",tmp), 
+  tmp3 <- sub("^[[:alpha:]]+_{0,1}[[:alpha:]]*\\|[[:upper:]][[:digit:]]+-{0,1}[[:digit:]]*\\|[[:alnum:]]+_{0,1}[[:alnum:]]*_{0,1}[[:alnum:]]*\\ ",
+    "",annot[,annotCol[2]]) # without db|accession|EntryName
+  tmp2 <- cbind(Accession=sub("\\|[[:print:]]+$","",tmp), EntryName=sub("^[[:alnum:]]+-{0,1}[[:digit:]]{0,2}\\|","",tmp), 
     ProteinName=sub("\\ [[:upper:]]{2}=[[:print:]]+","",tmp3) , GN=NA, Species=NA, Contam=NA, SpecType=NA) #
+
   ## recover GN
-  GNLi <- grep("\\ GN=[[:upper:]]{2,}[[:digit:]]", tmp3)
+  GNLi <- grep("\\ GN=[[:upper:]]{2,}[[:digit:]]*", tmp3)
     if(length(GNLi) >0) { zz <- sub("[[:print:]]+\\ GN=", "",tmp3[GNLi])             # remove surplus to left
       tmp2[GNLi,"GN"] <- sub("\\ +$","",sub("\\ [[:print:]]+","",zz)) }              # remove surplus to right (and right trailing space)
   ## recover OS
   OSLi <- grep("\\ OS=[[:upper:]][[:lower:]]+", tmp3)
     if(length(OSLi) >0) { zz <- sub("[[:print:]]+\\ OS=", "",tmp3[OSLi])             # remove surplus to left
-      tmp2[OSLi,"Species"] <- sub("\\ [[:upper:]]{2}=[[:print:]]+","",zz) }          # remove surplus to right  
+      tmp2[OSLi,"Species"] <- sub("\\ [[:upper:]]{2}=[[:print:]]+","",zz) }          # remove surplus to right (next tag)  
   ## locate special groups, column "SpecType"
   if(length(specPref) >0) for(i in 1:length(specPref)) {         # locate specPref
     naSp <- if(i==1) "conta" else {if(i==2) "mainSpe" else paste0("species",i-1)}
@@ -141,7 +144,7 @@ readProlineFile <- function(fileName, path=NULL, normalizeMeth=NULL, logConvert=
       if(any(!chNa) & !silent) message(fxNa," Beware, ",sum(!chNa)," 'SpecType' will be overwritten by ",naSp)
       tmp2[chSp,"SpecType"] <- naSp }
   }  
-  
+    
   annot <- cbind(tmp2,annot[,-1*match(annotCol[1], colnames(annot))])
   chDesc <- colnames(annot) %in% "description" 
   if(any(chDesc)) colnames(annot)[which(chDesc)] <- "Description"                # make uniform to other
@@ -149,7 +152,16 @@ readProlineFile <- function(fileName, path=NULL, normalizeMeth=NULL, logConvert=
   if(any(chUniNa) & !silent) message(fxNa," Caution: ",sum(chUniNa)," Accession entries appear repeatedly !  Making unique rownames by adding counter ...") 
   rowNa <- if(any(chUniNa)) wrMisc::correctToUnique(annot[,1],callFrom=fxNa) else annot[,1] 
   rownames(annot) <- rowNa
-    
+
+  if(remStrainNo) {
+    chSp <- grep("^[[:upper:]][[:lower:]]*\\ [[:lower:]]+\\ [[:print:]]*", annot[,"Species"])
+    if(length(chSp) >0) { nch1 <- nchar(sub("^[[:upper:]][[:lower:]]+\\ [[:lower:]]+", "", annot[chSp,"Species"]))
+      annot[chSp,"Species"] <- substr(annot[chSp,"Species"], 1, nchar(annot[chSp,"Species"]) - nch1) }
+  }
+
+  ## set annotation to common format
+  chNa <- match(c("GN","ProteinName"),colnames(annot))
+  colnames(annot)[chNa] <- c("GeneName","Description")
   ## locate & extract abundance/quantitation data
   if(length(quantCol) >1) { abund <- as.matrix(wrMisc::extrColsDeX(out, extrCol=quantCol, doExtractCols=TRUE, callFrom=fxNa))
   } else {
@@ -166,6 +178,7 @@ readProlineFile <- function(fileName, path=NULL, normalizeMeth=NULL, logConvert=
     if(any(chLe)) {pepCount <- array(dim=c(nrow(out), ncol(abund), sum(chLe)), dimnames=list(rowNa,colnames(abund),c("PSM","NoOfPeptides")[which(chLe)]))
       for(i in which(chLe)) pepCount[,,i] <- as.matrix(out[,supCol[[i]]]) }                                                 
   }    
+
   ## check abundance/quantitation data
   chNum <- is.numeric(abund)
   if(!chNum) {abund <- apply(out[,quantCol2], 2, wrMisc::convToNum, convert="allChar", callFrom=fxNa)} 
@@ -200,7 +213,7 @@ readProlineFile <- function(fileName, path=NULL, normalizeMeth=NULL, logConvert=
     graphics::par(mar=c(3, 3, 3, 1))                          # mar: bot,le,top,ri
     if(length(graphTit) >0) message(fxNa,"argument 'graphTit' is depreciated, please rather use 'tit' ")
     if(is.null(tit) & !is.null(graphTit)) tit <- graphTit
-    if(is.null(tit)) tit <- "Distribution of quantification values"
+    if(is.null(tit)) tit <- "Distribution of quantification values"                                                 
     chGr <- try(find.package("wrGraph"), silent=TRUE)
     chSm <- try(find.package("sm"), silent=TRUE)
     misPa <- c("try-error" %in% class(chGr),"try-error" %in% class(chSm))
@@ -209,25 +222,25 @@ readProlineFile <- function(fileName, path=NULL, normalizeMeth=NULL, logConvert=
       if(any(misPa)) { 
         ## wrGraph not available : simple boxplot  
         graphics::boxplot(log2(rawD), main=paste(tit," (initial)"), las=1, outline=FALSE) 
-        graphics::abline(h=round(log2(stats::median(rawD, na.rm=TRUE))) +c(-1:1), lty=2, col=grDevices::grey(0.6))      
+        graphics::abline(h=round(log2(stats::median(rawD, na.rm=TRUE))) +c(-2:2)*2, lty=2, col=grDevices::grey(0.6))      
       } else {                                          # wrGraph & sm are available
         wrGraph::vioplotW(log2(rawD), tit=paste(tit," (initial)"), wex=wex) 
-        graphics::abline(h=round(stats::median(rawD, na.rm=TRUE)) +(-1:1), lty=2, col=grDevices::grey(0.6))           
+        graphics::abline(h=round(log2(stats::median(rawD, na.rm=TRUE))) +(-2:2)*2, lty=2, col=grDevices::grey(0.6))           
       }
     }
     if(length(normalizeMeth) >0) tit <- paste(tit," (normalized)")
     if(any(misPa)) { 
       ## wrGraph not available : simple boxplot  
       graphics::boxplot(abund, main=tit, las=1, outline=FALSE) 
-      graphics::abline(h=round(stats::median(abund, na.rm=TRUE)) +c(-1:1), lty=2, col=grDevices::grey(0.6))      
+      graphics::abline(h=round(stats::median(abund, na.rm=TRUE)) +c(-2:2)*2, lty=2, col=grDevices::grey(0.6))      
     } else {                                          # wrGraph & sm are available
       wrGraph::vioplotW(abund, tit=paste(tit, sep=" "), wex=wex) 
-      graphics::abline(h=round(stats::median(abund, na.rm=TRUE)) +(-1:1), lty=2, col=grDevices::grey(0.6))           
+      graphics::abline(h=round(stats::median(abund, na.rm=TRUE)) +(-2:2)*2, lty=2, col=grDevices::grey(0.6))           
     }        
     on.exit(graphics::par(opar)) }                         #
   ## meta-data to export
-  notes <- c(qmethod="Proline", normalizeMeth="none", call=match.call(), created=as.character(Sys.time()), 
-    wrProteo.version=utils::packageVersion("wrProteo"), machine=Sys.info()["nodename"])
+  notes <- c(inpFile=paFi, qmethod="Proline", normalizeMeth="none", call=match.call(),  
+    created=as.character(Sys.time()), wrProteo.version=utils::packageVersion("wrProteo"), machine=Sys.info()["nodename"])
   ##
   if(separateAnnot) {
     if(!is.numeric(abund) & logConvert) {message(fxNa," Problem: Abundance data seem not numeric, can't transform log2 !")}

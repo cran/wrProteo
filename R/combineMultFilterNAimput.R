@@ -49,16 +49,21 @@ combineMultFilterNAimput <- function(dat,imputed,grp,annDat=NULL,abundThr=NULL,c
   grpMeans <- wrMisc::rowGrpMeans(imputed$data,grp)
   if(any(!(colnames(grpMeans) == colnames(imputed$nNA)))) message(fxNa," Problem with order of columns of imputed$nNA !?")
   pwComb <- wrMisc::triCoord(ncol(grpMeans))
+
   if(is.numeric(abundThr) & length(abundThr)==1) {
     for(i in 1:nrow(pwComb)) {                                                # loop along all pair-wise questions => (update filter) datFi
       chLi <- grpMeans[,pwComb[i,1]] < abundThr & grpMeans[,pwComb[i,2]] < abundThr
       if(any(chLi)) datFi[which(chLi),i] <- FALSE}
     if(!silent) cat(fxNa,"   at abundanceFilt: ",colSums(datFi),"\n") }
   ## check if set of mostly imputed data higher than measured -> filter
+  ## number of NAs per line & group
+  nNAbyGroup <- wrMisc::rowGrpNA(dat,grp)
+  
   for(i in 1:nrow(pwComb)) {
     critNAGrp <- table(grp)[colnames(grpMeans)[pwComb[i,]]]
-    critNAGrp <- critNAGrp/2 -0.1                                                          # potentially filter when min 50% of data NA
-    chLi <- imputed$nNA[,pwComb[i,]] > matrix(rep(critNAGrp, each=nrow(grpMeans)), ncol=2)   # use imputed$nNA; return T when need to filter
+    critNAGrp <- critNAGrp/2 -0.1  
+      #re-check ?# potentially filter when min 50% of data NA
+    chLi <- nNAbyGroup[,pwComb[i,]] > matrix(rep(critNAGrp, each=nrow(grpMeans)), ncol=2)   # use imputed$nNA; return T when need to filter
     if(any(chLi)) {
       chLi2 <- cbind(chLi[,1] & grpMeans[,pwComb[i,1]] > grpMeans[,pwComb[i,2]], chLi[,2] & grpMeans[,pwComb[i,2]] > grpMeans[,pwComb[i,1]]) # is T if bad
       datFi[,i] <- datFi[,i] & !chLi[,1] & !chLi[,2] }

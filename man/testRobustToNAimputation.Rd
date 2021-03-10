@@ -2,21 +2,22 @@
 % Please edit documentation in R/testRobustToNAimputation.R
 \name{testRobustToNAimputation}
 \alias{testRobustToNAimputation}
-\title{Test robust to NA-imputation}
+\title{Pair-wise testing robust to NA-imputation}
 \usage{
 testRobustToNAimputation(
   dat,
   gr,
   annot = NULL,
   retnNA = TRUE,
-  avSdH = c(0.18, 0.5),
-  avSdL = c(0.1, 0.5),
+  avSdH = c(0.15, 0.5),
+  avSdL = NULL,
   plotHist = FALSE,
   xLab = NULL,
   tit = NULL,
-  seedNo = 2018,
-  nLoop = 20,
-  lfdrInclude = TRUE,
+  seedNo = NULL,
+  multCorMeth = NULL,
+  nLoop = 100,
+  lfdrInclude = NULL,
   ROTSn = NULL,
   silent = FALSE,
   callFrom = NULL
@@ -33,7 +34,7 @@ testRobustToNAimputation(
 
 \item{avSdH}{(numeric) population characteristics (mean and sd) for >1 \code{NA} neighbours 'high' (per line)}
 
-\item{avSdL}{(numeric) population characteristics (mean and sd) for >0 \code{NA} neighbours 'low' (per line)}
+\item{avSdL}{depreciated argument, no longer used}
 
 \item{plotHist}{(logical) additional histogram of original, imputed and resultant distribution (made using \code{\link{matrixNAneighbourImpute}} )}
 
@@ -43,11 +44,13 @@ testRobustToNAimputation(
 
 \item{seedNo}{(integer) seed-value for normal random values}
 
+\item{multCorMeth}{(character)}
+
 \item{nLoop}{(integer) number of runs of independent \code{NA}-imputation}
 
-\item{lfdrInclude}{(logical) include lfdr estimations (may cause warning message(s) concerning convergence if few too lines/proteins in dataset tested).}
+\item{lfdrInclude}{(logical) depreciated, please used \code{multCorMeth} instead (include lfdr estimations, may cause warning message(s) concerning convergence if few too lines/proteins in dataset tested).}
 
-\item{ROTSn}{(integer) number of repeats by \code{ROTS}, if \code{NULL} \code{ROTS} will not be called}
+\item{ROTSn}{(integer) depreciated, please used \code{multCorMeth} instead (number of repeats by \code{ROTS}, if \code{NULL} \code{ROTS} will not be called)}
 
 \item{silent}{(logical) suppress messages}
 
@@ -57,7 +60,7 @@ testRobustToNAimputation(
 limma-type S3 object of class 'MArrayLM' which can be accessed; multiple results of testing or multiple testing correction types may get included ('p.value','FDR','BY','lfdr' or 'ROTS.BH')
 }
 \description{
-\code{testRobustToNAimputation} replaces \code{NA} values based on group neigbours (based on grouping of columns in argument \code{gr}), following overall assumption of close to Gaussian distribution.
+\code{testRobustToNAimputation} replaces \code{NA} values based on group neighbours (based on grouping of columns in argument \code{gr}), following overall assumption of close to Gaussian distribution.
 Furthermore, it is assumed that \code{NA}-values originate from experimental settings where measurements at or below detection limit are recoreded as \code{NA}.
 In  such cases (eg in proteomics) it is current practice to replace \code{NA}-values by very low (random) values in order to be able to perform t-tests.
 However, random normal values used for replacing may in rare cases deviate from the average (the 'assumed' value) and in particular, if multiple \code{NA} replacements are above the average, 
@@ -69,20 +72,25 @@ It is necessary to define all groups of replicates in \code{gr} to obtain all po
 The modified testing-procedure of Bioconductor package \href{https://bioconductor.org/packages/release/bioc/html/ROTS.html}{ROTS} may optionaly be included, if desired.
 This function returns a \href{https://bioconductor.org/packages/release/bioc/html/limma.html}{limma}-like S3 list-object further enriched by additional fields/elements.
 }
+\details{
+The argument \code{multCorMeth} allows to choose which multiple correction algorimths will be used and included to the final results.
+Possible options are 'lfdr','BH','BY','tValTab', ROTSn='100' (name to element necessary) or 'noLimma' (to add initial p.values and BH to limma-results). By default 'lfdr' (local false discovery rate from package 'fdrtools') and 'BH' (Benjamini-Hochberg FDR) are chosen.
+The option 'BY' referrs to Benjamini-Yakuteli FDR, 'tValTab' allows exporting all individual t-values from the repeated NA-substitution and subsequent testing.
+}
 \examples{
-set.seed(2015); rand1 <- round(runif(600)+rnorm(600,1,2),3)
+set.seed(2015); rand1 <- round(runif(600) +rnorm(600,1,2),3)
 dat1 <- matrix(rand1,ncol=6) + matrix(rep((1:100)/20,6),ncol=6)
-dat1[13:16,1:3] <- dat1[13:16,1:3]+2   # augment lines 13:16 
-dat1[19:20,1:3] <- dat1[19:20,1:3]+3   # augment lines 19:20
-dat1[15:18,4:6] <- dat1[15:18,4:6]+1.4   # augment lines 15:18 
+dat1[13:16,1:3] <- dat1[13:16,1:3] +2    # augment lines 13:16 
+dat1[19:20,1:3] <- dat1[19:20,1:3] +3    # augment lines 19:20
+dat1[15:18,4:6] <- dat1[15:18,4:6] +1.4  # augment lines 15:18 
 dat1[dat1 <1] <- NA                    # mimick some NAs for low abundance
 ## normalize data
-boxplot(dat1,main="data before normalization")
-dat1 <- wrMisc::normalizeThis(as.matrix(dat1),meth="median")
+boxplot(dat1, main="data before normalization")
+dat1 <- wrMisc::normalizeThis(as.matrix(dat1), meth="median")
 ## designate replicate relationships in samples ...  
-grp1 <- gl(2,3,labels=LETTERS[1:2])                   
+grp1 <- gl(2, 3, labels=LETTERS[1:2])                   
 ## moderated t-test with repeated inputations (may take >10 sec,  >60 sec if ROTSn >0 !) 
-PLtestR1 <- testRobustToNAimputation(dat=dat1,gr=grp1,retnNA=TRUE,nLoop=100,ROTSn=0,lfdr=FALSE)
+PLtestR1 <- testRobustToNAimputation(dat=dat1, gr=grp1, retnNA=TRUE, nLoop=70)
 names(PLtestR1)
 }
 \seealso{

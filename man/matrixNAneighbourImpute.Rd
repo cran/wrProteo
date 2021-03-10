@@ -2,19 +2,23 @@
 % Please edit documentation in R/matrixNAneighbourImpute.R
 \name{matrixNAneighbourImpute}
 \alias{matrixNAneighbourImpute}
-\title{Impute random values to NAs in matrix based on replicates (neighbour) values}
+\title{Imputation of NA-values based on non-NA replicates}
 \usage{
 matrixNAneighbourImpute(
   dat,
   gr,
+  imputMethod = "mode2",
   retnNA = TRUE,
-  avSdH = c(0.18, 0.5),
-  avSdL = c(0.1, 0.5),
-  plotHist = TRUE,
+  avSdH = c(NA, 0.5),
+  NAneigLst = NULL,
+  plotHist = c("hist", "mode"),
   xLab = NULL,
+  xLim = NULL,
+  yLab = NULL,
+  yLim = NULL,
   tit = NULL,
-  addImputDetail = TRUE,
-  seedNo = 2018,
+  figImputDetail = TRUE,
+  seedNo = NULL,
   silent = FALSE,
   callFrom = NULL
 )
@@ -24,19 +28,27 @@ matrixNAneighbourImpute(
 
 \item{gr}{(character or factor) grouping of columns of 'dat', replicate association}
 
-\item{retnNA}{(logical) decide if NA values should be removed or retained}
+\item{imputMethod}{(character) choose the imputation method (may be 'mode2'(default), 'mode1', 'datQuant' or 'modeAdopt')}
+
+\item{retnNA}{(logical) decide (if =\code{TRUE}) only NA-substuted data should be returned, or if list with $data, $nNA, $NAneighbour and $randParam should be returned}
 
 \item{avSdH}{(numerical,length=2) population characteristics 'high' (mean and sd) for >1 \code{NA}-neighbours (per line)}
 
-\item{avSdL}{(numerical,length=2) population characteristics 'low' (mean and sd) for >0 \code{NA}-neighbours}
+\item{NAneigLst}{(list) option for repeated rounds of imputations: list of \code{NA}-neighbour values can be furnished for slightly faster processing}
 
-\item{plotHist}{(logical) decide if supplemental figure with histogram shoud be drawn}
+\item{plotHist}{(character or logical) decide if supplemental figure with histogram shoud be drawn, the details 'Hist','quant' (display quantile of originak data), 'mode' (display mode of original data) can be chosen explicitely}
 
 \item{xLab}{(character) label on x-axis on plot}
 
+\item{xLim}{(numeric, length=2) custom x-axis limits}
+
+\item{yLab}{(character) label on y-axis on plot}
+
+\item{yLim}{(numeric, length=2) custom y-axis limits}
+
 \item{tit}{(character) title on plot}
 
-\item{addImputDetail}{(logical) display details about data (number of NAs) and imputation in graph (min number of NA-neighbours per protein and group, quantile to model, mean and sd of imputed)}
+\item{figImputDetail}{(logical) display details about data (number of NAs) and imputation in graph (min number of NA-neighbours per protein and group, quantile to model, mean and sd of imputed)}
 
 \item{seedNo}{(integer) seed-value for normal random values}
 
@@ -48,34 +60,51 @@ matrixNAneighbourImpute(
 list with \code{$data} .. matrix of data where \code{NA} are replaced by imputed values, \code{$nNA} .. number of \code{NA} by group, \code{$randParam} .. parameters used for making random data
 }
 \description{
-It is assumed that \code{NA}-values appear the data when quantitation values are very low, as this appears eg in proteomics. 
-Thus the remaining lowest values may be used to guide imputation.
-Here, groups of replicate samples (grouping defined via \code{gr} of columns of \code{dat}) are inspected for each line to gather NA-neighbour values.
-Eg, if a given line contains for a set of 4 replicates 2 \code{NA}-values, the remaining 2 non-\code{NA}-values will be considered as NA-neighbours.
-Then, this function replaces \code{NA}-values based the sub-population of all NA-neighbours (across all groups of replicates and all lines), assuming a Gaussian distribution.
-Indeed, in a number of experimental settings some actual measurements may not meet an arbitrary defined baseline (as 'zero') or may be too low to be distinguishable from  
-noise that associated measures were initially recorded as \code{NA}. In several types of (quantitative) measurments in proteomics and transcriptomics this is known to happen.
-So this function allows to model and subsequently replace all \code{NA}-values by Gaussian random values based on the characteristics of \code{NA}-neighbours in the same data-set.
-However, defining these characteristics (via the arguments \code{avSdH} and \code{avSdL}) may be very delicate and visual verification of the plots produced is highly encouraged ! 
-If more than 300 \code{NA}-neighbours were detected, the imputation will be based on a more restricted sub-set of data with >1 \code{NA} values (ie via the argument \code{avSdH}). 
-Optionally a histogram may be plotted showing the initial, imputed and final distribution to check if the global hypothesis that \code{NA}-values arose 
+It is assumed that \code{NA}-values appear in data when quantitation values are very low (as this appears eg in quantitative shotgun proteomics). 
+Here, the concept of (technical) replicates is used to investigate what kind of values appear in the other replicates next to NA-values for the same line/protein.
+Groups of replicate samples  are defined via argument \code{gr} which descibes the columns of \code{dat}). 
+Then, they are inspected for each line to gather NA-neighbour values (ie those values where NAs and regular measures are observed the same time).
+Eg, let's consider a line contains a set of 4 replicates. Now, if 2 of them are \code{NA}-values, the remaining 2 non-\code{NA}-values will be considered as NA-neighbours.
+Ultimately, the aim is to replaces all \code{NA}-values based on values from a normal distribution ressembling theire respective NA-neighbours.
+}
+\details{
+By default a histogram gets plotted showing the initial, imputed and final distribution to check the global hypothesis that \code{NA}-values arose 
 from very low measurements and to appreciate the impact of the imputed values to the overall final distribution.
-Of course, all decisions to replace \code{values} do have a strong impact on further steps of data-analysis and should be performed with care. 
-Please note, that no distinction is made if values seem totally absent (all values of given line and group) as \code{NA} or partially absent (mixture of \code{NA} and real quantitations).
-Thus, truly absent groups may be over-estimated.
+
+
+There are a number of experimental settings where low measurements may be reported as \code{NA}. 
+Sometimes an arbitrary defined baseline (as 'zero') may provoke those values found below being unfortunately reported as \code{NA} or as 0 (in case of MaxQuant). 
+In quantitative proteomics (DDA-mode) the presence of numerous high-abundance peptides will lead to the fact that a number of less 
+intense MS-peaks don't get identified properly and will then be reported as \code{NA} in the respective samples, 
+while the same peptides may by correctly identified and quantified in other (replicate) samples.
+So, if a given protein/peptide gets properly quantified in some replicate samples but reported as \code{NA} in other replicate samples 
+one may thus speculate that similar values like in the successful quantifications may have occored. 
+Thus, imputation of \code{NA}-values may be done on the basis of \code{NA}-neighbours.
+ 
+There are 
+ 
+When extracting \code{NA}-neighbours, a slightly more focussed approach gets checked, too, the 2-\code{NA}-neighbours : In case a set of replicates for a given protein 
+contains at least 2 non-\code{NA}-values (instead of just one) it will be considered as a (min) 2-\code{NA}-neighbour as well as regular \code{NA}-neighbour. 
+If >300 of these (min) 2-\code{NA}-neighbours get found, they will be used instead of the regular \code{NA}-neighbours.
+For creating a collection of normal random values one may use directly the mode of the \code{NA}-neighbours (or 2-\code{NA}-neighbours, if >300 such values available).
+To do so, the first value of argument \code{avSdH} must be set to \code{NA}. Otherwise, the first value \code{avSdH} will be used as quantile of all data to define the mean   
+for the imputed data (ie as \code{quantile(dat, avSdH[1], na.rm=TRUE)}). The sd for generating normal random values will be taken from the sd of all  \code{NA}-neighbours (or 2-\code{NA}-neighbours)
+multiplied by the second value in argument \code{avSdH} (or \code{avSdH}, if >300 2-\code{NA}-neighbours), since the sd of the \code{NA}-neighbours is usually quite high.
+In extremely rare cases it may happen that no \code{NA}-neighbours are found (ie if \code{NA}s occur, all replicates are \code{NA}). 
+Then, this function replaces \code{NA}-values based on the normal random values obtained as dscribed above.
 }
 \examples{
 set.seed(2013)
-datT6 <- matrix(round(rnorm(300)+3,1),ncol=6,dimnames=list(paste("li",1:50,sep=""),
+datT6 <- matrix(round(rnorm(300)+3,1),ncol=6, dimnames=list(paste("li",1:50,sep=""),
   letters[19:24]))
-datT6 <- datT6 +matrix(rep(1:nrow(datT6),ncol(datT6)),ncol=ncol(datT6))
-datT6[6:7,c(1,3,6)] <- NA
+datT6 <- datT6 +matrix(rep(1:nrow(datT6), ncol(datT6)), ncol=ncol(datT6))
+datT6[6:7, c(1,3,6)] <- NA
 datT6[which(datT6 < 11 & datT6 > 10.5)] <- NA
 datT6[which(datT6 < 6 & datT6 > 5)] <- NA
 datT6[which(datT6 < 4.6 & datT6 > 4)] <- NA
-datT6b <- matrixNAneighbourImpute(datT6,gr=gl(2,3))
+datT6b <- matrixNAneighbourImpute(datT6, gr=gl(2,3))
 head(datT6b$data)
 }
 \seealso{
-\code{\link[graphics]{hist}}, \code{\link[stats]{na.fail}},  \code{\link[wrMisc]{naOmit}}
+this function gets used by \code{\link{testRobustToNAimputation}}; stimation of mode \code{\link[wrMisc]{stableMode}}; detection of NAs \code{\link[stats]{na.fail}}
 }

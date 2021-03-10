@@ -7,24 +7,33 @@ knitr::opts_chunk$set(collapse=TRUE, comment = "#>")
 #  install.packages("wrProteo")
 #  ## The package 'wrGraph' is not obligatory, but it allows making better graphs
 #  install.packages("wrGraph")
+#  
+#  # Installation of limma
+#  if(!requireNamespace("BiocManager", quietly=TRUE)) install.packages("BiocManager")
+#  BiocManager::install("limma")
 
 ## ----setup, echo=FALSE, messages=FALSE, warnings=FALSE------------------------
 suppressPackageStartupMessages({
     library(wrMisc)
     library(wrProteo)
+    library(wrGraph)
     library(knitr)
     library(rmarkdown) 
 }) 
 
 ## ----setup2-------------------------------------------------------------------
+## Get started by loading the packages
 library("wrMisc")
 library("wrProteo")
+library("wrGraph")
 # This is wrProteo version no :
 packageVersion("wrProteo")
 
+## ----setup32, echo=TRUE, eval=FALSE-------------------------------------------
+#  browseVignettes("wrProteo")
+
 ## ----ChemFormMolMass1, echo=TRUE----------------------------------------------
 massDeFormula(c("12H12O", "HO", " 2H 1 Se, 6C 2N", "HSeCN", " ", "e"))
-# Note, that empty/invalid entries will be returned as a mass of 0.0 .
 
 # Ignore empty/invalid entries
 massDeFormula(c("12H12O", "HO", " 2H 1 Se, 6C 2N", "HSeCN"), rmEmpty=TRUE)
@@ -32,7 +41,6 @@ massDeFormula(c("12H12O", "HO", " 2H 1 Se, 6C 2N", "HSeCN"), rmEmpty=TRUE)
 
 ## ----ChemFormMolMass2, echo=TRUE----------------------------------------------
 massDeFormula(c("12H12O", "HO", " 2H 1 Se, 6C 2N", "HSeCN"), massTy="aver")
-
 
 ## ----AAseqMolMass, echo=TRUE--------------------------------------------------
 AAmass()
@@ -53,9 +61,55 @@ str(fasta1)
 fasta1det <- readFasta2(file.path(path1,fiNa), tableOut=TRUE)
 str(fasta1det)
 
+## ----readMaxQuant1, fig.height=8, fig.width=9.5, fig.align="center", echo=TRUE----
+path1 <- system.file("extdata", package="wrProteo")
+dataMQ <- readMaxQuantFile(path1, specPref=NULL, normalizeMeth="median")
+
+## ----readMaxQuant2,  echo=TRUE------------------------------------------------
+## the number of lines and colums
+dim(dataMQ$quant)
+## a summary of the quantitation data
+summary(dataMQ$quant[,1:8])        # the first 8 cols
+
+## ----sampNa1,  echo=TRUE------------------------------------------------------
+UPSconc <- c(50,125,250,500,2500,5000,12500,25000,50000)  
+sampNa <- paste0(rep(UPSconc, each=3),"amol_",rep(1:3,length(UPSconc))) 
+grp9 <- paste0(rep(UPSconc,each=3),"amol") 
+head(grp9)
+
+## ----NA_MaxQuant, echo=TRUE---------------------------------------------------
+## Let's inspect NA values as graphic
+matrixNAinspect(dataMQ$quant, gr=grp9, tit="Data from MaxQuant") 
+
+## ----NArepl_MaxQuant, echo=TRUE-----------------------------------------------
+## MaxQuant simple NA-imputation (single round)
+dataMQimp <- matrixNAneighbourImpute(dataMQ$quant, gr=grp9, tit="Example from MaxQuant") 
+
+## ----testRobustToNAimputation_MQ1, echo=TRUE----------------------------------
+## Impute NA-values repeatedly and run statistical testing after each round of imputations
+testMQ <- testRobustToNAimputation(dataMQ, gr=grp9) 
+
+## the data after repeated NA-imputation
+head(testMQ$datImp[,1:8])
+
+## ----PCA1MQ, fig.height=12, fig.width=9.5, fig.align="center", echo=TRUE------
+# limit to UPS1 
+plotPCAw(testMQ$datImp, sampleGrp=grp9, tit="PCA on MaxQuant (NAs imputed)", rowTyName="proteins", useSymb2=0)
+
+## ----VolcanoPlot1MQ, fig.height=7, fig.width=9.5, fig.align="center", echo=TRUE----
+## by default the first pairwise comparison is taken
+## using the argument 'namesNBest' we can add names from the annotation
+VolcanoPlotW2(testMQ, namesNBest="passThr")
+
+## ----results1, echo=TRUE------------------------------------------------------
+res1 <- extractTestingResults(testMQ, compNo=1, thrsh=0.05, FCthrs=2)
+
+## ----results2, echo=TRUE------------------------------------------------------
+knitr::kable(res1[,-1], caption="5%-FDR (BH) Significant results for 1st pairwise set", align="c")
+
 ## ----readUCSC1, echo=TRUE-----------------------------------------------------
 path1 <- system.file("extdata", package="wrProteo")
-gtfFi <- file.path(path1, "UCSC_hg38_chr11extr.gtf")
+gtfFi <- file.path(path1, "UCSC_hg38_chr11extr.gtf.gz")
 UcscAnnot1 <- readUCSCtable(gtfFi)
 
 # The Ensemble transcript identifyers and their chromosomal locations :
@@ -71,68 +125,6 @@ UcscAnnot1 <- readUCSCtable(gtfFi, exportFileNa=expFi)
 deUniProtFi <- file.path(path1, "deUniProt_hg38chr11extr.tab")
 deUniPr1 <- readUniProtExport(UniP=deUniProtFi, deUcsc=UcscAnnot1, targRegion="chr11:1-135,086,622")
 str(deUniPr1)
-
-## ----readProteomeDiscoverer, echo=TRUE----------------------------------------
-path1 <- system.file("extdata", package="wrProteo")
-fiNaPd <- "exampleProtDiscov1.txt"
-dataPD <- readPDExport(file=fiNaPd, path=path1, normalizeMeth="median")
-## a summary of the quantitation data
-summary(dataPD$quant)
-
-## ----readMaxQuant, echo=TRUE--------------------------------------------------
-path1 <- system.file("extdata", package="wrProteo")
-fiNaMa <- "proteinGroupsMaxQuantUps1.txt"
-specPref1 <- c(conta="conta|CON_|LYSC_CHICK", mainSpecies="YEAST", spike="HUMAN_UPS")
-dataMQ <- readMaxQuantFile(path1, file=fiNaMa, specPref=specPref1, normalizeMeth="median")
-## a summary of the quantitation data
-summary(dataMQ$quant)
-
-## ----readProline, echo=TRUE---------------------------------------------------
-normalizeMeth <- NULL
-path1 <- system.file("extdata", package="wrProteo")
-fiNaPl <- "exampleProlineABC.csv"
-dataPL <- readProlineFile(file.path(path1,fiNaPl) )
-## a summary of the quantitation data
-summary(dataPL$quant)
-
-## ----NA_ProteomeDiscoverer, echo=TRUE-----------------------------------------
-## Let's inspect NA values as graphic
-matrixNAinspect(dataPD$quant, gr=gl(2,3), tit="Tiny example data from ProteomeDiscoverer") 
-
-## ----NA_MaxQuant, echo=TRUE---------------------------------------------------
-## Let's inspect NA values as graphic
-matrixNAinspect(dataMQ$quant, gr=gl(3,3), tit="Tiny example data from MaxQuant") 
-
-## ----NA_Proline, echo=TRUE----------------------------------------------------
-## Let's inspect NA values as graphic
-matrixNAinspect(dataPL$quant, gr=as.factor(substr(colnames(dataPL$quant),1,1)),
-  tit="Tiny example data from Proline") 
-
-## ----NArepl_ProteomeDiscoverer, echo=TRUE-------------------------------------
-## ProteomeDiscoverer
-dataPD$NArepl <- matrixNAneighbourImpute(dataPD$quant,gr=gl(2,3),
-  tit="Tiny example from ProteomeDiscoverer") 
-
-## ----NArepl_MaxQuant, echo=TRUE-----------------------------------------------
-## MaxQuant
-dataMQ$NArepl <- matrixNAneighbourImpute(dataMQ$quant,gr=gl(3,3),tit="Tiny example from MaxQuant") 
-
-## ----NArepl_Proline, echo=TRUE------------------------------------------------
-## Proline
-dataPL$NArepl <- matrixNAneighbourImpute(dataPL$quant,gr=gl(3,4),tit="Tiny example from Proline") 
-
-## ----testRobustToNAimputation_PL1, echo=TRUE----------------------------------
-## Impute NA-values repeatedly and run statistical testing after each round of imputations
-testPL <- testRobustToNAimputation(dataPL$quant, gr=gl(3,4), lfdrInclude=FALSE) 
-## Note, this example is too small for reliable lfdr estimation (would give warning)
-
-## test results: classical BH FDR
-head(testPL$BH)
-sum(testPL$BH[,1] < 0.05, na.rm=TRUE)
-
-## the data after repeated NA-imputation
-head(testPL$datImp)
-
 
 ## ----sessionInfo, echo=FALSE--------------------------------------------------
 sessionInfo()

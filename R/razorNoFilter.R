@@ -32,4 +32,16 @@ razorNoFilter <- function(annot,speNa=NULL,totNa=NULL,minRazNa=NULL,minSpeNo=1,m
     filt <- as.integer(annot[,minRazNa]) >= minTotNo
   }
   filt } 
+
+#' @export
+.checkKnitrProt <- function(tryF=FALSE) {
+  ## function for checking presence of knitr and rmarkdown
+  ## needed to explicitely call functions of packages
+  chPaR <- try(find.package("rmarkdown"), silent=TRUE)
+  chPaK <- try(find.package("knitr"), silent=TRUE)
+  if("try-error" %in% class(chPaR)) warning("package 'rmarkdown' not found ! Please install from CRAN") else {
+    if(tryF) rmarkdown::pandoc_available() }
+  if("try-error" %in% class(chPaK)) warning("package 'knitr' not found ! Please install from CRAN") else {
+    if(tryF) knitr::kable(matrix(1:4, ncol=2)) }
+  }  
    

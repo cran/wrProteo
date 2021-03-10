@@ -50,7 +50,7 @@ deUniPr1a <- readUniProtExport(deUniProtFi)
 str(deUniPr1a)
 
 ## Workflow starting with UCSC annotation (gtf) files :
-gtfFi <- file.path(path1,"UCSC_hg38_chr11extr.gtf")
+gtfFi <- file.path(path1,"UCSC_hg38_chr11extr.gtf.gz")
 UcscAnnot1 <- readUCSCtable(gtfFi)
 ## Results of conversion at UniProt are already available (file "deUniProt_hg38chr11extr.tab")
 myTargRegion <- list("chr1", pos=c(198110001,198570000))

@@ -7,7 +7,7 @@
 plotROC(
   dat,
   ...,
-  useCol = 2:3,
+  useColumn = 2:3,
   methNames = NULL,
   col = NULL,
   pch = 1,
@@ -32,7 +32,7 @@ plotROC(
 
 \item{...}{optional additional data-sets to include as seprate ROC-curves to same plot (must be of same type of format as 'dat')}
 
-\item{useCol}{(integer or character, length=2) columns from \code{dat} to be used for pecificity and sensitivity}
+\item{useColumn}{(integer or character, length=2) columns from \code{dat} to be used for pecificity and sensitivity}
 
 \item{methNames}{(character) names of methods (data-sets) to be displayed}
 
@@ -69,13 +69,13 @@ plotROC(
 \item{callFrom}{(character) allows easier tracking of messages produced}
 }
 \value{
-plot only
+plot with ROC curves only
 }
 \description{
 \code{plotROC} plots ROC curves based on results from \code{\link{summarizeForROC}}. 
-Does not return any data, plot only. Allows printing simultaneously multiple ROC curves from different studies. 
-Was made for special consideration of 3 species mix as in proteomics benchmark
-In the simplest case data were prepared using \code{\link[wrMisc]{moderTest2grp}}
+This function plots only, it does not return any data. It allows printing simultaneously multiple ROC curves from different studies, 
+it is also compatible with data from 3 species mix as in proteomics benchmark.
+Input can be prepared using \code{\link[wrMisc]{moderTest2grp}} followed by \code{\link{summarizeForROC}}.
 }
 \examples{
 roc0 <- cbind(alph=c(2e-6,4e-5,4e-4,2.7e-3,1.6e-2,4.2e-2,8.3e-2,1.7e-1,2.7e-1,4.1e-1,5.3e-1,

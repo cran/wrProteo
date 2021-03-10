@@ -8,7 +8,9 @@ summarizeForROC(
   test,
   thr = NULL,
   tyThr = "BH",
-  columnTest = 1,
+  useComp = 1,
+  columnTest = NULL,
+  FCthrs = NULL,
   spec = c("H", "E", "S"),
   annotCol = "spec",
   tit = NULL,
@@ -24,11 +26,15 @@ summarizeForROC(
 \arguments{
 \item{test}{(class \code{MArrayLM}, S3-object from limma) from testing (eg \code{\link{testRobustToNAimputation}} or \code{\link{test2grp}}}
 
-\item{thr}{(numeric) threshold, if \code{NULL} a panel of 108 values will be used for calculating specifcity and sensitivity}
+\item{thr}{(numeric) p-value threshold, if \code{NULL} a panel of 108 p-value threshold-levels values will be used for calculating specifcity and sensitivity}
 
 \item{tyThr}{(character,length=1) type of test-result to be used for sensitivity and specificity calculations (eg 'BH','lfdr' or 'p.value'), must be list-element of 'test'}
 
-\item{columnTest}{(character or integer) only in case 'tyThr' is matrix (as typically the case after \code{testRobustToNAimputation}) : which column of 'test$tyThr' should be used as test-result}
+\item{useComp}{(character or integer) in case multiple comparisons (ie multiple columns 'test$tyThr'); which pairwise comparison to used}
+
+\item{columnTest}{depreciated, pleas use 'useComp' instead}
+
+\item{FCthrs}{(numeric) Fold-Change threshold (display as line) give as Fold-change and NOT log2(FC), default at 1.5, set to \code{NA} for omitting}
 
 \item{spec}{(character) labels for species will be matched to column 'spec' of test$annot and used for sensitivity and specificity calculations. Important : 1st label for matrix (expected as constant) and subsequent labels for spike-ins (variable)}
 

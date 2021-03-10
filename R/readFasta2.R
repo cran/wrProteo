@@ -13,7 +13,7 @@
 #' @param silent (logical) suppress messages
 #' @param callFrom (character) allows easier tracking of message(s) produced
 #' @return return (based on 'tableOut') simple character vector (of sequence) with Uniprot ID as name or matrix with columns: 'database','uniqueIdentifier','entryName','proteinName','sequence' and further columns depending on argument \code{UniprSep}
-#' @seealso  \code{\link[base]{scan}} or \code{\link[seqinr]{read.fasta}}  
+#' @seealso  \code{\link[base]{scan}} or  \code{read.fasta} from the package \href{https://CRAN.R-project.org/package=seqinr}{seqinr} 
 #' @examples
 #' # tiny example with common contaminants 
 #' path1 <- system.file('extdata',package='wrProteo')

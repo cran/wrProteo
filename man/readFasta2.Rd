@@ -57,5 +57,5 @@ fasta2 <- readFasta2(file.path(path1,fiNa),tableOut=TRUE)
 str(fasta1)
 }
 \seealso{
-\code{\link[base]{scan}} or \code{\link[seqinr]{read.fasta}}
+\code{\link[base]{scan}} or  \code{read.fasta} from the package \href{https://CRAN.R-project.org/package=seqinr}{seqinr}
 }

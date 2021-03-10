@@ -2,7 +2,7 @@
 % Please edit documentation in R/readProlineFile.R
 \name{readProlineFile}
 \alias{readProlineFile}
-\title{Read csv or txt files exported from MS-Angel and Proline}
+\title{Read csv or txt files exported from Proline and MS-Angel}
 \usage{
 readProlineFile(
   fileName,
@@ -13,6 +13,7 @@ readProlineFile(
   quantCol = "^abundance_",
   annotCol = c("accession", "description", "is_validated", "protein_set_score",
     "X.peptides", "X.specific_peptides"),
+  remStrainNo = TRUE,
   pepCountCol = c("^psm_count_", "^peptides_count_"),
   trimColnames = FALSE,
   refLi = NULL,
@@ -27,11 +28,11 @@ readProlineFile(
 )
 }
 \arguments{
-\item{fileName}{(character) name of file to read}
+\item{fileName}{(character) name of file to read; .xlsx-, .csv-, .txt- and .tsv can be read (csv, txt and tsv may be gz-compressed). Reading xlsx requires package 'readxl'.}
 
 \item{path}{(character) optional path (note: Windows backslash sould be protected or written as '/')}
 
-\item{normalizeMeth}{(character) normalization method (will be sent to  \code{\link[wrMisc]{normalizeThis}})}
+\item{normalizeMeth}{(character) normalization method (for details and options see \code{\link[wrMisc]{normalizeThis}})}
 
 \item{logConvert}{(logical) convert numeric data as log2, will be placed in $quant}
 
@@ -40,6 +41,8 @@ readProlineFile(
 \item{quantCol}{(character or integer) colums with main quantitation-data : precise colnames to extract, or if length=1 content of \code{quantCol} will be used as pattern to search among column-names for $quant using \code{grep}}
 
 \item{annotCol}{(character) precise colnames or if length=1 pattern to search among column-names for $annot}
+
+\item{remStrainNo}{(logical) if \code{TRUE}, the organism annotation will be trimmed to uppercaseWord+space+lowercaseWord (eg Homo sapiens)}
 
 \item{pepCountCol}{(character) pattern to search among column-names for count data of PSM and NoOfPeptides}
 
@@ -70,7 +73,7 @@ list with \code{$raw} (initial/raw abundance values), \code{$quant} with final n
 }
 \description{
 Quantification results form MS-Angel and Proline \href{http://www.profiproteomics.fr/proline/}{Proline} exported as xlsx format can be read directly.
-Besides, files in csv (European and US format), tsv or tabulated txt can be read, too.
+Besides, files in tsv, csv (European and US format) or tabulated txt can be read, too.
 Then relevant information gets extracted, the data can optionally normalized and displayed as boxplot or vioplot. 
 The final output is a list containing 6 elements: \code{$raw}, \code{$quant},  \code{$annot}, \code{$counts}, \code{$quantNotes} and \code{$notes}. 
 Alternatively, a data.frame with annotation and quantitation data may be returned if \code{separateAnnot=FALSE}.
@@ -83,10 +86,9 @@ The format of the exported file depends on the columns chosen for export, defaul
 }
 \examples{
 path1 <- system.file("extdata", package="wrProteo")
-fiNa <- "exampleProlineABC.csv"
-dataABC <- readProlineFile(file.path(path1,fiNa))
+fiNa <- "exampleProlineABC.csv.gz"
+dataABC <- readProlineFile(file.path(path1, fiNa))
 summary(dataABC$quant)
-matrixNAinspect(dataABC$quant, gr=as.factor(substr(colnames(dataABC$quant),1,1))) 
 }
 \seealso{
 \code{\link[utils]{read.table}}

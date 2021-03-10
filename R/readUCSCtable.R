@@ -21,7 +21,7 @@
 #' @seealso \code{\link{readUniProtExport}}, \code{\link{readPDExport}}, \code{\link{readMaxQuantFile}},
 #' @examples
 #' path1 <- system.file("extdata", package="wrProteo")
-#' gtfFi <- file.path(path1, "UCSC_hg38_chr11extr.gtf")
+#' gtfFi <- file.path(path1, "UCSC_hg38_chr11extr.gtf.gz")
 #' # here we'll write the file for UniProt conversion to tempdir() to keep things tidy
 #' expFi <- file.path(tempdir(), "deUcscForUniProt2.txt")
 #' UcscAnnot1 <- readUCSCtable(gtfFi, exportFileNa=expFi)
