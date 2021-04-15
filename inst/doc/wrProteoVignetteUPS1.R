@@ -6,13 +6,13 @@ knitr::opts_chunk$set(collapse=TRUE, comment = "#>")
 #  # If not already installed, you'll have to install wrMisc and wrProteo first.
 #  install.packages("wrMisc")
 #  install.packages("wrProteo")
+#  # These packages are used for the graphics
+#  install.packages("wrGraph")
+#  install.packages("RColorBrewer")
 #  
 #  # Installation of limma from Bioconductor
 #  if(!requireNamespace("BiocManager", quietly=TRUE)) install.packages("BiocManager")
 #  BiocManager::install("limma")
-#  
-#  # The package wrGraph is recommended for better graphics
-#  install.packages("wrGraph")
 #  
 #  # You cat start the vignettes for this package by typing :
 #  browseVignettes("wrProteo")    #  ... and the select the html output
@@ -41,6 +41,7 @@ UPS1ac <- c("P00915", "P00918", "P01031", "P69905", "P68871", "P41159", "P02768"
   "P99999", "P06396", "P09211", "P01112", "P01579", "P02787", "O00762", "P51965",
   "P08758", "P02741", "P05413", "P10145", "P02788", "P10636-8", "P00441", "P01375" ) 
 
+## additional functions
 replSpecType <- function(x, annCol="SpecType", replBy=cbind(old=c("mainSpe","species2"), new=c("Yeast","UPS1")), silent=TRUE) {
   ## rename $annot[,"SpecType"] to more specific names
   chCol <- annCol[1] %in% colnames(x$annot)
@@ -79,7 +80,8 @@ plotMultRegrPar <- function(dat, methInd, tit=NULL, useColumn=c("logp","slope","
   if(is.list(lineGuide) & length(lineGuide) >0) {if(length(lineGuide$v) >0) graphics::abline(v=lineGuide$v,lty=2,col=lineGuide$col) 
     if(length(lineGuide$h) >0) graphics::abline(h=lineGuide$h,lty=2,col=lineGuide$col)}
   hi1 <- graphics::hist(dat[,methInd,useColumn[3]], plot=FALSE)
-  wrGraph::legendHist(sort(dat[,methInd,useColumn[3]]), colRamp=useCol[order(dat[,methInd,useColumn[3]])][cumsum(hi1$counts)], location="bottomleft", legTit="median raw abundance")  #
+  wrGraph::legendHist(sort(dat[,methInd,useColumn[3]]), colRamp=useCol[order(dat[,methInd,useColumn[3]])][cumsum(hi1$counts)], 
+    cex=0.5, location="bottomleft", legTit="median raw abundance")  #
 }
 
 ## ----readMaxQuant, fig.height=8, fig.width=9.5, fig.align="center", echo=TRUE----
@@ -163,9 +165,10 @@ NamesUpsPL <- dataPL$annot[which(dataPL$annot[,"SpecType"]=="UPS1"),"Accession"]
 
 ## ----postTreatmTables, echo=TRUE----------------------------------------------
 tabS <- mergeVectors(PD=table(dataPD$annot[,"SpecType"]), MQ=table(dataMQ$annot[,"SpecType"]), PL=table(dataPL$annot[,"SpecType"]))  
-knitr::kable(tabS, caption="Number of proteins identified, by custom tags and software")
+kable(tabS, caption="Number of proteins identified, by custom tags and software")
 tabT <- mergeVectors(PD=table(dataPD$annot[,"Species"]), MQ=table(dataMQ$annot[,"Species"]), PL=table(dataPL$annot[,"Species"]))  
-knitr::kable(tabT, caption="Number of proteins identified, by species and software")
+tabT[which(is.na(tabT))] <- 0
+kable(tabT, caption="Number of proteins identified, by species and software")
 
 ## ----NA_ProteomeDiscoverer, echo=TRUE-----------------------------------------
 ## Let's inspect NA values from ProteomeDiscoverer as graphic
@@ -182,7 +185,7 @@ matrixNAinspect(dataPL$quant, gr=grp9, tit="Proline")
 ## ----nNA1, echo=TRUE----------------------------------------------------------
 ## Let's look at the number of NAs. Is there an accumulated number in lower UPS1 samples ?
 tabSumNA <- rbind(PD=sumNAperGroup(dataPD$raw, grp9), MQ=sumNAperGroup(dataMQ$raw, grp9), PL=sumNAperGroup(dataPL$raw, grp9) )
-knitr::kable(tabSumNA, caption="Number of NAs per group of samples", align="r")
+kable(tabSumNA, caption="Number of NAs per group of samples", align="r")
 
 ## ----testProteomeDiscoverer, echo=TRUE----------------------------------------
 testPD <- testRobustToNAimputation(dataPD, gr=grp9)     # ProteomeDiscoverer
@@ -206,31 +209,33 @@ signCount <- cbind( sig.PD.BH=colSums(testPD$BH < 0.05, na.rm=TRUE), sig.PD.lfdr
 
 table1 <- numPairDeColNames(testPD$BH, stripTxt="amol", sortByAbsRatio=TRUE)
 table1 <- cbind(table1, signCount[table1[,1],])
-knitr::kable(table1, caption="All pairwise comparisons and number of significant proteins", align="c")
+kable(table1, caption="All pairwise comparisons and number of significant proteins", align="c")
 
 ## ----pairWise3, fig.height=4.5, fig.width=9.5, fig.align="center", echo=TRUE----
 par(mar=c(6.2, 4.7, 4, 1))   
-imageW(table1[,c("sig.PD.BH","sig.MQ.BH","sig.PL.BH" )], tit="Number of BH.FDR signif proteins by the quantification approaches")
-mtext("red for high number signif proteins", cex=0.7)
+imageW(table1[,c("sig.PD.BH","sig.MQ.BH","sig.PL.BH" )], col=RColorBrewer::brewer.pal(9,"YlOrRd"),
+  tit="Number of BH.FDR signif proteins by the quantification approaches")
+mtext("dark red for high number signif proteins", cex=0.7)
 
 ## ----pairWiseSelect2, echo=TRUE-----------------------------------------------
 ## Selection in Ramus paper 
-knitr::kable(table1[which(rownames(table1) %in% colnames(testPD$BH)[c(2,21,27)]),], caption="Selected pairwise comparisons (as in Ramus et al)", align="c")
+kable(table1[which(rownames(table1) %in% colnames(testPD$BH)[c(2,21,27)]),], caption="Selected pairwise comparisons (as in Ramus et al)", align="c")
 
 ## ----ROC_main1, echo=TRUE-----------------------------------------------------
 layout(1)
-rocPD <- lapply(table1[,1], function(x) summarizeForROC(testPD, useComp=x, annotCol="SpecType", spec=c("Yeast","UPS1"), tyThr="BH", plotROC=FALSE))
-rocMQ <- lapply(table1[,1], function(x) summarizeForROC(testMQ, useComp=x, annotCol="SpecType", spec=c("Yeast","UPS1"), tyThr="BH", plotROC=FALSE))
-rocPL <- lapply(table1[,1], function(x) summarizeForROC(testPL, useComp=x, annotCol="SpecType", spec=c("Yeast","UPS1"), tyThr="BH", plotROC=FALSE))
+rocPD <- lapply(table1[,1], function(x) summarizeForROC(testPD, useComp=x, annotCol="SpecType", spec=c("Yeast","UPS1"), tyThr="BH", plotROC=FALSE,silent=TRUE))
+rocMQ <- lapply(table1[,1], function(x) summarizeForROC(testMQ, useComp=x, annotCol="SpecType", spec=c("Yeast","UPS1"), tyThr="BH", plotROC=FALSE,silent=TRUE))
+rocPL <- lapply(table1[,1], function(x) summarizeForROC(testPL, useComp=x, annotCol="SpecType", spec=c("Yeast","UPS1"), tyThr="BH", plotROC=FALSE,silent=TRUE))
 
 # we still need to add the names for the pair-wise groups:
-names(rocPD) <- colnames(testPD$BH)
-names(rocMQ) <- colnames(testMQ$BH)
-names(rocPL) <- colnames(testPL$BH)
+names(rocPD) <- names(rocMQ) <- names(rocPL) <- rownames(table1)
+#names(rocPD) <- rownames(table1)  #colnames(testPD$BH)[table1[,1]]
+#names(rocMQ) <- colnames(testMQ$BH)[table1[,1]]
+#names(rocPL) <- colnames(testPL$BH)[table1[,1]]
 
 ## ----ROC_main2, echo=TRUE-----------------------------------------------------
 ## calulate  AUC for each ROC 
-AucAll <- cbind(ind=table1[match(names(rocPD),rownames(table1)),"index"], clu=NA, 
+AucAll <- cbind(ind=table1[match(names(rocPD), rownames(table1)),"index"], clu=NA, 
   PD=sapply(rocPD, AucROC), MQ=sapply(rocMQ, AucROC), PL=sapply(rocPL, AucROC) )
 
 ## ----ROC_biplot, fig.height=9, fig.width=9.5, fig.align="center", echo=TRUE----
@@ -262,115 +267,133 @@ AucRep <- table(AucAll[,"cluNo"])[rank(unique(AucAll[,"cluNo"]))]   # representa
 AucRep <- round(cumsum(AucRep) -AucRep/2 +0.1) 
 
 ## select representative for each cluster
-knitr::kable(round(AucAll[AucRep,c("Auc.PD","Auc.MQ","Auc.PL","cluNo")],3), caption="Selected representative for each cluster ", align="c")  
+kable(round(AucAll[AucRep,c("Auc.PD","Auc.MQ","Auc.PL","cluNo")],3), caption="Selected representative for each cluster ", align="c")  
 
 ## ----freqOfFCperClu, echo=TRUE------------------------------------------------
 ratTab <- sapply(5:1, function(x) { y <- table1[match(rownames(AucAll),rownames(table1)),]
   table(factor(signif(y[which(AucAll[,"cluNo"]==x),"log2rat"],1), levels=unique(signif(table1[,"log2rat"],1))) )}) 
 colnames(ratTab) <- paste0("clu",5:1,"\nn=",rev(table(kMAx)))
 layout(1)
-imageW(ratTab, tit="Frequency of log2FC in the 5 clusters", xLab="log2FC")
+imageW(ratTab, tit="Frequency of log2FC in the 5 clusters", xLab="log2FC (rounded)", col=RColorBrewer::brewer.pal(9,"YlOrRd"),las=1)
+mtext("dark red for high number signif proteins", cex=0.7)
 
 ## ----ROC_grp5tab, echo=TRUE---------------------------------------------------
 colPanel <- 2:5
 gr <- 5 
-j <- match(rownames(AucAll)[AucRep[6-gr]], colnames(testPD$t)) 
+j1 <- match(rownames(AucAll)[AucRep[6-gr]], colnames(testPD$t)) 
 
 ## table of all proteins in cluster
 useLi <- which(AucAll[,"cluNo"]==gr)
 tmp <- cbind(round(as.data.frame(AucAll)[useLi,c("cluNo","Auc.PD","Auc.MQ","Auc.PL")],3), 
   as.data.frame(table1)[match(names(useLi),rownames(table1)),c(2,5,7,9)])
-knitr::kable(tmp, caption="AUC details for best pairwise-comparisons ", align="c")  
+kable(tmp, caption="AUC details for best pairwise-comparisons ", align="c")  
 
 ## ----ROC_grp5fig, fig.height=9, fig.width=9.5, fig.align="center", echo=TRUE----
 ## frequent concentrations :
 layout(matrix(1:2), heights=c(1,2.5)) 
 plotConcHist(mat=tmp, ref=table1)
     
-## representative ROC    
-plotROC(rocPD[[j]],rocMQ[[j]],rocPL[[j]], col=colPanel, methNames=methNa, pointSi=0.8, xlim=c(0,0.45),
-  txtLoc=c(0.12,0.1,0.033), tit=paste("Cluster",gr," Example: ",names(rocPD)[j]), legCex=1)
+## representative ROC
+j2 <- match(rownames(AucAll)[AucRep[6-gr]], names(rocPD))
+plotROC(rocPD[[j2]], rocMQ[[j2]], rocPL[[j2]], col=colPanel, methNames=methNa, pointSi=0.8, xlim=c(0,0.45),
+  txtLoc=c(0.12,0.1,0.033), tit=paste("Cluster",gr," Example: ",names(rocPD)[j2]), legCex=1)
 
 ## ----VolcanoClu5, fig.height=10, fig.width=9.5, fig.align="center", echo=TRUE----
+fcPar1 <- c(text="arrow: expected ratio at",loc="toright")
 layout(matrix(1:4,ncol=2))
-VolcanoPlotW2(testPD, useComp=j, FCthrs=1.5, FdrThrs=0.05, annColor=c(4,2,3), ProjNa=methNa[1], silent=TRUE)
-VolcanoPlotW2(testMQ, useComp=j, FCthrs=1.5, FdrThrs=0.05, annColor=c(4,2,3), ProjNa=methNa[2], silent=TRUE)
-VolcanoPlotW2(testPL, useComp=j, FCthrs=1.5, FdrThrs=0.05, annColor=c(4,2,3), ProjNa=methNa[3], silent=TRUE)
+VolcanoPlotW(testPD, useComp=j1, FCthrs=1.5, FdrThrs=0.05, annColor=c(4,2,3), ProjNa=methNa[1], silent=TRUE)
+  foldChangeArrow2(testPD, useComp=j1, addText=fcPar1)
+VolcanoPlotW(testMQ, useComp=j1, FCthrs=1.5, FdrThrs=0.05, annColor=c(4,2,3), ProjNa=methNa[2], silent=TRUE)
+  foldChangeArrow2(testMQ, useComp=j1, addText=fcPar1)
+VolcanoPlotW(testPL, useComp=j1, FCthrs=1.5, FdrThrs=0.05, annColor=c(4,2,3), ProjNa=methNa[3], silent=TRUE)
+  foldChangeArrow2(testPL, useComp=j1, addText=fcPar1)
 
 ## ----ROC_grp4tab, echo=TRUE---------------------------------------------------
 gr <- 4
-j <- match(rownames(AucAll)[AucRep[6-gr]], colnames(testPD$t)) 
+j1 <- match(rownames(AucAll)[AucRep[6-gr]], colnames(testPD$t)) 
 
 ## table of all proteins in cluster
 useLi <- which(AucAll[,"cluNo"]==gr)
 tmp <- cbind(round(as.data.frame(AucAll)[useLi,c("cluNo","Auc.PD","Auc.MQ","Auc.PL")],3), 
   as.data.frame(table1)[match(names(useLi),rownames(table1)),c(2,5,7,9)])
-knitr::kable(tmp, caption="AUC details for best pairwise-comparisons ", align="c")  
+kable(tmp, caption="AUC details for best pairwise-comparisons ", align="c")  
 
 ## ----ROC_grp4fig, fig.height=10, fig.width=9.5, fig.align="center", echo=TRUE----
 ## frequent concentrations :
 layout(matrix(1:2), heights=c(1,2.5)) 
 plotConcHist(mat=tmp, ref=table1)
     
-## representative ROC    
-plotROC(rocPD[[j]], rocMQ[[j]],rocPL[[j]], col=colPanel, methNames=methNa, pointSi=0.8, xlim=c(0,0.45),
-  txtLoc=c(0.12,0.1,0.033), tit=paste("Cluster",gr," Example: ",names(rocPD)[j]), legCex=1)
+## representative ROC
+j2 <- match(rownames(AucAll)[AucRep[6-gr]], names(rocPD))
+plotROC(rocPD[[j2]], rocMQ[[j2]], rocPL[[j2]], col=colPanel, methNames=methNa, pointSi=0.8, xlim=c(0,0.45),
+  txtLoc=c(0.12,0.1,0.033), tit=paste("Cluster",gr," Example: ",names(rocPD)[j2]), legCex=1)
 
 ## ----VolcanoClu4, fig.height=10, fig.width=9.5, fig.align="center", echo=TRUE----
 layout(matrix(1:4, ncol=2)) 
-VolcanoPlotW2(testPD, useComp=j, FCthrs=1.5, FdrThrs=0.05, annColor=c(4,2,3), ProjNa=methNa[1], silent=TRUE)
-VolcanoPlotW2(testMQ, useComp=j, FCthrs=1.5, FdrThrs=0.05, annColor=c(4,2,3), ProjNa=methNa[2], silent=TRUE)
-VolcanoPlotW2(testPL, useComp=j, FCthrs=1.5, FdrThrs=0.05, annColor=c(4,2,3), ProjNa=methNa[3], silent=TRUE)
+VolcanoPlotW(testPD, useComp=j1, FCthrs=1.5, FdrThrs=0.05, annColor=c(4,2,3), ProjNa=methNa[1], silent=TRUE)
+  foldChangeArrow2(testPD, useComp=j1, addText=fcPar1)
+VolcanoPlotW(testMQ, useComp=j1, FCthrs=1.5, FdrThrs=0.05, annColor=c(4,2,3), ProjNa=methNa[2], silent=TRUE)
+  foldChangeArrow2(testMQ, useComp=j1, addText=fcPar1, col=4)
+VolcanoPlotW(testPL, useComp=j1, FCthrs=1.5, FdrThrs=0.05, annColor=c(4,2,3), ProjNa=methNa[3], silent=TRUE)
+  foldChangeArrow2(testPL, useComp=j1, addText=fcPar1, col=4)
 
 ## ----ROC_grp3tab, echo=TRUE---------------------------------------------------
 gr <- 3 
-j <- match(rownames(AucAll)[AucRep[6-gr]], colnames(testPD$t)) 
+j1 <- match(rownames(AucAll)[AucRep[6-gr]], colnames(testPD$t)) 
 
 ## table of all proteins in cluster
 useLi <- which(AucAll[,"cluNo"]==gr)
 tmp <- cbind(round(as.data.frame(AucAll)[useLi,c("cluNo","Auc.PD","Auc.MQ","Auc.PL")],3), 
   as.data.frame(table1)[match(names(useLi),rownames(table1)),c(2,5,7,9)])
-knitr::kable(tmp, caption="AUC details for best pairwise-comparisons ", align="c")  
+kable(tmp, caption="AUC details for best pairwise-comparisons ", align="c")  
 
 ## ----ROC_grp3fig, fig.height=10, fig.width=9.5, fig.align="center", echo=TRUE----
 ## frequent concentrations :
 layout(matrix(1:2), heights=c(1,2.5)) 
 plotConcHist(mat=tmp, ref=table1)
 
-## representative ROC    
-plotROC(rocPD[[j]], rocMQ[[j]],rocPL[[j]], col=colPanel, methNames=methNa, pointSi=0.8, xlim=c(0,0.45),
-  txtLoc=c(0.12,0.1,0.033), tit=paste("Cluster",gr," Example: ",names(rocPD)[j]), legCex=1)
+## representative ROC
+j2 <- match(rownames(AucAll)[AucRep[6-gr]], names(rocPD))
+plotROC(rocPD[[j2]],rocMQ[[j2]],rocPL[[j2]], col=colPanel, methNames=methNa, pointSi=0.8, xlim=c(0,0.45),
+  txtLoc=c(0.12,0.1,0.033), tit=paste("Cluster",gr," Example: ",names(rocPD)[j2]), legCex=1)
 
 ## ----VolcanoClu3, fig.height=10, fig.width=9.5, fig.align="center", echo=TRUE----
 layout(matrix(1:4, ncol=2)) 
-VolcanoPlotW2(testPD, useComp=j, FCthrs=1.5, FdrThrs=0.05, annColor=c(4,2,3), ProjNa=methNa[1], silent=TRUE)
-VolcanoPlotW2(testMQ, useComp=j, FCthrs=1.5, FdrThrs=0.05, annColor=c(4,2,3), ProjNa=methNa[2], silent=TRUE)
-VolcanoPlotW2(testPL, useComp=j, FCthrs=1.5, FdrThrs=0.05, annColor=c(4,2,3), ProjNa=methNa[3], silent=TRUE)
+VolcanoPlotW(testPD, useComp=j1, FCthrs=1.5, FdrThrs=0.05, annColor=c(4,2,3), ProjNa=methNa[1], silent=TRUE)
+  foldChangeArrow2(testPD, useComp=j1, addText=fcPar1)
+VolcanoPlotW(testMQ, useComp=j1, FCthrs=1.5, FdrThrs=0.05, annColor=c(4,2,3), ProjNa=methNa[2], silent=TRUE)
+  foldChangeArrow2(testMQ, useComp=j1, addText=fcPar1)
+VolcanoPlotW(testPL, useComp=j1, FCthrs=1.5, FdrThrs=0.05, annColor=c(4,2,3), ProjNa=methNa[3], silent=TRUE)
+  foldChangeArrow2(testPL, useComp=j1, addText=fcPar1)
 
 ## ----ROC_grp2tab, echo=TRUE---------------------------------------------------
 gr <- 2 
-j <- match(rownames(AucAll)[AucRep[6-gr]], colnames(testPD$t)) 
+j1 <- match(rownames(AucAll)[AucRep[6-gr]], colnames(testPD$t)) 
 
 ## table of all proteins in cluster
 useLi <- which(AucAll[,"cluNo"]==gr)
 tmp <- cbind(round(as.data.frame(AucAll)[useLi,c("cluNo","Auc.PD","Auc.MQ","Auc.PL")],3), 
   as.data.frame(table1)[match(names(useLi),rownames(table1)),c(2,5,7,9)])
-knitr::kable(tmp, caption="AUC details for best pairwise-comparisons ", align="c")  
+kable(tmp, caption="AUC details for best pairwise-comparisons ", align="c")  
 
 ## ----ROC_grp2fig, fig.height=10, fig.width=9.5, fig.align="center", echo=TRUE----
 ## frequent concentrations :
 layout(matrix(1:2), heights=c(1,2.5)) 
 plotConcHist(mat=tmp, ref=table1)
 
-## representative ROC    
-plotROC(rocPD[[j]], rocMQ[[j]],rocPL[[j]], col=colPanel, methNames=methNa, pointSi=0.8, xlim=c(0,0.45),
-  txtLoc=c(0.12,0.1,0.033), tit=paste("Cluster",gr," Example: ",names(rocPD)[j]), legCex=1)
+## representative ROC
+j2 <- match(rownames(AucAll)[AucRep[6-gr]], names(rocPD))
+plotROC(rocPD[[j2]], rocMQ[[j2]], rocPL[[j2]], col=colPanel, methNames=methNa, pointSi=0.8, xlim=c(0,0.45),
+  txtLoc=c(0.12,0.1,0.033), tit=paste("Cluster",gr," Example: ",names(rocPD)[j2]), legCex=1)
 
 ## ----VolcanoClu2, fig.height=10, fig.width=9.5, fig.align="center", echo=TRUE----
 layout(matrix(1:4, ncol=2)) 
-VolcanoPlotW2(testPD, useComp=j, FCthrs=1.5, FdrThrs=0.05, annColor=c(4,2,3), ProjNa=methNa[1], silent=TRUE)
-VolcanoPlotW2(testMQ, useComp=j, FCthrs=1.5, FdrThrs=0.05, annColor=c(4,2,3), ProjNa=methNa[2], silent=TRUE)
-VolcanoPlotW2(testPL, useComp=j, FCthrs=1.5, FdrThrs=0.05, annColor=c(4,2,3), ProjNa=methNa[3], silent=TRUE)
+VolcanoPlotW(testPD, useComp=j1, FCthrs=1.5, FdrThrs=0.05, annColor=c(4,2,3), ProjNa=methNa[1], silent=TRUE)
+  foldChangeArrow2(testPD, useComp=j1, addText=fcPar1)
+VolcanoPlotW(testMQ, useComp=j1, FCthrs=1.5, FdrThrs=0.05, annColor=c(4,2,3), ProjNa=methNa[2], silent=TRUE)
+  foldChangeArrow2(testMQ, useComp=j1, addText=fcPar1)
+VolcanoPlotW(testPL, useComp=j1, FCthrs=1.5, FdrThrs=0.05, annColor=c(4,2,3), ProjNa=methNa[3], silent=TRUE)
+  foldChangeArrow2(testPL, useComp=j1, addText=fcPar1)
 
 ## ----ROC_grp1tab, echo=TRUE---------------------------------------------------
 gr <- 1 
@@ -380,28 +403,32 @@ j <- match(rownames(AucAll)[AucRep[6-gr]], colnames(testPD$t))
 useLi <- which(AucAll[,"cluNo"]==gr)
 tmp <- cbind(round(as.data.frame(AucAll)[useLi,c("cluNo","Auc.PD","Auc.MQ","Auc.PL")],3), 
   as.data.frame(table1)[match(names(useLi),rownames(table1)),c(2,5,7,9)])
-knitr::kable(tmp, caption="AUC details for best pairwise-comparisons ", align="c")  
+kable(tmp, caption="AUC details for best pairwise-comparisons ", align="c")  
 
 ## ----ROC_grp1fig, fig.height=10, fig.width=9.5, fig.align="center", echo=TRUE----
 ## frequent concentrations :
 layout(matrix(1:2, ncol=1), heights=c(1,2.5)) 
 plotConcHist(mat=tmp, ref=table1)
     
-## representative ROC    
-plotROC(rocPD[[j]],rocMQ[[j]],rocPL[[j]], col=colPanel, methNames=methNa, pointSi=0.8, xlim=c(0,0.45),
-  txtLoc=c(0.12,0.1,0.033), tit=paste("Cluster",gr," Example: ",names(rocPD)[j]), legCex=1)
+## representative ROC
+j2 <- match(rownames(AucAll)[AucRep[6-gr]], names(rocPD))
+plotROC(rocPD[[j2]], rocMQ[[j2]], rocPL[[j2]], col=colPanel, methNames=methNa, pointSi=0.8, xlim=c(0,0.45),
+  txtLoc=c(0.12,0.1,0.033), tit=paste("Cluster",gr," Example: ",names(rocPD)[j2]), legCex=1)
 
 ## ----VolcanoClu1, fig.height=10, fig.width=9.5, fig.align="center", echo=TRUE----
 layout(matrix(1:4, ncol=2)) 
-VolcanoPlotW2(testPD, useComp=j, FCthrs=1.5, FdrThrs=0.05, annColor=c(4,2,3), ProjNa=methNa[1], silent=TRUE)
-VolcanoPlotW2(testMQ, useComp=j, FCthrs=1.5, FdrThrs=0.05, annColor=c(4,2,3), ProjNa=methNa[2], silent=TRUE)
-VolcanoPlotW2(testPL, useComp=j, FCthrs=1.5, FdrThrs=0.05, annColor=c(4,2,3), ProjNa=methNa[3], silent=TRUE) 
+VolcanoPlotW(testPD, useComp=j1, FCthrs=1.5, FdrThrs=0.05, annColor=c(4,2,3), ProjNa=methNa[1], silent=TRUE)
+  foldChangeArrow2(testPD, useComp=j1, addText=fcPar1)
+VolcanoPlotW(testMQ, useComp=j1, FCthrs=1.5, FdrThrs=0.05, annColor=c(4,2,3), ProjNa=methNa[2], silent=TRUE)
+  foldChangeArrow2(testMQ, useComp=j1, addText=fcPar1)
+VolcanoPlotW(testPL, useComp=j1, FCthrs=1.5, FdrThrs=0.05, annColor=c(4,2,3), ProjNa=methNa[3], silent=TRUE)
+  foldChangeArrow2(testPL, useComp=j1, addText=fcPar1)
 
 ## ----nNA2, echo=TRUE----------------------------------------------------------
 tab1 <- rbind(PD=sumNAperGroup(dataPD$raw[which(dataPD$annot[,"SpecType"]=="UPS1"),], grp9),
   MQ=sumNAperGroup(dataMQ$raw[which(dataMQ$annot[,"SpecType"]=="UPS1"),], grp9),
   PL= sumNAperGroup(dataPL$raw[which(dataPL$annot[,"SpecType"]=="UPS1"),], grp9)  ) 
-knitr::kable(tab1, caption="The number of NAs in the UPS1 proteins", align="c")
+kable(tab1, caption="The number of NAs in the UPS1 proteins", align="c")
 
 ## ----nNAfig1, fig.height=3.5, fig.width=9.5, fig.align="center", echo=TRUE----
 countRawNA <- function(dat, newOrd=UPS1ac, relative=FALSE) {  # count number of NAs per UPS protein and order as UPS
@@ -411,8 +438,8 @@ countRawNA <- function(dat, newOrd=UPS1ac, relative=FALSE) {  # count number of 
 sumNAperMeth <- cbind(PD=countRawNA(dataPD), MQ=countRawNA(dataMQ), PL=countRawNA(dataPL) )
 UPS1na <- sub("_UPS","",dataPL$annot[UPS1ac,"EntryName"])
 par(mar=c(6.8, 3.5, 4, 1))   
-imageW(sumNAperMeth, rowNa=UPS1na, tit="Number of NAs in UPS proteins", xLab="",yLab="")
-mtext("red for high number of NAs",cex=0.7)
+imageW(sumNAperMeth, rowNa=UPS1na, tit="Number of NAs in UPS proteins", xLab="", yLab="", col=RColorBrewer::brewer.pal(9,"YlOrRd"))
+mtext("dark red for high number of NAs",cex=0.7)
 
 ## ----PCA2PD, fig.height=12, fig.width=9.5, fig.align="center", echo=TRUE------
 plotPCAw(testPD$datImp[which(testPD$annot[,"SpecType"]=="UPS1"),], sampleGrp=grp9, tit="PCA on ProteomeDiscoverer, UPS1 only (NAs imputed)",rowTyName="proteins", useSymb2=0)
@@ -499,7 +526,7 @@ datUPS1[,3,"medAbund"] <- apply(wrMisc::.scale01(dataPL$datImp)[match(UPS1ac,row
 ## at which concentration of UPS1 did the best regression start ?
 stTab <- sapply(1:5, function(x) apply(datUPS1[,,"startFr"],2,function(y) sum(x==y)))
 colnames(stTab) <- paste("lev",1:5,sep="_")
-knitr::kable(stTab, caption = "Frequency of starting levels for regression")
+kable(stTab, caption = "Frequency of starting levels for regression")
 
 ## ----linModelPlotAll, fig.height=12, fig.width=9.5, fig.align="center", echo=TRUE----
 layout(matrix(1:4,ncol=2))
@@ -519,20 +546,21 @@ datUPS1[,3,2] <- rowSums(dataPL$count[match(UPS1ac,dataPL$annot[,1]),,2], na.rm=
 
 ## ----combRegrScore3, fig.height=6, fig.width=9.5, fig.align="center", echo=TRUE----
 layout(matrix(1:4,ncol=2))
-par(mar=c(5.5, 3, 4, 0.4))  
-imageW(datUPS1[,,1],col=heat.colors(15), tit="Linear regression score", xLab="",yLab="")
-mtext("red for bad score", cex=0.8)
+par(mar=c(5.5, 3, 4, 0.4))
+col1 <- RColorBrewer::brewer.pal(9,"YlOrRd")  
+imageW(datUPS1[,,1], col=col1, tit="Linear regression score", xLab="",yLab="")
+mtext("red for bad score", cex=0.75)
 
-imageW(log(datUPS1[,,2]),col=rev(heat.colors(15)),tit="Number of peptides", xLab="",yLab="")
-mtext("red for high number of peptides", cex=0.8)
+imageW(log(datUPS1[,,2]), tit="Number of peptides", xLab="",yLab="", col=col1)
+mtext("dark red for high number of peptides", cex=0.75)
 
 ## ratio : regression score vs no of peptides
-imageW(datUPS1[,,1]/log(datUPS1[,,2]),col=rev(heat.colors(15)),tit="Regression score / Number of peptides", xLab="",yLab="")
-mtext("red for high (good) lmScore/peptide ratio)", cex=0.8)
+imageW(datUPS1[,,1]/log(datUPS1[,,2]), col=rev(col1), tit="Regression score / Number of peptides", xLab="",yLab="")
+mtext("dark red for high (good) lmScore/peptide ratio)", cex=0.75)
 
 ## score vs abundance
-imageW(datUPS1[,,1]/datUPS1[,,3], col=rev(heat.colors(15)),tit="Regression score / median Abundance", xLab="",yLab="")
-mtext("red for high (good) lmScore/abundance ratio)", cex=0.8)
+imageW(datUPS1[,,1]/datUPS1[,,3], col=rev(col1), tit="Regression score / median Abundance", xLab="",yLab="")
+mtext("dark red for high (good) lmScore/abundance ratio)", cex=0.75)
 
 ## ----combScore1, echo=TRUE----------------------------------------------------
 ## number of groups for clustering
@@ -542,7 +570,6 @@ nGr <- 5
 kMx <- stats::kmeans(standardW(datUPS1[,,"sco"], byColumn=FALSE), nGr)$cluster  
 datUPS1[,,"cluNo"] <- matrix(rep(kMx,dim(datUPS1)[2]), nrow=length(kMx))
 
-#soon#datUPS1clu <- reorgByCluNo(datUPS1,cluNo=kMx)
 geoM <- apply(datUPS1[,,"sco"], 1, function(x) prod(x)^(1/length(x)))        # geometric mean across analysis soft
 geoM2 <- lrbind(by(cbind(geoM,datUPS1[,,"sco"], clu=kMx), kMx, function(x) x[order(x[,1],decreasing=TRUE),]))  # organize by clusters
 tmp <- tapply(geoM2[,"geoM"], geoM2[,"clu"], median)
@@ -568,7 +595,7 @@ UPSrep <- tapply(geoM2[,"geoM"], geoM2[,"clu"], function(x) floor(length(x)/2))+
 gr <- 1
 useLi <- which(datUPS1[,1,"cluNo"]==gr)
 colNa <- c("Protein",paste(colnames(datUPS1), rep(c("slope","logp"), each=ncol(datUPS1)), sep=" "))
-knitr::kable(cbind(annUPS1[useLi,2], signif(datUPS1[useLi,,"slope"],3), signif(datUPS1[useLi,,"logp"],3)), 
+kable(cbind(annUPS1[useLi,2], signif(datUPS1[useLi,,"slope"],3), signif(datUPS1[useLi,,"logp"],3)), 
   caption="Regression details for cluster of best UPS1 proteins ", col.names=colNa, align="l")
 
 ## ----regrPlot5star, fig.height=9, fig.width=9.5, fig.align="center", echo=TRUE----
@@ -582,7 +609,7 @@ tm <- linModelSelect(annUPS1[UPSrep[gr],1], dat=dataPL, tit=tit[3], expect=grp9,
 ## ----regr4star, echo=TRUE-----------------------------------------------------
 gr <- 2
 useLi <- which(datUPS1[,1,"cluNo"]==gr)
-knitr::kable(cbind(annUPS1[useLi,2], signif(datUPS1[useLi,,"slope"],3), signif(datUPS1[useLi,,"logp"],3)), 
+kable(cbind(annUPS1[useLi,2], signif(datUPS1[useLi,,"slope"],3), signif(datUPS1[useLi,,"logp"],3)), 
   caption="Regression details for cluster of 2nd best UPS1 proteins ", col.names=colNa, align="l")
 
 ## ----regrPlot4star, fig.height=9, fig.width=9.5, fig.align="center", echo=TRUE----
@@ -595,7 +622,7 @@ tm <- linModelSelect(annUPS1[UPSrep[gr],1], dat=dataPL, tit=tit[3], expect=grp9,
 ## ----regr3star, echo=TRUE-----------------------------------------------------
 gr <- 3
 useLi <- which(datUPS1[,1,"cluNo"]==gr)
-knitr::kable(cbind(annUPS1[useLi,2], signif(datUPS1[useLi,,"slope"],3), signif(datUPS1[useLi,,"logp"],3)), 
+kable(cbind(annUPS1[useLi,2], signif(datUPS1[useLi,,"slope"],3), signif(datUPS1[useLi,,"logp"],3)), 
   caption="Regression details for 3rd cluster UPS1 proteins ", col.names=colNa, align="l")
 
 ## ----regrPlot3star, fig.height=9, fig.width=9.5, fig.align="center", echo=TRUE----
@@ -608,7 +635,7 @@ tm <- linModelSelect(annUPS1[UPSrep[gr],1], dat=dataPL, tit=tit[3], expect=grp9,
 ## ----regrPlot2star, fig.height=9, fig.width=9.5, fig.align="center", echo=TRUE----
 gr <- 4
 useLi <- which(datUPS1[,1,"cluNo"]==gr)
-knitr::kable(cbind(annUPS1[useLi,2], signif(datUPS1[useLi,,"slope"],3), signif(datUPS1[useLi,,"logp"],3)), 
+kable(cbind(annUPS1[useLi,2], signif(datUPS1[useLi,,"slope"],3), signif(datUPS1[useLi,,"logp"],3)), 
   caption="Regression details for 3rd cluster UPS1 proteins ", col.names=colNa, align="l")
 
 tit <- paste0(methNa,", ",annUPS1[UPSrep[gr],1])
@@ -620,7 +647,7 @@ tm <- linModelSelect(annUPS1[UPSrep[gr],1], dat=dataPL, tit=tit[3], expect=grp9,
 ## ----regrPlot1star, fig.height=9, fig.width=9.5, fig.align="center", echo=TRUE----
 gr <- 5
 useLi <- which(datUPS1[,1,"cluNo"]==gr)
-knitr::kable(cbind(annUPS1[useLi,2], signif(datUPS1[useLi,,"slope"],3), signif(datUPS1[useLi,,"logp"],3)), 
+kable(cbind(annUPS1[useLi,2], signif(datUPS1[useLi,,"slope"],3), signif(datUPS1[useLi,,"logp"],3)), 
   caption="Regression details for 5th cluster UPS1 proteins ", col.names=colNa, align="l")
 tit <- paste0(methNa,", ",annUPS1[UPSrep[gr],1])
 layout(matrix(1:4, ncol=2))

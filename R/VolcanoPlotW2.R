@@ -56,26 +56,20 @@
 #' ## assume 2 groups with 3 samples each
 #' gr3 <- gl(3,3,labels=c("C","A","B"))
 #' tRes2 <- moderTest2grp(mat[,1:6], gl(2,3), addResults = c("FDR","means"))
-#' # Note: due to the small number of lines only FDR chosen to calculate 
-#' VolcanoPlotW2(tRes2)
-#' ## Add names of points passing custom filters
-#' VolcanoPlotW2(tRes2, FCth=1.3, FdrThrs=0.2, namesNBest="passThr")
-#'
-#' ## assume 3 groups with 3 samples each
-#' tRes <- moderTestXgrp(mat, gr3, addResults = c("FDR","means"))
-#' # Note: due to the small number of lines only FDR chosen to calculate 
-#' VolcanoPlotW2(tRes)
-#' VolcanoPlotW2(tRes, FCth=1.3, FdrThrs=0.2)
-#' VolcanoPlotW2(tRes, FCth=1.3, FdrThrs=0.2, useComp=2)
+#' ## Please NOTE : the function VolcanoPlotW2 has been depreaciated, 
+#' ## please use VolcanoPlotW() from package wrGraph
+#' library(wrGraph)
+#' VolcanoPlotW(tRes2)
 #'  
 #' @export
 VolcanoPlotW2 <- function(Mvalue, pValue=NULL, useComp=1, filtFin=NULL, ProjNa=NULL, FCthrs=NULL, FdrList=NULL, FdrThrs=NULL, FdrType=NULL,
   subTxt=NULL, grayIncrem=TRUE, col=NULL, pch=16, compNa=NULL, batchFig=FALSE, cexMa=1.8, cexLa=1.1, limM=NULL, limp=NULL,
   annotColumn=c("SpecType","GeneName","EntryName","Accession","Species","Contam"), annColor=NULL, cexPt=NULL, cexSub=NULL, 
   cexTxLab=0.7, namesNBest=NULL, NbestCol=1, sortLeg="descend", NaSpecTypeAsContam=TRUE, useMar=c(6.2,4,4,2), returnData=FALSE, callFrom=NULL, silent=FALSE,debug=FALSE) {
-  ## MA plot
+  ## Volcano plot
   ## optional arguments for explicit title in batch-mode
   fxNa <- wrMisc::.composeCallName(callFrom, newNa="VolcanoPlotW2")
+  .Deprecated("please use VolcanoPlotW() from package wrGraph")
   opar <- graphics::par(no.readonly=TRUE) 
   on.exit(graphics::par(opar$mar)) 
   on.exit(graphics::par(opar$cex.main)) 
@@ -305,7 +299,7 @@ VolcanoPlotW2 <- function(Mvalue, pValue=NULL, useComp=1, filtFin=NULL, ProjNa=N
       if("lfdr" %in% colnames(merg)) FdrList <- merg[,"lfdr"]}
     pch <- merg[,"pch"]            # update
     ptType <- if(annotColumn[1] %in% colnames(merg)) merg[,annotColumn[1]] else rep(1,nrow(merg))     # update "SpecType"
-
+    
     ## prepare for  plotting
     if(is.null(cexSub)) cexSub <- cexLa +0.05  
     xLab <- "M-value (log2 fold-change)"
@@ -315,9 +309,10 @@ VolcanoPlotW2 <- function(Mvalue, pValue=NULL, useComp=1, filtFin=NULL, ProjNa=N
     if(length(FdrThrs) <1) FdrThrs <- 0.05 
 
     ## count no of passing
-    passFC <- if(length(FCthrs) ==1 & !any(is.na(FCthrs))) abs(merg[,"Mvalue"]) > log2(FCthrs) else merg[,"filtFin"]      ## convert FCthrs to log2
+    passFC <- if(length(FCthrs) ==1 & !any(is.na(FCthrs))) abs(merg[,"Mvalue"]) >= log2(FCthrs) else merg[,"filtFin"]      ## convert FCthrs to log2
     passFdr <- if(length(FdrThrs) ==1 & !any(is.na(FdrThrs))) {merg[,"FDR"] <= FdrThrs} else merg[,"filtFin"]
     passAll <- merg[,"filtFin"] & passFC & passFdr
+
     chNA <- is.na(passAll)                              # passFdr may contain NAs
     if(any(chNA)) passAll[which(chNA)] <- FALSE 
     if(debug) message(fxNa,"  ",sum(passFC,na.rm=TRUE)," passing FCthrs ; ",sum(passFdr,na.rm=TRUE)," passing FdrThrs ; combined ",sum(passAll,na.rm=TRUE))
@@ -340,6 +335,11 @@ VolcanoPlotW2 <- function(Mvalue, pValue=NULL, useComp=1, filtFin=NULL, ProjNa=N
       } else colPass <- grDevices::rgb(c(0.95,0.2,0,0.75), c(0.15,0.2,0.9,0.35), c(0.15,0.95,0,0.8), alph2)    # red, blue, green, purple (luminosity adjusted) 
       useCol <- rep(useCol[1], nrow(merg))         # fuse basic gray to colors for different types
 
+      ## integrate names of annColor as order of colPass
+      if(length(names(annColor)) >0) {        
+        uniTy <- unique(merg[which(passAll),annotColumn[1]])
+        colPass <- colPass[match(names(annColor), uniTy)]
+      }
       ## assign color for those passing
       if(any(passAll)) useCol[which(passAll)] <- colPass[if(length(unique(merg[which(passAll),annotColumn[1]])) >1) .levIndex(merg[which(passAll),annotColumn[1]]) else rep(1,sum(passAll))]  # assign colors for those passing 
     } else useCol <- col

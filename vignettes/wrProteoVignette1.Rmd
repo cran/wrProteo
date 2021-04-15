@@ -59,6 +59,7 @@ suppressPackageStartupMessages({
 
 ```{r setup2}
 ## Get started by loading the packages
+library("knitr")
 library("wrMisc")
 library("wrProteo")
 library("wrGraph")
@@ -156,7 +157,7 @@ This package provides support for importing quantitation results from [Proteome 
 All quantitation import functions offer special features for further separating annotation related information, like species, for later use.
 
 In most common real-world cases people typically analyze data using only one quantitation algorithm/software.
-Below in this vignette, we'll use only the quantitation data generated using MaxQuant (ProteomeDiscoverer, Proline and OpenMS are supported, too). 
+Below in this vignette, we'll use only the quantitation data generated using MaxQuant (ProteomeDiscoverer, Proline, OpenMS and MassChroQ are supported, too). 
 The other vignette to this package ("UPS-1 spike-in Experiments") shows in detail the import functions available for ProteomeDiscoverer and Proline
 and how further comparsions can be performed in bench-mark studies. 
 All these import functions generate an equivalent output format, separating (selected) annotation data (\$annot) from normalized log2-quantitation data (\$quant)
@@ -164,14 +165,14 @@ and initial quantitation (\$raw).
 
 Normalization (discussed below in more detail) is an important part of 'preparing' the data for subsequant analysis.
 The import functions in this package allow performin an initial normalization step (with choice among multiple algorithims), too.
-As further information about the proteins identifed can be considered during normalization it is, eg, possible to exclude contaminants.
-In proteomics experiments it is very common to find contaminants like keratins among the higher abundant proteins which may introduce bias at normalization.
+Further information about the proteins identifed can be considered during normalization: 
+For example, it is possible to exclude contaminants like keratins which are frequently found among the higher abundant proteins which may potentially introduce bias at global normalization.
 
 Technical replicates are very frequently produced in proteomics, they allow to assess the variability linked to repeated injection of the same material.
-Biological replicates, however, make additional information accessible, allowing an interpretation of experiments in a more general way.
+Biological replicates, however, make additional information accessible, allowing the interpretation of experiments in a more general way.
 
 
-### Read Data From MaxQuant
+### Data From MaxQuant
 
 [MaxQuant](https://www.maxquant.org) is free software provided by the [Max-Planck-Institute](https://www.biochem.mpg.de/de), 
 see [Tyanova et al 2016](https://doi.org/10.1038/nprot.2016.136). 
@@ -205,24 +206,31 @@ head(grp9)
 ```
 
 
-#### Read Data From ProteomeDiscoverer
+#### Data From ProteomeDiscoverer
 
 [Proteome Discoverer](https://www.thermofisher.com/order/catalog/product/OPTON-30812) is commercial software from ThermoFisher (www.thermofisher.com).
 Data exported from [Proteome Discoverer](https://www.thermofisher.com/order/catalog/product/OPTON-30812) can get imported (typically the xx_allProteins.txt file) using `readProtDiscovFile()`, for details please see the vignette "UPS-1 spike-in Experiments" to this package. 
 
 
-#### Read Data From Proline
+#### Data From Proline
 
 [Proline](http://www.profiproteomics.fr/proline/) is free software provided by the Profi-consortium, 
-see [Bouyssie et al 2020](https://doi.org/10.1016/j.jprot.2015.11.011).
+see [Bouyssi&eacute; et al 2020](https://doi.org/10.1016/j.jprot.2015.11.011).
 Data exported from [Proline](http://www.profiproteomics.fr/proline/) (xlsx or tsv format) can get imported using `readProlineFile()`, for details please see the  vignette "UPS-1 spike-in Experiments" to this package. 
 
 
-#### Read Data From OpenMS
+#### Data From OpenMS
 
-[OpenMS](https://www.openms.de/) is free software provided by the deNBI Center for integrative Bioinformatics, 
+[OpenMS](https://www.openms.de/) is free open software provided by the deNBI Center for integrative Bioinformatics, 
 see [Rost et al 2016](https://doi.org/10.1038/nmeth.3959).
 Data exported as csv get summarized from peptide to protein level and further normalized using `readOpenMSFile()`, for details please see the help-page to this function. 
+
+#### Data From MassChroQ
+
+[MassChroQ](http://pappso.inrae.fr/bioinfo/masschroq/) is free open software provided by the [PAPPSO](http://pappso.inrae.fr), 
+see [Valot et al 2011](https://doi.org/10.1002/pmic.201100120).
+Inital quantifications are on peptide basis and should be normalized and summarized using the R-package MassChroqR, which is also distributed by the [PAPPSO](http://pappso.inrae.fr/bioinfo/). Quantifications at protein-level can be saved as matrix into an RData-file or written to tsv,csv or txt files for following import into the framework of this package using `readMassChroQFile()`, for details please see the help-page to this function. 
+
 
 
 ## Normalization
@@ -305,9 +313,28 @@ Of course in this case it would be a bad interpretation to consider the protein 
 To circumvent this problem there are 2 options : 1) one may use special filtering schemes to exclude such constellations from final results or 2)
 one could repeat replacement of NA-values numerous times.
 
-Filtering can be performed using presenceFilt (package [wrMisc](https://CRAN.R-project.org/package=wrMisc)).
+Filtering can be performed using `presenceFilt() (package [wrMisc](https://CRAN.R-project.org/package=wrMisc)).
 
 The function _testRobustToNAimputation()_ allows such repeated replacement of NA-values. For details, see also the following section.
+
+
+## Filtering
+
+The main aim of filtering in omic-data analysis is to remove proteins/genes/lines which are for obvious reasons not suitable for further analysis.
+Invalid or low quality measures are not suitable for good results and may thus be removed.
+Frequently additional information is used to justy the procedure of removing certain proteins/genes/lines. 
+
+One very common element in filtering is the observation that very low abundance measures are typically less precise than medium or high abundance values.
+Thus, a protein/gene with all abundance measures at the very low end of the global scale may as well just seem to change abundance due to the elevated variance of low abundance measures. 
+However, most statitical tests are not very well prepared for elevated variance of low abundance measures. 
+In consequence, it is common to remove or disqualify such proteins/genes/lines which are at high risk of yielding false positive results.
+
+In the context of proteomics the number of samples with NAs (non-quantified peptides/proteins) for a given protein/peptide represents also an interesting starting point.  If almost all values finally compared are a result of (random) imputation, any apparent change in abundanc of such proteins/peptides lay rather reflect rare stochastic events of NA-imputation.
+Please note, that rather aggressive filtering may severly reduce the ability to identify on/off situations which very well may occur in most biological settings.
+
+Initial information for filtering is already collected by the import-functions (_readMaxQuantFile()_, _readProtDiscovFile()_, _readProlineFile()_, _readOpenMSFile()_ etc..). 
+Then information for filtering can be used by the function _combineMultFilterNAimput()_ which is integrated to _testRobustToNAimputation()_ (see section below) to conveniently include filtering-aspects.
+ 
 
 
 ## Statistical Testing
@@ -316,8 +343,8 @@ The [t-test](https://en.wikipedia.org/wiki/Student%27s_t-test) remains the main 
 Statistical testing in the context of proteomics data poses challenges similar to transcriptomics : 
 Many times the number of replicate-samples is fairly low and the inter-measurement variability quite high.
 In some unfortunate cases proteins with rather constant quantities may appear as false positives when searching for proteins who's abundance changes between two groups of samples : If the apparent variability is by chance too low, the respective standard-deviations will be low and a plain t-test may give very enthusiastic p-values.  
-Next to stringent filtering (previous section of this vignette) the shrinkage when estimating the intra-group/replicate variance from the Bioconductor package [limma](https://bioconductor.org/packages/release/bioc/html/limma.html) turns out very helpful, 
-see [Ritchie et al 2015](https://doi.org/10.1093/nar/gkv007). 
+Besides stringent filtering (previous section of this vignette), the use of shrinkage when estimating the intra-group/replicate variance from the Bioconductor package [limma](https://bioconductor.org/packages/release/bioc/html/limma.html) turns out very helpful, 
+see also [Ritchie et al 2015](https://doi.org/10.1093/nar/gkv007). 
 In this package the function _eBayes()_ has been used and adopted to proteomics.
 
 The function `testRobustToNAimputation()` allows running multiple cycles of NA-imputation and statistical testing with the aim of providing stable imputation and testing results. 
@@ -341,13 +368,31 @@ In principle one could also run PCA along the rows, ie the proteins, but their n
 
 In the context of high throughput experiments, like proteomics, PCA allows to distinguish important information how the different samples are related (ie similar). This covers of course the real differences between different biological conditions, but also additional bias introduced as (technical) artifacts. Thus, such plots serve as well for quality control (in particular to identify outlyer-samples, eg due to degraded material) as well as for the biological interpretation.
 
+Here we'll use the function `plotPCAw()` form the package [wrGraph](https://CRAN.R-project.org/package=wrGraph)
 
 ```{r PCA1MQ, fig.height=12, fig.width=9.5, fig.align="center", echo=TRUE}
 # limit to UPS1 
 plotPCAw(testMQ$datImp, sampleGrp=grp9, tit="PCA on MaxQuant (NAs imputed)", rowTyName="proteins", useSymb2=0)
 ```
 
-Please note, the vignette dedicated to spike-in experiments ("UPS-1 spike-in Experiments") presents a slightly different way how to make PCA-plots for this specific type of experiment/data-set.
+Please note, the vignette dedicated to spike-in experiments ("UPS-1 spike-in Experiments") presents a slightly different way of making PCA-plots for this specific type of experiment/data-set.
+
+
+## MA-plot
+
+MA-plots are mainly used for diagnostic purposes. Basically an [MA-plot](https://en.wikipedia.org/wiki/MA_plot) displays the log-Fold-Change versus the average abundance.
+We'll use the function `MAplotW()` from the package [wrGraph](https://CRAN.R-project.org/package=wrGraph).
+
+```{r MAplot1, fig.height=6.5, fig.width=9.5, fig.align="center", echo=TRUE}
+# By default this plots at the first of all pairwise questions
+MAplotW(testMQ)
+```
+
+
+Now for the second group of pair-wise comparisons, plus adding names of proteins passing threshold:
+```{r MAplot2, fig.height=6.5, fig.width=9.5, fig.align="center", echo=TRUE}
+MAplotW(testMQ, useComp=2, namesNBest="passFC") 
+```
 
 
 ## Volcano-Plot
@@ -358,10 +403,10 @@ However, generally such proteins with so small FC don't get considered as reliab
 typically a 1.5 or 2 fold-change. 
 
 The number of proteins retained by pair-wise comparison :
-```{r VolcanoPlot1MQ, fig.height=7, fig.width=9.5, fig.align="center", echo=TRUE}
+```{r VolcanoPlot1MQ, fig.height=6.5, fig.width=9.5, fig.align="center", echo=TRUE}
 ## by default the first pairwise comparison is taken
 ## using the argument 'namesNBest' we can add names from the annotation
-VolcanoPlotW2(testMQ, namesNBest="passThr")
+VolcanoPlotW(testMQ, useComp=2, namesNBest="passFDR")
 ```
 
 Additional Note : Vlcano-plots may also help identifying bias in the data, in particular, to the question if normalization gave satisfactory results. 
@@ -375,20 +420,24 @@ as it has been performed in the vignette 'UPS-1 spike-in Experiments', a vignett
 
 ## Reporting Results
 
-Tables with results can be either directed created using _VolcanoPlotW()_ or, as shown below, using `extractTestingResults()`.
+Tables with results can be either directed created using _VolcanoPlotW()_ or, as shown below, using the function `extractTestingResults()`.
 
-For this example the moderated t-test expressed as Benjamini-Hochberg FDR gave `r sum(testMQ$BH[,1] < 0.05,na.rm=TRUE)` proteins with
-FDR < 0.05 (however, many of them with low FC) for the comparison `r colnames(testMQ$BH)[1]`.
-So one should add an additional filter for too low FC values.
+For example, let's look at the first of the pair-wise comparisons:
+The moderated t-test expressed as Benjamini-Hochberg FDR gave `r sum(testMQ$BH[,1] < 0.05,na.rm=TRUE)` proteins with
+FDR < 0.05 for the comparison `r colnames(testMQ$BH)[1]`.
+Since unfortunately many verly low fold-change instances are amongst the results, one should add an additional filter for too low FC values.
+This is common practice in most omics analysis when mostly technical replicates are run and/or the number of replicates is rather low.
 
 ```{r results1, echo=TRUE}
 res1 <- extractTestingResults(testMQ, compNo=1, thrsh=0.05, FCthrs=2)
 ```
-After FC-filtering for 2-fold (ie change to double or half) `r nrow(res1)` proteins remain.
+
+After FC-filtering for 2-fold (ie change of protein abundance to double or half) `r nrow(res1)` proteins remain.
 
 ```{r results2, echo=TRUE}
-knitr::kable(res1[,-1], caption="5%-FDR (BH) Significant results for 1st pairwise set", align="c")
+kable(res1[,-1], caption="5%-FDR (BH) Significant results for 1st pairwise set", align="c")
 ```
+
 Please note that the column-name 'BH' referrs to Benjamini-Hochberg FDR (several other options of multiple testing correction exist, too).
 We can see that many UPS1 proteins are, as expected, among the best-ranking differential changes.
 However, not all UPS1 proteins do show up in the results as expected, and furthermore, a number of yeast proteins 
@@ -489,7 +538,7 @@ Finally, it should be added, that of course several other ways of retrieving ann
 
 ## Acknowledgements
 
-The author would like to acknowledge the support by the [IGBMC](http://www.igbmc.fr/) (CNRS UMR 7104, Inserm U 1258), [CNRS](http://www.cnrs.fr/), [Universite de Strasbourg](https://www.unistra.fr) and [Inserm](https://www.inserm.fr/).
+The author would like to acknowledge the support by the [IGBMC](http://www.igbmc.fr/) (CNRS UMR 7104, Inserm U 1258, UdS), [CNRS](http://www.cnrs.fr/), [Universit&eacute; de Strasbourg](https://www.unistra.fr) and [Inserm](https://www.inserm.fr/).
 All collegues from the [proteomics platform](http://proteomics.igbmc.fr/) at the IGBMC work very commited to provide high quality mass-spectrometry data (including some of those used here).
 The author wishes to thank the [CRAN-staff](https://CRAN.R-project.org) for all their help with new entries and their efforts in maintaining this repository of R-packages.
 Furthermore, many very fruitful discussions with colleages on national and international level have helped to improve the tools presented here.

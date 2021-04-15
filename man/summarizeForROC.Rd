@@ -6,13 +6,14 @@
 \usage{
 summarizeForROC(
   test,
-  thr = NULL,
-  tyThr = "BH",
   useComp = 1,
+  tyThr = "BH",
+  thr = NULL,
   columnTest = NULL,
   FCthrs = NULL,
   spec = c("H", "E", "S"),
   annotCol = "spec",
+  filterMat = "filter",
   tit = NULL,
   color = 1,
   plotROC = TRUE,
@@ -26,19 +27,21 @@ summarizeForROC(
 \arguments{
 \item{test}{(class \code{MArrayLM}, S3-object from limma) from testing (eg \code{\link{testRobustToNAimputation}} or \code{\link{test2grp}}}
 
-\item{thr}{(numeric) p-value threshold, if \code{NULL} a panel of 108 p-value threshold-levels values will be used for calculating specifcity and sensitivity}
-
-\item{tyThr}{(character,length=1) type of test-result to be used for sensitivity and specificity calculations (eg 'BH','lfdr' or 'p.value'), must be list-element of 'test'}
-
 \item{useComp}{(character or integer) in case multiple comparisons (ie multiple columns 'test$tyThr'); which pairwise comparison to used}
 
-\item{columnTest}{depreciated, pleas use 'useComp' instead}
+\item{tyThr}{(character,length=1) type of stat test-result to be used for sensitivity and specificity calculations (eg 'BH','lfdr' or 'p.value'), must be list-element of 'test'}
+
+\item{thr}{(numeric) stat test (FDR/p-value) threshold, if \code{NULL} a panel of 108 p-value threshold-levels values will be used for calculating specifcity and sensitivity}
+
+\item{columnTest}{depreciated, please use 'useComp' instead}
 
 \item{FCthrs}{(numeric) Fold-Change threshold (display as line) give as Fold-change and NOT log2(FC), default at 1.5, set to \code{NA} for omitting}
 
 \item{spec}{(character) labels for species will be matched to column 'spec' of test$annot and used for sensitivity and specificity calculations. Important : 1st label for matrix (expected as constant) and subsequent labels for spike-ins (variable)}
 
 \item{annotCol}{(character) column name of \code{test$annot} to use to separate species}
+
+\item{filterMat}{(character) name (or index) of element of \code{test} containing matrix or vector of logical filtering results}
 
 \item{tit}{(character) optinal custom title in graph}
 
@@ -69,9 +72,9 @@ Note that numerous other packages also provide support for building and plotting
  \href{https://CRAN.R-project.org/package=ROCR}{ROCR}, \href{https://CRAN.R-project.org/package=pROC}{pROC} or \href{https://CRAN.R-project.org/package=ROCit}{ROCit}
 }
 \examples{
-set.seed(2019); test1 <- list(annot=cbind(spec=c(rep("b",35),letters[sample.int(n=3,
-  size=150,replace=TRUE)])),BH=matrix(c(runif(35,0,0.01),runif(150)),ncol=1))
-tail(roc1 <- summarizeForROC(test1,spec=c("a","b","c")))
+set.seed(2019); test1 <- list(annot=cbind(spec=c(rep("b",35), letters[sample.int(n=3,
+  size=150,replace=TRUE)])), BH=matrix(c(runif(35,0,0.01), runif(150)), ncol=1))
+tail(roc1 <- summarizeForROC(test1, spec=c("a","b","c")))
 
 }
 \seealso{

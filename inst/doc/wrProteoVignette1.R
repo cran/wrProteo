@@ -23,6 +23,7 @@ suppressPackageStartupMessages({
 
 ## ----setup2-------------------------------------------------------------------
 ## Get started by loading the packages
+library("knitr")
 library("wrMisc")
 library("wrProteo")
 library("wrGraph")
@@ -96,16 +97,23 @@ head(testMQ$datImp[,1:8])
 # limit to UPS1 
 plotPCAw(testMQ$datImp, sampleGrp=grp9, tit="PCA on MaxQuant (NAs imputed)", rowTyName="proteins", useSymb2=0)
 
-## ----VolcanoPlot1MQ, fig.height=7, fig.width=9.5, fig.align="center", echo=TRUE----
+## ----MAplot1, fig.height=6.5, fig.width=9.5, fig.align="center", echo=TRUE----
+# By default this plots at the first of all pairwise questions
+MAplotW(testMQ)
+
+## ----MAplot2, fig.height=6.5, fig.width=9.5, fig.align="center", echo=TRUE----
+MAplotW(testMQ, useComp=2, namesNBest="passFC") 
+
+## ----VolcanoPlot1MQ, fig.height=6.5, fig.width=9.5, fig.align="center", echo=TRUE----
 ## by default the first pairwise comparison is taken
 ## using the argument 'namesNBest' we can add names from the annotation
-VolcanoPlotW2(testMQ, namesNBest="passThr")
+VolcanoPlotW(testMQ, useComp=2, namesNBest="passFDR")
 
 ## ----results1, echo=TRUE------------------------------------------------------
 res1 <- extractTestingResults(testMQ, compNo=1, thrsh=0.05, FCthrs=2)
 
 ## ----results2, echo=TRUE------------------------------------------------------
-knitr::kable(res1[,-1], caption="5%-FDR (BH) Significant results for 1st pairwise set", align="c")
+kable(res1[,-1], caption="5%-FDR (BH) Significant results for 1st pairwise set", align="c")
 
 ## ----readUCSC1, echo=TRUE-----------------------------------------------------
 path1 <- system.file("extdata", package="wrProteo")

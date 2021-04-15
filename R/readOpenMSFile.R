@@ -211,7 +211,7 @@ readOpenMSFile <- function(fileName=NULL, path=NULL, normalizeMeth="median", ref
 #' @export
 .commonSpecies <- function() {
   ## matrix with UniProt abbreviations for common species
-  cbind(c("_HUMAN","_MOUSE","_RAT","_PIG","_BOVIN","SHEEP","_CAEEL", "_DROME","_YEAST","_ARATH","_ECOLI","_MYCTU"),
+  cbind(c("_HUMAN","_MOUSE","_RAT","_PIG","_BOVIN","_SHEEP","_CAEEL", "_DROME","_YEAST","_ARATH","_ECOLI","_MYCTU"),
       c("Homo sapiens","Mus muscullus","Rattus norvegicus","Sus scrofa","Bos taurus","Ovis aries","Caenorhabditis elegans",
         "Drosophila melanogaster","Saccharomyces cerevisiae", "Arabidopsis thaliana", "Escherichia coli", "Mycobacterium tuberculosis"))
 }

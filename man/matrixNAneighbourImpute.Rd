@@ -81,7 +81,7 @@ So, if a given protein/peptide gets properly quantified in some replicate sample
 one may thus speculate that similar values like in the successful quantifications may have occored. 
 Thus, imputation of \code{NA}-values may be done on the basis of \code{NA}-neighbours.
  
-There are 
+ 
  
 When extracting \code{NA}-neighbours, a slightly more focussed approach gets checked, too, the 2-\code{NA}-neighbours : In case a set of replicates for a given protein 
 contains at least 2 non-\code{NA}-values (instead of just one) it will be considered as a (min) 2-\code{NA}-neighbour as well as regular \code{NA}-neighbour. 
