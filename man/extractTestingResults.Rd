@@ -12,7 +12,7 @@ extractTestingResults(
   FCthrs = 1.5,
   annotCol = c("Accession", "EntryName", "GeneName"),
   nSign = 6,
-  add = "allMeans",
+  addTy = c("allMeans"),
   filename = NULL,
   fileTy = "csvUS",
   silent = FALSE,
@@ -34,7 +34,7 @@ extractTestingResults(
 
 \item{nSign}{(integer) number of significant digits whe returning results}
 
-\item{add}{(character) additional groups to add (so far only "allMeans" available) in addition to the means used in the pairwise comparison}
+\item{addTy}{(character) additional groups to add (so far only "allMeans" available) in addition to the means used in the pairwise comparison}
 
 \item{filename}{(character) optional (path and) file-name for exporting results to csv-file}
 

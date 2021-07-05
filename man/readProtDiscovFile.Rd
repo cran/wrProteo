@@ -9,18 +9,21 @@ readProtDiscovFile(
   path = NULL,
   normalizeMeth = "median",
   sampleNames = NULL,
+  infoFile = TRUE,
   read0asNA = TRUE,
   quantCol = "^Abundances*",
   annotCol = NULL,
   contamCol = "Contaminant",
   refLi = NULL,
   separateAnnot = TRUE,
+  FDRCol = list(c("^Protein.FDR.Confidence", "High"), c("^Found.in.Sample.", "High")),
   plotGraph = TRUE,
   tit = "Proteome Discoverer",
   graphTit = NULL,
   wex = 1.6,
   specPref = c(conta = "CON_|LYSC_CHICK", mainSpecies = "OS=Homo sapiens"),
   silent = FALSE,
+  debug = FALSE,
   callFrom = NULL
 )
 }
@@ -31,7 +34,11 @@ readProtDiscovFile(
 
 \item{normalizeMeth}{(character) normalization method (will be sent to  \code{\link[wrMisc]{normalizeThis}})}
 
-\item{sampleNames}{(character) new column-names for quantification data (ProteomeDiscoverer does not automatically use file-names from spectra)}
+\item{sampleNames}{(character) new column-names for quantification data (ProteomeDiscoverer does not automatically use file-names from spectra); this argument has priority over \code{infoFile}}
+
+\item{infoFile}{(character or logical) filename containing additional information about MS-samples (produced by ProteomeDiscoverer default '*.InputFiles.txt'), 
+if \code{TRUE} the first file in \code{path} containing the default name will be used. If no specific \code{sampleNames} given, the filenames will will be trimmed to remove redundant text and used as \code{sampleNames}. 
+Besides, ProteomeDiscoverer version number and full raw-file path will be extracted for $notes in fial output.}
 
 \item{read0asNA}{(logical) decide if initial quntifications at 0 should be transformed to NA}
 
@@ -39,11 +46,14 @@ readProtDiscovFile(
 
 \item{annotCol}{(character) column names to be read/extracted for the annotation section (default  c("Accession","Description","Gene","Contaminant","Sum.PEP.Score","Coverage....","X..Peptides","X..PSMs","X..Unique.Peptides", "X..AAs","MW..kDa.") )}
 
-\item{contamCol}{(character or integer, length=1) which columns should be used for contaminants marked by ProteomeDiscoverer}
+\item{contamCol}{(character or integer, length=1) which columns should be used for contaminants marked by ProteomeDiscoverer. 
+If a column named \code{contamCol} is found, the data will be lateron filtered to remove all contaminants, set to \code{NULL} for keeping all contaminants}
 
 \item{refLi}{(character or integer) custom specify which line of data is main species, if character (eg 'mainSpe'), the column 'SpecType' in $annot will be searched for exact match of the (single) term given}
 
 \item{separateAnnot}{(logical) if \code{TRUE} output will be organized as list with \code{$annot}, \code{$abund} for initial/raw abundance values and \code{$quant} with final normalized quantitations}
+
+\item{FDRCol}{(list) optional indication to search for protein FDR information}
 
 \item{plotGraph}{(logical) optional plot of type vioplot of initial and normalized data (using \code{normalizeMeth}); if integer, it will be passed to \code{layout} when plotting}
 
@@ -59,10 +69,13 @@ if list and list-element has multiple values they will be used for exact matchin
 
 \item{silent}{(logical) suppress messages}
 
-\item{callFrom}{(character) allow easier tracking of message(s) produced}
+\item{debug}{(logical) additional messages for debugging}
+
+\item{callFrom}{(character) allow easier tracking of messages produced}
 }
 \value{
-list with \code{$raw} (initial/raw abundance values), \code{$quant} with final normalized quantitations, \code{$annot}, \code{$counts} an array with number of peptides, \code{$quantNotes} and \code{$notes}; or if \code{separateAnnot=FALSE} the function returns a data.frame with annotation and quantitation only
+list with \code{$raw} (initial/raw abundance values), \code{$quant} with final normalized quantitations, \code{$annot}, \code{$counts} an array with number of peptides, \code{$quantNotes} 
+ and \code{$notes}; or if \code{separateAnnot=FALSE} the function returns a data.frame with annotation and quantitation only
 }
 \description{
 Protein quantification results form \href{https://www.thermofisher.com/order/catalog/product/OPTON-30812}{Thermo ProteomeDiscoverer} 
@@ -72,7 +85,8 @@ The final output is a list containing 3 elements: \code{$annot}, \code{$raw} and
 \details{
 This function has been developed using Thermo ProteomeDiscoverer versions 2.2 to 2.5.
 The format of resulting files at export also depends which columns are chosen as visible inside ProteomeDiscoverer and subsequently get chosen for export.
-Please make sure that 'RawAbundance' is chosen, too.
+Using the argument \code{infoFile} it is possible to specify a specific file (or search for default file) to read for extracting file-names as sample-names and other experiment realted information.  
+If a column named \code{contamCol} is found, the data will be lateron filtered to remove all contaminants, set to \code{NULL} for keeping all contaminants 
 This function replaces the depreciated function \code{readPDExport}.
 }
 \examples{

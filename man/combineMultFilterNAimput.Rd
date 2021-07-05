@@ -15,6 +15,7 @@ combineMultFilterNAimput(
   minSpeNo = 1,
   minTotNo = 2,
   silent = FALSE,
+  debug = FALSE,
   callFrom = NULL
 )
 }
@@ -38,6 +39,8 @@ combineMultFilterNAimput(
 \item{minTotNo}{(integer) minimum total ie max razor number of peptides}
 
 \item{silent}{(logical) suppress messages}
+
+\item{debug}{(logical) additional messages for debugging}
 
 \item{callFrom}{(character) allows easier tracking of message(s) produced}
 }

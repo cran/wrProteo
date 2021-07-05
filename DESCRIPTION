@@ -1,5 +1,5 @@
 Package: wrProteo
-Version: 1.4.1
+Version: 1.4.2
 Title: Proteomics Data Analysis Functions
 Authors@R: person("Wolfgang", "Raffelsberger", email = "w.raffelsberger@gmail.com", role = c("aut", "cre"))
 Author: Wolfgang Raffelsberger [aut, cre]
@@ -14,7 +14,8 @@ Description: Data analysis of proteomics experiments by mass spectrometry is sup
     OpenMS (<doi:10.1038/nmeth.3959>) and Proline (Bouyssie et al 2020 <doi:10.1093/bioinformatics/btaa118>).
     Subsequently, ROC curves (Hand and Till 2001 <doi:10.1023/A:1010920819831>) can be constructed to compare multiple analysis approaches.
 Depends: R (>= 3.5.0)
-Imports: grDevices, graphics, knitr, limma, stats, utils, wrMisc
+Imports: grDevices, graphics, knitr, limma, stats, utils, wrMisc (>=
+        1.6.0)
 Suggests: data.table, fdrtool, MASS, RColorBrewer, readxl, ROTS,
         rmarkdown, R.utils, sm, wrGraph
 License: GPL-3
@@ -22,6 +23,6 @@ Encoding: UTF-8
 VignetteBuilder: knitr, rmarkdown
 RoxygenNote: 7.1.1
 NeedsCompilation: no
-Packaged: 2021-04-15 10:57:28 UTC; wraff
+Packaged: 2021-07-05 14:08:10 UTC; wraff
 Repository: CRAN
-Date/Publication: 2021-04-15 20:00:03 UTC
+Date/Publication: 2021-07-05 15:50:02 UTC

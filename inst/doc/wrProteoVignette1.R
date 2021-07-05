@@ -30,7 +30,7 @@ library("wrGraph")
 # This is wrProteo version no :
 packageVersion("wrProteo")
 
-## ----setup32, echo=TRUE, eval=FALSE-------------------------------------------
+## ----Vigenttes1, echo=TRUE, eval=FALSE----------------------------------------
 #  browseVignettes("wrProteo")
 
 ## ----ChemFormMolMass1, echo=TRUE----------------------------------------------

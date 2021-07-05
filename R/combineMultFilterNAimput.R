@@ -21,6 +21,7 @@
 #' @param minSpeNo (integer) minimum number of specific peptides for maintaining proteins
 #' @param minTotNo (integer) minimum total ie max razor number of peptides
 #' @param silent (logical) suppress messages
+#' @param debug (logical) additional messages for debugging
 #' @param callFrom (character) allows easier tracking of message(s) produced
 #' @return vector of logical values if corresponding line passes filter criteria  
 #' @seealso \code{\link[wrMisc]{presenceFilt}} 
@@ -36,14 +37,15 @@
 #' datT6c <- combineMultFilterNAimput(datT6,datT6b,grp=gl(2,3),abundThr=2)
 #' 
 #' @export
-combineMultFilterNAimput <- function(dat,imputed,grp,annDat=NULL,abundThr=NULL,colRazNa=NULL,colTotNa=NULL,minSpeNo=1,minTotNo=2,silent=FALSE,callFrom=NULL){
+combineMultFilterNAimput <- function(dat,imputed,grp,annDat=NULL,abundThr=NULL,colRazNa=NULL,colTotNa=NULL,minSpeNo=1,minTotNo=2,silent=FALSE,debug=FALSE,callFrom=NULL){
   fxNa <- wrMisc::.composeCallName(callFrom,newNa="combineMultFilterNAimput")
-  datFi <- wrMisc::presenceFilt(dat,grp=grp,maxGrpM=1,ratMa=0.8)
-  if(!silent) cat(fxNa,"   at presenceFilt:  ",colSums(datFi),"  out of ",nrow(dat),"\n")
+  if(debug) silent <- FALSE
+  datFi <- wrMisc::presenceFilt(dat, grp=grp, maxGrpM=1, ratMa=0.8, silent=silent, callFrom=fxNa)
+  if(!silent) message(fxNa,"   at presenceFilt:  ",paste(colSums(datFi),collapse=" "),"  out of ",nrow(dat))
   if(length(colRazNa) >0 & length(annDat) >0) {
-    razFilt <- razorNoFilter(annot=annDat, totNa=colTotNa, minRazNa=colRazNa, minSpeNo=minSpeNo, minTotNo=minTotNo)
+    razFilt <- razorNoFilter(annot=annDat, totNa=colTotNa, minRazNa=colRazNa, minSpeNo=minSpeNo, minTotNo=minTotNo, silent=silent,callFrom=fxNa)
     datFi[which(!razFilt),] <- rep(FALSE,ncol(datFi)) 
-    if(!silent) cat(fxNa,"   at razorNoFilter: ",colSums(datFi),"\n")    
+    if(debug) message(fxNa,"   at razorNoFilter: ",paste(colSums(datFi),collapse=" "))    
     }
   ## filter mostly low abundance (using imputed), see also .filterMinAv
   grpMeans <- wrMisc::rowGrpMeans(imputed$data,grp)
@@ -54,7 +56,7 @@ combineMultFilterNAimput <- function(dat,imputed,grp,annDat=NULL,abundThr=NULL,c
     for(i in 1:nrow(pwComb)) {                                                # loop along all pair-wise questions => (update filter) datFi
       chLi <- grpMeans[,pwComb[i,1]] < abundThr & grpMeans[,pwComb[i,2]] < abundThr
       if(any(chLi)) datFi[which(chLi),i] <- FALSE}
-    if(!silent) cat(fxNa,"   at abundanceFilt: ",colSums(datFi),"\n") }
+    if(!silent) message(fxNa,"   at abundanceFilt: ",paste(colSums(datFi),collapse=" ")) }
   ## check if set of mostly imputed data higher than measured -> filter
   ## number of NAs per line & group
   nNAbyGroup <- wrMisc::rowGrpNA(dat,grp)

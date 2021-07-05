@@ -10,7 +10,7 @@ readMaxQuantFile(
   normalizeMeth = "median",
   quantCol = "LFQ.intensity",
   contamCol = "Potential.contaminant",
-  pepCountCol = c("Razor...unique.peptides.", "MS.MS.count."),
+  pepCountCol = c("Razor + unique peptides", "Unique peptides", "MS.MS.count"),
   uniqPepPat = NULL,
   refLi = NULL,
   extrColNames = c("Majority.protein.IDs", "Fasta.headers", "Number.of.proteins"),
@@ -35,7 +35,7 @@ readMaxQuantFile(
 
 \item{contamCol}{(character or integer, length=1) which columns should be used for contaminants marked by ProteomeDiscoverer}
 
-\item{pepCountCol}{(character) pattern to search among column-names for count data of PSM and NoOfPeptides}
+\item{pepCountCol}{(character) pattern to search among column-names for count data (1st entry for 'Razor + unique peptides', 2nd fro 'Unique peptides', 3rd for 'MS.MS.count' (PSM))}
 
 \item{uniqPepPat}{(character, length=1) depreciated, please use \code{pepCountCol} instead}
 
@@ -68,15 +68,15 @@ Innput files compressed as .gz can be read as well. Besides protein abundance va
 The protein abundance values mat be normalized using multiple methods (median normalization is default), the determination of normalization values can be restricted to specific proteins
 (normalization to bait protein(s), or to matrix in UPS1 spike-in experiments).
 Besides, a graphical display of the distruibution of protein abundance values may be generated.
+}
+\details{
+This function has been developed using MaxQuant versions 1.6.10.x to 1.6.17.x, the format of resulting file 'proteinGroups.txt' is typically well conserved.  
 The final output is a list containing these elements: \code{$raw}, \code{$quant}, \code{$annot}, \code{$counts}, \code{$quantNotes}, \code{$notes}, or (if \code{separateAnnot=FALSE}) data.frame 
   with annotation- and main quantification-content.
 }
-\details{
-This function has been developed using MaxQuant versions 1.6.10.x to 1.6.17.x, the format of resulting file 'proteinGroups.txt' is typically well conserved.
-}
 \examples{
 path1 <- system.file("extdata", package="wrProteo")
-# Here we'll load a short/trimmed example file (thus not MaxQuant default name) 
+# Here we'll load a short/trimmed example file (thus not the MaxQuant default name) 
 fiNa <- "proteinGroupsMaxQuant1.txt.gz"
 specPr <- c(conta="conta|CON_|LYSC_CHICK", mainSpecies="YEAST",spike="HUMAN_UPS")
 dataMQ <- readMaxQuantFile(path1, file=fiNa, specPref=specPr, tit="tiny MaxQuant")

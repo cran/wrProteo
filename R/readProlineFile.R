@@ -175,8 +175,9 @@ readProlineFile <- function(fileName, path=NULL, normalizeMeth=NULL, logConvert=
   ## peptide counts
   if(length(pepCountCol) >1) { supCol <- lapply(pepCountCol, grep, colnames(out))
     chLe <- sapply(supCol,length) ==ncol(abund)
-    if(any(chLe)) {pepCount <- array(dim=c(nrow(out), ncol(abund), sum(chLe)), dimnames=list(rowNa,colnames(abund),c("PSM","NoOfPeptides")[which(chLe)]))
-      for(i in which(chLe)) pepCount[,,i] <- as.matrix(out[,supCol[[i]]]) }                                                 
+    if(any(chLe)) {pepCount <- array(dim=c(nrow(out), ncol(abund), sum(chLe)), 
+      dimnames=list(rowNa, colnames(abund), sub("\\^peptides_count","NoOfPeptides",sub("\\^psm_count","PSM",sub("_$","",pepCountCol)))[which(chLe)]))
+      for(i in 1:sum(chLe)) pepCount[,,i] <- as.matrix(out[,supCol[[which(chLe)[i]]]]) }                                                 
   }    
 
   ## check abundance/quantitation data

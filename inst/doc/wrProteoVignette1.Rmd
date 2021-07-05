@@ -27,7 +27,7 @@ If you are not familiar with [R](https://www.r-project.org/) you may find many i
 in [contributed documents](https://cran.r-project.org/other-docs.html) or under [Documentation/Manuals](https://cran.r-project.org/manuals.html).
 Of course, numerous other documents/sites with tutorials exit.
 
-The aim of package-vignettes is to provide additional information how the R-package concerned may be used, thus complementing the documentation given with _help()_ for each of the functions of the package. In terms of examples, frequent standard types of problems are preferred in a vignette. 
+The aim of package-vignettes is to provide additional information and show examples how the R-package concerned may be used, thus complementing the documentation given with _help()_ for each of the functions of the package. In terms of examples, frequent standard types of problems are preferred in a vignette. 
 Nevertheless, most functions can be used in many other ways, for this you may have to check the various arguments via calling _help_ on the function of interest.
 All R-code in this vigentte can be directly repeated by the user, all data used is provided with the package.
 
@@ -68,7 +68,7 @@ packageVersion("wrProteo")
 ```
 
 This way you can browse all vignettes available to this package :
-```{r setup32, echo=TRUE, eval=FALSE}
+```{r Vigenttes1, echo=TRUE, eval=FALSE}
 browseVignettes("wrProteo")
 ```
 There you can find another vignette dedicated to the analysis of heterogenous spike-in experiments.
@@ -209,14 +209,14 @@ head(grp9)
 #### Data From ProteomeDiscoverer
 
 [Proteome Discoverer](https://www.thermofisher.com/order/catalog/product/OPTON-30812) is commercial software from ThermoFisher (www.thermofisher.com).
-Data exported from [Proteome Discoverer](https://www.thermofisher.com/order/catalog/product/OPTON-30812) can get imported (typically the xx_allProteins.txt file) using `readProtDiscovFile()`, for details please see the vignette "UPS-1 spike-in Experiments" to this package. 
+Data exported from [Proteome Discoverer](https://www.thermofisher.com/order/catalog/product/OPTON-30812) can get imported (typically the xx_Proteins.txt file) using `readProtDiscovFile()`, for details please see the vignette "UPS-1 spike-in Experiments" to this package. 
 
 
 #### Data From Proline
 
-[Proline](http://www.profiproteomics.fr/proline/) is free software provided by the Profi-consortium, 
+[Proline](https://www.profiproteomics.fr/proline/) is free software provided by the Profi-consortium, 
 see [Bouyssi&eacute; et al 2020](https://doi.org/10.1016/j.jprot.2015.11.011).
-Data exported from [Proline](http://www.profiproteomics.fr/proline/) (xlsx or tsv format) can get imported using `readProlineFile()`, for details please see the  vignette "UPS-1 spike-in Experiments" to this package. 
+Data exported from [Proline](https://www.profiproteomics.fr/proline/) (xlsx or tsv format) can get imported using `readProlineFile()`, for details please see the  vignette "UPS-1 spike-in Experiments" to this package. 
 
 
 #### Data From OpenMS
@@ -397,7 +397,7 @@ MAplotW(testMQ, useComp=2, namesNBest="passFC")
 
 ## Volcano-Plot
 
-A [Volcano-plot](https://en.wikipedia.org/wiki/Volcano_plot_(statistics)) allows to compare the simple fold-change (FC) opposed to the outcome of a statistcal test.
+A [Volcano-plot](https://en.wikipedia.org/wiki/Volcano_plot_(statistics) allows to compare the simple fold-change (FC) opposed to the outcome of a statistcal test.
 Frequently we can obsereve, that a some proteins show very small FC but enthousiastic p-values and subsequently enthousiastic FDR-values.
 However, generally such proteins with so small FC don't get considered as reliable results, therefore it is common practice to add an additional FC-threshold,
 typically a 1.5 or 2 fold-change. 
@@ -448,7 +448,7 @@ The function _extractTestingResults()_ also allows to write the data shown above
 ## Further Steps
 
 In case of standard projects one typically would like to find out more about the biological context of the proteins retained at statistical analysis, their function and their interactors.
-Such a list of significant proteins from a given project could be tested lateron for enrichment of [GO-functions](http://geneontology.org/) or for their inter-connectivity in PPI networks like [String](https://string-db.org/).
+Such a list of significant proteins from a given project could be tested lateron for enrichment of [GO-functions](https://www.uniprot.org/help/gene_ontology) or for their inter-connectivity in PPI networks like [String](https://string-db.org/).
 There are multiple tools available on [Bioconductor](https://www.bioconductor.org/) and [CRAN](https://cran.r-project.org/) as well as outside of R to perform such analysis tasks.
 
 In case of UPS1 spike-in experiments the subsequent analysis is different. 

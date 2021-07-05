@@ -70,7 +70,7 @@ matrixNAinspect <- function(dat,gr,retnNA=TRUE,xLab=NULL,tit=NULL,xLim=NULL,sile
     if(length(NAneig) >10) {    # display mode
       yLim <- signif(graphics::par("usr")[3:4], 3)             # current y-limits
       mod <- signif(wrMisc::stableMode(if(length(NAneig2) >300) NAneig2 else NAneig, method="density"), 3)
-      graphics::mtext(paste(" (arrow) mode of",if(length(NAneig2) >300) "2-"," NA-neighbours"), col="sienna2", cex=0.7, adj=0, line=-3.4, side=3)
+      graphics::mtext(paste(" (arrow) mode of",if(length(NAneig2) >300) "2-"," NA-neighbours :",signif(mod,3)), col="sienna2", cex=0.7, adj=0, line=-3.4, side=3)
       graphics::arrows(mod, yLim[1]+(yLim[2]-yLim[1])*0.4, mod, yLim[1]+(yLim[2]-yLim[1])/4, length=0.1, col="sienna2", lwd=2)
     }    
     graphics::hist(NAneig,breaks=hi1$breaks,border=grDevices::grey(0.75), col=grDevices::rgb(0.1,1,0.1,0.15), add=TRUE);                    # in green

@@ -17,7 +17,7 @@ vignette: >
 
 
 ## Introduction
-This vignette shows how [UPS1](https://www.sigmaaldrich.com/life-science/proteomics/mass-spectrometry/ups1-and-ups2-proteomic.html) 
+This vignette shows how [UPS1](https://www.sigmaaldrich.com/FR/en/product/sigma/ups1)
 spike-in experiments may be analyzed using the packages [wrProteo](https://CRAN.R-project.org/package=wrProteo),
 [wrMisc](https://CRAN.R-project.org/package=wrMisc) and [wrGraph](https://CRAN.R-project.org/package=wrGraph), all these packages are available on CRAN. 
 
@@ -63,7 +63,7 @@ packageVersion("wrProteo")
 
 The main aim of the experimental setup using heterologous spike-in experiments is to provide a framework to test identification and quantitation procedures in proteomics.
 
-By mixing known amounts of a collection of human proteins ([UPS1](https://www.sigmaaldrich.com/life-science/proteomics/mass-spectrometry/ups1-and-ups2-proteomic.html)) in various concentrations on top of a constant level yeast total protein extract, one expects to find only the spiked human UPS1 proteins varying between samples. 
+By mixing known amounts of a collection of human proteins ([UPS1](https://www.sigmaaldrich.com/FR/en/product/sigma/ups1)) in various concentrations on top of a constant level yeast total protein extract, one expects to find only the spiked human UPS1 proteins varying between samples. 
 In terms of ROC curves (see also [ROC on Wikipedia](https://en.wikipedia.org/wiki/Receiver_operating_characteristic)) the spike-in proteins are expected to show up as true positives (TP).
 In contrast, all yeast proteins were added in the same quantity to same samples and should thus be observed as constant, ie as true negatives (TN) when looking for proteins changing abundance.
 
@@ -74,7 +74,7 @@ The data used in this vignette were published with the article : [Ramus et al 20
 
 This dataset is available on PRIDE as [PXD001819](https://www.ebi.ac.uk/pride/archive/projects/PXD001819) (and on ProteomeXchange).
 
-Briefly, this experiment aims to evaluate and compare various quantification appoaches of the heterologous spike-in [UPS1](https://www.sigmaaldrich.com/life-science/proteomics/mass-spectrometry/ups1-and-ups2-proteomic.html) in yeast protein extracts as constant matrix. 9 different concentrations of the heterologous spike-in (UPS1) were run in triplicates. The proteins were initially digested by Trypsin and then analyzed by LC-MS/MS in DDA mode. 
+Briefly, this experiment aims to evaluate and compare various quantification appoaches of the heterologous spike-in [UPS1](https://www.sigmaaldrich.com/FR/en/product/sigma/ups1) (available from Sigma-Aldrich) in yeast protein extracts as constant matrix. 9 different concentrations of the heterologous spike-in (UPS1) were run in triplicates. The proteins were initially digested by Trypsin and then analyzed by LC-MS/MS in DDA mode. 
 
 
 ### Key Elements and Additional Functions
@@ -194,7 +194,7 @@ Later in this document data from ProteomeDiscoverer will by frequently abbreviat
 
 With the data used here, the identification was performed using the XCalibur module of ProteomeDiscoverer version 2.4 .
 Quantitation data at the level of consensus-proteins can be exported to tabulated text files, which can be treated by the function shown below.
-The resultant data were export in tablulated format and the file automatically named 'all\_Proteins.txt' (the option R-headers was checked, however this option is not mandatory).
+The resultant data were export in tablulated format and the file automatically named '\_Proteins.txt' (the option R-headers was checked, however this option is not mandatory).
 Files compressed as .gz can be read, too (like in the example below).
 
 ```{r readProteomeDiscoverer1, fig.height=8, fig.width=9.5, fig.align="center", echo=TRUE}
@@ -231,7 +231,7 @@ In sum `r sum(UPS1ac %in% dataPD$annot[,1])` UPS1 proteins were found, `r sum(!U
 
 ### Proline
 
-[Proline](http://www.profiproteomics.fr/proline/) is open-source software provided by the [Profi-consortium](http://www.profiproteomics.fr/) (see also [proline-core on github](https://github.com/profiproteomics/proline-core)), published by [Bouyssié et al 2020](https://doi.org/10.1093/bioinformatics/btaa118).
+[Proline](http://www.profiproteomics.fr/proline/) is open-source software provided by the [Profi-consortium](https://www.profiproteomics.fr/) (see also [proline-core on github](https://github.com/profiproteomics/proline-core)), published by [Bouyssié et al 2020](https://doi.org/10.1093/bioinformatics/btaa118).
 Later in this document data from Proline will by frequently abbreviated as **PL**.
 
 Protein identification in Proline gets performed by [SearchGUI](http://compomics.github.io/projects/searchgui), see also [Vaudel et al 2015](https://doi.org/10.1002/pmic.201000595).
@@ -385,17 +385,35 @@ In addition, various formats of multiple testing correction can be added to the 
 
 We are ready to launch the NA-imputation and testing for data from ProteomeDiscoverer :
 ```{r testProteomeDiscoverer, echo=TRUE} 
-testPD <- testRobustToNAimputation(dataPD, gr=grp9)     # ProteomeDiscoverer
+testPD <- testRobustToNAimputation(dataPD, gr=grp9, imputMethod="informed")     # ProteomeDiscoverer
+```
+
+```{r testProteomeDiscoverer2, echo=TRUE} 
+testPD2 <- testRobustToNAimputation(dataPD, gr=grp9)     # ProteomeDiscoverer
+```
+
+```{r testProteomeDiscoverer3, echo=TRUE} 
+testPD3 <- testRobustToNAimputation(dataPD, gr=grp9, imputMethod="modeadopt")     # ProteomeDiscoverer
 ```
 
 Then for MaxQuant ...
 ```{r testMaxQuant, echo=TRUE}
-testMQ <- testRobustToNAimputation(dataMQ, gr=grp9)      # MaxQuant
+testMQ <- testRobustToNAimputation(dataMQ, gr=grp9, imputMethod="informed")      # MaxQuant
+```
+
+```{r testMaxQuant2, echo=TRUE}
+testMQ2 <- testRobustToNAimputation(dataMQ, gr=grp9)      # MaxQuant
+```
+
+```{r testMaxQuant3, echo=TRUE}
+testMQ3 <- testRobustToNAimputation(dataMQ, gr=grp9, imputMethod="modeadopt")      # MaxQuant
 ```
 
 And finally for Proline :
 ```{r testProline, echo=TRUE}
 testPL <- testRobustToNAimputation(dataPL, gr=grp9)      # Proline
+testPL2 <- testRobustToNAimputation(dataPL, gr=grp9)     # 
+testPL3 <- testRobustToNAimputation(dataPL, gr=grp9, imputMethod="modeadopt")     # 
 ```
 
 From these results we'll use i) the NA-imputed version of our datasets for plotting principal components (PCA) and ii) the (stabilized) testing results for counting TP, FP, etc and to construct ROC curves.
@@ -422,7 +440,7 @@ A traditional 5 percent FDR cut-off is used for Volcano-plots, while ROC-curves 
 
 A very universal and simple way to analyze data is by checking as several pairwise comparisons, in particular, if the experimental setup does not include complete multifactorial plans. 
 
-This [UPS1](https://www.sigmaaldrich.com/life-science/proteomics/mass-spectrometry/ups1-and-ups2-proteomic.html) spike-in experiment has `r ncol(dataPD$quant)` samples organized (according to meta-information) as `r length(UPSconc)` groups. 
+This [UPS1](https://www.sigmaaldrich.com/FR/en/product/sigma/ups1) spike-in experiment has `r ncol(dataPD$quant)` samples organized (according to meta-information) as `r length(UPSconc)` groups. 
 Thus, one obtains in total `r ncol(testPD$BH)` pair-wise comparisons which will make comparisons very crowded.
 The publication by [Ramus et al 2016](https://doi.org/10.1016/j.jprot.2015.11.011) focussed on 3 pairwise comparisons only. 
 In this vignette it is shown how all of them can get considered.
@@ -446,7 +464,7 @@ However, some proteins with enthousiastic FDR values have very low log-FC amplit
 ```{r pairWise3, fig.height=4.5, fig.width=9.5, fig.align="center", echo=TRUE}
 par(mar=c(6.2, 4.7, 4, 1))   
 imageW(table1[,c("sig.PD.BH","sig.MQ.BH","sig.PL.BH" )], col=RColorBrewer::brewer.pal(9,"YlOrRd"),
-  tit="Number of BH.FDR signif proteins by the quantification approaches")
+  tit="Number of BH.FDR passing proteins by the quantification approaches")
 mtext("dark red for high number signif proteins", cex=0.7)
 ```
 
@@ -465,7 +483,7 @@ In addition, we can mark the different protein-groups (or species) by different 
 Counting the number of proteins passing a classical threshold for differential expression combined with a filter for minimum log-fold-change is a good way to start.
 
 As mentioned, the dataset from [Ramus et al 2016](https://doi.org/10.1016/j.jprot.2015.11.011) 
-contains `r length(UPSconc)` different levels of [UPS1](https://www.sigmaaldrich.com/life-science/proteomics/mass-spectrometry/ups1-and-ups2-proteomic.html) concentrations, 
+contains `r length(UPSconc)` different levels of [UPS1](https://www.sigmaaldrich.com/FR/en/product/sigma/ups1) concentrations, 
 in consequence `r ncol(testPD$BH)` pair-wise comparisons are possible.
 Again, plotting all possible Volcano plots would make way too crowded plots, instead we'll try to summarize (see ROC curves), cluster into groups and finally plot only a few representative ones.
 
@@ -478,10 +496,10 @@ They are typically used as illustrate and compare the discriminiative capacity o
 see eg also the original publication [Hand and Till 2001](https://doi.org/doi:10.1023/A:1010920819831). 
 
 The data get constructed by sliding through a panel of threshold-values for the statistical tests instead of just using 0.05. 
-Due to the experimental setup we know that all yeast proteins should stay constant and only [UPS1 proteins](https://www.sigmaaldrich.com/life-science/proteomics/mass-spectrometry/ups1-and-ups2-proteomic.html) are expected to change.
+Due to the experimental setup we know that all yeast proteins should stay constant and only [UPS1 proteins](https://www.sigmaaldrich.com/FR/en/product/sigma/ups1) are expected to change.
 For each of these threshold values one counts the number of true positives (TP), false positives (FP) etc, allowing then to calculate _sensitivity_ and _specificity_. 
 
- In the case of bechmarking quantitation efforts, ROC curves are used to judge how well heterologous spikes [UPS1 proteins](https://www.sigmaaldrich.com/life-science/proteomics/mass-spectrometry/ups1-and-ups2-proteomic.html) can be recognized as differentially abundant while constant yeast matrix proteins should not get classified as differential.
+ In the case of bechmarking quantitation efforts, ROC curves are used to judge how well heterologous spikes [UPS1 proteins](https://www.sigmaaldrich.com/FR/en/product/sigma/ups1) can be recognized as differentially abundant while constant yeast matrix proteins should not get classified as differential.
  Finally, ROC curves let us also gain some additional insights in the question which cutoff may be optimal or if the commonly used 5-percent FDR threshld cutoff allows getting the best out of the testing system.
 
 Below, these calculations of _summarizeForROC()_ are run in batch.
@@ -540,7 +558,7 @@ AucAll[,"clu"] <- kMAx
 AucAll <- reorgByCluNo(AucAll, cluNo=kMAx, useColumn=c("PD","MQ","PL"))
 AucAll <- cbind(AucAll, iniInd=table1[match(rownames(AucAll), rownames(table1)), "index"])
 colnames(AucAll)[1:(which(colnames(AucAll)=="index")-1)] <- paste("Auc",colnames(AucAll)[1:(which(colnames(AucAll)=="index")-1)], sep=".")
-AucAll[,"cluNo"] <- rep(nGr:1, table(AucAll[,"cluNo"]))        # make cluNo descencing
+AucAll[,"cluNo"] <- rep(nGr:1, table(AucAll[,"cluNo"]))        # make cluNo descending
 
 kMAx <- AucAll[,"cluNo"]      # update
   table(AucAll[,"cluNo"])
@@ -572,7 +590,7 @@ ratTab <- sapply(5:1, function(x) { y <- table1[match(rownames(AucAll),rownames(
   table(factor(signif(y[which(AucAll[,"cluNo"]==x),"log2rat"],1), levels=unique(signif(table1[,"log2rat"],1))) )}) 
 colnames(ratTab) <- paste0("clu",5:1,"\nn=",rev(table(kMAx)))
 layout(1)
-imageW(ratTab, tit="Frequency of log2FC in the 5 clusters", xLab="log2FC (rounded)", col=RColorBrewer::brewer.pal(9,"YlOrRd"),las=1)
+imageW(ratTab, tit="Frequency of rounded log2FC in the 5 clusters", xLab="log2FC (rounded)", col=RColorBrewer::brewer.pal(9,"YlOrRd"),las=1)
 mtext("dark red for high number signif proteins", cex=0.7)
 ```
 
@@ -606,14 +624,11 @@ plotROC(rocPD[[j2]], rocMQ[[j2]], rocPL[[j2]], col=colPanel, methNames=methNa, p
 ```
 
 ```{r VolcanoClu5, fig.height=10, fig.width=9.5, fig.align="center", echo=TRUE}
-fcPar1 <- c(text="arrow: expected ratio at",loc="toright")
+#fcPar1 <- c(text="arrow: expected ratio at",loc="toright")
 layout(matrix(1:4,ncol=2))
-VolcanoPlotW(testPD, useComp=j1, FCthrs=1.5, FdrThrs=0.05, annColor=c(4,2,3), ProjNa=methNa[1], silent=TRUE)
-  foldChangeArrow2(testPD, useComp=j1, addText=fcPar1)
-VolcanoPlotW(testMQ, useComp=j1, FCthrs=1.5, FdrThrs=0.05, annColor=c(4,2,3), ProjNa=methNa[2], silent=TRUE)
-  foldChangeArrow2(testMQ, useComp=j1, addText=fcPar1)
-VolcanoPlotW(testPL, useComp=j1, FCthrs=1.5, FdrThrs=0.05, annColor=c(4,2,3), ProjNa=methNa[3], silent=TRUE)
-  foldChangeArrow2(testPL, useComp=j1, addText=fcPar1)
+VolcanoPlotW(testPD, useComp=j1, FCthrs=1.5, FdrThrs=0.05, annColor=c(4,2,3), ProjNa=methNa[1], expFCarrow=TRUE, silent=TRUE) 
+VolcanoPlotW(testMQ, useComp=j1, FCthrs=1.5, FdrThrs=0.05, annColor=c(4,2,3), ProjNa=methNa[2], expFCarrow=TRUE, silent=TRUE)
+VolcanoPlotW(testPL, useComp=j1, FCthrs=1.5, FdrThrs=0.05, annColor=c(4,2,3), ProjNa=methNa[3], expFCarrow=TRUE, silent=TRUE)
 ```
 
 
@@ -643,13 +658,11 @@ plotROC(rocPD[[j2]], rocMQ[[j2]], rocPL[[j2]], col=colPanel, methNames=methNa, p
 
 ```{r VolcanoClu4, fig.height=10, fig.width=9.5, fig.align="center", echo=TRUE}
 layout(matrix(1:4, ncol=2)) 
-VolcanoPlotW(testPD, useComp=j1, FCthrs=1.5, FdrThrs=0.05, annColor=c(4,2,3), ProjNa=methNa[1], silent=TRUE)
-  foldChangeArrow2(testPD, useComp=j1, addText=fcPar1)
-VolcanoPlotW(testMQ, useComp=j1, FCthrs=1.5, FdrThrs=0.05, annColor=c(4,2,3), ProjNa=methNa[2], silent=TRUE)
-  foldChangeArrow2(testMQ, useComp=j1, addText=fcPar1, col=4)
-VolcanoPlotW(testPL, useComp=j1, FCthrs=1.5, FdrThrs=0.05, annColor=c(4,2,3), ProjNa=methNa[3], silent=TRUE)
-  foldChangeArrow2(testPL, useComp=j1, addText=fcPar1, col=4)
+VolcanoPlotW(testPD, useComp=j1, FCthrs=1.5, FdrThrs=0.05, annColor=c(4,2,3), ProjNa=methNa[1], expFCarrow=TRUE, silent=TRUE)
+VolcanoPlotW(testMQ, useComp=j1, FCthrs=1.5, FdrThrs=0.05, annColor=c(4,2,3), ProjNa=methNa[2], expFCarrow=TRUE, silent=TRUE)
+VolcanoPlotW(testPL, useComp=j1, FCthrs=1.5, FdrThrs=0.05, annColor=c(4,2,3), ProjNa=methNa[3], expFCarrow=TRUE, silent=TRUE) 
 ```
+
 
 #### ROC Curves for the 3rd Best Cluster  (the '+++')
 
@@ -677,12 +690,9 @@ plotROC(rocPD[[j2]],rocMQ[[j2]],rocPL[[j2]], col=colPanel, methNames=methNa, poi
 
 ```{r VolcanoClu3, fig.height=10, fig.width=9.5, fig.align="center", echo=TRUE}
 layout(matrix(1:4, ncol=2)) 
-VolcanoPlotW(testPD, useComp=j1, FCthrs=1.5, FdrThrs=0.05, annColor=c(4,2,3), ProjNa=methNa[1], silent=TRUE)
-  foldChangeArrow2(testPD, useComp=j1, addText=fcPar1)
-VolcanoPlotW(testMQ, useComp=j1, FCthrs=1.5, FdrThrs=0.05, annColor=c(4,2,3), ProjNa=methNa[2], silent=TRUE)
-  foldChangeArrow2(testMQ, useComp=j1, addText=fcPar1)
-VolcanoPlotW(testPL, useComp=j1, FCthrs=1.5, FdrThrs=0.05, annColor=c(4,2,3), ProjNa=methNa[3], silent=TRUE)
-  foldChangeArrow2(testPL, useComp=j1, addText=fcPar1)
+VolcanoPlotW(testPD, useComp=j1, FCthrs=1.5, FdrThrs=0.05, annColor=c(4,2,3), ProjNa=methNa[1], expFCarrow=TRUE, silent=TRUE) 
+VolcanoPlotW(testMQ, useComp=j1, FCthrs=1.5, FdrThrs=0.05, annColor=c(4,2,3), ProjNa=methNa[2], expFCarrow=TRUE, silent=TRUE)
+VolcanoPlotW(testPL, useComp=j1, FCthrs=1.5, FdrThrs=0.05, annColor=c(4,2,3), ProjNa=methNa[3], expFCarrow=TRUE, silent=TRUE)
 ```
 
 #### ROC Curves for the 4th Best Cluster  (the '++')
@@ -711,12 +721,9 @@ plotROC(rocPD[[j2]], rocMQ[[j2]], rocPL[[j2]], col=colPanel, methNames=methNa, p
 
 ```{r VolcanoClu2, fig.height=10, fig.width=9.5, fig.align="center", echo=TRUE}
 layout(matrix(1:4, ncol=2)) 
-VolcanoPlotW(testPD, useComp=j1, FCthrs=1.5, FdrThrs=0.05, annColor=c(4,2,3), ProjNa=methNa[1], silent=TRUE)
-  foldChangeArrow2(testPD, useComp=j1, addText=fcPar1)
-VolcanoPlotW(testMQ, useComp=j1, FCthrs=1.5, FdrThrs=0.05, annColor=c(4,2,3), ProjNa=methNa[2], silent=TRUE)
-  foldChangeArrow2(testMQ, useComp=j1, addText=fcPar1)
-VolcanoPlotW(testPL, useComp=j1, FCthrs=1.5, FdrThrs=0.05, annColor=c(4,2,3), ProjNa=methNa[3], silent=TRUE)
-  foldChangeArrow2(testPL, useComp=j1, addText=fcPar1)
+VolcanoPlotW(testPD, useComp=j1, FCthrs=1.5, FdrThrs=0.05, annColor=c(4,2,3), ProjNa=methNa[1], expFCarrow=TRUE, silent=TRUE)
+VolcanoPlotW(testMQ, useComp=j1, FCthrs=1.5, FdrThrs=0.05, annColor=c(4,2,3), ProjNa=methNa[2], expFCarrow=TRUE, silent=TRUE)
+VolcanoPlotW(testPL, useComp=j1, FCthrs=1.5, FdrThrs=0.05, annColor=c(4,2,3), ProjNa=methNa[3], expFCarrow=TRUE, silent=TRUE)
 ```
 
 #### ROC Curves for the Weakest Cluster 1  (the '+')
@@ -745,12 +752,9 @@ plotROC(rocPD[[j2]], rocMQ[[j2]], rocPL[[j2]], col=colPanel, methNames=methNa, p
 
 ```{r VolcanoClu1, fig.height=10, fig.width=9.5, fig.align="center", echo=TRUE}
 layout(matrix(1:4, ncol=2)) 
-VolcanoPlotW(testPD, useComp=j1, FCthrs=1.5, FdrThrs=0.05, annColor=c(4,2,3), ProjNa=methNa[1], silent=TRUE)
-  foldChangeArrow2(testPD, useComp=j1, addText=fcPar1)
-VolcanoPlotW(testMQ, useComp=j1, FCthrs=1.5, FdrThrs=0.05, annColor=c(4,2,3), ProjNa=methNa[2], silent=TRUE)
-  foldChangeArrow2(testMQ, useComp=j1, addText=fcPar1)
-VolcanoPlotW(testPL, useComp=j1, FCthrs=1.5, FdrThrs=0.05, annColor=c(4,2,3), ProjNa=methNa[3], silent=TRUE)
-  foldChangeArrow2(testPL, useComp=j1, addText=fcPar1)
+VolcanoPlotW(testPD, useComp=j1, FCthrs=1.5, FdrThrs=0.05, annColor=c(4,2,3), ProjNa=methNa[1], expFCarrow=TRUE, silent=TRUE)
+VolcanoPlotW(testMQ, useComp=j1, FCthrs=1.5, FdrThrs=0.05, annColor=c(4,2,3), ProjNa=methNa[2], expFCarrow=TRUE, silent=TRUE)
+VolcanoPlotW(testPL, useComp=j1, FCthrs=1.5, FdrThrs=0.05, annColor=c(4,2,3), ProjNa=methNa[3], expFCarrow=TRUE, silent=TRUE)
 ```
 
 ------
@@ -758,7 +762,7 @@ VolcanoPlotW(testPL, useComp=j1, FCthrs=1.5, FdrThrs=0.05, annColor=c(4,2,3), Pr
 
 ## Analysis Focussing on UPS1 Spike-In Proteins Only
 
-We know from the experimental setup that there were 48 [UPS1 proteins](https://www.sigmaaldrich.com/life-science/proteomics/mass-spectrometry/ups1-and-ups2-proteomic.html)) 
+We know from the experimental setup that there were 48 [UPS1 proteins](https://www.sigmaaldrich.com/FR/en/product/sigma/ups1)) 
 present in the commercial mix added to a constant background of yeast-proteins. 
 The lowest concentrations are extremely challenging and it is no surprise that many of them were not detected at the lowest concentration(s).
 In order to choose among the various concentrations of UPS1, let's look how many NAs are in each group of replicates (ie before NA-imputation), 
@@ -801,7 +805,7 @@ We can conclude, the capacity to successfully quantify a given protein depends o
 Plotting the [principal components (PCA)](https://en.wikipedia.org/wiki/Principal_component_analysis) typically allows to gain 
 an overview on how samples are related to each other.
 This type of experiment is special for the fact that the majority of proteins is expected to remain constant (yeast matrix),
-while only the [UPS1 proteins](https://www.sigmaaldrich.com/life-science/proteomics/mass-spectrometry/ups1-and-ups2-proteomic.html) vary.
+while only the [UPS1 proteins](https://www.sigmaaldrich.com/FR/en/product/sigma/ups1) vary.
 Since we are primarily intereseted in the UPS1 proteins, the regular plots of PCA are not shown here, but PCA of the lines identified as UPS1.
 
 [Principal component analysis (PCA)](https://en.wikipedia.org/wiki/Principal_component_analysis) cannot handle NA-values. Either all lines with any NAs have to be excluded, or data after NA-imputation have to be used.
@@ -989,9 +993,9 @@ for(i in 1:(dim(datUPS1)[2])) datUPS1[,i,"sco"] <- -datUPS1[,i,"logp"] - (datUPS
 Next, let's bring together all linear-model scores, the number of peptides and meadian protein abundance for each of UPS1 proteins in one object to facilite further steps.
 
 ```{r combRegrScore2, echo=TRUE}
-datUPS1[,1,2] <- rowSums(dataPD$count[match(UPS1ac,dataPD$annot[,1]),,1], na.rm=TRUE)
-datUPS1[,2,2] <- rowSums(dataMQ$count[match(UPS1ac,dataMQ$annot[,1]),,2], na.rm=TRUE)
-datUPS1[,3,2] <- rowSums(dataPL$count[match(UPS1ac,dataPL$annot[,1]),,2], na.rm=TRUE)
+datUPS1[,1,2] <- rowSums(dataPD$count[match(UPS1ac,dataPD$annot[,1]),,"NoOfPeptides"], na.rm=TRUE)
+datUPS1[,2,2] <- rowSums(dataMQ$count[match(UPS1ac,dataMQ$annot[,1]),,1], na.rm=TRUE)
+datUPS1[,3,2] <- rowSums(dataPL$count[match(UPS1ac,dataPL$annot[,1]),,"NoOfPeptides"], na.rm=TRUE)
 ```
 
 Now we can explore the regression score and its context to other parameters, below it's done graphically.
@@ -1167,6 +1171,8 @@ This indicates that many times the common 5-percent threshold may not be the 'op
 The author wants to acknowledge the support by the [IGBMC](http://www.igbmc.fr/) (CNRS UMR 7104, Inserm U 1258, UdS), [CNRS](http://www.cnrs.fr/), [Universit&eacute; de Strasbourg](https://www.unistra.fr) and [Inserm](https://www.inserm.fr/) and of course all collegues from the [IGBMC proteomics platform](http://proteomics.igbmc.fr/).
 The author wishes to thank the [CRAN-staff](https://CRAN.R-project.org) for all their help with new entries and their efforts in maintaining this repository of R-packages.
 Furthermore, many very fruitful discussions with colleages on national and international level have helped to formulate ideas and improve the tools presented here.
+
+Thank you for you interest in this package. This package is constantly evolving, new featues/functions may get added to the next version.
 
 
 ## Session-Info

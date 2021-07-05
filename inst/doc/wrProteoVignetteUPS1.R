@@ -188,13 +188,27 @@ tabSumNA <- rbind(PD=sumNAperGroup(dataPD$raw, grp9), MQ=sumNAperGroup(dataMQ$ra
 kable(tabSumNA, caption="Number of NAs per group of samples", align="r")
 
 ## ----testProteomeDiscoverer, echo=TRUE----------------------------------------
-testPD <- testRobustToNAimputation(dataPD, gr=grp9)     # ProteomeDiscoverer
+testPD <- testRobustToNAimputation(dataPD, gr=grp9, imputMethod="informed")     # ProteomeDiscoverer
+
+## ----testProteomeDiscoverer2, echo=TRUE---------------------------------------
+testPD2 <- testRobustToNAimputation(dataPD, gr=grp9)     # ProteomeDiscoverer
+
+## ----testProteomeDiscoverer3, echo=TRUE---------------------------------------
+testPD3 <- testRobustToNAimputation(dataPD, gr=grp9, imputMethod="modeadopt")     # ProteomeDiscoverer
 
 ## ----testMaxQuant, echo=TRUE--------------------------------------------------
-testMQ <- testRobustToNAimputation(dataMQ, gr=grp9)      # MaxQuant
+testMQ <- testRobustToNAimputation(dataMQ, gr=grp9, imputMethod="informed")      # MaxQuant
+
+## ----testMaxQuant2, echo=TRUE-------------------------------------------------
+testMQ2 <- testRobustToNAimputation(dataMQ, gr=grp9)      # MaxQuant
+
+## ----testMaxQuant3, echo=TRUE-------------------------------------------------
+testMQ3 <- testRobustToNAimputation(dataMQ, gr=grp9, imputMethod="modeadopt")      # MaxQuant
 
 ## ----testProline, echo=TRUE---------------------------------------------------
 testPL <- testRobustToNAimputation(dataPL, gr=grp9)      # Proline
+testPL2 <- testRobustToNAimputation(dataPL, gr=grp9)     # 
+testPL3 <- testRobustToNAimputation(dataPL, gr=grp9, imputMethod="modeadopt")     # 
 
 ## ----testReorganize1, echo=TRUE-----------------------------------------------
 dataPD$datImp <- testPD$datImp       # recuperate imputeded data to main data-object
@@ -214,7 +228,7 @@ kable(table1, caption="All pairwise comparisons and number of significant protei
 ## ----pairWise3, fig.height=4.5, fig.width=9.5, fig.align="center", echo=TRUE----
 par(mar=c(6.2, 4.7, 4, 1))   
 imageW(table1[,c("sig.PD.BH","sig.MQ.BH","sig.PL.BH" )], col=RColorBrewer::brewer.pal(9,"YlOrRd"),
-  tit="Number of BH.FDR signif proteins by the quantification approaches")
+  tit="Number of BH.FDR passing proteins by the quantification approaches")
 mtext("dark red for high number signif proteins", cex=0.7)
 
 ## ----pairWiseSelect2, echo=TRUE-----------------------------------------------
@@ -253,7 +267,7 @@ AucAll[,"clu"] <- kMAx
 AucAll <- reorgByCluNo(AucAll, cluNo=kMAx, useColumn=c("PD","MQ","PL"))
 AucAll <- cbind(AucAll, iniInd=table1[match(rownames(AucAll), rownames(table1)), "index"])
 colnames(AucAll)[1:(which(colnames(AucAll)=="index")-1)] <- paste("Auc",colnames(AucAll)[1:(which(colnames(AucAll)=="index")-1)], sep=".")
-AucAll[,"cluNo"] <- rep(nGr:1, table(AucAll[,"cluNo"]))        # make cluNo descencing
+AucAll[,"cluNo"] <- rep(nGr:1, table(AucAll[,"cluNo"]))        # make cluNo descending
 
 kMAx <- AucAll[,"cluNo"]      # update
   table(AucAll[,"cluNo"])
@@ -274,7 +288,7 @@ ratTab <- sapply(5:1, function(x) { y <- table1[match(rownames(AucAll),rownames(
   table(factor(signif(y[which(AucAll[,"cluNo"]==x),"log2rat"],1), levels=unique(signif(table1[,"log2rat"],1))) )}) 
 colnames(ratTab) <- paste0("clu",5:1,"\nn=",rev(table(kMAx)))
 layout(1)
-imageW(ratTab, tit="Frequency of log2FC in the 5 clusters", xLab="log2FC (rounded)", col=RColorBrewer::brewer.pal(9,"YlOrRd"),las=1)
+imageW(ratTab, tit="Frequency of rounded log2FC in the 5 clusters", xLab="log2FC (rounded)", col=RColorBrewer::brewer.pal(9,"YlOrRd"),las=1)
 mtext("dark red for high number signif proteins", cex=0.7)
 
 ## ----ROC_grp5tab, echo=TRUE---------------------------------------------------
@@ -299,14 +313,11 @@ plotROC(rocPD[[j2]], rocMQ[[j2]], rocPL[[j2]], col=colPanel, methNames=methNa, p
   txtLoc=c(0.12,0.1,0.033), tit=paste("Cluster",gr," Example: ",names(rocPD)[j2]), legCex=1)
 
 ## ----VolcanoClu5, fig.height=10, fig.width=9.5, fig.align="center", echo=TRUE----
-fcPar1 <- c(text="arrow: expected ratio at",loc="toright")
+#fcPar1 <- c(text="arrow: expected ratio at",loc="toright")
 layout(matrix(1:4,ncol=2))
-VolcanoPlotW(testPD, useComp=j1, FCthrs=1.5, FdrThrs=0.05, annColor=c(4,2,3), ProjNa=methNa[1], silent=TRUE)
-  foldChangeArrow2(testPD, useComp=j1, addText=fcPar1)
-VolcanoPlotW(testMQ, useComp=j1, FCthrs=1.5, FdrThrs=0.05, annColor=c(4,2,3), ProjNa=methNa[2], silent=TRUE)
-  foldChangeArrow2(testMQ, useComp=j1, addText=fcPar1)
-VolcanoPlotW(testPL, useComp=j1, FCthrs=1.5, FdrThrs=0.05, annColor=c(4,2,3), ProjNa=methNa[3], silent=TRUE)
-  foldChangeArrow2(testPL, useComp=j1, addText=fcPar1)
+VolcanoPlotW(testPD, useComp=j1, FCthrs=1.5, FdrThrs=0.05, annColor=c(4,2,3), ProjNa=methNa[1], expFCarrow=TRUE, silent=TRUE) 
+VolcanoPlotW(testMQ, useComp=j1, FCthrs=1.5, FdrThrs=0.05, annColor=c(4,2,3), ProjNa=methNa[2], expFCarrow=TRUE, silent=TRUE)
+VolcanoPlotW(testPL, useComp=j1, FCthrs=1.5, FdrThrs=0.05, annColor=c(4,2,3), ProjNa=methNa[3], expFCarrow=TRUE, silent=TRUE)
 
 ## ----ROC_grp4tab, echo=TRUE---------------------------------------------------
 gr <- 4
@@ -330,12 +341,9 @@ plotROC(rocPD[[j2]], rocMQ[[j2]], rocPL[[j2]], col=colPanel, methNames=methNa, p
 
 ## ----VolcanoClu4, fig.height=10, fig.width=9.5, fig.align="center", echo=TRUE----
 layout(matrix(1:4, ncol=2)) 
-VolcanoPlotW(testPD, useComp=j1, FCthrs=1.5, FdrThrs=0.05, annColor=c(4,2,3), ProjNa=methNa[1], silent=TRUE)
-  foldChangeArrow2(testPD, useComp=j1, addText=fcPar1)
-VolcanoPlotW(testMQ, useComp=j1, FCthrs=1.5, FdrThrs=0.05, annColor=c(4,2,3), ProjNa=methNa[2], silent=TRUE)
-  foldChangeArrow2(testMQ, useComp=j1, addText=fcPar1, col=4)
-VolcanoPlotW(testPL, useComp=j1, FCthrs=1.5, FdrThrs=0.05, annColor=c(4,2,3), ProjNa=methNa[3], silent=TRUE)
-  foldChangeArrow2(testPL, useComp=j1, addText=fcPar1, col=4)
+VolcanoPlotW(testPD, useComp=j1, FCthrs=1.5, FdrThrs=0.05, annColor=c(4,2,3), ProjNa=methNa[1], expFCarrow=TRUE, silent=TRUE)
+VolcanoPlotW(testMQ, useComp=j1, FCthrs=1.5, FdrThrs=0.05, annColor=c(4,2,3), ProjNa=methNa[2], expFCarrow=TRUE, silent=TRUE)
+VolcanoPlotW(testPL, useComp=j1, FCthrs=1.5, FdrThrs=0.05, annColor=c(4,2,3), ProjNa=methNa[3], expFCarrow=TRUE, silent=TRUE) 
 
 ## ----ROC_grp3tab, echo=TRUE---------------------------------------------------
 gr <- 3 
@@ -359,12 +367,9 @@ plotROC(rocPD[[j2]],rocMQ[[j2]],rocPL[[j2]], col=colPanel, methNames=methNa, poi
 
 ## ----VolcanoClu3, fig.height=10, fig.width=9.5, fig.align="center", echo=TRUE----
 layout(matrix(1:4, ncol=2)) 
-VolcanoPlotW(testPD, useComp=j1, FCthrs=1.5, FdrThrs=0.05, annColor=c(4,2,3), ProjNa=methNa[1], silent=TRUE)
-  foldChangeArrow2(testPD, useComp=j1, addText=fcPar1)
-VolcanoPlotW(testMQ, useComp=j1, FCthrs=1.5, FdrThrs=0.05, annColor=c(4,2,3), ProjNa=methNa[2], silent=TRUE)
-  foldChangeArrow2(testMQ, useComp=j1, addText=fcPar1)
-VolcanoPlotW(testPL, useComp=j1, FCthrs=1.5, FdrThrs=0.05, annColor=c(4,2,3), ProjNa=methNa[3], silent=TRUE)
-  foldChangeArrow2(testPL, useComp=j1, addText=fcPar1)
+VolcanoPlotW(testPD, useComp=j1, FCthrs=1.5, FdrThrs=0.05, annColor=c(4,2,3), ProjNa=methNa[1], expFCarrow=TRUE, silent=TRUE) 
+VolcanoPlotW(testMQ, useComp=j1, FCthrs=1.5, FdrThrs=0.05, annColor=c(4,2,3), ProjNa=methNa[2], expFCarrow=TRUE, silent=TRUE)
+VolcanoPlotW(testPL, useComp=j1, FCthrs=1.5, FdrThrs=0.05, annColor=c(4,2,3), ProjNa=methNa[3], expFCarrow=TRUE, silent=TRUE)
 
 ## ----ROC_grp2tab, echo=TRUE---------------------------------------------------
 gr <- 2 
@@ -388,12 +393,9 @@ plotROC(rocPD[[j2]], rocMQ[[j2]], rocPL[[j2]], col=colPanel, methNames=methNa, p
 
 ## ----VolcanoClu2, fig.height=10, fig.width=9.5, fig.align="center", echo=TRUE----
 layout(matrix(1:4, ncol=2)) 
-VolcanoPlotW(testPD, useComp=j1, FCthrs=1.5, FdrThrs=0.05, annColor=c(4,2,3), ProjNa=methNa[1], silent=TRUE)
-  foldChangeArrow2(testPD, useComp=j1, addText=fcPar1)
-VolcanoPlotW(testMQ, useComp=j1, FCthrs=1.5, FdrThrs=0.05, annColor=c(4,2,3), ProjNa=methNa[2], silent=TRUE)
-  foldChangeArrow2(testMQ, useComp=j1, addText=fcPar1)
-VolcanoPlotW(testPL, useComp=j1, FCthrs=1.5, FdrThrs=0.05, annColor=c(4,2,3), ProjNa=methNa[3], silent=TRUE)
-  foldChangeArrow2(testPL, useComp=j1, addText=fcPar1)
+VolcanoPlotW(testPD, useComp=j1, FCthrs=1.5, FdrThrs=0.05, annColor=c(4,2,3), ProjNa=methNa[1], expFCarrow=TRUE, silent=TRUE)
+VolcanoPlotW(testMQ, useComp=j1, FCthrs=1.5, FdrThrs=0.05, annColor=c(4,2,3), ProjNa=methNa[2], expFCarrow=TRUE, silent=TRUE)
+VolcanoPlotW(testPL, useComp=j1, FCthrs=1.5, FdrThrs=0.05, annColor=c(4,2,3), ProjNa=methNa[3], expFCarrow=TRUE, silent=TRUE)
 
 ## ----ROC_grp1tab, echo=TRUE---------------------------------------------------
 gr <- 1 
@@ -417,12 +419,9 @@ plotROC(rocPD[[j2]], rocMQ[[j2]], rocPL[[j2]], col=colPanel, methNames=methNa, p
 
 ## ----VolcanoClu1, fig.height=10, fig.width=9.5, fig.align="center", echo=TRUE----
 layout(matrix(1:4, ncol=2)) 
-VolcanoPlotW(testPD, useComp=j1, FCthrs=1.5, FdrThrs=0.05, annColor=c(4,2,3), ProjNa=methNa[1], silent=TRUE)
-  foldChangeArrow2(testPD, useComp=j1, addText=fcPar1)
-VolcanoPlotW(testMQ, useComp=j1, FCthrs=1.5, FdrThrs=0.05, annColor=c(4,2,3), ProjNa=methNa[2], silent=TRUE)
-  foldChangeArrow2(testMQ, useComp=j1, addText=fcPar1)
-VolcanoPlotW(testPL, useComp=j1, FCthrs=1.5, FdrThrs=0.05, annColor=c(4,2,3), ProjNa=methNa[3], silent=TRUE)
-  foldChangeArrow2(testPL, useComp=j1, addText=fcPar1)
+VolcanoPlotW(testPD, useComp=j1, FCthrs=1.5, FdrThrs=0.05, annColor=c(4,2,3), ProjNa=methNa[1], expFCarrow=TRUE, silent=TRUE)
+VolcanoPlotW(testMQ, useComp=j1, FCthrs=1.5, FdrThrs=0.05, annColor=c(4,2,3), ProjNa=methNa[2], expFCarrow=TRUE, silent=TRUE)
+VolcanoPlotW(testPL, useComp=j1, FCthrs=1.5, FdrThrs=0.05, annColor=c(4,2,3), ProjNa=methNa[3], expFCarrow=TRUE, silent=TRUE)
 
 ## ----nNA2, echo=TRUE----------------------------------------------------------
 tab1 <- rbind(PD=sumNAperGroup(dataPD$raw[which(dataPD$annot[,"SpecType"]=="UPS1"),], grp9),
@@ -540,9 +539,9 @@ plotMultRegrPar(datUPS1,3,xlim=c(-25,-1),ylim=c(0.1,1.6),tit="Proline UPS1, p-va
 for(i in 1:(dim(datUPS1)[2])) datUPS1[,i,"sco"] <- -datUPS1[,i,"logp"] - (datUPS1[,i,"slope"] -1)^2    # cut at > 8
 
 ## ----combRegrScore2, echo=TRUE------------------------------------------------
-datUPS1[,1,2] <- rowSums(dataPD$count[match(UPS1ac,dataPD$annot[,1]),,1], na.rm=TRUE)
-datUPS1[,2,2] <- rowSums(dataMQ$count[match(UPS1ac,dataMQ$annot[,1]),,2], na.rm=TRUE)
-datUPS1[,3,2] <- rowSums(dataPL$count[match(UPS1ac,dataPL$annot[,1]),,2], na.rm=TRUE)
+datUPS1[,1,2] <- rowSums(dataPD$count[match(UPS1ac,dataPD$annot[,1]),,"NoOfPeptides"], na.rm=TRUE)
+datUPS1[,2,2] <- rowSums(dataMQ$count[match(UPS1ac,dataMQ$annot[,1]),,1], na.rm=TRUE)
+datUPS1[,3,2] <- rowSums(dataPL$count[match(UPS1ac,dataPL$annot[,1]),,"NoOfPeptides"], na.rm=TRUE)
 
 ## ----combRegrScore3, fig.height=6, fig.width=9.5, fig.align="center", echo=TRUE----
 layout(matrix(1:4,ncol=2))

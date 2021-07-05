@@ -9,7 +9,7 @@ matrixNAneighbourImpute(
   gr,
   imputMethod = "mode2",
   retnNA = TRUE,
-  avSdH = c(NA, 0.5),
+  avSdH = c(0.1, 0.5),
   NAneigLst = NULL,
   plotHist = c("hist", "mode"),
   xLab = NULL,
@@ -28,7 +28,7 @@ matrixNAneighbourImpute(
 
 \item{gr}{(character or factor) grouping of columns of 'dat', replicate association}
 
-\item{imputMethod}{(character) choose the imputation method (may be 'mode2'(default), 'mode1', 'datQuant' or 'modeAdopt')}
+\item{imputMethod}{(character) choose the imputation method (may be 'mode2'(default), 'mode1', 'datQuant', 'modeAdopt' or 'informed')}
 
 \item{retnNA}{(logical) decide (if =\code{TRUE}) only NA-substuted data should be returned, or if list with $data, $nNA, $NAneighbour and $randParam should be returned}
 

@@ -1,9 +1,11 @@
-#' add arrow for Fold-Change to VolcanoPlot or MA-plot  
+#' Add arrow for expected Fold-Change to VolcanoPlot or MA-plot  
 #'
-#' This function allows adding an arrow indicating a fold-change to MA- or Volcano-plots. 
-#' Optionally the ratio used for plotting can be returned as numeric value. 
+#' NOTE : This function is deprecated, please use \code{\link[wrGraph]{foldChangeArrow}} instead !!
+#' This function was made for adding an arrow indicating a fold-change to MA- or Volcano-plots. 
+#' When comparing mutiple concentratios of standards in benchmark-tests it may be useful to indicate the expected ratio in a pair-wise comparison.
 #' In case of main input as list or MArrayLM-object (as generated from limma), the colum-names of multiple pairwise comparisons can be used 
-#' for extracting a numeric content which will be used to determine the ratio used for plotting. 
+#' for extracting a numeric content (supposed as concentrations in sample-names) which will be used to determine the expected ratio used for plotting. 
+#' Optionally the ratio used for plotting can be returned as numeric value. 
 #' 
 #' @param FC (numeric, list or MArrayLM-object) main information for drawing arrow : either numeric value for fold-change/log2-ratio of object to search for colnames of statistical testing for extracting numeric part
 #' @param useComp (integer) only used in case FC is list or MArrayLM-object an has multiple pairwise-comparisons  
@@ -24,19 +26,21 @@
 #'
 #'  Ultimately this function will be integated to the package wrGraph. 
 #'
-#' @seealso \code{\link[wrGraph]{MAplotW}}, \code{\link[wrGraph]{VolcanoPlotW}}
+#' @seealso new version : \code{\link[wrGraph]{foldChangeArrow}}; used with \code{\link[wrGraph]{MAplotW}}, \code{\link[wrGraph]{VolcanoPlotW}}
 #' @examples
 #' plot(rnorm(20,1.5,0.1),1:20)
-#' foldChangeArrow2(FC=1.5) 
+#' #deprecated# foldChangeArrow2(FC=1.5) 
 #' 
 #' @export
 foldChangeArrow2 <- function(FC, useComp=1, isLin=TRUE, asX=TRUE, col=2, arr=c(0.005,0.15), lwd=NULL, 
   addText=c(line=-0.9,cex=0.7,txt="expected",loc="toright"), returnRatio=FALSE,silent=FALSE, callFrom=NULL){
   ##
+  .Deprecated("Please use the foldChangeArrow() function form the package wrGrpah instead !")
   fxNa <- wrMisc::.composeCallName(callFrom, newNa="foldChangeArrow2")
   figCo <- graphics::par("usr")                         #  c(x1, x2, y1, y2)
   if(all(length(FC) >1, any(c("MArrayLM","list") %in% class(FC)) )) {
     ## try working based on MArrayLM-object or list
+    ##  look for names of pairwise comparisons to extract numeric parts for calculating expected ratio 
     chNa <- names(FC) %in% c("t","BH","FDR","p.value")
     if(any(chNa)) {
       if(all(length(useComp)==1, length(dim(FC[[which(chNa)[1]]])) ==2, dim(FC[[which(chNa)[1]]]) > 0:1)) {

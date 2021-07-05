@@ -77,7 +77,7 @@ summarizeForROC <- function(test,useComp=1,tyThr="BH",thr=NULL,columnTest=NULL,F
     if("means" %in% names(test)) {
       if(nrow(test$means) ==nrow(test[[tyThr]])) {
         ## identify sample-groups to comparison(s) - needed lateron
-        pairwCol <- .sampNoDeMArrayLM2(test, useComp, lstMeans="means", lstP=which(names(test)==tyThr),callFrom=fxNa,silent=silent) 
+        pairwCol <- wrMisc::sampNoDeMArrayLM(test, useComp, lstMeans="means", lstP=which(names(test)==tyThr),callFrom=fxNa,silent=silent) 
         grpMeans <- cbind(mean1=test$means[,pairwCol[1]], mean2=test$means[,pairwCol[2]])
         FCval <- grpMeans[,2] - grpMeans[,1]  
         ## FC-filter

@@ -14,12 +14,14 @@ testRobustToNAimputation(
   plotHist = FALSE,
   xLab = NULL,
   tit = NULL,
+  imputMethod = "mode2",
   seedNo = NULL,
   multCorMeth = NULL,
   nLoop = 100,
   lfdrInclude = NULL,
   ROTSn = NULL,
   silent = FALSE,
+  debug = FALSE,
   callFrom = NULL
 )
 }
@@ -42,9 +44,11 @@ testRobustToNAimputation(
 
 \item{tit}{(character) custom title}
 
+\item{imputMethod}{(character) choose the imputation method (may be 'mode2'(default), 'mode1', 'datQuant', 'modeAdopt' or 'informed', for details see \code{\link{matrixNAneighbourImpute}} )}
+
 \item{seedNo}{(integer) seed-value for normal random values}
 
-\item{multCorMeth}{(character)}
+\item{multCorMeth}{(character) define which method(s) for correction of multipl testing should be run (for choice : 'BH','lfdr','BY','tValTab', choosing several is possible)}
 
 \item{nLoop}{(integer) number of runs of independent \code{NA}-imputation}
 
@@ -53,6 +57,8 @@ testRobustToNAimputation(
 \item{ROTSn}{(integer) depreciated, please used \code{multCorMeth} instead (number of repeats by \code{ROTS}, if \code{NULL} \code{ROTS} will not be called)}
 
 \item{silent}{(logical) suppress messages}
+
+\item{debug}{(logical) additional messages fro debugging}
 
 \item{callFrom}{(character) allows easier tracking of messages produced}
 }
@@ -80,10 +86,10 @@ The option 'BY' referrs to Benjamini-Yakuteli FDR, 'tValTab' allows exporting al
 \examples{
 set.seed(2015); rand1 <- round(runif(600) +rnorm(600,1,2),3)
 dat1 <- matrix(rand1,ncol=6) + matrix(rep((1:100)/20,6),ncol=6)
-dat1[13:16,1:3] <- dat1[13:16,1:3] +2    # augment lines 13:16 
-dat1[19:20,1:3] <- dat1[19:20,1:3] +3    # augment lines 19:20
-dat1[15:18,4:6] <- dat1[15:18,4:6] +1.4  # augment lines 15:18 
-dat1[dat1 <1] <- NA                    # mimick some NAs for low abundance
+dat1[13:16,1:3] <- dat1[13:16,1:3] +2      # augment lines 13:16 
+dat1[19:20,1:3] <- dat1[19:20,1:3] +3      # augment lines 19:20
+dat1[15:18,4:6] <- dat1[15:18,4:6] +1.4    # augment lines 15:18 
+dat1[dat1 <1] <- NA                        # mimick some NAs for low abundance
 ## normalize data
 boxplot(dat1, main="data before normalization")
 dat1 <- wrMisc::normalizeThis(as.matrix(dat1), meth="median")

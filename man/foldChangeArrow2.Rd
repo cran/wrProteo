@@ -2,7 +2,7 @@
 % Please edit documentation in R/foldChangeArrow2.R
 \name{foldChangeArrow2}
 \alias{foldChangeArrow2}
-\title{add arrow for Fold-Change to VolcanoPlot or MA-plot}
+\title{Add arrow for expected Fold-Change to VolcanoPlot or MA-plot}
 \usage{
 foldChangeArrow2(
   FC,
@@ -46,10 +46,12 @@ or any combination of 'loc','line','cex','side','adj','col','text' (or 'txt') fo
 plots arrow only (and explicative text), if \code{returnRatio=TRUE} also returns numeric value for extracted ratio
 }
 \description{
-This function allows adding an arrow indicating a fold-change to MA- or Volcano-plots. 
-Optionally the ratio used for plotting can be returned as numeric value. 
+NOTE : This function is deprecated, please use \code{\link[wrGraph]{foldChangeArrow}} instead !!
+This function was made for adding an arrow indicating a fold-change to MA- or Volcano-plots. 
+When comparing mutiple concentratios of standards in benchmark-tests it may be useful to indicate the expected ratio in a pair-wise comparison.
 In case of main input as list or MArrayLM-object (as generated from limma), the colum-names of multiple pairwise comparisons can be used 
-for extracting a numeric content which will be used to determine the ratio used for plotting.
+for extracting a numeric content (supposed as concentrations in sample-names) which will be used to determine the expected ratio used for plotting. 
+Optionally the ratio used for plotting can be returned as numeric value.
 }
 \details{
 The argument \code{addText} also allows specifying a fixed position when using \code{addText=c(loc="bottomleft")}, also bottomright, topleft, topright, toleft and toright may be used.
@@ -59,9 +61,9 @@ The argument \code{addText} also allows specifying a fixed position when using \
 }
 \examples{
 plot(rnorm(20,1.5,0.1),1:20)
-foldChangeArrow2(FC=1.5) 
+#deprecated# foldChangeArrow2(FC=1.5) 
 
 }
 \seealso{
-\code{\link[wrGraph]{MAplotW}}, \code{\link[wrGraph]{VolcanoPlotW}}
+new version : \code{\link[wrGraph]{foldChangeArrow}}; used with \code{\link[wrGraph]{MAplotW}}, \code{\link[wrGraph]{VolcanoPlotW}}
 }
