@@ -1,4 +1,4 @@
-8d9add684b514b2604ed82295bd0c708 *DESCRIPTION
+3c104c226c9fb8d90d4a588003c9d9aa *DESCRIPTION
 9f4c1d89905b9250f77adfcefaa22f72 *NAMESPACE
 bbbca0f17698a041d3fc35bfd1737d7e *R/AAmass.R
 40a90be8e3fad6951b8827a65da9229a *R/AucRoc.R
@@ -34,10 +34,10 @@ b78b9f747915166de30d379aeda86427 *R/testRobustToNAimputation.R
 11f35283a59d56e8764554f84da54bb2 *build/vignette.rds
 e1203606a028957716efd3db292c3750 *inst/doc/wrProteoVignette1.R
 7d072cceacdf00c070499376ebc9adf0 *inst/doc/wrProteoVignette1.Rmd
-ed79af1ecef2d6ba14754f5276789ace *inst/doc/wrProteoVignette1.html
-2b93474270e0c660a8e28292461ea733 *inst/doc/wrProteoVignetteUPS1.R
-abd32a0a8687dc7d55e5db3a8843c2b5 *inst/doc/wrProteoVignetteUPS1.Rmd
-15565a58a0984b6e5355aaa5e1329348 *inst/doc/wrProteoVignetteUPS1.html
+e5e7c7a92ccd9882628ecfaca063fd12 *inst/doc/wrProteoVignette1.html
+53c468c5c6ba669abb4f70c206d06805 *inst/doc/wrProteoVignetteUPS1.R
+0cc5452647250192510580f92300ec4e *inst/doc/wrProteoVignetteUPS1.Rmd
+7031dbbebd3caf5d9a9e075eb47bbcb2 *inst/doc/wrProteoVignetteUPS1.html
 5a36dae79d2427c12f424b7b63273b63 *inst/extdata/OpenMS_tiny.csv.gz
 fa4ddbca3647427a25de3ca91325b01d *inst/extdata/UCSC_hg38_chr11extr.gtf.gz
 1ec7e9c3460fc02d1aaad651db2d31f0 *inst/extdata/conta1.fasta
@@ -82,4 +82,4 @@ a5c41b3eea4963622704d56c221a70e6 *man/replMissingProtNames.Rd
 1b9eee5ff8fab7ff07859ca3880b8106 *man/test2grp.Rd
 97015a356291c716224a35cf0f284851 *man/testRobustToNAimputation.Rd
 7d072cceacdf00c070499376ebc9adf0 *vignettes/wrProteoVignette1.Rmd
-abd32a0a8687dc7d55e5db3a8843c2b5 *vignettes/wrProteoVignetteUPS1.Rmd
+0cc5452647250192510580f92300ec4e *vignettes/wrProteoVignetteUPS1.Rmd

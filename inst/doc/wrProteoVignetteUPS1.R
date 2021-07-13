@@ -294,12 +294,12 @@ mtext("dark red for high number signif proteins", cex=0.7)
 ## ----ROC_grp5tab, echo=TRUE---------------------------------------------------
 colPanel <- 2:5
 gr <- 5 
-j1 <- match(rownames(AucAll)[AucRep[6-gr]], colnames(testPD$t)) 
+j <- match(rownames(AucAll)[AucRep[6-gr]], colnames(testPD$t)) 
 
 ## table of all proteins in cluster
 useLi <- which(AucAll[,"cluNo"]==gr)
 tmp <- cbind(round(as.data.frame(AucAll)[useLi,c("cluNo","Auc.PD","Auc.MQ","Auc.PL")],3), 
-  as.data.frame(table1)[match(names(useLi),rownames(table1)),c(2,5,7,9)])
+  as.data.frame(table1)[match(names(useLi),rownames(table1)), c(2,5,7,9)])
 kable(tmp, caption="AUC details for best pairwise-comparisons ", align="c")  
 
 ## ----ROC_grp5fig, fig.height=9, fig.width=9.5, fig.align="center", echo=TRUE----
@@ -308,25 +308,25 @@ layout(matrix(1:2), heights=c(1,2.5))
 plotConcHist(mat=tmp, ref=table1)
     
 ## representative ROC
-j2 <- match(rownames(AucAll)[AucRep[6-gr]], names(rocPD))
-plotROC(rocPD[[j2]], rocMQ[[j2]], rocPL[[j2]], col=colPanel, methNames=methNa, pointSi=0.8, xlim=c(0,0.45),
-  txtLoc=c(0.12,0.1,0.033), tit=paste("Cluster",gr," Example: ",names(rocPD)[j2]), legCex=1)
+jR <- match(rownames(AucAll)[AucRep[6-gr]], names(rocPD))
+plotROC(rocPD[[jR]], rocMQ[[jR]], rocPL[[jR]], col=colPanel, methNames=methNa, pointSi=0.8, xlim=c(0,0.45),
+  txtLoc=c(0.12,0.1,0.033), tit=paste("Cluster",gr," Example: ",names(rocPD)[jR]), legCex=1)
 
 ## ----VolcanoClu5, fig.height=10, fig.width=9.5, fig.align="center", echo=TRUE----
 #fcPar1 <- c(text="arrow: expected ratio at",loc="toright")
 layout(matrix(1:4,ncol=2))
-VolcanoPlotW(testPD, useComp=j1, FCthrs=1.5, FdrThrs=0.05, annColor=c(4,2,3), ProjNa=methNa[1], expFCarrow=TRUE, silent=TRUE) 
-VolcanoPlotW(testMQ, useComp=j1, FCthrs=1.5, FdrThrs=0.05, annColor=c(4,2,3), ProjNa=methNa[2], expFCarrow=TRUE, silent=TRUE)
-VolcanoPlotW(testPL, useComp=j1, FCthrs=1.5, FdrThrs=0.05, annColor=c(4,2,3), ProjNa=methNa[3], expFCarrow=TRUE, silent=TRUE)
+try(VolcanoPlotW(testPD, useComp=j, FCthrs=1.5, FdrThrs=0.05, annColor=c(4,2,3), ProjNa=methNa[1], expFCarrow=TRUE, silent=TRUE),silent=TRUE) 
+try(VolcanoPlotW(testMQ, useComp=j, FCthrs=1.5, FdrThrs=0.05, annColor=c(4,2,3), ProjNa=methNa[2], expFCarrow=TRUE, silent=TRUE),silent=TRUE)
+try(VolcanoPlotW(testPL, useComp=j, FCthrs=1.5, FdrThrs=0.05, annColor=c(4,2,3), ProjNa=methNa[3], expFCarrow=TRUE, silent=TRUE),silent=TRUE)
 
 ## ----ROC_grp4tab, echo=TRUE---------------------------------------------------
 gr <- 4
-j1 <- match(rownames(AucAll)[AucRep[6-gr]], colnames(testPD$t)) 
+j <- match(rownames(AucAll)[AucRep[6-gr]], colnames(testPD$t)) 
 
 ## table of all proteins in cluster
 useLi <- which(AucAll[,"cluNo"]==gr)
 tmp <- cbind(round(as.data.frame(AucAll)[useLi,c("cluNo","Auc.PD","Auc.MQ","Auc.PL")],3), 
-  as.data.frame(table1)[match(names(useLi),rownames(table1)),c(2,5,7,9)])
+  as.data.frame(table1)[match(names(useLi),rownames(table1)), c(2,5,7,9)])
 kable(tmp, caption="AUC details for best pairwise-comparisons ", align="c")  
 
 ## ----ROC_grp4fig, fig.height=10, fig.width=9.5, fig.align="center", echo=TRUE----
@@ -335,24 +335,24 @@ layout(matrix(1:2), heights=c(1,2.5))
 plotConcHist(mat=tmp, ref=table1)
     
 ## representative ROC
-j2 <- match(rownames(AucAll)[AucRep[6-gr]], names(rocPD))
-plotROC(rocPD[[j2]], rocMQ[[j2]], rocPL[[j2]], col=colPanel, methNames=methNa, pointSi=0.8, xlim=c(0,0.45),
-  txtLoc=c(0.12,0.1,0.033), tit=paste("Cluster",gr," Example: ",names(rocPD)[j2]), legCex=1)
+jR <- match(rownames(AucAll)[AucRep[6-gr]], names(rocPD))
+plotROC(rocPD[[jR]], rocMQ[[jR]], rocPL[[jR]], col=colPanel, methNames=methNa, pointSi=0.8, xlim=c(0,0.45),
+  txtLoc=c(0.12,0.1,0.033), tit=paste("Cluster",gr," Example: ",names(rocPD)[jR]), legCex=1)
 
 ## ----VolcanoClu4, fig.height=10, fig.width=9.5, fig.align="center", echo=TRUE----
 layout(matrix(1:4, ncol=2)) 
-VolcanoPlotW(testPD, useComp=j1, FCthrs=1.5, FdrThrs=0.05, annColor=c(4,2,3), ProjNa=methNa[1], expFCarrow=TRUE, silent=TRUE)
-VolcanoPlotW(testMQ, useComp=j1, FCthrs=1.5, FdrThrs=0.05, annColor=c(4,2,3), ProjNa=methNa[2], expFCarrow=TRUE, silent=TRUE)
-VolcanoPlotW(testPL, useComp=j1, FCthrs=1.5, FdrThrs=0.05, annColor=c(4,2,3), ProjNa=methNa[3], expFCarrow=TRUE, silent=TRUE) 
+try(VolcanoPlotW(testPD, useComp=j, FCthrs=1.5, FdrThrs=0.05, annColor=c(4,2,3), ProjNa=methNa[1], expFCarrow=TRUE, silent=TRUE),silent=TRUE)
+try(VolcanoPlotW(testMQ, useComp=j, FCthrs=1.5, FdrThrs=0.05, annColor=c(4,2,3), ProjNa=methNa[2], expFCarrow=TRUE, silent=TRUE),silent=TRUE)
+try(VolcanoPlotW(testPL, useComp=j, FCthrs=1.5, FdrThrs=0.05, annColor=c(4,2,3), ProjNa=methNa[3], expFCarrow=TRUE, silent=TRUE),silent=TRUE) 
 
 ## ----ROC_grp3tab, echo=TRUE---------------------------------------------------
 gr <- 3 
-j1 <- match(rownames(AucAll)[AucRep[6-gr]], colnames(testPD$t)) 
+j <- match(rownames(AucAll)[AucRep[6-gr]], colnames(testPD$t)) 
 
 ## table of all proteins in cluster
 useLi <- which(AucAll[,"cluNo"]==gr)
 tmp <- cbind(round(as.data.frame(AucAll)[useLi,c("cluNo","Auc.PD","Auc.MQ","Auc.PL")],3), 
-  as.data.frame(table1)[match(names(useLi),rownames(table1)),c(2,5,7,9)])
+  as.data.frame(table1)[match(names(useLi),rownames(table1)), c(2,5,7,9)])
 kable(tmp, caption="AUC details for best pairwise-comparisons ", align="c")  
 
 ## ----ROC_grp3fig, fig.height=10, fig.width=9.5, fig.align="center", echo=TRUE----
@@ -361,24 +361,24 @@ layout(matrix(1:2), heights=c(1,2.5))
 plotConcHist(mat=tmp, ref=table1)
 
 ## representative ROC
-j2 <- match(rownames(AucAll)[AucRep[6-gr]], names(rocPD))
-plotROC(rocPD[[j2]],rocMQ[[j2]],rocPL[[j2]], col=colPanel, methNames=methNa, pointSi=0.8, xlim=c(0,0.45),
-  txtLoc=c(0.12,0.1,0.033), tit=paste("Cluster",gr," Example: ",names(rocPD)[j2]), legCex=1)
+jR <- match(rownames(AucAll)[AucRep[6-gr]], names(rocPD))
+plotROC(rocPD[[jR]],rocMQ[[jR]],rocPL[[jR]], col=colPanel, methNames=methNa, pointSi=0.8, xlim=c(0,0.45),
+  txtLoc=c(0.12,0.1,0.033), tit=paste("Cluster",gr," Example: ",names(rocPD)[jR]), legCex=1)
 
 ## ----VolcanoClu3, fig.height=10, fig.width=9.5, fig.align="center", echo=TRUE----
 layout(matrix(1:4, ncol=2)) 
-VolcanoPlotW(testPD, useComp=j1, FCthrs=1.5, FdrThrs=0.05, annColor=c(4,2,3), ProjNa=methNa[1], expFCarrow=TRUE, silent=TRUE) 
-VolcanoPlotW(testMQ, useComp=j1, FCthrs=1.5, FdrThrs=0.05, annColor=c(4,2,3), ProjNa=methNa[2], expFCarrow=TRUE, silent=TRUE)
-VolcanoPlotW(testPL, useComp=j1, FCthrs=1.5, FdrThrs=0.05, annColor=c(4,2,3), ProjNa=methNa[3], expFCarrow=TRUE, silent=TRUE)
+try(VolcanoPlotW(testPD, useComp=j, FCthrs=1.5, FdrThrs=0.05, annColor=c(4,2,3), ProjNa=methNa[1], expFCarrow=TRUE, silent=TRUE),silent=TRUE) 
+try(VolcanoPlotW(testMQ, useComp=j, FCthrs=1.5, FdrThrs=0.05, annColor=c(4,2,3), ProjNa=methNa[2], expFCarrow=TRUE, silent=TRUE),silent=TRUE)
+try(VolcanoPlotW(testPL, useComp=j, FCthrs=1.5, FdrThrs=0.05, annColor=c(4,2,3), ProjNa=methNa[3], expFCarrow=TRUE, silent=TRUE),silent=TRUE)
 
 ## ----ROC_grp2tab, echo=TRUE---------------------------------------------------
 gr <- 2 
-j1 <- match(rownames(AucAll)[AucRep[6-gr]], colnames(testPD$t)) 
+j <- match(rownames(AucAll)[AucRep[6-gr]], colnames(testPD$t)) 
 
 ## table of all proteins in cluster
 useLi <- which(AucAll[,"cluNo"]==gr)
 tmp <- cbind(round(as.data.frame(AucAll)[useLi,c("cluNo","Auc.PD","Auc.MQ","Auc.PL")],3), 
-  as.data.frame(table1)[match(names(useLi),rownames(table1)),c(2,5,7,9)])
+  as.data.frame(table1)[match(names(useLi),rownames(table1)), c(2,5,7,9)])
 kable(tmp, caption="AUC details for best pairwise-comparisons ", align="c")  
 
 ## ----ROC_grp2fig, fig.height=10, fig.width=9.5, fig.align="center", echo=TRUE----
@@ -387,15 +387,15 @@ layout(matrix(1:2), heights=c(1,2.5))
 plotConcHist(mat=tmp, ref=table1)
 
 ## representative ROC
-j2 <- match(rownames(AucAll)[AucRep[6-gr]], names(rocPD))
-plotROC(rocPD[[j2]], rocMQ[[j2]], rocPL[[j2]], col=colPanel, methNames=methNa, pointSi=0.8, xlim=c(0,0.45),
-  txtLoc=c(0.12,0.1,0.033), tit=paste("Cluster",gr," Example: ",names(rocPD)[j2]), legCex=1)
+jR <- match(rownames(AucAll)[AucRep[6-gr]], names(rocPD))
+plotROC(rocPD[[jR]], rocMQ[[jR]], rocPL[[jR]], col=colPanel, methNames=methNa, pointSi=0.8, xlim=c(0,0.45),
+  txtLoc=c(0.12,0.1,0.033), tit=paste("Cluster",gr," Example: ",names(rocPD)[jR]), legCex=1)
 
 ## ----VolcanoClu2, fig.height=10, fig.width=9.5, fig.align="center", echo=TRUE----
 layout(matrix(1:4, ncol=2)) 
-VolcanoPlotW(testPD, useComp=j1, FCthrs=1.5, FdrThrs=0.05, annColor=c(4,2,3), ProjNa=methNa[1], expFCarrow=TRUE, silent=TRUE)
-VolcanoPlotW(testMQ, useComp=j1, FCthrs=1.5, FdrThrs=0.05, annColor=c(4,2,3), ProjNa=methNa[2], expFCarrow=TRUE, silent=TRUE)
-VolcanoPlotW(testPL, useComp=j1, FCthrs=1.5, FdrThrs=0.05, annColor=c(4,2,3), ProjNa=methNa[3], expFCarrow=TRUE, silent=TRUE)
+try(VolcanoPlotW(testPD, useComp=j, FCthrs=1.5, FdrThrs=0.05, annColor=c(4,2,3), ProjNa=methNa[1], expFCarrow=TRUE, silent=TRUE),silent=TRUE) 
+try(VolcanoPlotW(testMQ, useComp=j, FCthrs=1.5, FdrThrs=0.05, annColor=c(4,2,3), ProjNa=methNa[2], expFCarrow=TRUE, silent=TRUE),silent=TRUE) 
+try(VolcanoPlotW(testPL, useComp=j, FCthrs=1.5, FdrThrs=0.05, annColor=c(4,2,3), ProjNa=methNa[3], expFCarrow=TRUE, silent=TRUE),silent=TRUE) 
 
 ## ----ROC_grp1tab, echo=TRUE---------------------------------------------------
 gr <- 1 
@@ -404,7 +404,7 @@ j <- match(rownames(AucAll)[AucRep[6-gr]], colnames(testPD$t))
 ## table of all proteins in cluster
 useLi <- which(AucAll[,"cluNo"]==gr)
 tmp <- cbind(round(as.data.frame(AucAll)[useLi,c("cluNo","Auc.PD","Auc.MQ","Auc.PL")],3), 
-  as.data.frame(table1)[match(names(useLi),rownames(table1)),c(2,5,7,9)])
+  as.data.frame(table1)[match(names(useLi),rownames(table1)), c(2,5,7,9)])
 kable(tmp, caption="AUC details for best pairwise-comparisons ", align="c")  
 
 ## ----ROC_grp1fig, fig.height=10, fig.width=9.5, fig.align="center", echo=TRUE----
@@ -413,15 +413,15 @@ layout(matrix(1:2, ncol=1), heights=c(1,2.5))
 plotConcHist(mat=tmp, ref=table1)
     
 ## representative ROC
-j2 <- match(rownames(AucAll)[AucRep[6-gr]], names(rocPD))
-plotROC(rocPD[[j2]], rocMQ[[j2]], rocPL[[j2]], col=colPanel, methNames=methNa, pointSi=0.8, xlim=c(0,0.45),
-  txtLoc=c(0.12,0.1,0.033), tit=paste("Cluster",gr," Example: ",names(rocPD)[j2]), legCex=1)
+jR <- match(rownames(AucAll)[AucRep[6-gr]], names(rocPD))
+plotROC(rocPD[[jR]], rocMQ[[jR]], rocPL[[jR]], col=colPanel, methNames=methNa, pointSi=0.8, xlim=c(0,0.45),
+  txtLoc=c(0.12,0.1,0.033), tit=paste("Cluster",gr," Example: ",names(rocPD)[jR]), legCex=1)
 
 ## ----VolcanoClu1, fig.height=10, fig.width=9.5, fig.align="center", echo=TRUE----
 layout(matrix(1:4, ncol=2)) 
-VolcanoPlotW(testPD, useComp=j1, FCthrs=1.5, FdrThrs=0.05, annColor=c(4,2,3), ProjNa=methNa[1], expFCarrow=TRUE, silent=TRUE)
-VolcanoPlotW(testMQ, useComp=j1, FCthrs=1.5, FdrThrs=0.05, annColor=c(4,2,3), ProjNa=methNa[2], expFCarrow=TRUE, silent=TRUE)
-VolcanoPlotW(testPL, useComp=j1, FCthrs=1.5, FdrThrs=0.05, annColor=c(4,2,3), ProjNa=methNa[3], expFCarrow=TRUE, silent=TRUE)
+try(VolcanoPlotW(testPD, useComp=j, FCthrs=1.5, FdrThrs=0.05, annColor=c(4,2,3), ProjNa=methNa[1], expFCarrow=TRUE, silent=TRUE),silent=TRUE) 
+try(VolcanoPlotW(testMQ, useComp=j, FCthrs=1.5, FdrThrs=0.05, annColor=c(4,2,3), ProjNa=methNa[2], expFCarrow=TRUE, silent=TRUE),silent=TRUE) 
+try(VolcanoPlotW(testPL, useComp=j, FCthrs=1.5, FdrThrs=0.05, annColor=c(4,2,3), ProjNa=methNa[3], expFCarrow=TRUE, silent=TRUE),silent=TRUE) 
 
 ## ----nNA2, echo=TRUE----------------------------------------------------------
 tab1 <- rbind(PD=sumNAperGroup(dataPD$raw[which(dataPD$annot[,"SpecType"]=="UPS1"),], grp9),
@@ -594,65 +594,65 @@ UPSrep <- tapply(geoM2[,"geoM"], geoM2[,"clu"], function(x) floor(length(x)/2))+
 gr <- 1
 useLi <- which(datUPS1[,1,"cluNo"]==gr)
 colNa <- c("Protein",paste(colnames(datUPS1), rep(c("slope","logp"), each=ncol(datUPS1)), sep=" "))
-kable(cbind(annUPS1[useLi,2], signif(datUPS1[useLi,,"slope"],3), signif(datUPS1[useLi,,"logp"],3)), 
-  caption="Regression details for cluster of best UPS1 proteins ", col.names=colNa, align="l")
+try(kable(cbind(annUPS1[useLi,2], signif(datUPS1[useLi,,"slope"],3), signif(datUPS1[useLi,,"logp"],3)), 
+  caption="Regression details for cluster of best UPS1 proteins ", col.names=colNa, align="l"),silent=TRUE)
 
 ## ----regrPlot5star, fig.height=9, fig.width=9.5, fig.align="center", echo=TRUE----
 ## Plotting the best regressions
 layout(matrix(1:4, ncol=2))
 tit <- paste0(methNa,", ",annUPS1[UPSrep[gr],1])
-tm <- linModelSelect(annUPS1[UPSrep[gr],1], dat=dataPD, tit=tit[1], expect=grp9, startLev=1:5, cexXAxis=0.7, logExpect=TRUE, plotGraph=TRUE, silent=TRUE)
-tm <- linModelSelect(annUPS1[UPSrep[gr],1], dat=dataMQ, tit=tit[2], expect=grp9, startLev=1:5, cexXAxis=0.7, logExpect=TRUE, plotGraph=TRUE, silent=TRUE)
-tm <- linModelSelect(annUPS1[UPSrep[gr],1], dat=dataPL, tit=tit[3], expect=grp9, startLev=1:5, cexXAxis=0.7, logExpect=TRUE, plotGraph=TRUE, silent=TRUE)
+try(tm <- linModelSelect(annUPS1[UPSrep[gr],1], dat=dataPD, tit=tit[1], expect=grp9, startLev=1:5, cexXAxis=0.7, logExpect=TRUE, plotGraph=TRUE, silent=TRUE),silent=TRUE)
+try(tm <- linModelSelect(annUPS1[UPSrep[gr],1], dat=dataMQ, tit=tit[2], expect=grp9, startLev=1:5, cexXAxis=0.7, logExpect=TRUE, plotGraph=TRUE, silent=TRUE),silent=TRUE)
+try(tm <- linModelSelect(annUPS1[UPSrep[gr],1], dat=dataPL, tit=tit[3], expect=grp9, startLev=1:5, cexXAxis=0.7, logExpect=TRUE, plotGraph=TRUE, silent=TRUE),silent=TRUE)
 
 ## ----regr4star, echo=TRUE-----------------------------------------------------
 gr <- 2
 useLi <- which(datUPS1[,1,"cluNo"]==gr)
-kable(cbind(annUPS1[useLi,2], signif(datUPS1[useLi,,"slope"],3), signif(datUPS1[useLi,,"logp"],3)), 
-  caption="Regression details for cluster of 2nd best UPS1 proteins ", col.names=colNa, align="l")
+try(kable(cbind(annUPS1[useLi,2], signif(datUPS1[useLi,,"slope"],3), signif(datUPS1[useLi,,"logp"],3)), 
+  caption="Regression details for cluster of 2nd best UPS1 proteins ", col.names=colNa, align="l"),silent=TRUE)
 
 ## ----regrPlot4star, fig.height=9, fig.width=9.5, fig.align="center", echo=TRUE----
 layout(matrix(1:4,ncol=2))
 tit <- paste0(methNa,", UPS1: ",annUPS1[UPSrep[gr],1])
-tm <- linModelSelect(annUPS1[UPSrep[gr],1], dat=dataPD, tit=tit[1], expect=grp9, startLev=1:5, cexXAxis=0.7, logExpect=TRUE, plotGraph=TRUE, silent=TRUE)
-tm <- linModelSelect(annUPS1[UPSrep[gr],1], dat=dataMQ, tit=tit[2], expect=grp9, startLev=1:5, cexXAxis=0.7, logExpect=TRUE, plotGraph=TRUE, silent=TRUE)
-tm <- linModelSelect(annUPS1[UPSrep[gr],1], dat=dataPL, tit=tit[3], expect=grp9, startLev=1:5, cexXAxis=0.7, logExpect=TRUE, plotGraph=TRUE, silent=TRUE)
+try(tm <- linModelSelect(annUPS1[UPSrep[gr],1], dat=dataPD, tit=tit[1], expect=grp9, startLev=1:5, cexXAxis=0.7, logExpect=TRUE, plotGraph=TRUE, silent=TRUE),silent=TRUE)
+try(tm <- linModelSelect(annUPS1[UPSrep[gr],1], dat=dataMQ, tit=tit[2], expect=grp9, startLev=1:5, cexXAxis=0.7, logExpect=TRUE, plotGraph=TRUE, silent=TRUE),silent=TRUE)
+try(tm <- linModelSelect(annUPS1[UPSrep[gr],1], dat=dataPL, tit=tit[3], expect=grp9, startLev=1:5, cexXAxis=0.7, logExpect=TRUE, plotGraph=TRUE, silent=TRUE),silent=TRUE)
 
 ## ----regr3star, echo=TRUE-----------------------------------------------------
 gr <- 3
 useLi <- which(datUPS1[,1,"cluNo"]==gr)
-kable(cbind(annUPS1[useLi,2], signif(datUPS1[useLi,,"slope"],3), signif(datUPS1[useLi,,"logp"],3)), 
-  caption="Regression details for 3rd cluster UPS1 proteins ", col.names=colNa, align="l")
+try(kable(cbind(annUPS1[useLi,2], signif(datUPS1[useLi,,"slope"],3), signif(datUPS1[useLi,,"logp"],3)), 
+  caption="Regression details for 3rd cluster UPS1 proteins ", col.names=colNa, align="l"),silent=TRUE)
 
 ## ----regrPlot3star, fig.height=9, fig.width=9.5, fig.align="center", echo=TRUE----
 layout(matrix(1:4, ncol=2))
 tit <- paste0(methNa,", ",annUPS1[UPSrep[gr],1])
-tm <- linModelSelect(annUPS1[UPSrep[gr],1], dat=dataPD, tit=tit[1], expect=grp9, startLev=1:5, cexXAxis=0.7, logExpect=TRUE, plotGraph=TRUE, silent=TRUE)
-tm <- linModelSelect(annUPS1[UPSrep[gr],1], dat=dataMQ, tit=tit[2], expect=grp9, startLev=1:5, cexXAxis=0.7, logExpect=TRUE, plotGraph=TRUE, silent=TRUE)
-tm <- linModelSelect(annUPS1[UPSrep[gr],1], dat=dataPL, tit=tit[3], expect=grp9, startLev=1:5, cexXAxis=0.7, logExpect=TRUE, plotGraph=TRUE, silent=TRUE)
+try(tm <- linModelSelect(annUPS1[UPSrep[gr],1], dat=dataPD, tit=tit[1], expect=grp9, startLev=1:5, cexXAxis=0.7, logExpect=TRUE, plotGraph=TRUE, silent=TRUE),silent=TRUE)
+try(tm <- linModelSelect(annUPS1[UPSrep[gr],1], dat=dataMQ, tit=tit[2], expect=grp9, startLev=1:5, cexXAxis=0.7, logExpect=TRUE, plotGraph=TRUE, silent=TRUE),silent=TRUE)
+try(tm <- linModelSelect(annUPS1[UPSrep[gr],1], dat=dataPL, tit=tit[3], expect=grp9, startLev=1:5, cexXAxis=0.7, logExpect=TRUE, plotGraph=TRUE, silent=TRUE),silent=TRUE)
 
 ## ----regrPlot2star, fig.height=9, fig.width=9.5, fig.align="center", echo=TRUE----
 gr <- 4
 useLi <- which(datUPS1[,1,"cluNo"]==gr)
-kable(cbind(annUPS1[useLi,2], signif(datUPS1[useLi,,"slope"],3), signif(datUPS1[useLi,,"logp"],3)), 
-  caption="Regression details for 3rd cluster UPS1 proteins ", col.names=colNa, align="l")
+try(kable(cbind(annUPS1[useLi,2], signif(datUPS1[useLi,,"slope"],3), signif(datUPS1[useLi,,"logp"],3)), 
+  caption="Regression details for 3rd cluster UPS1 proteins ", col.names=colNa, align="l"),silent=TRUE)
 
 tit <- paste0(methNa,", ",annUPS1[UPSrep[gr],1])
 layout(matrix(1:4, ncol=2))
-tm <- linModelSelect(annUPS1[UPSrep[gr],1], dat=dataPD, tit=tit[1], expect=grp9, startLev=1:5, cexXAxis=0.7, logExpect=TRUE, plotGraph=TRUE, silent=TRUE)
-tm <- linModelSelect(annUPS1[UPSrep[gr],1], dat=dataMQ, tit=tit[2], expect=grp9, startLev=1:5, cexXAxis=0.7, logExpect=TRUE, plotGraph=TRUE, silent=TRUE)
-tm <- linModelSelect(annUPS1[UPSrep[gr],1], dat=dataPL, tit=tit[3], expect=grp9, startLev=1:5, cexXAxis=0.7, logExpect=TRUE, plotGraph=TRUE, silent=TRUE)
+try(tm <- linModelSelect(annUPS1[UPSrep[gr],1], dat=dataPD, tit=tit[1], expect=grp9, startLev=1:5, cexXAxis=0.7, logExpect=TRUE, plotGraph=TRUE, silent=TRUE),silent=TRUE)
+try(tm <- linModelSelect(annUPS1[UPSrep[gr],1], dat=dataMQ, tit=tit[2], expect=grp9, startLev=1:5, cexXAxis=0.7, logExpect=TRUE, plotGraph=TRUE, silent=TRUE),silent=TRUE)
+try(tm <- linModelSelect(annUPS1[UPSrep[gr],1], dat=dataPL, tit=tit[3], expect=grp9, startLev=1:5, cexXAxis=0.7, logExpect=TRUE, plotGraph=TRUE, silent=TRUE),silent=TRUE)
 
 ## ----regrPlot1star, fig.height=9, fig.width=9.5, fig.align="center", echo=TRUE----
 gr <- 5
 useLi <- which(datUPS1[,1,"cluNo"]==gr)
-kable(cbind(annUPS1[useLi,2], signif(datUPS1[useLi,,"slope"],3), signif(datUPS1[useLi,,"logp"],3)), 
-  caption="Regression details for 5th cluster UPS1 proteins ", col.names=colNa, align="l")
+try(kable(cbind(annUPS1[useLi,2], signif(datUPS1[useLi,,"slope"],3), signif(datUPS1[useLi,,"logp"],3)), 
+  caption="Regression details for 5th cluster UPS1 proteins ", col.names=colNa, align="l"),silent=TRUE)
 tit <- paste0(methNa,", ",annUPS1[UPSrep[gr],1])
 layout(matrix(1:4, ncol=2))
-tm <- linModelSelect(annUPS1[UPSrep[gr],1], dat=dataPD, tit=tit[1], expect=grp9, startLev=1:5, cexXAxis=0.7, logExpect=TRUE, plotGraph=TRUE, silent=TRUE)
-tm <- linModelSelect(annUPS1[UPSrep[gr],1], dat=dataMQ, tit=tit[2], expect=grp9, startLev=1:5, cexXAxis=0.7, logExpect=TRUE, plotGraph=TRUE, silent=TRUE)
-tm <- linModelSelect(annUPS1[UPSrep[gr],1], dat=dataPL, tit=tit[3], expect=grp9, startLev=1:5, cexXAxis=0.7, logExpect=TRUE, plotGraph=TRUE, silent=TRUE)
+try(tm <- linModelSelect(annUPS1[UPSrep[gr],1], dat=dataPD, tit=tit[1], expect=grp9, startLev=1:5, cexXAxis=0.7, logExpect=TRUE, plotGraph=TRUE, silent=TRUE),silent=TRUE)
+try(tm <- linModelSelect(annUPS1[UPSrep[gr],1], dat=dataMQ, tit=tit[2], expect=grp9, startLev=1:5, cexXAxis=0.7, logExpect=TRUE, plotGraph=TRUE, silent=TRUE),silent=TRUE)
+try(tm <- linModelSelect(annUPS1[UPSrep[gr],1], dat=dataPL, tit=tit[3], expect=grp9, startLev=1:5, cexXAxis=0.7, logExpect=TRUE, plotGraph=TRUE, silent=TRUE),silent=TRUE)
 
 ## ----sessionInfo, echo=FALSE--------------------------------------------------
 sessionInfo()

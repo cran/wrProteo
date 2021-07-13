@@ -1,5 +1,5 @@
 Package: wrProteo
-Version: 1.4.2
+Version: 1.4.3
 Title: Proteomics Data Analysis Functions
 Authors@R: person("Wolfgang", "Raffelsberger", email = "w.raffelsberger@gmail.com", role = c("aut", "cre"))
 Author: Wolfgang Raffelsberger [aut, cre]
@@ -17,12 +17,12 @@ Depends: R (>= 3.5.0)
 Imports: grDevices, graphics, knitr, limma, stats, utils, wrMisc (>=
         1.6.0)
 Suggests: data.table, fdrtool, MASS, RColorBrewer, readxl, ROTS,
-        rmarkdown, R.utils, sm, wrGraph
+        rmarkdown, R.utils, sm, wrGraph (>= 1.2.4)
 License: GPL-3
 Encoding: UTF-8
 VignetteBuilder: knitr, rmarkdown
 RoxygenNote: 7.1.1
 NeedsCompilation: no
-Packaged: 2021-07-05 14:08:10 UTC; wraff
+Packaged: 2021-07-08 12:55:16 UTC; wraff
 Repository: CRAN
-Date/Publication: 2021-07-05 15:50:02 UTC
+Date/Publication: 2021-07-13 09:30:02 UTC
