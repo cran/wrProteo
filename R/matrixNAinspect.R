@@ -31,24 +31,25 @@
 #' datT6[which(datT6 < 4.6 & datT6 > 4)] <- NA
 #' matrixNAinspect(datT6,gr=gl(2,3)) 
 #' @export
-matrixNAinspect <- function(dat,gr,retnNA=TRUE,xLab=NULL,tit=NULL,xLim=NULL,silent=FALSE,callFrom=NULL) {
+matrixNAinspect <- function(dat, gr, retnNA=TRUE, xLab=NULL, tit=NULL, xLim=NULL, silent=FALSE, callFrom=NULL) {
   fxNa <- wrMisc::.composeCallName(callFrom,newNa="matrixNAinspect")
   if(length(dim(dat)) !=2) stop("'dat' must be matrix or data.frame with >1 columns")
+  if(!isTRUE(silent)) silent <- FALSE
   if(is.data.frame(dat)) dat <- as.matrix(dat)
   if(length(gr) != ncol(dat)) stop("Number of columns in 'dat' and number of (group-)elements in 'gr' do not match !")
   if(!is.factor(gr)) gr <- as.factor(gr)
   if(is.null(xLab)) xLab <- "(log2) Abundance"
-  chRColB <- try(find.package("limma"),silent=TRUE)
-  if("try-error" %in% class(chRColB)) message(fxNa," More/better colors may be displayed with package 'RColorBrewer' installed; consider installing it !")
-  quaCol <- if(!"try-error" %in% class(chRColB))  RColorBrewer::brewer.pal(4,"Set1")[c(3,2,4)] else c(3:4,2) 
+  chRColB <- requireNamespace("RColorBrewer", quietly=TRUE) 
+  if(!chRColB) message(fxNa," More/better colors may be displayed with package 'RColorBrewer' installed; consider installing it !")
+  quaCol <- if(chRColB) RColorBrewer::brewer.pal(4,"Set1")[c(3,2,4)] else c(3:4,2) 
   if(is.null(tit)) tit <- "Distribution of values and NA-neighbours"
   cexMain <- if(nchar(tit) < 25) 1.4 else 1.1
   ## main
   NAneig <- NAneig2 <- numeric() 
   isNA <- is.na(dat)
   chNA <- any(isNA)
-  nNAmat <- matrix(0,nrow=nrow(dat),ncol=length(levels(gr)),dimnames=list(NULL,levels(gr)))
-  colPanel <- c(grDevices::grey(0.6),grDevices::rgb(0,0.7,0,0.6),grDevices::rgb(0.15,0.15,0.7,0.7))
+  nNAmat <- matrix(0,nrow=nrow(dat), ncol=length(levels(gr)), dimnames=list(NULL,levels(gr)))
+  colPanel <- c(grDevices::grey(0.6), grDevices::rgb(0,0.7,0,0.6), grDevices::rgb(0.15,0.15,0.7,0.7))
   if(chNA) {
     for(i in c(1:length(levels(gr)))) {
       curCol <- which(gr==levels(gr)[i]) 

@@ -16,7 +16,7 @@
 #' @return limma-type S3 object of class 'MArrayLM' which can be accessed; multiple testing correction types or modified testing by ROTS may get included ('p.value','FDR','BY','lfdr' or 'ROTS.BH')
 #' @seealso  \code{\link[wrMisc]{moderTest2grp}}, \code{\link[wrMisc]{pVal2lfdr}}, \code{\link[stats]{t.test}}, \code{ROTS} from the Bioconductor package \href{https://www.bioconductor.org/packages/release/bioc/html/ROTS.html}{ROTS}  
 #' @examples
-#' set.seed(2018);  datT8 <- matrix(round(rnorm(800)+3,1),nc=8,dimnames=list(paste(
+#' set.seed(2018);  datT8 <- matrix(round(rnorm(800)+3,1), nc=8, dimnames=list(paste(
 #'   "li",1:100,sep=""),paste(rep(LETTERS[1:3],c(3,3,2)),letters[18:25],sep="")))
 #' datT8[3:6,1:2] <- datT8[3:6,1:2]+3   # augment lines 3:6 (c-f) 
 #' datT8[5:8,5:6] <- datT8[5:8,5:6]+3   # augment lines 5:8 (e-h) 
@@ -25,13 +25,15 @@
 #' testAvB0 <- wrMisc::moderTest2grp(datT8[,1:6],gl(2,3))
 #' testAvB <- test2grp(datL,questNo=1)
 #' @export
-test2grp <- function(dat,questNo,useCol=NULL,grp=NULL,annot=NULL,ROTSn=0,silent=FALSE,callFrom=NULL) {
+test2grp <- function(dat, questNo, useCol=NULL, grp=NULL, annot=NULL, ROTSn=0, silent=FALSE, callFrom=NULL) {
   ## custom extracting data from list with $data and $filt
   ## return MA-type list with test resuls
   fxNa <- wrMisc::.composeCallName(callFrom,newNa="test2grp")
   msg <- " 'dat' must be list containing $data and $filt, with same number of rows !!"
   if(!all(c("data","filt") %in% names(dat))) stop(msg)
   if(nrow(dat$filt) != nrow(dat$data)) stop(msg)
+  if(!isTRUE(silent)) silent <- FALSE
+  
   questNa <- colnames(dat$filt)[questNo]
   questNa <- unlist(strsplit(questNa,"-"))
   if(is.null(useCol)) useCol <- lapply(questNa, grep, colnames(dat$data))
@@ -46,9 +48,9 @@ test2grp <- function(dat,questNo,useCol=NULL,grp=NULL,annot=NULL,ROTSn=0,silent=
   } else out$nonMod.lfdr <- wrMisc::pVal2lfdr(out$nonMod.p)
   ## need to add : (non-moderated test and) ROTS
   if(length(ROTSn==1)) if(ROTSn >0 & !is.na(ROTSn)) {
-    chPa <- try(find.package("ROTS"),silent=TRUE)
-    if("try-error" %in% class(chPa)) { ROTSn <- NULL
-      message(fxNa,"package 'ROTS' not found ! Please install first .. setting 'ROTSn'=0") }
+    chPa <- requireNamespace("ROTS", quietly=TRUE)
+    if(!chPa) { ROTSn <- NULL
+      message(fxNa,"package 'ROTS' not found ! Please install first .. setting  ROTSn=NULL") }
   } else ROTSn <- NULL      
   if(length(ROTSn)==1) if(ROTSn >0) {
     ## this part requires ROTS

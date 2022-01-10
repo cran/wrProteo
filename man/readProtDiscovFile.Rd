@@ -55,7 +55,7 @@ If a column named \code{contamCol} is found, the data will be lateron filtered t
 
 \item{FDRCol}{(list) optional indication to search for protein FDR information}
 
-\item{plotGraph}{(logical) optional plot of type vioplot of initial and normalized data (using \code{normalizeMeth}); if integer, it will be passed to \code{layout} when plotting}
+\item{plotGraph}{(logical or integer) optional plot of type vioplot of initial and normalized data (using \code{normalizeMeth}); if integer, it will be passed to \code{layout} when plotting}
 
 \item{tit}{(character) custom title to plot}
 

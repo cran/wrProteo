@@ -28,19 +28,19 @@ knitr::opts_chunk$set(collapse=TRUE, comment = "#>")
 ```
 
 ```{r install, echo=TRUE, eval=FALSE}
-# This is R code, you can run this to redo all analysis presented here.
-# If not already installed, you'll have to install wrMisc and wrProteo first.
+## This is R code, you can run this to redo all analysis presented here.
+## If not already installed, you'll have to install wrMisc and wrProteo first.
 install.packages("wrMisc")
 install.packages("wrProteo")
-# These packages are used for the graphics
+## These packages are used for the graphics
 install.packages("wrGraph")
 install.packages("RColorBrewer")     
 
-# Installation of limma from Bioconductor
+## Installation of limma from Bioconductor
 if(!requireNamespace("BiocManager", quietly=TRUE)) install.packages("BiocManager")
 BiocManager::install("limma")
 
-# You cat start the vignettes for this package by typing :
+## You cat also see all vignettes for this package by typing :
 browseVignettes("wrProteo")    #  ... and the select the html output
 ```
 
@@ -50,6 +50,7 @@ Note, [this package](https://CRAN.R-project.org/package=wrProteo) has also a mor
 Now let's load the packages needed :
 
 ```{r setup, echo=TRUE, messages=FALSE, warnings=FALSE}
+## Let's assume this is a fresh R-session
 library(knitr)
 library(wrMisc)
 library(wrGraph)
@@ -77,22 +78,46 @@ This dataset is available on PRIDE as [PXD001819](https://www.ebi.ac.uk/pride/ar
 Briefly, this experiment aims to evaluate and compare various quantification appoaches of the heterologous spike-in [UPS1](https://www.sigmaaldrich.com/FR/en/product/sigma/ups1) (available from Sigma-Aldrich) in yeast protein extracts as constant matrix. 9 different concentrations of the heterologous spike-in (UPS1) were run in triplicates. The proteins were initially digested by Trypsin and then analyzed by LC-MS/MS in DDA mode. 
 
 
+### Experiment Meta-Data
+
+The projcet [proteomics-metadata-standard](https://github.com/bigbio/proteomics-metadata-standard) tries to provide a framework for documenting meta-data as sdrf files.
+This data-set has already been added to this effort and all important information can thus be easily directly imported to this analysis.
+
+```{r metaData1, echo=TRUE}
+## Read meta-data from  github.com/bigbio/proteomics-metadata-standard/
+pxd001819meta <- readSdrf("PXD001819")
+
+## The concentration of the UPS1 spike-in proteins in the samples
+if(length(pxd001819meta) >0) {
+  UPSconc <- sort(unique(as.numeric(sub(" amol;CN.+","",sub(".+;QY=","",pxd001819meta$characteristics.spiked.compound.)))))
+} else UPSconc <- c(50, 125, 250, 500, 2500, 5000, 12500, 25000, 50000)
+
+
+```
+
 ### Key Elements and Additional Functions
 
 ```{r functions1, echo=TRUE}
 ## A few elements and functions we'll need lateron
-UPSconc <- c(50,125,250,500,2500,5000,12500,25000,50000)  
-
 methNa <- c("ProteomeDiscoverer","MaxQuant","Proline")
 names(methNa) <- c("PD","MQ","PL")
 
 ## The accession numbers for the UPS1 proteins
-UPS1ac <- c("P00915", "P00918", "P01031", "P69905", "P68871", "P41159", "P02768", "P62988",
+UPS1 <- data.frame(ac=c("P00915", "P00918", "P01031", "P69905", "P68871", "P41159", "P02768", "P62988",
   "P04040", "P00167", "P01133", "P02144", "P15559", "P62937", "Q06830", "P63165",
   "P00709", "P06732", "P12081", "P61626", "Q15843", "P02753", "P16083", "P63279",
   "P01008", "P61769", "P55957", "O76070", "P08263", "P01344", "P01127", "P10599",
   "P99999", "P06396", "P09211", "P01112", "P01579", "P02787", "O00762", "P51965",
-  "P08758", "P02741", "P05413", "P10145", "P02788", "P10636-8", "P00441", "P01375" ) 
+  "P08758", "P02741", "P05413", "P10145", "P02788", "P10636-8", "P00441", "P01375"),
+  species=rep("Homo sapiens",48),
+  name=NA)
+
+#      UPS1ac <- c("P00915", "P00918", "P01031", "P69905", "P68871", "P41159", "P02768", "P62988",
+#        "P04040", "P00167", "P01133", "P02144", "P15559", "P62937", "Q06830", "P63165",
+#        "P00709", "P06732", "P12081", "P61626", "Q15843", "P02753", "P16083", "P63279",
+#        "P01008", "P61769", "P55957", "O76070", "P08263", "P01344", "P01127", "P10599",
+#        "P99999", "P06396", "P09211", "P01112", "P01579", "P02787", "O00762", "P51965",
+#        "P08758", "P02741", "P05413", "P10145", "P02788", "P10636-8", "P00441", "P01375" ) 
 
 ## additional functions
 replSpecType <- function(x, annCol="SpecType", replBy=cbind(old=c("mainSpe","species2"), new=c("Yeast","UPS1")), silent=TRUE) {
@@ -169,7 +194,7 @@ Files compressed as .gz can be read, too (like in the example below).
 ```{r readMaxQuant, fig.height=8, fig.width=9.5, fig.align="center", echo=TRUE}
 path1 <- system.file("extdata", package="wrProteo")
 fiNaMQ <- "proteinGroups.txt.gz"
-specPrefMQ <- list(conta="CON_|LYSC_CHICK", mainSpecies="OS=Saccharomyces cerevisiae", spike=UPS1ac)
+specPrefMQ <- list(conta="CON_|LYSC_CHICK", mainSpecies="OS=Saccharomyces cerevisiae", spike=UPS1$ac)
 
 dataMQ <- readMaxQuantFile(path1, file=fiNaMQ, specPref=specPrefMQ, refLi="mainSpe")
 ```
@@ -184,7 +209,7 @@ summary(dataMQ$quant[,1:8])                # the first 8 cols
 ```
 
 Now we can summarize the presence of UPS1 proteins after treatment by MaxQuant :
-In sum `r sum(UPS1ac %in% dataMQ$annot[,1])` UPS1 proteins were found, `r sum(!UPS1ac %in% dataMQ$annot[,1])` are missing.
+In sum `r sum(UPS1$ac %in% dataMQ$annot[,1])` UPS1 proteins were found, `r sum(!UPS1$ac %in% dataMQ$annot[,1])` are missing.
 
 
 ### ProteomeDiscoverer
@@ -203,7 +228,7 @@ fiNaPd <- "pxd001819_PD24_Proteins.txt.gz"
 
 ## Note: data exported from ProteomeDiscoverer frequently do not have proper column-names, providing names here
 sampNa <- paste(rep(UPSconc, each=3),"amol_",rep(1:3,length(UPSconc)),sep="") 
-specPrefPD <- list(conta="Bos tauris|Gallus", mainSpecies="OS=Saccharomyces cerevisiae", spike=UPS1ac)
+specPrefPD <- list(conta="Bos tauris|Gallus", mainSpecies="OS=Saccharomyces cerevisiae", spike=UPS1$ac)
 
 dataPD <- readProtDiscovFile(file=fiNaPd, path=path1, sampleNames=sampNa, refLi="mainSpe", specPref=specPrefPD)
 ```
@@ -226,7 +251,7 @@ which(is.na(dataPD$annot[,"Species"]) & dataPD$annot[,"SpecType"]=="species2")  
 Confirming the presence of UPS1 proteins by ProteomeDiscoverer:
 
 Now we can summarize the presence of UPS1 proteins after treatment by ProteomeDiscoverer :
-In sum `r sum(UPS1ac %in% dataPD$annot[,1])` UPS1 proteins were found, `r sum(!UPS1ac %in% dataPD$annot[,1])` are missing.
+In sum `r sum(UPS1$ac %in% dataPD$annot[,1])` UPS1 proteins were found, `r sum(!UPS1$ac %in% dataPD$annot[,1])` are missing.
 
 
 ### Proline
@@ -247,7 +272,7 @@ path1 <- system.file("extdata", package="wrProteo")
 fiNaPl <- "pxd001819_PL.xlsx"
 
 specPrefPL <- c(conta="_conta", mainSpecies="OS=Saccharomyces cerevisiae", spike="_ups")  
-dataPL <- readProlineFile(file.path(path1,fiNaPl), specPref=specPrefPL, normalizeMeth="median", refLi="mainSpe")
+dataPL <- readProlineFile(file.path(path1,fiNaPl), specPref=specPrefPL, normalizeMeth="median", refLi="mainSpe", silent=TRUE)
 ```
 
 In addition, we need to correct the quantification column-heads (like '`r colnames(dataPL$raw)[1]`') and bring them to a simpler version :
@@ -269,7 +294,7 @@ summary(dataPL$quant[,1:8])        # the first 8 cols
 ```
 
 Now we can summarize the presence of UPS1 proteins after treatment by Proline :
-In sum `r sum(UPS1ac %in% dataPL$annot[,1])` UPS1 proteins were found, `r sum(!UPS1ac %in% dataPL$annot[,1])` are missing.
+In sum `r sum(UPS1$ac %in% dataPL$annot[,1])` UPS1 proteins were found, `r sum(!UPS1$ac %in% dataPL$annot[,1])` are missing.
 
 
 ### Uniform Re-Arranging of Data
@@ -311,10 +336,9 @@ NamesUpsPL <- dataPL$annot[which(dataPL$annot[,"SpecType"]=="UPS1"),"Accession"]
 
 ```{r postTreatmTables, echo=TRUE}
 tabS <- mergeVectors(PD=table(dataPD$annot[,"SpecType"]), MQ=table(dataMQ$annot[,"SpecType"]), PL=table(dataPL$annot[,"SpecType"]))  
-kable(tabS, caption="Number of proteins identified, by custom tags and software")
 tabT <- mergeVectors(PD=table(dataPD$annot[,"Species"]), MQ=table(dataMQ$annot[,"Species"]), PL=table(dataPL$annot[,"Species"]))  
 tabT[which(is.na(tabT))] <- 0
-kable(tabT, caption="Number of proteins identified, by species and software")
+kable(cbind(tabS[,2:1], tabT), caption="Number of proteins identified, by custom tags, species and software")
 ```
 
 The initial fasta file also contained the yeast strain number, this has been stripped off when using default parameters.
@@ -457,14 +481,14 @@ table1 <- numPairDeColNames(testPD$BH, stripTxt="amol", sortByAbsRatio=TRUE)
 table1 <- cbind(table1, signCount[table1[,1],])
 kable(table1, caption="All pairwise comparisons and number of significant proteins", align="c")
 ```
-You can see that in numerous cases much more than the `r length(UPS1ac)` UPS1 proteins showed up significant, 
+You can see that in numerous cases much more than the `r length(UPS1$ac)` UPS1 proteins showed up significant, 
 ie yeast proteins supposed to remain constant also showed up in part as 'sigificantly changing'.
 However, some proteins with enthousiastic FDR values have very low log-FC amplitude and will be removed by filtering in the following steps. 
 
 ```{r pairWise3, fig.height=4.5, fig.width=9.5, fig.align="center", echo=TRUE}
-par(mar=c(6.2, 4.7, 4, 1))   
+par(mar=c(5.5, 4.7, 4, 1))   
 imageW(table1[,c("sig.PD.BH","sig.MQ.BH","sig.PL.BH" )], col=RColorBrewer::brewer.pal(9,"YlOrRd"),
-  tit="Number of BH.FDR passing proteins by the quantification approaches")
+  transp=FALSE, tit="Number of BH.FDR passing proteins by the quantification approaches")
 mtext("dark red for high number signif proteins", cex=0.7)
 ```
 
@@ -625,10 +649,12 @@ plotROC(rocPD[[jR]], rocMQ[[jR]], rocPL[[jR]], col=colPanel, methNames=methNa, p
 
 ```{r VolcanoClu5, fig.height=10, fig.width=9.5, fig.align="center", echo=TRUE}
 #fcPar1 <- c(text="arrow: expected ratio at",loc="toright")
-layout(matrix(1:4,ncol=2))
-try(VolcanoPlotW(testPD, useComp=j, FCthrs=1.5, FdrThrs=0.05, annColor=c(4,2,3), ProjNa=methNa[1], expFCarrow=TRUE, silent=TRUE),silent=TRUE) 
-try(VolcanoPlotW(testMQ, useComp=j, FCthrs=1.5, FdrThrs=0.05, annColor=c(4,2,3), ProjNa=methNa[2], expFCarrow=TRUE, silent=TRUE),silent=TRUE)
-try(VolcanoPlotW(testPL, useComp=j, FCthrs=1.5, FdrThrs=0.05, annColor=c(4,2,3), ProjNa=methNa[3], expFCarrow=TRUE, silent=TRUE),silent=TRUE)
+## This required package 'wrGraph' at version 1.2.5 (or higher)
+if(packageVersion("wrGraph")  >= "1.2.5"){
+  layout(matrix(1:4,ncol=2))
+  try(VolcanoPlotW(testPD, useComp=j, FCthrs=1.5, FdrThrs=0.05, annColor=c(4,2,3), ProjNa=methNa[1], expFCarrow=TRUE, silent=TRUE),silent=TRUE) 
+  try(VolcanoPlotW(testMQ, useComp=j, FCthrs=1.5, FdrThrs=0.05, annColor=c(4,2,3), ProjNa=methNa[2], expFCarrow=TRUE, silent=TRUE),silent=TRUE)
+  try(VolcanoPlotW(testPL, useComp=j, FCthrs=1.5, FdrThrs=0.05, annColor=c(4,2,3), ProjNa=methNa[3], expFCarrow=TRUE, silent=TRUE),silent=TRUE)}
 ```
 
 
@@ -657,10 +683,11 @@ plotROC(rocPD[[jR]], rocMQ[[jR]], rocPL[[jR]], col=colPanel, methNames=methNa, p
 ```
 
 ```{r VolcanoClu4, fig.height=10, fig.width=9.5, fig.align="center", echo=TRUE}
-layout(matrix(1:4, ncol=2)) 
-try(VolcanoPlotW(testPD, useComp=j, FCthrs=1.5, FdrThrs=0.05, annColor=c(4,2,3), ProjNa=methNa[1], expFCarrow=TRUE, silent=TRUE),silent=TRUE)
-try(VolcanoPlotW(testMQ, useComp=j, FCthrs=1.5, FdrThrs=0.05, annColor=c(4,2,3), ProjNa=methNa[2], expFCarrow=TRUE, silent=TRUE),silent=TRUE)
-try(VolcanoPlotW(testPL, useComp=j, FCthrs=1.5, FdrThrs=0.05, annColor=c(4,2,3), ProjNa=methNa[3], expFCarrow=TRUE, silent=TRUE),silent=TRUE) 
+if(packageVersion("wrGraph")  >= "1.2.5"){
+  layout(matrix(1:4,ncol=2))
+  try(VolcanoPlotW(testPD, useComp=j, FCthrs=1.5, FdrThrs=0.05, annColor=c(4,2,3), ProjNa=methNa[1], expFCarrow=TRUE, silent=TRUE),silent=TRUE) 
+  try(VolcanoPlotW(testMQ, useComp=j, FCthrs=1.5, FdrThrs=0.05, annColor=c(4,2,3), ProjNa=methNa[2], expFCarrow=TRUE, silent=TRUE),silent=TRUE)
+  try(VolcanoPlotW(testPL, useComp=j, FCthrs=1.5, FdrThrs=0.05, annColor=c(4,2,3), ProjNa=methNa[3], expFCarrow=TRUE, silent=TRUE),silent=TRUE)}
 ```
 
 
@@ -689,10 +716,11 @@ plotROC(rocPD[[jR]],rocMQ[[jR]],rocPL[[jR]], col=colPanel, methNames=methNa, poi
 ```
 
 ```{r VolcanoClu3, fig.height=10, fig.width=9.5, fig.align="center", echo=TRUE}
-layout(matrix(1:4, ncol=2)) 
-try(VolcanoPlotW(testPD, useComp=j, FCthrs=1.5, FdrThrs=0.05, annColor=c(4,2,3), ProjNa=methNa[1], expFCarrow=TRUE, silent=TRUE),silent=TRUE) 
-try(VolcanoPlotW(testMQ, useComp=j, FCthrs=1.5, FdrThrs=0.05, annColor=c(4,2,3), ProjNa=methNa[2], expFCarrow=TRUE, silent=TRUE),silent=TRUE)
-try(VolcanoPlotW(testPL, useComp=j, FCthrs=1.5, FdrThrs=0.05, annColor=c(4,2,3), ProjNa=methNa[3], expFCarrow=TRUE, silent=TRUE),silent=TRUE)
+if(packageVersion("wrGraph")  >= "1.2.5"){
+  layout(matrix(1:4,ncol=2))
+  try(VolcanoPlotW(testPD, useComp=j, FCthrs=1.5, FdrThrs=0.05, annColor=c(4,2,3), ProjNa=methNa[1], expFCarrow=TRUE, silent=TRUE),silent=TRUE) 
+  try(VolcanoPlotW(testMQ, useComp=j, FCthrs=1.5, FdrThrs=0.05, annColor=c(4,2,3), ProjNa=methNa[2], expFCarrow=TRUE, silent=TRUE),silent=TRUE)
+  try(VolcanoPlotW(testPL, useComp=j, FCthrs=1.5, FdrThrs=0.05, annColor=c(4,2,3), ProjNa=methNa[3], expFCarrow=TRUE, silent=TRUE),silent=TRUE)}
 ```
 
 #### ROC Curves for the 4th Best Cluster  (the '++')
@@ -720,10 +748,11 @@ plotROC(rocPD[[jR]], rocMQ[[jR]], rocPL[[jR]], col=colPanel, methNames=methNa, p
 ```
 
 ```{r VolcanoClu2, fig.height=10, fig.width=9.5, fig.align="center", echo=TRUE}
-layout(matrix(1:4, ncol=2)) 
-try(VolcanoPlotW(testPD, useComp=j, FCthrs=1.5, FdrThrs=0.05, annColor=c(4,2,3), ProjNa=methNa[1], expFCarrow=TRUE, silent=TRUE),silent=TRUE) 
-try(VolcanoPlotW(testMQ, useComp=j, FCthrs=1.5, FdrThrs=0.05, annColor=c(4,2,3), ProjNa=methNa[2], expFCarrow=TRUE, silent=TRUE),silent=TRUE) 
-try(VolcanoPlotW(testPL, useComp=j, FCthrs=1.5, FdrThrs=0.05, annColor=c(4,2,3), ProjNa=methNa[3], expFCarrow=TRUE, silent=TRUE),silent=TRUE) 
+if(packageVersion("wrGraph")  >= "1.2.5"){
+  layout(matrix(1:4,ncol=2))
+  try(VolcanoPlotW(testPD, useComp=j, FCthrs=1.5, FdrThrs=0.05, annColor=c(4,2,3), ProjNa=methNa[1], expFCarrow=TRUE, silent=TRUE),silent=TRUE) 
+  try(VolcanoPlotW(testMQ, useComp=j, FCthrs=1.5, FdrThrs=0.05, annColor=c(4,2,3), ProjNa=methNa[2], expFCarrow=TRUE, silent=TRUE),silent=TRUE)
+  try(VolcanoPlotW(testPL, useComp=j, FCthrs=1.5, FdrThrs=0.05, annColor=c(4,2,3), ProjNa=methNa[3], expFCarrow=TRUE, silent=TRUE),silent=TRUE)}
 ```
 
 #### ROC Curves for the Weakest Cluster 1  (the '+')
@@ -751,10 +780,11 @@ plotROC(rocPD[[jR]], rocMQ[[jR]], rocPL[[jR]], col=colPanel, methNames=methNa, p
 ```
 
 ```{r VolcanoClu1, fig.height=10, fig.width=9.5, fig.align="center", echo=TRUE}
-layout(matrix(1:4, ncol=2)) 
-try(VolcanoPlotW(testPD, useComp=j, FCthrs=1.5, FdrThrs=0.05, annColor=c(4,2,3), ProjNa=methNa[1], expFCarrow=TRUE, silent=TRUE),silent=TRUE) 
-try(VolcanoPlotW(testMQ, useComp=j, FCthrs=1.5, FdrThrs=0.05, annColor=c(4,2,3), ProjNa=methNa[2], expFCarrow=TRUE, silent=TRUE),silent=TRUE) 
-try(VolcanoPlotW(testPL, useComp=j, FCthrs=1.5, FdrThrs=0.05, annColor=c(4,2,3), ProjNa=methNa[3], expFCarrow=TRUE, silent=TRUE),silent=TRUE) 
+if(packageVersion("wrGraph")  >= "1.2.5"){
+  layout(matrix(1:4,ncol=2))
+  try(VolcanoPlotW(testPD, useComp=j, FCthrs=1.5, FdrThrs=0.05, annColor=c(4,2,3), ProjNa=methNa[1], expFCarrow=TRUE, silent=TRUE),silent=TRUE) 
+  try(VolcanoPlotW(testMQ, useComp=j, FCthrs=1.5, FdrThrs=0.05, annColor=c(4,2,3), ProjNa=methNa[2], expFCarrow=TRUE, silent=TRUE),silent=TRUE)
+  try(VolcanoPlotW(testPL, useComp=j, FCthrs=1.5, FdrThrs=0.05, annColor=c(4,2,3), ProjNa=methNa[3], expFCarrow=TRUE, silent=TRUE),silent=TRUE)}
 ```
 
 ------
@@ -784,14 +814,15 @@ In consequence we'll avoid using all of them at all times, but this should be ma
 Let's look graphically at the number of NAs in each of the UPS1 proteins along the quantification methods :
 
 ```{r nNAfig1, fig.height=3.5, fig.width=9.5, fig.align="center", echo=TRUE}
-countRawNA <- function(dat, newOrd=UPS1ac, relative=FALSE) {  # count number of NAs per UPS protein and order as UPS
+countRawNA <- function(dat, newOrd=UPS1$ac, relative=FALSE) {  # count number of NAs per UPS protein and order as UPS
   out <- rowSums(is.na(dat$raw[match(newOrd,rownames(dat$raw)),])) 
   if(relative) out/nrow(dat$raw) else out }
 
 sumNAperMeth <- cbind(PD=countRawNA(dataPD), MQ=countRawNA(dataMQ), PL=countRawNA(dataPL) )
-UPS1na <- sub("_UPS","",dataPL$annot[UPS1ac,"EntryName"])
+UPS1na <- sub("_UPS","",dataPL$annot[UPS1$ac,"EntryName"])
 par(mar=c(6.8, 3.5, 4, 1))   
-imageW(sumNAperMeth, rowNa=UPS1na, tit="Number of NAs in UPS proteins", xLab="", yLab="", col=RColorBrewer::brewer.pal(9,"YlOrRd"))
+imageW(sumNAperMeth, rowNa=UPS1na, tit="Number of NAs in UPS proteins", xLab="", yLab="", 
+  transp=FALSE, col=RColorBrewer::brewer.pal(9,"YlOrRd"))
 mtext("dark red for high number of NAs",cex=0.7)
 ```
 
@@ -891,7 +922,7 @@ Once can see that lower concentrations of UPS1 usually have worse CV (coefficien
 First, we construct a container for storing various measures and results which we will look at lateron. 
 ```{r linModel0, echo=TRUE}
 ## prepare object for storing all results
-datUPS1 <- array(NA, dim=c(length(UPS1ac),length(methNa),7), dimnames=list(UPS1ac,c("PD","MQ","PL"),
+datUPS1 <- array(NA, dim=c(length(UPS1$ac),length(methNa),7), dimnames=list(UPS1$ac,c("PD","MQ","PL"),
   c("sco","nPep","medAbund", "logp","slope","startFr","cluNo")))
 ```
 
@@ -912,11 +943,11 @@ names(lmPD) <- NamesUpsPD
 
 ```{r linModelPD2, echo=TRUE}
 ## We make a little summary of regression-results (ProteomeDiscoverer)
-linIn <- match(names(lmPD), UPS1ac)
+linIn <- match(names(lmPD), UPS1$ac)
 datUPS1[linIn,1,c("logp","slope","startFr")] <- cbind(log10(sapply(lmPD, function(x) x$coef[2,4])), 
   sapply(lmPD, function(x) x$coef[2,1]), sapply(lmPD, function(x) x$startLev) )
 ## need correct rownames in  dataPD$datImp !!! 
-datUPS1[,1,"medAbund"] <- apply(wrMisc::.scale01(dataPD$datImp)[match(UPS1ac,rownames(dataPD$datImp)),],1,median,na.rm=TRUE)
+datUPS1[,1,"medAbund"] <- apply(wrMisc::.scale01(dataPD$datImp)[match(UPS1$ac,rownames(dataPD$datImp)),],1,median,na.rm=TRUE)
 ```
 
 
@@ -931,10 +962,10 @@ names(lmMQ) <- NamesUpsMQ
     
 ```{r linModelMQ2, fig.height=17, fig.width=9.5, fig.align="center", echo=TRUE}
 ## We make a little summary of regression-results (MaxQuant)
-linIn <- match(names(lmMQ), UPS1ac)
+linIn <- match(names(lmMQ), UPS1$ac)
 datUPS1[linIn,2,c("logp","slope","startFr")] <- cbind( log10(sapply(lmMQ, function(x) x$coef[2,4])), 
   sapply(lmMQ, function(x) x$coef[2,1]), sapply(lmMQ, function(x) x$startLev) )
-datUPS1[,2,"medAbund"] <- apply(wrMisc::.scale01(dataMQ$datImp)[match(UPS1ac,rownames(dataMQ$datImp)),],1,median,na.rm=TRUE)
+datUPS1[,2,"medAbund"] <- apply(wrMisc::.scale01(dataMQ$datImp)[match(UPS1$ac,rownames(dataMQ$datImp)),],1,median,na.rm=TRUE)
 ```
 
 
@@ -948,10 +979,10 @@ names(lmPL) <- NamesUpsPL
 ```
 
 ```{r linModelPLsum, fig.height=17, fig.width=9.5, fig.align="center", echo=TRUE}
-linIn <- match(names(lmPL), UPS1ac)
+linIn <- match(names(lmPL), UPS1$ac)
 datUPS1[linIn,3,c("logp","slope","startFr")] <- cbind(log10(sapply(lmPL, function(x) x$coef[2,4])), 
   sapply(lmPL, function(x) x$coef[2,1]), sapply(lmPL, function(x) x$startLev) )
-datUPS1[,3,"medAbund"] <- apply(wrMisc::.scale01(dataPL$datImp)[match(UPS1ac,rownames(dataPL$datImp)),],1,median,na.rm=TRUE)
+datUPS1[,3,"medAbund"] <- apply(wrMisc::.scale01(dataPL$datImp)[match(UPS1$ac,rownames(dataPL$datImp)),],1,median,na.rm=TRUE)
 ```
 
 #### Frequency Of Starting Levels For Regression
@@ -978,13 +1009,16 @@ plotMultRegrPar(datUPS1,2,xlim=c(-25,-1),ylim=c(0.1,1.6),tit="MaxQuant UPS1, p-v
 plotMultRegrPar(datUPS1,3,xlim=c(-25,-1),ylim=c(0.1,1.6),tit="Proline UPS1, p-value vs slope",subTit=subTi)
 ```
 
+We can observe, that sope and (log)p-value of the resultant regressions do not necessarily correlate well. 
+Thus, considering only one of these resultant values may not be sufficient.
+
 
 ### Summarize Linear Regression Results
 
 When judging results for indivual UPS1 proteins one may see that both the value of the slope as well as the p-value (for H0:slope=0) are important to consider.
 For example, there are some cases where the quantitations lign up well giving a good p-value but with slopes < 0.4. 
 This is definitely not the type of dose-response characteristics we are looking for. 
-In consequence we construct a combined score for these two components for easier consideration of both elements at once.
+In consequence, let's construct a **combined score** for these components _slope_ and _p-value_ for easier consideration of both elements at once :
 
 ```{r combRegrScore1, echo=TRUE}
 for(i in 1:(dim(datUPS1)[2])) datUPS1[,i,"sco"] <- -datUPS1[,i,"logp"] - (datUPS1[,i,"slope"] -1)^2    # cut at > 8
@@ -993,29 +1027,29 @@ for(i in 1:(dim(datUPS1)[2])) datUPS1[,i,"sco"] <- -datUPS1[,i,"logp"] - (datUPS
 Next, let's bring together all linear-model scores, the number of peptides and meadian protein abundance for each of UPS1 proteins in one object to facilite further steps.
 
 ```{r combRegrScore2, echo=TRUE}
-datUPS1[,1,2] <- rowSums(dataPD$count[match(UPS1ac,dataPD$annot[,1]),,"NoOfPeptides"], na.rm=TRUE)
-datUPS1[,2,2] <- rowSums(dataMQ$count[match(UPS1ac,dataMQ$annot[,1]),,1], na.rm=TRUE)
-datUPS1[,3,2] <- rowSums(dataPL$count[match(UPS1ac,dataPL$annot[,1]),,"NoOfPeptides"], na.rm=TRUE)
+datUPS1[,1,2] <- rowSums(dataPD$count[match(UPS1$ac,dataPD$annot[,1]),,"NoOfPeptides"], na.rm=TRUE)
+datUPS1[,2,2] <- rowSums(dataMQ$count[match(UPS1$ac,dataMQ$annot[,1]),,1], na.rm=TRUE)
+datUPS1[,3,2] <- rowSums(dataPL$count[match(UPS1$ac,dataPL$annot[,1]),,"NoOfPeptides"], na.rm=TRUE)
 ```
 
 Now we can explore the regression score and its context to other parameters, below it's done graphically.
 
 ```{r combRegrScore3, fig.height=6, fig.width=9.5, fig.align="center", echo=TRUE}
-layout(matrix(1:4,ncol=2))
-par(mar=c(5.5, 3, 4, 0.4))
+layout(matrix(1:4, ncol=2))
+par(mar=c(5.5, 2.2, 4, 0.4))
 col1 <- RColorBrewer::brewer.pal(9,"YlOrRd")  
-imageW(datUPS1[,,1], col=col1, tit="Linear regression score", xLab="",yLab="")
+imageW(datUPS1[,,1], col=col1, tit="Linear regression score", xLab="",yLab="",transp=FALSE)
 mtext("red for bad score", cex=0.75)
 
-imageW(log(datUPS1[,,2]), tit="Number of peptides", xLab="",yLab="", col=col1)
+imageW(log(datUPS1[,,2]), tit="Number of peptides", xLab="",yLab="", col=col1, transp=FALSE)
 mtext("dark red for high number of peptides", cex=0.75)
 
 ## ratio : regression score vs no of peptides
-imageW(datUPS1[,,1]/log(datUPS1[,,2]), col=rev(col1), tit="Regression score / Number of peptides", xLab="",yLab="")
+imageW(datUPS1[,,1]/log(datUPS1[,,2]), col=rev(col1), tit="Regression score / Number of peptides", xLab="",yLab="", transp=FALSE)
 mtext("dark red for high (good) lmScore/peptide ratio)", cex=0.75)
 
 ## score vs abundance
-imageW(datUPS1[,,1]/datUPS1[,,3], col=rev(col1), tit="Regression score / median Abundance", xLab="",yLab="")
+imageW(datUPS1[,,1]/datUPS1[,,3], col=rev(col1), tit="Regression score / median Abundance", xLab="",yLab="", transp=FALSE)
 mtext("dark red for high (good) lmScore/abundance ratio)", cex=0.75)
 ```
 
@@ -1048,7 +1082,9 @@ geoM2 <- geoM2[order(geoM2[,"clu"],geoM2[,"geoM"],decreasing=TRUE),]         # o
 geoM2[,"clu"] <- rep(1:max(kMx), table(geoM2[,"clu"])[rank(unique(geoM2[,"clu"]))])    # replace cluster-names to increasing 
 
 profileAsClu(geoM2[,2:4], geoM2[,"clu"], tit="Clustered Regression Results for UPS1 Proteins", ylab="Linear regression score") 
+```
 
+```{r combScore2, echo=TRUE}
 datUPS1 <- datUPS1[match(rownames(geoM2), rownames(datUPS1)),,]               # bring in new order
 datUPS1[,,"cluNo"] <- geoM2[,"clu"]                                          # update cluster-names
 
@@ -1078,12 +1114,13 @@ try(kable(cbind(annUPS1[useLi,2], signif(datUPS1[useLi,,"slope"],3), signif(datU
 ```
 
 ```{r regrPlot5star, fig.height=9, fig.width=9.5, fig.align="center", echo=TRUE}
-## Plotting the best regressions
-layout(matrix(1:4, ncol=2))
-tit <- paste0(methNa,", ",annUPS1[UPSrep[gr],1])
-try(tm <- linModelSelect(annUPS1[UPSrep[gr],1], dat=dataPD, tit=tit[1], expect=grp9, startLev=1:5, cexXAxis=0.7, logExpect=TRUE, plotGraph=TRUE, silent=TRUE),silent=TRUE)
-try(tm <- linModelSelect(annUPS1[UPSrep[gr],1], dat=dataMQ, tit=tit[2], expect=grp9, startLev=1:5, cexXAxis=0.7, logExpect=TRUE, plotGraph=TRUE, silent=TRUE),silent=TRUE)
-try(tm <- linModelSelect(annUPS1[UPSrep[gr],1], dat=dataPL, tit=tit[3], expect=grp9, startLev=1:5, cexXAxis=0.7, logExpect=TRUE, plotGraph=TRUE, silent=TRUE),silent=TRUE)
+## Plotting the best regressions, this required package wrGraph version 1.2.5 (or higher)
+if(packageVersion("wrGraph")  >= "1.2.5"){
+  layout(matrix(1:4, ncol=2))
+  tit <- paste0(methNa,", ",annUPS1[UPSrep[gr],1])
+  try(tm <- linModelSelect(annUPS1[UPSrep[gr],1], dat=dataPD, tit=tit[1], expect=grp9, startLev=1:5, cexXAxis=0.7, logExpect=TRUE, plotGraph=TRUE, silent=TRUE),silent=TRUE)
+  try(tm <- linModelSelect(annUPS1[UPSrep[gr],1], dat=dataMQ, tit=tit[2], expect=grp9, startLev=1:5, cexXAxis=0.7, logExpect=TRUE, plotGraph=TRUE, silent=TRUE),silent=TRUE)
+  try(tm <- linModelSelect(annUPS1[UPSrep[gr],1], dat=dataPL, tit=tit[3], expect=grp9, startLev=1:5, cexXAxis=0.7, logExpect=TRUE, plotGraph=TRUE, silent=TRUE),silent=TRUE) }
 ```
 
 ####  Representative UPS1-protein of the 2nd Best Group  (the '++++')
@@ -1096,11 +1133,12 @@ try(kable(cbind(annUPS1[useLi,2], signif(datUPS1[useLi,,"slope"],3), signif(datU
 ```
 
 ```{r regrPlot4star, fig.height=9, fig.width=9.5, fig.align="center", echo=TRUE}
-layout(matrix(1:4,ncol=2))
-tit <- paste0(methNa,", UPS1: ",annUPS1[UPSrep[gr],1])
-try(tm <- linModelSelect(annUPS1[UPSrep[gr],1], dat=dataPD, tit=tit[1], expect=grp9, startLev=1:5, cexXAxis=0.7, logExpect=TRUE, plotGraph=TRUE, silent=TRUE),silent=TRUE)
-try(tm <- linModelSelect(annUPS1[UPSrep[gr],1], dat=dataMQ, tit=tit[2], expect=grp9, startLev=1:5, cexXAxis=0.7, logExpect=TRUE, plotGraph=TRUE, silent=TRUE),silent=TRUE)
-try(tm <- linModelSelect(annUPS1[UPSrep[gr],1], dat=dataPL, tit=tit[3], expect=grp9, startLev=1:5, cexXAxis=0.7, logExpect=TRUE, plotGraph=TRUE, silent=TRUE),silent=TRUE)
+if(packageVersion("wrGraph")  >= "1.2.5"){
+  layout(matrix(1:4, ncol=2))
+  tit <- paste0(methNa,", ",annUPS1[UPSrep[gr],1])
+  try(tm <- linModelSelect(annUPS1[UPSrep[gr],1], dat=dataPD, tit=tit[1], expect=grp9, startLev=1:5, cexXAxis=0.7, logExpect=TRUE, plotGraph=TRUE, silent=TRUE),silent=TRUE)
+  try(tm <- linModelSelect(annUPS1[UPSrep[gr],1], dat=dataMQ, tit=tit[2], expect=grp9, startLev=1:5, cexXAxis=0.7, logExpect=TRUE, plotGraph=TRUE, silent=TRUE),silent=TRUE)
+  try(tm <- linModelSelect(annUPS1[UPSrep[gr],1], dat=dataPL, tit=tit[3], expect=grp9, startLev=1:5, cexXAxis=0.7, logExpect=TRUE, plotGraph=TRUE, silent=TRUE),silent=TRUE) }
 ```
 
 ####  Representative UPS1-protein of the 3rd Group  (the '+++')
@@ -1113,11 +1151,13 @@ try(kable(cbind(annUPS1[useLi,2], signif(datUPS1[useLi,,"slope"],3), signif(datU
 ```
 
 ```{r regrPlot3star, fig.height=9, fig.width=9.5, fig.align="center", echo=TRUE}
-layout(matrix(1:4, ncol=2))
-tit <- paste0(methNa,", ",annUPS1[UPSrep[gr],1])
-try(tm <- linModelSelect(annUPS1[UPSrep[gr],1], dat=dataPD, tit=tit[1], expect=grp9, startLev=1:5, cexXAxis=0.7, logExpect=TRUE, plotGraph=TRUE, silent=TRUE),silent=TRUE)
-try(tm <- linModelSelect(annUPS1[UPSrep[gr],1], dat=dataMQ, tit=tit[2], expect=grp9, startLev=1:5, cexXAxis=0.7, logExpect=TRUE, plotGraph=TRUE, silent=TRUE),silent=TRUE)
-try(tm <- linModelSelect(annUPS1[UPSrep[gr],1], dat=dataPL, tit=tit[3], expect=grp9, startLev=1:5, cexXAxis=0.7, logExpect=TRUE, plotGraph=TRUE, silent=TRUE),silent=TRUE)
+if(packageVersion("wrGraph")  >= "1.2.5"){
+  layout(matrix(1:4, ncol=2))
+  tit <- paste0(methNa,", ",annUPS1[UPSrep[gr],1])
+  try(tm <- linModelSelect(annUPS1[UPSrep[gr],1], dat=dataPD, tit=tit[1], expect=grp9, startLev=1:5, cexXAxis=0.7, logExpect=TRUE, plotGraph=TRUE, silent=TRUE),silent=TRUE)
+  try(tm <- linModelSelect(annUPS1[UPSrep[gr],1], dat=dataMQ, tit=tit[2], expect=grp9, startLev=1:5, cexXAxis=0.7, logExpect=TRUE, plotGraph=TRUE, silent=TRUE),silent=TRUE)
+  try(tm <- linModelSelect(annUPS1[UPSrep[gr],1], dat=dataPL, tit=tit[3], expect=grp9, startLev=1:5, cexXAxis=0.7, logExpect=TRUE, plotGraph=TRUE, silent=TRUE),silent=TRUE) }
+
 ```
 
 ####  Representative UPS1-protein of the 4th Group  (the '++')
@@ -1128,11 +1168,12 @@ useLi <- which(datUPS1[,1,"cluNo"]==gr)
 try(kable(cbind(annUPS1[useLi,2], signif(datUPS1[useLi,,"slope"],3), signif(datUPS1[useLi,,"logp"],3)), 
   caption="Regression details for 3rd cluster UPS1 proteins ", col.names=colNa, align="l"),silent=TRUE)
 
-tit <- paste0(methNa,", ",annUPS1[UPSrep[gr],1])
-layout(matrix(1:4, ncol=2))
-try(tm <- linModelSelect(annUPS1[UPSrep[gr],1], dat=dataPD, tit=tit[1], expect=grp9, startLev=1:5, cexXAxis=0.7, logExpect=TRUE, plotGraph=TRUE, silent=TRUE),silent=TRUE)
-try(tm <- linModelSelect(annUPS1[UPSrep[gr],1], dat=dataMQ, tit=tit[2], expect=grp9, startLev=1:5, cexXAxis=0.7, logExpect=TRUE, plotGraph=TRUE, silent=TRUE),silent=TRUE)
-try(tm <- linModelSelect(annUPS1[UPSrep[gr],1], dat=dataPL, tit=tit[3], expect=grp9, startLev=1:5, cexXAxis=0.7, logExpect=TRUE, plotGraph=TRUE, silent=TRUE),silent=TRUE)
+if(packageVersion("wrGraph")  >= "1.2.5"){
+  layout(matrix(1:4, ncol=2))
+  tit <- paste0(methNa,", ",annUPS1[UPSrep[gr],1])
+  try(tm <- linModelSelect(annUPS1[UPSrep[gr],1], dat=dataPD, tit=tit[1], expect=grp9, startLev=1:5, cexXAxis=0.7, logExpect=TRUE, plotGraph=TRUE, silent=TRUE),silent=TRUE)
+  try(tm <- linModelSelect(annUPS1[UPSrep[gr],1], dat=dataMQ, tit=tit[2], expect=grp9, startLev=1:5, cexXAxis=0.7, logExpect=TRUE, plotGraph=TRUE, silent=TRUE),silent=TRUE)
+  try(tm <- linModelSelect(annUPS1[UPSrep[gr],1], dat=dataPL, tit=tit[3], expect=grp9, startLev=1:5, cexXAxis=0.7, logExpect=TRUE, plotGraph=TRUE, silent=TRUE),silent=TRUE) }
 ```
 
 ####  Representative UPS1-protein of the 5th (And Last) Group  (the '+')
@@ -1142,11 +1183,12 @@ gr <- 5
 useLi <- which(datUPS1[,1,"cluNo"]==gr)
 try(kable(cbind(annUPS1[useLi,2], signif(datUPS1[useLi,,"slope"],3), signif(datUPS1[useLi,,"logp"],3)), 
   caption="Regression details for 5th cluster UPS1 proteins ", col.names=colNa, align="l"),silent=TRUE)
-tit <- paste0(methNa,", ",annUPS1[UPSrep[gr],1])
-layout(matrix(1:4, ncol=2))
-try(tm <- linModelSelect(annUPS1[UPSrep[gr],1], dat=dataPD, tit=tit[1], expect=grp9, startLev=1:5, cexXAxis=0.7, logExpect=TRUE, plotGraph=TRUE, silent=TRUE),silent=TRUE)
-try(tm <- linModelSelect(annUPS1[UPSrep[gr],1], dat=dataMQ, tit=tit[2], expect=grp9, startLev=1:5, cexXAxis=0.7, logExpect=TRUE, plotGraph=TRUE, silent=TRUE),silent=TRUE)
-try(tm <- linModelSelect(annUPS1[UPSrep[gr],1], dat=dataPL, tit=tit[3], expect=grp9, startLev=1:5, cexXAxis=0.7, logExpect=TRUE, plotGraph=TRUE, silent=TRUE),silent=TRUE)
+if(packageVersion("wrGraph")  >= "1.2.5"){
+  layout(matrix(1:4, ncol=2))
+  tit <- paste0(methNa,", ",annUPS1[UPSrep[gr],1])
+  try(tm <- linModelSelect(annUPS1[UPSrep[gr],1], dat=dataPD, tit=tit[1], expect=grp9, startLev=1:5, cexXAxis=0.7, logExpect=TRUE, plotGraph=TRUE, silent=TRUE),silent=TRUE)
+  try(tm <- linModelSelect(annUPS1[UPSrep[gr],1], dat=dataMQ, tit=tit[2], expect=grp9, startLev=1:5, cexXAxis=0.7, logExpect=TRUE, plotGraph=TRUE, silent=TRUE),silent=TRUE)
+  try(tm <- linModelSelect(annUPS1[UPSrep[gr],1], dat=dataPL, tit=tit[3], expect=grp9, startLev=1:5, cexXAxis=0.7, logExpect=TRUE, plotGraph=TRUE, silent=TRUE),silent=TRUE) }
 ```
 
 
@@ -1168,11 +1210,11 @@ This indicates that many times the common 5-percent threshold may not be the 'op
 
 ## Acknowledgements
 
-The author wants to acknowledge the support by the [IGBMC](http://www.igbmc.fr/) (CNRS UMR 7104, Inserm U 1258, UdS), [CNRS](http://www.cnrs.fr/), [Universit&eacute; de Strasbourg](https://www.unistra.fr) and [Inserm](https://www.inserm.fr/) and of course all collegues from the [IGBMC proteomics platform](http://proteomics.igbmc.fr/).
-The author wishes to thank the [CRAN-staff](https://CRAN.R-project.org) for all their help with new entries and their efforts in maintaining this repository of R-packages.
+The author wants to acknowledge the support by the [IGBMC](https://www.igbmc.fr/) (CNRS UMR 7104, Inserm U 1258, UdS), [CNRS](http://www.cnrs.fr/), [Universit&eacute; de Strasbourg](https://www.unistra.fr) and [Inserm](https://www.inserm.fr/) and of course all collegues from the [IGBMC proteomics platform](https://proteomics.igbmc.fr/).
+The author wishes to thank the [CRAN](https://CRAN.R-project.org) -staff for all their help with new entries and their efforts in maintaining this repository of R-packages.
 Furthermore, many very fruitful discussions with colleages on national and international level have helped to formulate ideas and improve the tools presented here.
 
-Thank you for you interest in this package. This package is constantly evolving, new featues/functions may get added to the next version.
+Thank you for you interest, this package is constantly evolving, new featues/functions may get added to the next version.
 
 
 ## Session-Info

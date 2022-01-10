@@ -17,7 +17,7 @@ vignette: >
 
 
 ## Introduction
-This package contains a collection of various tools for Proteomics used at the [proteomics platform](http://proteomics.igbmc.fr/) of the [IGBMC](http://www.igbmc.fr/). 
+This package contains a collection of various tools for Proteomics used at the [proteomics platform](https://proteomics.igbmc.fr/) of the [IGBMC](https://www.igbmc.fr/). 
 To get started, we need to load the packages "[wrMisc](https://CRAN.R-project.org/package=wrMisc)" and 
 this package ([wrProteo](https://CRAN.R-project.org/package=wrProteo)), both are available from CRAN.
 The packages [wrGraph](https://CRAN.R-project.org/package=wrGraph) and [RColorBrewer](https://CRAN.R-project.org/package=RColorBrewer) get used internally by some of the functions from this package for (optional/improved) figures.
@@ -42,7 +42,7 @@ install.packages("wrProteo")
 ## The package 'wrGraph' is not obligatory, but it allows making better graphs
 install.packages("wrGraph")
 
-# Installation of limma 
+## Installation of limma from Bioconductor
 if(!requireNamespace("BiocManager", quietly=TRUE)) install.packages("BiocManager")
 BiocManager::install("limma")
 ```
@@ -58,6 +58,7 @@ suppressPackageStartupMessages({
 ```
 
 ```{r setup2}
+## Let's assume this is a fresh R-session
 ## Get started by loading the packages
 library("knitr")
 library("wrMisc")
@@ -232,6 +233,24 @@ see [Valot et al 2011](https://doi.org/10.1002/pmic.201100120).
 Inital quantifications are on peptide basis and should be normalized and summarized using the R-package MassChroqR, which is also distributed by the [PAPPSO](http://pappso.inrae.fr/bioinfo/). Quantifications at protein-level can be saved as matrix into an RData-file or written to tsv,csv or txt files for following import into the framework of this package using `readMassChroQFile()`, for details please see the help-page to this function. 
 
 
+## Meta-Data (sdrf format) 
+
+The project [Proteomics Sample Metadata Format](https://github.com/bigbio/proteomics-metadata-standard) aims to provide a framework 
+of providing a uniform format for documenting experimental meta-data (ie the sdrf-format).
+A few experiments have already been integrated there and can be directly accessed from [wrProteo](https://CRAN.R-project.org/package=wrProteo).
+You don't necessarily need to copmy/pase the full path, you only need the main [PRIDE](https://www.ebi.ac.uk/pride/) accession number, `readSdrfAnnot` can compose the full url for you.
+
+For this specific example the meta-data can be found as [https://github.com/bigbio/proteomics-metadata-standard/blob/master/annotated-projects/PXD001819/PXD001819.sdrf.tsv](https://github.com/bigbio/proteomics-metadata-standard/blob/master/annotated-projects/PXD001819/PXD001819.sdrf.tsv).
+
+```{r metaData1, echo=TRUE}
+## Read meta-data from  github.com/bigbio/proteomics-metadata-standard/
+pxd001819meta <- readSdrf("PXD001819")
+
+str(pxd001819meta)
+```
+The second vignette (entitled "UPS1 spike-in Experiments") to this package shows more details how this information can be used to in further analysis.
+
+
 
 ## Normalization
 
@@ -271,7 +290,7 @@ however, but not necessarily the lowest values observed in the entire data-set.
 
 ```{r NA_MaxQuant, echo=TRUE}
 ## Let's inspect NA values as graphic
-matrixNAinspect(dataMQ$quant, gr=grp9, tit="Data from MaxQuant") 
+matrixNAinspect(dataMQ$quant, gr=grp9, tit="Histogram of Protein Abundances and NA-Neighbours") 
 ```
 
 So only if the hypothesis of NA-neighbours as typically low abundance values gets confirmed by visual inspection of the histograms, 
@@ -303,7 +322,7 @@ The final replacement is done on all NA values. This also includes proteins with
 
 ```{r NArepl_MaxQuant, echo=TRUE}
 ## MaxQuant simple NA-imputation (single round)
-dataMQimp <- matrixNAneighbourImpute(dataMQ$quant, gr=grp9, tit="Example from MaxQuant") 
+dataMQimp <- matrixNAneighbourImpute(dataMQ$quant, gr=grp9, tit="Histogram of Imputed and Final Data") 
 ```
 
 However, imputing using normal distributed random data also brings the risk of occasional extreme values.
@@ -372,7 +391,7 @@ Here we'll use the function `plotPCAw()` form the package [wrGraph](https://CRAN
 
 ```{r PCA1MQ, fig.height=12, fig.width=9.5, fig.align="center", echo=TRUE}
 # limit to UPS1 
-plotPCAw(testMQ$datImp, sampleGrp=grp9, tit="PCA on MaxQuant (NAs imputed)", rowTyName="proteins", useSymb2=0)
+plotPCAw(testMQ$datImp, sampleGrp=grp9, tit="PCA on Protein Abundances (MaxQuant,NAs imputed)", rowTyName="proteins", useSymb2=0)
 ```
 
 Please note, the vignette dedicated to spike-in experiments ("UPS-1 spike-in Experiments") presents a slightly different way of making PCA-plots for this specific type of experiment/data-set.
@@ -461,7 +480,7 @@ Suggestions for in depth-analysis of UPS1 spike-in are shown in the vignette 'UP
 
 # Protein Annotation
 
-In most 'Omics' acitivities getting additional annotation may get a bit tricky.
+In most 'Omics' acitivities getting additional annotation may get sometimes a bit tricky.
 In Proteomics most mass-spectrometry software will use the informaton provided in the Fasta-file as annotation (typically as provided from UniProt).
 But this lacks for example chromosomal location information.
 There are are many repositories with genome-, gene- and protein-annotation and most of them are linked, but sometimes the links get broken when 
@@ -470,24 +489,24 @@ may be (slightly) not up to date (sometimes gene- or protein-IDs do change or ma
 
 Globally two families of strategies for adding annotation exist :
 
-a) Strategies using online-based ressources for getting the most up-to-date information/annotation. 
-Depite the advantage of most up-to-date information there may be some downsides :
-This may require quite some time to run all queries via interet-connections and this strategy is vulnerable to broken links (eg linked to the delay of updates between different types of databases that may need to get combined). Furthermore, the results typically change a bit when the queries get repeated.
+a) Strategies using online-based ressources for getting the most up-to-date information/annotation (like BioMart). 
+Despite the advantage of most up-to-date information there may be some downsides :
+Interogating databases may require more time to run all queries via interet-connections and this strategy is vulnerable to broken links (eg linked to the delay of updates between different types of databases that may need to get combined). Furthermore, the results typically change a bit when the queries get repeated. In this case one should rather search version-numbers for the specific queries.
 When combining multiple interconnected ressources it may be very difficult to document the precise version of all individual ressources used.
 
 b) Strategies based on using (local copies of) defined versions of databases. Frequently, these databases can get downloaded/installed locally and thus allow faster queries and guarantee of repeatability and comparability to other tools or studies. 
-Despite the disadvantage, that some information might be slightly not up-to-date the ability to completely control the query process and repeatability are reasonable arguments.
+Note, that tracking version-numbers may be easier.
 
 
 In the context of adding chromosomal annotation to a list of proteins here the following concept is developed :
-Annotation-tables from [UCSC](https://genome.ucsc.edu/cgi-bin/hgTables) are available for a good number of species and can be downloaded for conventient off-line search. Howwever, in the context of less common species we realized that the UniProt tables from UCSC had many times low yield in final matching.
-For this reason we propose the slightly more complicated route that provided finally a much higher success-rate to find chromosomal locations for a list of UniProt IDs. First one needs to download from [UCSC](https://genome.ucsc.edu/cgi-bin/hgTables) the table corresponding to the species of question fields _'clade','genome','assembly'_). For _'group'_ choose 'Genes and Gene Predictions' and for _'track'_ choose 'Ensembl Genes', as table choose 'ensGene'. 
+Annotation-tables from [UCSC](https://genome.ucsc.edu/cgi-bin/hgTables) are available for a decent number of species and can be downloaded for conventient off-line search. Howwever, in the context of less common species we realized that the UniProt tables from UCSC had many times low yield in final matching.
+For this reason we propose the slightly more complicated route that provided finally a much higher success-rate to find chromosomal locations for a list of UniProt IDs. First one needs to acces/download from [UCSC](https://genome.ucsc.edu/cgi-bin/hgTables) the table corresponding to the species of question fields _'clade','genome','assembly'_). For _'group'_ choose 'Genes and Gene Predictions' and for _'track'_ choose 'Ensembl Genes', as table choose 'ensGene'. 
 In addition, it is possible to select either the entire genome-annotation or user-specified regions. 
 In terms of 'output-format' one may choose 'GTF' (slightly more condensed, no headers) or 'all filds from selected table'.
 
-The strategy for adding genomic location data presented here :
+The following strategy for adding genomic location data using this package is presented here :
 
-Locate & download organism annotation from UCSC, read into R (_readUCSCtable()_ ) ->  from R export (non-redundant) 'enst'-IDs (still _readUCSCtable()_ ), 
+Locate (& download) organism annotation from UCSC, read into R (_readUCSCtable()_ ) ->  from R export (non-redundant) 'enst'-IDs (still using _readUCSCtable()_ ), 
 get corresponding UniProt-IDs at UniProt site, save as file and import result into R (_readUniProtExport()_ ) -> (in R) combine with initial UCSC table (_readUniProtExport()_ ) .
 
 The function `readUCSCtable()` is able to read such files downloaded from UCSC, compressed .gz files can be read, too (like in the example below). 
@@ -538,8 +557,8 @@ Finally, it should be added, that of course several other ways of retrieving ann
 
 ## Acknowledgements
 
-The author would like to acknowledge the support by the [IGBMC](http://www.igbmc.fr/) (CNRS UMR 7104, Inserm U 1258, UdS), [CNRS](http://www.cnrs.fr/), [Universit&eacute; de Strasbourg](https://www.unistra.fr) and [Inserm](https://www.inserm.fr/).
-All collegues from the [proteomics platform](http://proteomics.igbmc.fr/) at the IGBMC work very commited to provide high quality mass-spectrometry data (including some of those used here).
+The author would like to acknowledge the support by the [IGBMC](https://www.igbmc.fr/) (CNRS UMR 7104, Inserm U 1258, UdS), [CNRS](http://www.cnrs.fr/), [Universit&eacute; de Strasbourg](https://www.unistra.fr) and [Inserm](https://www.inserm.fr/).
+All collegues from the [proteomics platform](https://proteomics.igbmc.fr/) at the IGBMC work very commited to provide high quality mass-spectrometry data (including some of those used here).
 The author wishes to thank the [CRAN-staff](https://CRAN.R-project.org) for all their help with new entries and their efforts in maintaining this repository of R-packages.
 Furthermore, many very fruitful discussions with colleages on national and international level have helped to improve the tools presented here.
 

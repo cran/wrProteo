@@ -41,8 +41,9 @@ readMassChroQFile <- function(fileName, path=NULL, normalizeMeth="median", sampl
   ## read MassChroQ (pre-)treated data
   fxNa <- wrMisc::.composeCallName(callFrom, newNa="readMassChroQFile")
   opar <- graphics::par(no.readonly=TRUE)
-  chPa <- try(find.package("utils"), silent=TRUE)
-  if("try-error" %in% class(chPa)) stop("package 'utils' not found ! Please install first")   
+  if(!isTRUE(silent)) silent <- FALSE
+  if(!requireNamespace("utils", quietly=TRUE)) stop("package 'utils' not found ! Please install first") 
+  
   ## check & read file
   chPa <- length(grep("/",fileName)) >0 | length(grep("\\\\",fileName)) >0       # check for path already in fileName "
   if(length(path) <1) path <- "."
@@ -103,7 +104,7 @@ readMassChroQFile <- function(fileName, path=NULL, normalizeMeth="median", sampl
   ## plot distribution of intensities
   custLay <- NULL
   if(length(plotGraph) >0) {if(is.numeric(plotGraph)) {custLay <- plotGraph; plotGraph <- TRUE
-    } else  {plotGraph <- as.logical(plotGraph[1])}}
+    } else  {plotGraph <- isTRUE(plotGraph[1]) }}
   if(plotGraph){
     if(length(custLay) >0) graphics::layout(custLay) else graphics::layout(1:2)
     graphics::par(mar=c(3, 3, 3, 1))                           # mar: bot,le,top,ri
@@ -134,6 +135,6 @@ readMassChroQFile <- function(fileName, path=NULL, normalizeMeth="median", sampl
   notes <- c(inpFile=paFi, qmethod="MassChroQ", normalizeMeth=normalizeMeth, call=match.call(), created=as.character(Sys.time()), 
     wrProteo.version=utils::packageVersion("wrProteo"), machine=Sys.info()["nodename"])
   ## prepare for final output
-  if(separateAnnot) list(raw=tmp, quant=abundN, annot=annot, counts=NULL, quantNotes=NULL, notes=notes) else data.frame(abundN, annot)
+  if(isTRUE(separateAnnot)) list(raw=tmp, quant=abundN, annot=annot, counts=NULL, quantNotes=NULL, notes=notes) else data.frame(abundN, annot)
 }  
       

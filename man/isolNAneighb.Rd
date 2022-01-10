@@ -4,7 +4,14 @@
 \alias{isolNAneighb}
 \title{Isolate NA-neighbours}
 \usage{
-isolNAneighb(mat, gr, maxHi = 3, iniCheck = TRUE, callFrom = NULL)
+isolNAneighb(
+  mat,
+  gr,
+  maxHi = 3,
+  iniCheck = TRUE,
+  silent = FALSE,
+  callFrom = NULL
+)
 }
 \arguments{
 \item{mat}{(matrix or data.frame) main data (may contain \code{NA})}
@@ -14,6 +21,8 @@ isolNAneighb(mat, gr, maxHi = 3, iniCheck = TRUE, callFrom = NULL)
 \item{maxHi}{(integer) maximum count of NAs to consider separately (higher ones will be counted/pooled as maxHi)}
 
 \item{iniCheck}{(logical) check at beginning if executing this function is useful (presence any \code{NA})}
+
+\item{silent}{(logical) suppress messages}
 
 \item{callFrom}{(character) allow easier tracking of message(s) produced}
 }

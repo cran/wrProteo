@@ -20,7 +20,8 @@ matrixNAneighbourImpute(
   figImputDetail = TRUE,
   seedNo = NULL,
   silent = FALSE,
-  callFrom = NULL
+  callFrom = NULL,
+  debug = FALSE
 )
 }
 \arguments{
@@ -55,6 +56,8 @@ matrixNAneighbourImpute(
 \item{silent}{(logical) suppress messages}
 
 \item{callFrom}{(character) allow easier tracking of message(s) produced}
+
+\item{debug}{(logical) supplemental messages for debugging}
 }
 \value{
 list with \code{$data} .. matrix of data where \code{NA} are replaced by imputed values, \code{$nNA} .. number of \code{NA} by group, \code{$randParam} .. parameters used for making random data
@@ -95,7 +98,7 @@ Then, this function replaces \code{NA}-values based on the normal random values 
 }
 \examples{
 set.seed(2013)
-datT6 <- matrix(round(rnorm(300)+3,1),ncol=6, dimnames=list(paste("li",1:50,sep=""),
+datT6 <- matrix(round(rnorm(300)+3,1), ncol=6, dimnames=list(paste("li",1:50,sep=""),
   letters[19:24]))
 datT6 <- datT6 +matrix(rep(1:nrow(datT6), ncol(datT6)), ncol=ncol(datT6))
 datT6[6:7, c(1,3,6)] <- NA

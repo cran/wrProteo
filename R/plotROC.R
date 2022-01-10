@@ -39,6 +39,9 @@ plotROC <- function(dat,...,useColumn=2:3, methNames=NULL, col=NULL, pch=1, bg=N
   speciesOrder=NULL, txtLoc=NULL, legCex=0.72, las=1, addSuplT=TRUE, silent=FALSE, callFrom=NULL) {
   ##
   fxNa <- wrMisc::.composeCallName(callFrom, newNa="plotROC")
+  if(!isTRUE(silent)) silent <- FALSE
+  if(!isFALSE(addSuplT)) addSuplT <- TRUE
+  
   inpS <- list(...)
   chInp <- lapply(c("dat","useColumn","methNames","col","pch","bg","tit","point05","pointSi","nByMeth","txtLoc","legCex"),wrMisc::.seqCutStr,startFr=2,reverse=TRUE)
   chAr <- names(inpS) %in% unlist(chInp)

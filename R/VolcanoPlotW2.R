@@ -76,7 +76,7 @@ VolcanoPlotW2 <- function(Mvalue, pValue=NULL, useComp=1, filtFin=NULL, ProjNa=N
   ## MA plot
   ## optional arguments for explicit title in batch-mode
   fxNa <- wrMisc::.composeCallName(callFrom, newNa="VolcanoPlotW2")
-  message("++ NOTE : OLD VERSION !! ++ please use package wrGraph")
+  message("++ NOTE : OLD VERSION !! ++ please use VolcanoPlotW() from package wrGraph")
   opar <- graphics::par(no.readonly=TRUE) 
   on.exit(graphics::par(opar$mar)) 
   on.exit(graphics::par(opar$cex.main)) 

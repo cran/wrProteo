@@ -21,6 +21,7 @@ AucROC <- function(dat, useCol=c("spec","sens"), silent=FALSE, callFrom=NULL) {
   ## calculate AUC (area under the curve) from ROC data
   fxNa <- wrMisc::.composeCallName(callFrom, newNa="AucROC")
   dataOK <- FALSE
+  if(!isTRUE(silent)) silent <- FALSE  
   if(length(dat) >0) { chD <- dim(dat)
      if(length(chD) >1 & all(chD >1)) dataOK <- TRUE }
   if(is.numeric(useCol) & length(useCol) >1) if(all(useCol >0 | useCol <= ncol(dat))) dataOK <- TRUE 

@@ -28,18 +28,19 @@
 #' @examples
 #' set.seed(2013)
 #' datT6 <- matrix(round(rnorm(300)+3,1),ncol=6,dimnames=list(paste("li",1:50,sep=""),letters[19:24]))
-#' datT6 <- datT6 +matrix(rep(1:nrow(datT6),ncol(datT6)),ncol=ncol(datT6))
+#' datT6 <- datT6 +matrix(rep(1:nrow(datT6),ncol(datT6)), ncol=ncol(datT6))
 #' datT6[6:7,c(1,3,6)] <- NA
 #' datT6[which(datT6 < 11 & datT6 > 10.5)] <- NA
 #' datT6[which(datT6 < 6 & datT6 > 5)] <- NA
 #' datT6[which(datT6 < 4.6 & datT6 > 4)] <- NA
-#' datT6b <- matrixNAneighbourImpute(datT6,gr=gl(2,3))
-#' datT6c <- combineMultFilterNAimput(datT6,datT6b,grp=gl(2,3),abundThr=2)
+#' datT6b <- matrixNAneighbourImpute(datT6, gr=gl(2,3))
+#' datT6c <- combineMultFilterNAimput(datT6, datT6b, grp=gl(2,3),abundThr=2)
 #' 
 #' @export
-combineMultFilterNAimput <- function(dat,imputed,grp,annDat=NULL,abundThr=NULL,colRazNa=NULL,colTotNa=NULL,minSpeNo=1,minTotNo=2,silent=FALSE,debug=FALSE,callFrom=NULL){
+combineMultFilterNAimput <- function(dat, imputed, grp, annDat=NULL, abundThr=NULL, colRazNa=NULL, colTotNa=NULL, minSpeNo=1, minTotNo=2, silent=FALSE,debug=FALSE,callFrom=NULL){
   fxNa <- wrMisc::.composeCallName(callFrom,newNa="combineMultFilterNAimput")
-  if(debug) silent <- FALSE
+  if(isTRUE(debug)) silent <- FALSE else debug <- FALSE
+  if(!isTRUE(silent)) silent <- FALSE
   datFi <- wrMisc::presenceFilt(dat, grp=grp, maxGrpM=1, ratMa=0.8, silent=silent, callFrom=fxNa)
   if(!silent) message(fxNa,"   at presenceFilt:  ",paste(colSums(datFi),collapse=" "),"  out of ",nrow(dat))
   if(length(colRazNa) >0 & length(annDat) >0) {

@@ -32,10 +32,12 @@
 #' test8 <- moderTestXgrp(t8, grp) 
 #' extractTestingResults(test8)
 #' @export
-extractTestingResults <- function(stat, compNo=1, statTy="BH",thrsh=0.05, FCthrs=1.5, annotCol=c("Accession","EntryName","GeneName"), nSign=6,addTy=c("allMeans"),filename=NULL,fileTy="csvUS",silent=FALSE,callFrom=NULL) {
+extractTestingResults <- function(stat, compNo=1, statTy="BH",thrsh=0.05, FCthrs=1.5, annotCol=c("Accession","EntryName","GeneName"), 
+  nSign=6, addTy=c("allMeans"), filename=NULL, fileTy="csvUS", silent=FALSE, callFrom=NULL) {
   ##
   fxNa <- wrMisc::.composeCallName(callFrom, newNa="extractTestingResults")
   argNa <- deparse(substitute(stat))
+  if(!isTRUE(silent)) silent <- FALSE
   if(!"list" %in% mode(stat) | length(stat) <1) stop("'stat' must be a list or 'MArrayLM'-object from limma")
   if(!("MArrayLM" %in% class(stat)) & !silent) message(fxNa," Caution, '",argNa,"' is not 'MArrayLM'-object as expected")
   if(length(statTy) <1) { statTy <- "BH"

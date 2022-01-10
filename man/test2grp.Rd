@@ -42,7 +42,7 @@ The final obkect also includes the results without moderation by \code{limma} (e
 Furthermore, there is an option to make use of package ROTS (note, this will increase the time of computatins considerably).
 }
 \examples{
-set.seed(2018);  datT8 <- matrix(round(rnorm(800)+3,1),nc=8,dimnames=list(paste(
+set.seed(2018);  datT8 <- matrix(round(rnorm(800)+3,1), nc=8, dimnames=list(paste(
   "li",1:100,sep=""),paste(rep(LETTERS[1:3],c(3,3,2)),letters[18:25],sep="")))
 datT8[3:6,1:2] <- datT8[3:6,1:2]+3   # augment lines 3:6 (c-f) 
 datT8[5:8,5:6] <- datT8[5:8,5:6]+3   # augment lines 5:8 (e-h) 

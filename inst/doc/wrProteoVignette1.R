@@ -8,7 +8,7 @@ knitr::opts_chunk$set(collapse=TRUE, comment = "#>")
 #  ## The package 'wrGraph' is not obligatory, but it allows making better graphs
 #  install.packages("wrGraph")
 #  
-#  # Installation of limma
+#  ## Installation of limma from Bioconductor
 #  if(!requireNamespace("BiocManager", quietly=TRUE)) install.packages("BiocManager")
 #  BiocManager::install("limma")
 
@@ -22,6 +22,7 @@ suppressPackageStartupMessages({
 }) 
 
 ## ----setup2-------------------------------------------------------------------
+## Let's assume this is a fresh R-session
 ## Get started by loading the packages
 library("knitr")
 library("wrMisc")
@@ -78,13 +79,19 @@ sampNa <- paste0(rep(UPSconc, each=3),"amol_",rep(1:3,length(UPSconc)))
 grp9 <- paste0(rep(UPSconc,each=3),"amol") 
 head(grp9)
 
+## ----metaData1, echo=TRUE-----------------------------------------------------
+## Read meta-data from  github.com/bigbio/proteomics-metadata-standard/
+pxd001819meta <- readSdrf("PXD001819")
+
+str(pxd001819meta)
+
 ## ----NA_MaxQuant, echo=TRUE---------------------------------------------------
 ## Let's inspect NA values as graphic
-matrixNAinspect(dataMQ$quant, gr=grp9, tit="Data from MaxQuant") 
+matrixNAinspect(dataMQ$quant, gr=grp9, tit="Histogram of Protein Abundances and NA-Neighbours") 
 
 ## ----NArepl_MaxQuant, echo=TRUE-----------------------------------------------
 ## MaxQuant simple NA-imputation (single round)
-dataMQimp <- matrixNAneighbourImpute(dataMQ$quant, gr=grp9, tit="Example from MaxQuant") 
+dataMQimp <- matrixNAneighbourImpute(dataMQ$quant, gr=grp9, tit="Histogram of Imputed and Final Data") 
 
 ## ----testRobustToNAimputation_MQ1, echo=TRUE----------------------------------
 ## Impute NA-values repeatedly and run statistical testing after each round of imputations
@@ -95,7 +102,7 @@ head(testMQ$datImp[,1:8])
 
 ## ----PCA1MQ, fig.height=12, fig.width=9.5, fig.align="center", echo=TRUE------
 # limit to UPS1 
-plotPCAw(testMQ$datImp, sampleGrp=grp9, tit="PCA on MaxQuant (NAs imputed)", rowTyName="proteins", useSymb2=0)
+plotPCAw(testMQ$datImp, sampleGrp=grp9, tit="PCA on Protein Abundances (MaxQuant,NAs imputed)", rowTyName="proteins", useSymb2=0)
 
 ## ----MAplot1, fig.height=6.5, fig.width=9.5, fig.align="center", echo=TRUE----
 # By default this plots at the first of all pairwise questions

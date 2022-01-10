@@ -22,15 +22,23 @@
 #' datT[which(datT <0)] <- 0
 #' razorNoFilter(datT,speNa="A",totNa="B")
 #' @export
-razorNoFilter <- function(annot,speNa=NULL,totNa=NULL,minRazNa=NULL,minSpeNo=1,minTotNo=2,silent=FALSE,callFrom=NULL) {
-  fxNa <- wrMisc::.composeCallName(callFrom,newNa="razorNoFilter")
-  if(is.null(minRazNa)) {
-    specPe <- as.integer(annot[,speNa]) >= minSpeNo
-    totPe <- as.integer(annot[,totNa]) >= minTotNo
-    filt <- (specPe & totPe)  
-  } else {
-    filt <- as.integer(annot[,minRazNa]) >= minTotNo
-  }
+razorNoFilter <- function(annot, speNa=NULL, totNa=NULL, minRazNa=NULL, minSpeNo=1, minTotNo=2, silent=FALSE, callFrom=NULL) {
+  fxNa <- wrMisc::.composeCallName(callFrom, newNa="razorNoFilter")
+  if(!isTRUE(silent)) silent <- FALSE
+  msg <- NULL
+  doFilter <- length(annot) >0
+  if(length(speNa) != length(totNa) & is.null(minRazNa)) { doFilter <- FALSE
+    msg <- "Length of 'speNa' differs from 'totNa', can't run fiktering" }
+  if(doFilter) {
+    if(is.null(minRazNa)) {
+      specPe <- as.integer(annot[,speNa]) >= minSpeNo
+      totPe <- as.integer(annot[,totNa]) >= minTotNo
+      filt <- (specPe & totPe)  
+    } else {
+      filt <- as.integer(annot[,minRazNa]) >= minTotNo
+    }
+  } else { filt <- NULL  
+    if(!silent) message(fxNa,if(length(msg) >0) msg else "Invalid argumenet 'annot'")}
   filt } 
 
 #' @export

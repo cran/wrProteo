@@ -36,10 +36,11 @@
 #' ## Now UniProt IDs and genomic locations are both available :
 #' str(deUniPr1)
 #' @export
-readUniProtExport <- function(UniProtFileNa,deUcsc=NULL,targRegion=NULL,useUniPrCol=NULL,silent=FALSE,callFrom=NULL) {         
+readUniProtExport <- function(UniProtFileNa, deUcsc=NULL, targRegion=NULL, useUniPrCol=NULL, silent=FALSE, callFrom=NULL) {         
   ## read annotation exported from https://www.uniprot.org/uploadlists/  upload  Ensemble Transcript => UniprotKB => export 
   ## targRegion : list('chr1',pos=c(198110001,198570000)) or 'chr11:1-135,086,622'
   fxNa <- wrMisc::.composeCallName(callFrom,newNa="readUniProtExport")
+  if(!isTRUE(silent)) silent <- FALSE  
   if(length(UniProtFileNa) >1) UniProtFileNa <- UniProtFileNa[1] else {if(length(UniProtFileNa) < 1) stop(" argument 'UniProtFileNa' seems empty")}
   chFi <- file.exists(UniProtFileNa)
   if(!chFi) stop(" file '",UniProtFileNa,"' not found !")

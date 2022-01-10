@@ -37,10 +37,10 @@ Note: This function assumes same order of columns in list-elements 'listElem' !
 }
 \examples{
 set.seed(2019)
-datT6 <- matrix(round(rnorm(300)+3,1),ncol=6,dimnames=list(paste("li",1:50,sep=""),
+datT6 <- matrix(round(rnorm(300)+3,1), ncol=6, dimnames=list(paste("li",1:50,sep=""),
   letters[19:24]))
-datL <- list(abund=datT6,quant=datT6,annot=matrix(nrow=nrow(datT6),ncol=2)) 
-datDelta2 <- removeSampleInList(datL,remSam=2)
+datL <- list(abund=datT6, quant=datT6, annot=matrix(nrow=nrow(datT6), ncol=2)) 
+datDelta2 <- removeSampleInList(datL, remSam=2)
 }
 \seealso{
 \code{\link{testRobustToNAimputation}}

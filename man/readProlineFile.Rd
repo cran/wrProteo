@@ -24,7 +24,8 @@ readProlineFile(
   wex = 2,
   specPref = c(conta = "_conta\\\\|", mainSpecies = "OS=Homo sapiens"),
   silent = FALSE,
-  callFrom = NULL
+  callFrom = NULL,
+  debug = FALSE
 )
 }
 \arguments{
@@ -67,6 +68,8 @@ if list and list-element has multiple values they will be used for exact matchin
 \item{silent}{(logical) suppress messages}
 
 \item{callFrom}{(character) allow easier tracking of message(s) produced}
+
+\item{debug}{(logical) display additional messages for debugging}
 }
 \value{
 list with \code{$raw} (initial/raw abundance values), \code{$quant} with final normalized quantitations, \code{$annot} (columns ), \code{$counts} an array with 'PSM' and 'NoOfPeptides', \code{$quantNotes} and \code{$notes}; or a data.frame with quantitation and annotation if \code{separateAnnot=FALSE}
@@ -82,7 +85,10 @@ The figure produced using the argument \code{plotGraph=TRUE} may help judging if
 }
 \details{
 This function has been developed using Proline version 1.6.1 coupled with MS-Angel 1.6.1. 
-The format of the exported file depends on the columns chosen for export, default settings from Proline and MS-Angel work fine.
+The classical way of using ths function consists in exporting results produced by Proline and MS-Angel as xlsx file.
+Besides, other formats may be read, too. This includes csv (eg the main sheet/table of ths xlsx exported file saved as csv). 
+\href{https://github.com/wombat-p}{WOMBAT} represents an effort to automatize quantitative proteomics experiments, using this route 
+data get exported as txt files which can be read, too.
 }
 \examples{
 path1 <- system.file("extdata", package="wrProteo")

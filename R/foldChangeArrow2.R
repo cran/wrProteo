@@ -33,10 +33,11 @@
 #' 
 #' @export
 foldChangeArrow2 <- function(FC, useComp=1, isLin=TRUE, asX=TRUE, col=2, arr=c(0.005,0.15), lwd=NULL, 
-  addText=c(line=-0.9,cex=0.7,txt="expected",loc="toright"), returnRatio=FALSE,silent=FALSE, callFrom=NULL){
+  addText=c(line=-0.9,cex=0.7,txt="expected",loc="toright"), returnRatio=FALSE, silent=FALSE, callFrom=NULL){
   ##
   .Deprecated("Please use the foldChangeArrow() function form the package wrGrpah instead !")
   fxNa <- wrMisc::.composeCallName(callFrom, newNa="foldChangeArrow2")
+  if(!isTRUE(silent)) silent <- FALSE
   figCo <- graphics::par("usr")                         #  c(x1, x2, y1, y2)
   if(all(length(FC) >1, any(c("MArrayLM","list") %in% class(FC)) )) {
     ## try working based on MArrayLM-object or list
@@ -97,10 +98,10 @@ foldChangeArrow2 <- function(FC, useComp=1, isLin=TRUE, asX=TRUE, col=2, arr=c(0
     chArr <- (arr[2] -arr[1]) > 0.05
     if(!chArr) arr[2] <- arr[1] +0.04
     ## draw arrow
-    if(asX) graphics::arrows(FC, figCo[3] + arr[1]*(figCo[4]-figCo[3]), FC, figCo[3] + arr[2]*(figCo[4]-figCo[3]), 
+    if(!isFALSE(asX)) graphics::arrows(FC, figCo[3] + arr[1]*(figCo[4]-figCo[3]), FC, figCo[3] + arr[2]*(figCo[4]-figCo[3]), 
       col=col,lwd=lwd,length=0.1) else { graphics::arrows(figCo[3] + arr[1]*(figCo[4]-figCo[3]), FC, 
       figCo[3] + arr[2]*(figCo[4]-figCo[3]), FC, col=col, lwd=lwd,length=0.1) }
-    if(returnRatio) return(FC)
+    if(isTRUE(returnRatio)) return(FC)
   } else if(!silent) message("unable to extract usable values for drawing arrow")
 }
   

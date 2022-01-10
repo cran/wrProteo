@@ -33,13 +33,18 @@
 #' tail(roc1 <- summarizeForROC(test1, spec=c("a","b","c")))
 #' 
 #' @export
-summarizeForROC <- function(test,useComp=1,tyThr="BH",thr=NULL,columnTest=NULL,FCthrs=NULL,spec=c("H","E","S"),annotCol="spec",filterMat="filter",tit=NULL,color=1,plotROC=TRUE,pch=1,bg=NULL,overlPlot=FALSE,silent=FALSE,callFrom=NULL) {
+summarizeForROC <- function(test, useComp=1, tyThr="BH", thr=NULL, columnTest=NULL, FCthrs=NULL,spec=c("H","E","S"), annotCol="spec", filterMat="filter", 
+  tit=NULL, color=1, plotROC=TRUE, pch=1,bg=NULL, overlPlot=FALSE, silent=FALSE, callFrom=NULL) {
   ## summarize esting result by species (3rd is supposed as reference)
   argN <- deparse(substitute(test))
   fxNa <- wrMisc::.composeCallName(callFrom, newNa="summarizeForROC")
   inclFilter <- TRUE     # use $filtFin
   badFCtoNA <- FALSE     # how to disqualify FC not passing filter
   ## checking
+  if(!isTRUE(silent)) silent <- FALSE
+  if(!isFALSE(plotROC)) plotROC <- TRUE
+  if(!isTRUE(overlPlot)) overlPlot  <- FALSE
+  
   if(!"annot" %in% names(test)) stop("test$annot is needed to map content of 'spec'")
   chLst <- tyThr %in% names(test)
   if(any(!chLst)) stop("Don't know what kind of test-results to use.  Can't find element '",tyThr[!chLst],"' in elements of 'test' !!")
