@@ -135,16 +135,6 @@ mat[11:15,1:6] <- mat[11:15,1:6] - 0.7
 gr3 <- gl(3,3,labels=c("C","A","B"))
 tRes2 <- moderTest2grp(mat[,1:6], gl(2,3), addResults = c("FDR","means"))
 # Note: due to the small number of lines only FDR chosen to calculate 
-VolcanoPlotW2(tRes2)
-## Add names of points passing custom filters
-VolcanoPlotW2(tRes2, FCth=1.3, FdrThrs=0.2, namesNBest="passThr")
-
-## assume 3 groups with 3 samples each
-tRes <- moderTestXgrp(mat, gr3, addResults = c("FDR","means"))
-# Note: due to the small number of lines only FDR chosen to calculate 
-VolcanoPlotW2(tRes)
-VolcanoPlotW2(tRes, FCth=1.3, FdrThrs=0.2)
-VolcanoPlotW2(tRes, FCth=1.3, FdrThrs=0.2, useComp=2)
  
 }
 \seealso{

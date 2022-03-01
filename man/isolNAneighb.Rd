@@ -24,10 +24,10 @@ isolNAneighb(
 
 \item{silent}{(logical) suppress messages}
 
-\item{callFrom}{(character) allow easier tracking of message(s) produced}
+\item{callFrom}{(character) allow easier tracking of messages produced}
 }
 \value{
-list with NA-neighbours sorted by number of NAs in replicate group
+This function returns a list with NA-neighbours sorted by number of NAs in replicate group
 }
 \description{
 This functions extracts all replicate-values where at least one of the replicates is \code{NA}. 
@@ -45,5 +45,5 @@ isolNAneighb(mat1, gr4)
 
 }
 \seealso{
-this function gets used by \code{\link{matrixNAneighbourImpute}} and \code{\link{testRobustToNAimputation}}; estimation of mode \code{\link[wrMisc]{stableMode}}; detection of NAs \code{\link[stats]{na.fail}}
+This function gets used by \code{\link{matrixNAneighbourImpute}} and \code{\link{testRobustToNAimputation}}; estimation of mode \code{\link[wrMisc]{stableMode}}; detection of NAs \code{\link[stats]{na.fail}}
 }

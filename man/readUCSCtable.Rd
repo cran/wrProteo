@@ -30,7 +30,7 @@ for the 4th (typically gene end site) will be taken the maximum, for the 5th and
 \item{callFrom}{(character) allows easier tracking of message(s) produced}
 }
 \value{
-matrix, optionally the file 'exportFileNa' may be written
+This function returns a matrix, optionally the file 'exportFileNa' may be written
 }
 \description{
 This function allows reading and importing genomic \href{https://genome.ucsc.edu/cgi-bin/hgTables}{UCSC-annotation} data.
@@ -55,5 +55,5 @@ deUniPr1 <- readUniProtExport(deUniProtFi, deUcsc=UcscAnnot1,
 deUniPr1[1:5,-5] 
 }
 \seealso{
-\code{\link{readUniProtExport}}, \code{\link{readPDExport}}, \code{\link{readMaxQuantFile}},
+\code{\link{readUniProtExport}}
 }

@@ -24,7 +24,7 @@ corColumnOrder(
 \item{callFrom}{(character) allow easier tracking of message(s) produced}
 }
 \value{
-object of same class as input \code{dat}
+This function returns an object of same class as input \code{dat}  (ie matrix, list or MArrayLM-object from limma)
 }
 \description{
 This function orders columns in list of matrixes (or matrix) according to argument \code{sampNames}. 
@@ -34,11 +34,11 @@ The input may also be MArrayLM-type object from package \href{https://bioconduct
 \examples{
 grp <- factor(rep(LETTERS[c(3,1,4)], c(2,3,3)))
 dat1 <- matrix(1:15, ncol=5, dimnames=list(NULL,c("D","A","C","E","B")))
-corColumnOrder(dat1,sampNames=LETTERS[1:5])  
+corColumnOrder(dat1, sampNames=LETTERS[1:5])  
 
 dat1 <- list(quant=dat1,raw=dat1)
   dat1
-corColumnOrder(dat1,sampNames=LETTERS[1:5]) 
+corColumnOrder(dat1, sampNames=LETTERS[1:5]) 
 }
 \seealso{
 \code{\link{moderTestXgrp}} for single comparisons, \code{\link[base]{order}}

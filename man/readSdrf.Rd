@@ -5,7 +5,8 @@
 \title{Read proteomics meta-data as sdrf file 
  
 This function allows reading proteomics meta-data from sdrf file, as they are provided on https://github.com/bigbio/proteomics-metadata-standard. 
-Thus function requires the package utils being installed.}
+Then, a data.frame with all annotation data will be returned. To stay conform with the (non-obligatory) recommendations, column-names will be shown as lower caps.  
+The package utils must be installed.}
 \usage{
 readSdrf(
   fi,
@@ -31,13 +32,14 @@ it will be searched based at the location of \code{urlPrefix}}
 \item{debug}{(logical) display additional messages for debugging}
 }
 \value{
-data.frame
+This function returns the content of Sdrf-file as data.frame
 }
 \description{
 Read proteomics meta-data as sdrf file 
  
 This function allows reading proteomics meta-data from sdrf file, as they are provided on https://github.com/bigbio/proteomics-metadata-standard. 
-Thus function requires the package utils being installed.
+Then, a data.frame with all annotation data will be returned. To stay conform with the (non-obligatory) recommendations, column-names will be shown as lower caps.  
+The package utils must be installed.
 }
 \examples{
 

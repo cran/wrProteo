@@ -5,7 +5,7 @@
 #' @param massTy (character) 'mono' or 'average'
 #' @param inPept (logical) remove H20 corresponding to water loss at peptide bond formaton
 #' @param inclSpecAA (logical) include ornithine O & selenocysteine U 
-#' @return vector with masses for all amino-acids (argument 'massTy' to switch form mono-isotopic to average mass)
+#' @return This function returns a vector with masses for all amino-acids (argument 'massTy' to switch form mono-isotopic to average mass)
 #' @seealso \code{\link{massDeFormula}}, \code{\link[wrMisc]{convToNum}}
 #' @examples
 #' massDeFormula(c("12H12O","HO"," 2H 1 Se, 6C 2N","HSeCN"," ","e"))

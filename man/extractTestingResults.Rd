@@ -45,7 +45,7 @@ extractTestingResults(
 \item{callFrom}{(character) allow easier tracking of message(s) produced}
 }
 \value{
-limma-type MA-object (list)
+This function returns a limma-type MA-object (which can be handeled like a list)
 }
 \description{
 This function allows convenient access to results produced using the functions \code{\link{moderTest2grp}} or \code{moderTestXgrp}.

@@ -28,7 +28,7 @@ countNoOfCommonPeptides(
 \item{callFrom}{(character) allows easier tracking of message(s) produced}
 }
 \value{
-list with $byPep as list of logical matrixes for each peptide (as line) and unique/shared/etc for each species; $byProt as list of matrixes with count data per proten (as line) for each species; $tab with simple summary-type count data
+This function returns a list with $byPep as list of logical matrixes for each peptide (as line) and unique/shared/etc for each species; $byProt as list of matrixes with count data per proten (as line) for each species; $tab with simple summary-type count data
 }
 \description{
 Compare in-silico digested proteomes for unique and shared peptides, counts per protein or as peptides

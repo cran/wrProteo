@@ -17,7 +17,7 @@
 #' @param useUniPrCol (character) optional declaration which colums from UniProt exported file should be used/imported (default 'EnsID','Entry','Entry.name','Status','Protein.names','Gene.names','Length').
 #' @param silent (logical) suppress messages
 #' @param callFrom (character) allows easier tracking of message(s) produced
-#' @return data.frame (with columns $EnsID, $Entry, $Entry.name, $Status, $Protein.names, $Gene.names, $Length; if \code{deUcsc} is integrated plus: $chr, $type, $start, $end, $score, $strand, $Ensrnot, $avPos) 
+#' @return This function returns a data.frame (with columns $EnsID, $Entry, $Entry.name, $Status, $Protein.names, $Gene.names, $Length; if \code{deUcsc} is integrated plus: $chr, $type, $start, $end, $score, $strand, $Ensrnot, $avPos) 
 #' @seealso \code{\link{readUCSCtable}}
 #' @examples
 #' path1 <- system.file("extdata",package="wrProteo")
@@ -46,13 +46,13 @@ readUniProtExport <- function(UniProtFileNa, deUcsc=NULL, targRegion=NULL, useUn
   if(!chFi) stop(" file '",UniProtFileNa,"' not found !")
   chExt <- length(grep("\\.gz$", UniProtFileNa, fixed=FALSE, perl=FALSE)) >0  
   chPa <- try(find.package("utils"),silent=TRUE)
-  if("try-error" %in% class(chPa)) stop("package 'utils' not found ! Please install first")   
+  if(inherits(chPa, "try-error")) stop("package 'utils' not found ! Please install first")   
   ## main  
   deUniProt <- try(utils::read.delim(UniProtFileNa,stringsAsFactors=FALSE), silent=TRUE)
   errMsg1 <- " seems not to be in UniProt 'tab-separated' format (does not contain sufficent number of columns) !"
-  if("try-error" %in% class(deUniProt)) { 
+  if(inherits(deUniProt, "try-error")) { 
     deUniProt <- try(wrMisc::readVarColumns(if(chExt) unz(UniProtFileNa) else UniProtFileNa,callFrom=fxNa), silent=TRUE)
-    if("try-error" %in% class(deUniProt)) stop("Can't read file '",UniProtFileNa,"' - please check format !") else {
+    if(inherits(deUniProt, "try-error")) stop("Can't read file '",UniProtFileNa,"' - please check format !") else {
       if(!silent) message(fxNa," Managed to read file using readVarColumns()") }
     if(ncol(deUniProt) <9) stop("file ",UniProtFileNa,errMsg1)  
     colnames(deUniProt)[1:9] <- c("EnsTraID","xx","UniprotID",colnames(deUniProt)[c(2:7)])  # initial colnames by readVarColumns are shifted    

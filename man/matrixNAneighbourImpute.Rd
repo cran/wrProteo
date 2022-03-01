@@ -55,19 +55,19 @@ matrixNAneighbourImpute(
 
 \item{silent}{(logical) suppress messages}
 
-\item{callFrom}{(character) allow easier tracking of message(s) produced}
+\item{callFrom}{(character) allow easier tracking of messages produced}
 
 \item{debug}{(logical) supplemental messages for debugging}
 }
 \value{
-list with \code{$data} .. matrix of data where \code{NA} are replaced by imputed values, \code{$nNA} .. number of \code{NA} by group, \code{$randParam} .. parameters used for making random data
+This function returns a list with \code{$data} .. matrix of data where \code{NA} are replaced by imputed values, \code{$nNA} .. number of \code{NA} by group, \code{$randParam} .. parameters used for making random data
 }
 \description{
 It is assumed that \code{NA}-values appear in data when quantitation values are very low (as this appears eg in quantitative shotgun proteomics). 
 Here, the concept of (technical) replicates is used to investigate what kind of values appear in the other replicates next to NA-values for the same line/protein.
 Groups of replicate samples  are defined via argument \code{gr} which descibes the columns of \code{dat}). 
 Then, they are inspected for each line to gather NA-neighbour values (ie those values where NAs and regular measures are observed the same time).
-Eg, let's consider a line contains a set of 4 replicates. Now, if 2 of them are \code{NA}-values, the remaining 2 non-\code{NA}-values will be considered as NA-neighbours.
+Eg, let's consider a line contains a set of 4 replicates for a given group. Now, if 2 of them are \code{NA}-values, the remaining 2 non-\code{NA}-values will be considered as NA-neighbours.
 Ultimately, the aim is to replaces all \code{NA}-values based on values from a normal distribution ressembling theire respective NA-neighbours.
 }
 \details{
@@ -109,5 +109,5 @@ datT6b <- matrixNAneighbourImpute(datT6, gr=gl(2,3))
 head(datT6b$data)
 }
 \seealso{
-this function gets used by \code{\link{testRobustToNAimputation}}; stimation of mode \code{\link[wrMisc]{stableMode}}; detection of NAs \code{\link[stats]{na.fail}}
+this function gets used by \code{\link{testRobustToNAimputation}}; estimation of mode \code{\link[wrMisc]{stableMode}}; detection of NAs \code{\link[stats]{na.fail}}
 }

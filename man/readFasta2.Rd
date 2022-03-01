@@ -5,12 +5,13 @@
 \title{Read file of protein sequences in fasta format
   
 Read fasta formatted file (from \href{https://www.uniprot.org}{UniProt}) to extract (protein) sequences and name.
-If \code{tableOut=TRUE} output may be organized as matrix for separating meta-annotation (eg GeneName, OrganismName, ProteinName) in separate columns.}
+If \code{tableOut=TRUE} output may be organized as matrix for separating meta-annotation (eg uniqueIdentifier, entryName, proteinName, GN) in separate columns.}
 \usage{
 readFasta2(
   filename,
   delim = "|",
   databaseSign = c("sp", "tr", "generic", "gi"),
+  removeEntries = NULL,
   tableOut = FALSE,
   UniprSep = c("OS=", "OX=", "GN=", "PE=", "SV="),
   cleanCols = TRUE,
@@ -24,7 +25,9 @@ readFasta2(
 
 \item{delim}{(character) delimeter at header-line}
 
-\item{databaseSign}{(character) characters at beginning right afetr the '>' (typically specifying the data-base-origin), they will be excluded from the sequance-header}
+\item{databaseSign}{(character) characters at beginning right after the '>' (typically specifying the data-base-origin), they will be excluded from the sequance-header}
+
+\item{removeEntries}{(character) if \code{'empty'} allows removing entries without any sequence entries; set to \code{'duplicated'} to remove duplicate entries (same sequence and same header)}
 
 \item{tableOut}{(logical) toggle to return named character-vector or matrix with enhaced parsing of fasta-header. The resulting matrix will contain the comumns 'database','uniqueIdentifier','entryName','proteinName','sequence' and further columns depending on argument \code{UniprSep}}
 
@@ -34,18 +37,18 @@ readFasta2(
 
 \item{silent}{(logical) suppress messages}
 
-\item{callFrom}{(character) allows easier tracking of message(s) produced}
+\item{callFrom}{(character) allows easier tracking of messages produced}
 
 \item{debug}{(logical) supplemental messages for debugging}
 }
 \value{
-return (based on 'tableOut') simple character vector (of sequence) with Uniprot ID as name or matrix with columns: 'database','uniqueIdentifier','entryName','proteinName','sequence' and further columns depending on argument \code{UniprSep}
+This function returns (depending on parameter \code{tableOut}) a) a simple character vector (of sequence) with Uniprot ID as name or b) a matrix with columns: 'database','uniqueIdentifier','entryName','proteinName','sequence' and further columns depending on argument \code{UniprSep}
 }
 \description{
 Read file of protein sequences in fasta format
   
 Read fasta formatted file (from \href{https://www.uniprot.org}{UniProt}) to extract (protein) sequences and name.
-If \code{tableOut=TRUE} output may be organized as matrix for separating meta-annotation (eg GeneName, OrganismName, ProteinName) in separate columns.
+If \code{tableOut=TRUE} output may be organized as matrix for separating meta-annotation (eg uniqueIdentifier, entryName, proteinName, GN) in separate columns.
 }
 \examples{
 # tiny example with common contaminants 
@@ -57,5 +60,5 @@ fasta2 <- readFasta2(file.path(path1,fiNa),tableOut=TRUE)
 str(fasta1)
 }
 \seealso{
-\code{\link[base]{scan}} or  \code{read.fasta} from the package \href{https://CRAN.R-project.org/package=seqinr}{seqinr}
+\code{\link{writeFasta2}} for writing as fasta, or for reading \code{\link[base]{scan}} or  \code{read.fasta} from the package \href{https://CRAN.R-project.org/package=seqinr}{seqinr}
 }

@@ -9,9 +9,9 @@
 #' @param maxHi (integer) maximum count of NAs to consider separately (higher ones will be counted/pooled as maxHi)
 #' @param iniCheck (logical) check at beginning if executing this function is useful (presence any \code{NA})
 #' @param silent (logical) suppress messages
-#' @param callFrom (character) allow easier tracking of message(s) produced
-#' @return list with NA-neighbours sorted by number of NAs in replicate group
-#' @seealso this function gets used by \code{\link{matrixNAneighbourImpute}} and \code{\link{testRobustToNAimputation}}; estimation of mode \code{\link[wrMisc]{stableMode}}; detection of NAs \code{\link[stats]{na.fail}}
+#' @param callFrom (character) allow easier tracking of messages produced
+#' @return This function returns a list with NA-neighbours sorted by number of NAs in replicate group
+#' @seealso This function gets used by \code{\link{matrixNAneighbourImpute}} and \code{\link{testRobustToNAimputation}}; estimation of mode \code{\link[wrMisc]{stableMode}}; detection of NAs \code{\link[stats]{na.fail}}
 #' @examples
 #' mat1 <- c(22.2, 22.5, 22.2, 22.2, 21.5, 22.0, 22.1, 21.7, 21.5, 22, 22.2, 22.7,
 #'   NA, NA, NA, NA, NA, NA, NA, 21.2,   NA, NA, NA, NA,
@@ -31,16 +31,19 @@ isolNAneighb <- function(mat, gr, maxHi=3, iniCheck=TRUE, silent=FALSE, callFrom
   msg <- NULL
   if(!isTRUE(silent)) silent <- FALSE
   if(any(length(mat) <1, length(dim(mat)) !=2, dim(mat) < c(2,1))) { datOK <- FALSE
-    msg <- "'mat' should be matrix or data.frame with min 2 rows & 1 col , nothing to do, return NULL"}
+    msg <- "'mat' should be matrix or data.frame with min 2 rows & 1 column, nothing to do, return NULL"}
   if(length(gr) !=ncol(mat)) { datOK <- FALSE
-    msg <- "length of 'gr' must match number of columns in 'mat', nothing to do, return NULL" } 
-  
+    msg <- "Length of 'gr' must match number of columns in 'mat', nothing to do, return NULL" } 
+  if(length(unique(gr))==length(gr)) { datOK <- FALSE
+    if(!silent) message(fxNa,"No replicates, can't isolate NA-neighbours") }
   if(datOK) {
     NAneig <- lapply(1:maxHi, function(x) NULL)         # initialize
     names(NAneig) <- paste0("n", 1:maxHi)
     chNa <- if(!isFALSE(iniCheck)) is.na(mat) else TRUE
     if(!any(chNa)) { return(NAneig)
-    } else { for(i in wrMisc::naOmit(unique(gr))) {
+    } else { 
+      ii <- table(wrMisc::naOmit(gr))              # run only on data with replicate columns
+      for(i in names(ii)[which(ii >0)]) {
       tmp <- mat[,which(gr==i)]
       nNA <- rowSums(is.na(tmp))
       chHi <- nNA > maxHi & nNA < ncol(tmp)

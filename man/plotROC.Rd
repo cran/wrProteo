@@ -69,7 +69,7 @@ plotROC(
 \item{callFrom}{(character) allows easier tracking of messages produced}
 }
 \value{
-plot with ROC curves only
+This function returns only a plot with ROC curves
 }
 \description{
 \code{plotROC} plots ROC curves based on results from \code{\link{summarizeForROC}}. 

@@ -7,12 +7,12 @@
 #' @param rmEmpty (logical) suppress empty entries
 #' @param silent (logical) suppress messages
 #' @param callFrom (character) allow easier tracking of messages produced
-#' @return numeric vector with mass
+#' @return This function returns a numeric vector with mass
 #' @seealso \code{\link[wrMisc]{convToNum}}
 #' @examples
 #' massDeFormula(c("12H12O","HO"," 2H 1 Se, 6C 2N","HSeCN"," ","e"))
 #' @export
-massDeFormula <- function(comp,massTy="mono",rmEmpty=FALSE,silent=FALSE,callFrom=NULL){
+massDeFormula <- function(comp, massTy="mono", rmEmpty=FALSE, silent=FALSE, callFrom=NULL){
   ## calculate molecular mass based on composition formula (sum formula: number & element)
   ## 'comp' .. character vector with molecular composition(s)
   ##
@@ -21,7 +21,7 @@ massDeFormula <- function(comp,massTy="mono",rmEmpty=FALSE,silent=FALSE,callFrom
     if(!silent) message(fxNa,sum(is.na(comp))," entries of 'comp' are NA  (remove) !")
     comp <- comp[wrMisc::naOmit(match(wrMisc::naOmit(comp), comp))] }
   ## rm NAsclean heading space, 
-  comp <- gsub("^ +","",gsub(" +$","",comp))
+  comp <- gsub("^ +","", gsub(" +$","",comp))
   if(rmEmpty) {
     if(any(comp=="")) {
       if(!silent) message(fxNa,sum(comp=="")," some entries of 'comp' are empty  (remove) !")
@@ -62,7 +62,7 @@ massDeFormula <- function(comp,massTy="mono",rmEmpty=FALSE,silent=FALSE,callFrom
     form[corEl] <- lapply(form[corEl], function(x) {x[which(x[,2] %in% nonIdEl),1] <- "0"; x})
   }
   mass <- sapply(form,function(x) sum(as.numeric(x[,1])*atMa[match(x[,2],names(atMa))]))
-  names(mass) <- sapply(form,function(x) paste(paste(x[,1],x[,2],sep=""),collapse=""))
+  names(mass) <- sapply(form,function(x) paste(paste0(x[,1],x[,2]),collapse=""))
   chNa <- names(mass) =="0z"
   if(any(chNa)) {y <- which(chNa); mass[y] <- 0; names(mass)[y] <- ""}
   mass }

@@ -17,8 +17,8 @@
 #'  for the 4th (typically gene end site) will be taken the maximum, for the 5th and 6th a representative values will be reported;  
 #' @param silent (logical) suppress messages
 #' @param callFrom (character) allows easier tracking of message(s) produced
-#' @return matrix, optionally the file 'exportFileNa' may be written
-#' @seealso \code{\link{readUniProtExport}}, \code{\link{readPDExport}}, \code{\link{readMaxQuantFile}},
+#' @return This function returns a matrix, optionally the file 'exportFileNa' may be written
+#' @seealso \code{\link{readUniProtExport}}
 #' @examples
 #' path1 <- system.file("extdata", package="wrProteo")
 #' gtfFi <- file.path(path1, "UCSC_hg38_chr11extr.gtf.gz")
@@ -37,17 +37,18 @@ readUCSCtable <- function(fiName, exportFileNa=NULL, gtf=NA, simplifyCols=c("gen
   fxNa <- wrMisc::.composeCallName(callFrom, newNa="readUCSCtable")
   if(length(fiName) >1) fiName <- fiName[1] else {if(length(fiName) < 1) stop(" argument 'fiName' seems empty")}
   chFi <- file.exists(fiName)
-  if(!chFi) stop(" file '",fiName,"' not found ! (maybe you are not pointing to the correct direcory ?)")
+  if(!chFi) stop(" File '",fiName,"' not found ! (maybe you are not pointing to the correct direcory ?)")
   chPa1 <- try(find.package("utils"), silent=TRUE)
   chPa2 <- try(find.package("R.utils"), silent=TRUE)
-  if("try-error" %in% class(chPa1)) stop(fxNa,"package 'utils' not found ! Please install first ..")     
+  if(inherits(chPa1, "try-error")) stop(fxNa,"Package 'utils' not found ! Please install first ..")     
+
   ## check/find out if file is gtf
   if(is.na(gtf)) {                           # try to guess/check if gtf=TRUE
     gtfColNa <- c("#bin	name","chrom","strand","txStart","txEnd","cdsStart","cdsEnd","exonCount","exonStarts","exonEnds","score","name2",
       "cdsStartStat","cdsEndStat","exonFrame","#chrom","chromStart","chromEnd","score","thickStart","thickEnd","match","misMatch","repMatch",
       "nCount","acc","status","ensGene","ensTrans")
     tmp <- try(utils::read.table(fiName, header=FALSE, stringsAsFactors=FALSE, nrows=7))
-    if("try-error" %in% class(tmp)) {
+    if(inherits(tmp, "try-error")) {
       gtf <- length(grep("\\.gtf$|\\.gtf\\.gz$", tolower(basename(fiName)))) >0
       if(!silent) message(fxNa," Quick guess by file-name if compressed file '",basename(fiName),"' is gtf : ",gtf)
     } else {
@@ -55,29 +56,28 @@ readUCSCtable <- function(fiName, exportFileNa=NULL, gtf=NA, simplifyCols=c("gen
       if(!silent) message(fxNa," File '",basename(fiName),"' is gtf : ",gtf)
     }
   }
-  if("try-error" %in% class(chPa2)) {        # R.utils not available for reliable test if file is gz zipped
-    if(!silent) message(fxNa," package 'R.utils' not available, assuming by file-extension if file is gz-compressed")
+  if(inherits(chPa2, "try-error")) {                # R.utils not available for reliable test if file is gz zipped
+    if(!silent) message(fxNa," Package 'R.utils' not available, assuming by file-extension if file is gz-compressed")
     chGz <- length(grep("\\.gz$", tolower(fiName))) >0 
   } else chGz <- R.utils::isGzipped(fiName)
   ## main reading
   ensG1 <- try(utils::read.table(fiName, header=!gtf, stringsAsFactors=FALSE))
-  if("try-error" %in% class(chFi)) {
+  if(inherits(chFi, "try-error")) {
     ## try other format ? ... use wrMisc::readVarColumns()
     errMsg <- "' - please check format or see if file is readable"
     if(chGz) {                                     # need to decompress first : copy to tempdir, uncompress, read      
-      if("try-error" %in% class(chPa2)) stop(fxNa," Package 'R.utils' for decompressing .gz not found ! Please install first or decompress file ",fiName," manually ..")    
+      if(inherits(chPa2, "try-error")) stop(fxNa," Package 'R.utils' for decompressing .gz not found ! Please install first or decompress file ",fiName," manually ..")  
       file.copy(fiName, file.path(tempdir(),basename(fiName)))
       ## decompress      
       tmp <- try(R.utils::gunzip(file.path(tempdir(),basename(fiName))), silent=TRUE)
-      if("try-error" %in% class(tmp)) stop(" Failed to decompress file ", fiName)
+      if(inherits(tmp, "try-error")) stop(" Failed to decompress file ", fiName)
       ## read 
       if(!silent) message(fxNa," try reading decompressed file using readVarColumns() ...") 
-      ensG1 <- try(wrMisc::readVarColumns(file.path(tempdir(),basename(fiName), header=!gtf, silent=silent, callFrom=fxNa), silent=TRUE, callFrom=fxNa))
-      if("try-error" %in% class(ensG1)) stop("Can't read file '",fiName,errMsg)
+      ensG1 <- try(wrMisc::readVarColumns(file.path(tempdir(),basename(fiName)), header=!gtf, silent=silent, callFrom=fxNa, callFrom=fxNa), silent=TRUE)
       rmFi <- file.path(tempdir(), c(basename(fiName), sub("\\.gz$","",basename(fiName))))
       sapply(rmFi,function(x) if(file.exists(x)) file.remove(x))              # clean up files
     } else ensG1 <- try(wrMisc::readVarColumns(fiName, header=!gtf, silent=silent, callFrom=fxNa), silent=TRUE)
-    if("try-error" %in% class(ensG1)) stop(" Could not succed to read file '",basename(fiName),errMsg)  
+    if(inherits(ensG1, "try-error")) stop(" Could not succed to read file '",basename(fiName),errMsg) 
   }
   ## correct colnames, export ENSG if available  
   if(gtf) {
@@ -100,7 +100,7 @@ readUCSCtable <- function(fiName, exportFileNa=NULL, gtf=NA, simplifyCols=c("gen
   if(!any(chG)) {
     ## try to use the columns wo colnames as 'gene_id'
     NAcol <- colnames(ensG1) %in% "NA" | is.na(colnames(ensG1))
-    if(any(NAcol)) { chGeId <- which.max(apply(utils::head(ensG1),2, function(x) sum(x==simplifyCols[1])))
+    if(any(NAcol)) { chGeId <- which.max(apply(utils::head(ensG1), 2, function(x) sum(x==simplifyCols[1])))
       if(length(chGeId) >0 & chGeId[1] +1 %in% which(NAcol)) colnames(ensG1)[chGeId[1] +1] <- simplifyCols[1] else {
         if(!silent) message(fxNa," failed to locate column to use as '",simplifyCols[1],"'")}      
   } }

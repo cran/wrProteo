@@ -60,8 +60,29 @@ fasta1 <- readFasta2(file.path(path1,fiNa))
 str(fasta1)
 
 ## now let's read and further separate details in annotation-fields
-fasta1det <- readFasta2(file.path(path1,fiNa), tableOut=TRUE)
-str(fasta1det)
+fasta1b <- readFasta2(file.path(path1,fiNa), tableOut=TRUE)
+str(fasta1b)
+
+## ----treatFasta1, echo=TRUE---------------------------------------------------
+
+dupEntry <- duplicated(fasta1)
+
+table(dupEntry)
+
+
+## ----treatFasta2, echo=TRUE---------------------------------------------------
+fasta3 <- fasta1[which(!dupEntry)]
+
+length(fasta3)
+
+## ----writeFasta, echo=TRUE, eval=FALSE----------------------------------------
+#  writeFasta2(fasta3, fileNa="testWrite.fasta")
+
+## ----metaData1, echo=TRUE-----------------------------------------------------
+## Read meta-data from  github.com/bigbio/proteomics-metadata-standard/
+pxd001819meta <- readSdrf("PXD001819")
+
+str(pxd001819meta)
 
 ## ----readMaxQuant1, fig.height=8, fig.width=9.5, fig.align="center", echo=TRUE----
 path1 <- system.file("extdata", package="wrProteo")
@@ -78,12 +99,6 @@ UPSconc <- c(50,125,250,500,2500,5000,12500,25000,50000)
 sampNa <- paste0(rep(UPSconc, each=3),"amol_",rep(1:3,length(UPSconc))) 
 grp9 <- paste0(rep(UPSconc,each=3),"amol") 
 head(grp9)
-
-## ----metaData1, echo=TRUE-----------------------------------------------------
-## Read meta-data from  github.com/bigbio/proteomics-metadata-standard/
-pxd001819meta <- readSdrf("PXD001819")
-
-str(pxd001819meta)
 
 ## ----NA_MaxQuant, echo=TRUE---------------------------------------------------
 ## Let's inspect NA values as graphic

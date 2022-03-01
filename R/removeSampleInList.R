@@ -8,7 +8,7 @@
 #' @param listElem (character) names of list-elements where columns indicated with 'remSamp' should be removed
 #' @param silent (logical) suppress messages
 #' @param callFrom (character) allows easier tracking of messages produced
-#' @return matrix including imputed values or list of final and matrix with number of imputed by group (plus optional plot)
+#' @return This function returns a matrix including imputed values or list of final and matrix with number of imputed by group (plus optional plot)
 #' @seealso \code{\link{testRobustToNAimputation}}  
 #' @examples
 #' set.seed(2019)
@@ -26,7 +26,7 @@ removeSampleInList <- function(dat, remSamp, listElem=c("abund","quant"), silent
   if(length(dat) >0 & is.list(dat)) datOK <- TRUE
   if(datOK) {  
     chLst <- listElem %in% names(dat)
-    if(sum(chLst) <1) stop("can't find any of the list-elements defined in 'listElem' - nothing to do")
+    if(sum(chLst) <1) stop("Can't find any of the list-elements defined in 'listElem' - nothing to do")
     listElem <- listElem[which(chLst)]
     remSamp <- wrMisc::convToNum(remSamp)
     chRm <- 1:ncol(dat$quant) %in% remSamp

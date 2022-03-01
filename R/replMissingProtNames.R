@@ -10,7 +10,7 @@
 #'   column where empty fields are searched and the 2nd and (optional) 3rd will be used to fill the empty spots in the st column
 #' @param silent (logical) suppress messages
 #' @param callFrom (character) allow easier tracking of message(s) produced
-#' @return list as input, but with missing elments of $annot completed (if available in other columns) 
+#' @return This function returns a list (like as input), but with missing elments of $annot completed (if available in other columns) 
 #' @seealso \code{\link{readMaxQuantFile}}, \code{\link{readProtDiscovFile}}, \code{\link{readProlineFile}} 
 #' @examples
 #' dat <- list(quant=matrix(sample(11:99,9,replace=TRUE), ncol=3), annot=cbind(EntryName=c(

@@ -16,13 +16,11 @@ AucROC(dat, useCol = c("spec", "sens"), silent = FALSE, callFrom = NULL)
 \item{callFrom}{(character) allows easier tracking of message(s) produced}
 }
 \value{
-matrix including imputed values or list of final and matrix with number of imputed by group (plus optional plot)
+This functio returns a matrix including imputed values or list of final and matrix with number of imputed by group (plus optional plot)
 }
 \description{
 This function calculates the AUC (area under the curve) from ROC data in matrix of specificity and sensitivity values,
 as provided in the output from  \code{\link{summarizeForROC}}.
-Note that numerous other packages also provide support for working with ROC-curves : Eg \href{https://CRAN.R-project.org/package=dlstats}{rocPkgShort}, 
- \href{https://CRAN.R-project.org/package=ROCR}{ROCR}, \href{https://CRAN.R-project.org/package=pROC}{pROC} or \href{https://CRAN.R-project.org/package=ROCit}{ROCit}
 }
 \examples{
 set.seed(2019); test1 <- list(annot=cbind(spec=c(rep("b",35),letters[sample.int(n=3,
@@ -31,5 +29,7 @@ roc1 <- summarizeForROC(test1,spec=c("a","b","c"))
 AucROC(roc1)
 }
 \seealso{
-preparing ROC data \code{\link{summarizeForROC}}, (re)plot the ROC figure \code{\link{plotROC}}
+preparing ROC data \code{\link{summarizeForROC}}, (re)plot the ROC figure \code{\link{plotROC}};   
+  note that numerous other packages also provide support for working with ROC-curves : Eg \href{https://CRAN.R-project.org/package=dlstats}{rocPkgShort}, 
+   \href{https://CRAN.R-project.org/package=ROCR}{ROCR}, \href{https://CRAN.R-project.org/package=pROC}{pROC} or \href{https://CRAN.R-project.org/package=ROCit}{ROCit}
 }

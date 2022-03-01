@@ -17,6 +17,7 @@ vignette: >
 
 
 ## Introduction
+
 This package contains a collection of various tools for Proteomics used at the [proteomics platform](https://proteomics.igbmc.fr/) of the [IGBMC](https://www.igbmc.fr/). 
 To get started, we need to load the packages "[wrMisc](https://CRAN.R-project.org/package=wrMisc)" and 
 this package ([wrProteo](https://CRAN.R-project.org/package=wrProteo)), both are available from CRAN.
@@ -120,8 +121,9 @@ convAASeq2mass(pep1, seqN=FALSE)
 
 
 ## Reading Fasta Files (from Uniprot)
+
 This package contains a parser for Fasta-files allowing to separate different fields of meta-data like IDs, Name and Species.
-Here we will read a tiny example fasta-file obtained from a collection of typical contaminants in proteomics.
+Here we will read a tiny example fasta-file obtained from a collection of typical contaminants in proteomics using `readFasta2()`.
 
 ```{r readFasta, echo=TRUE}
 path1 <- system.file('extdata', package='wrProteo')
@@ -131,8 +133,37 @@ fasta1 <- readFasta2(file.path(path1,fiNa))
 str(fasta1)
 
 ## now let's read and further separate details in annotation-fields
-fasta1det <- readFasta2(file.path(path1,fiNa), tableOut=TRUE)
-str(fasta1det)
+fasta1b <- readFasta2(file.path(path1,fiNa), tableOut=TRUE)
+str(fasta1b)
+```
+
+Now we can check if for instance some entries appear twice. 
+
+```{r treatFasta1, echo=TRUE}
+
+dupEntry <- duplicated(fasta1)
+
+table(dupEntry)
+
+```
+
+Let's remove the duplicated entry.
+```{r treatFasta2, echo=TRUE}
+fasta3 <- fasta1[which(!dupEntry)]
+
+length(fasta3)
+```
+
+
+
+
+## Writing Sequences As Fasta Files
+
+Once we have modified a fasta we might want to save it again as fasta-formatted file.
+This can be done using `writeFasta2()`.
+
+```{r writeFasta, echo=TRUE, eval=FALSE}
+writeFasta2(fasta3, fileNa="testWrite.fasta")
 ```
 
 .
@@ -173,6 +204,30 @@ Technical replicates are very frequently produced in proteomics, they allow to a
 Biological replicates, however, make additional information accessible, allowing the interpretation of experiments in a more general way.
 
 
+## Meta-Data (SDRF Format) 
+
+Before importing quantification results, let's try to gather information about the experimental setup :
+
+The project [Proteomics Sample Metadata Format](https://github.com/bigbio/proteomics-metadata-standard) aims to provide a framework 
+of providing a uniform format for documenting experimental meta-data (sdrf-format).
+The meta-data for experiments already integrated can be directly read/accessed from [wrProteo](https://CRAN.R-project.org/package=wrProteo).
+
+Either you download the meta-data as file 'sdrf.tsv' from [Pride/PXD001819](https://www.ebi.ac.uk/pride/archive/projects/PXD001819), or you may read it directly from [github/bigbio](https://github.com/bigbio/proteomics-metadata-standard/blob/master/annotated-projects/PXD001819/PXD001819.sdrf.tsv).
+If your dataset has been added to github, you don't necessarily need to copy/paste the full path, you only need the main [PRIDE](https://www.ebi.ac.uk/pride/) accession number, `readSdrfAnnot` can compose the full url for you.
+
+
+```{r metaData1, echo=TRUE}
+## Read meta-data from  github.com/bigbio/proteomics-metadata-standard/
+pxd001819meta <- readSdrf("PXD001819")
+
+str(pxd001819meta)
+```
+The **second vignette** (entitled "**UPS1 spike-in Experiments**") to this package shows more details how this information can be used to in further analysis.
+
+
+
+## Import From Dedicated Quantification Algorithms/Software
+
 ### Data From MaxQuant
 
 [MaxQuant](https://www.maxquant.org) is free software provided by the [Max-Planck-Institute](https://www.biochem.mpg.de/de), 
@@ -210,7 +265,7 @@ head(grp9)
 #### Data From ProteomeDiscoverer
 
 [Proteome Discoverer](https://www.thermofisher.com/order/catalog/product/OPTON-30812) is commercial software from ThermoFisher (www.thermofisher.com).
-Data exported from [Proteome Discoverer](https://www.thermofisher.com/order/catalog/product/OPTON-30812) can get imported (typically the xx_Proteins.txt file) using `readProtDiscovFile()`, for details please see the vignette "UPS-1 spike-in Experiments" to this package. 
+Data exported from [Proteome Discoverer](https://www.thermofisher.com/order/catalog/product/OPTON-30812) can get imported (typically the *xx_Proteins.txt* file) using `readProtDiscovFile()`, for details please see the vignette "UPS-1 spike-in Experiments" to this package. 
 
 
 #### Data From Proline
@@ -231,24 +286,6 @@ Data exported as csv get summarized from peptide to protein level and further no
 [MassChroQ](http://pappso.inrae.fr/bioinfo/masschroq/) is free open software provided by the [PAPPSO](http://pappso.inrae.fr), 
 see [Valot et al 2011](https://doi.org/10.1002/pmic.201100120).
 Inital quantifications are on peptide basis and should be normalized and summarized using the R-package MassChroqR, which is also distributed by the [PAPPSO](http://pappso.inrae.fr/bioinfo/). Quantifications at protein-level can be saved as matrix into an RData-file or written to tsv,csv or txt files for following import into the framework of this package using `readMassChroQFile()`, for details please see the help-page to this function. 
-
-
-## Meta-Data (sdrf format) 
-
-The project [Proteomics Sample Metadata Format](https://github.com/bigbio/proteomics-metadata-standard) aims to provide a framework 
-of providing a uniform format for documenting experimental meta-data (ie the sdrf-format).
-A few experiments have already been integrated there and can be directly accessed from [wrProteo](https://CRAN.R-project.org/package=wrProteo).
-You don't necessarily need to copmy/pase the full path, you only need the main [PRIDE](https://www.ebi.ac.uk/pride/) accession number, `readSdrfAnnot` can compose the full url for you.
-
-For this specific example the meta-data can be found as [https://github.com/bigbio/proteomics-metadata-standard/blob/master/annotated-projects/PXD001819/PXD001819.sdrf.tsv](https://github.com/bigbio/proteomics-metadata-standard/blob/master/annotated-projects/PXD001819/PXD001819.sdrf.tsv).
-
-```{r metaData1, echo=TRUE}
-## Read meta-data from  github.com/bigbio/proteomics-metadata-standard/
-pxd001819meta <- readSdrf("PXD001819")
-
-str(pxd001819meta)
-```
-The second vignette (entitled "UPS1 spike-in Experiments") to this package shows more details how this information can be used to in further analysis.
 
 
 
@@ -387,6 +424,13 @@ In principle one could also run PCA along the rows, ie the proteins, but their n
 
 In the context of high throughput experiments, like proteomics, PCA allows to distinguish important information how the different samples are related (ie similar). This covers of course the real differences between different biological conditions, but also additional bias introduced as (technical) artifacts. Thus, such plots serve as well for quality control (in particular to identify outlyer-samples, eg due to degraded material) as well as for the biological interpretation.
 
+Normally one could immediately check the normalized data by PCA before running statistical tests. 
+As stated in other places, PCA can't handle missing values (ie _NA_s). 
+Thus, all proteins having one NA in just one sample won't be considered during PCA. 
+This would mask a significant number of proteins in numerous of proteomics experiments. 
+Thus, it may be preferable to run PCA after NA-imputation.
+However, since in this package statistical testing was coupled to the repeated NA-imputation, it may be better to use the NA-imputations made for the statistical testing (in the section above).
+
 Here we'll use the function `plotPCAw()` form the package [wrGraph](https://CRAN.R-project.org/package=wrGraph)
 
 ```{r PCA1MQ, fig.height=12, fig.width=9.5, fig.align="center", echo=TRUE}
@@ -407,6 +451,7 @@ We'll use the function `MAplotW()` from the package [wrGraph](https://CRAN.R-pro
 MAplotW(testMQ)
 ```
 
+#####
 
 Now for the second group of pair-wise comparisons, plus adding names of proteins passing threshold:
 ```{r MAplot2, fig.height=6.5, fig.width=9.5, fig.align="center", echo=TRUE}
@@ -416,7 +461,7 @@ MAplotW(testMQ, useComp=2, namesNBest="passFC")
 
 ## Volcano-Plot
 
-A [Volcano-plot](https://en.wikipedia.org/wiki/Volcano_plot_(statistics) allows to compare the simple fold-change (FC) opposed to the outcome of a statistcal test.
+A [Volcano-plot](https://en.wikipedia.org/wiki/Volcano_plot_\(statistics\)) allows to compare the simple fold-change (FC) opposed to the outcome of a statistcal test.
 Frequently we can obsereve, that a some proteins show very small FC but enthousiastic p-values and subsequently enthousiastic FDR-values.
 However, generally such proteins with so small FC don't get considered as reliable results, therefore it is common practice to add an additional FC-threshold,
 typically a 1.5 or 2 fold-change. 
@@ -471,7 +516,7 @@ Such a list of significant proteins from a given project could be tested lateron
 There are multiple tools available on [Bioconductor](https://www.bioconductor.org/) and [CRAN](https://cran.r-project.org/) as well as outside of R to perform such analysis tasks.
 
 In case of UPS1 spike-in experiments the subsequent analysis is different. 
-Suggestions for in depth-analysis of UPS1 spike-in are shown in the vignette 'UPS-1 spike-in Experiments' of [this package](https://CRAN.R-project.org/package=wrProteo).
+Suggestions for in depth-analysis of UPS1 spike-in are shown in the **vignette 'UPS-1 spike-in Experiments'** of [this package](https://CRAN.R-project.org/package=wrProteo).
  
 .
 
@@ -480,7 +525,7 @@ Suggestions for in depth-analysis of UPS1 spike-in are shown in the vignette 'UP
 
 # Protein Annotation
 
-In most 'Omics' acitivities getting additional annotation may get sometimes a bit tricky.
+In most 'Omics' activities getting additional annotation may get sometimes a bit tricky.
 In Proteomics most mass-spectrometry software will use the informaton provided in the Fasta-file as annotation (typically as provided from UniProt).
 But this lacks for example chromosomal location information.
 There are are many repositories with genome-, gene- and protein-annotation and most of them are linked, but sometimes the links get broken when 
@@ -489,13 +534,16 @@ may be (slightly) not up to date (sometimes gene- or protein-IDs do change or ma
 
 Globally two families of strategies for adding annotation exist :
 
-a) Strategies using online-based ressources for getting the most up-to-date information/annotation (like BioMart). 
+a) Strategies using online-based ressources for getting the most up-to-date information/annotation (like [biomaRt](https://bioconductor.org/packages/release/bioc/html/biomaRt.html)). 
 Despite the advantage of most up-to-date information there may be some downsides :
-Interogating databases may require more time to run all queries via interet-connections and this strategy is vulnerable to broken links (eg linked to the delay of updates between different types of databases that may need to get combined). Furthermore, the results typically change a bit when the queries get repeated. In this case one should rather search version-numbers for the specific queries.
-When combining multiple interconnected ressources it may be very difficult to document the precise version of all individual ressources used.
+Interogating databases may require more time to run all queries via interet-connections and this strategy is vulnerable to broken links (eg linked to the delay of updates between different types of databases that may need to get combined). 
+Furthermore, the results typically may change a bit when the queries get repeated. 
+When combining multiple interconnected ressources it may be very tricky to document the precise version of all individual ressources used.
 
 b) Strategies based on using (local copies of) defined versions of databases. Frequently, these databases can get downloaded/installed locally and thus allow faster queries and guarantee of repeatability and comparability to other tools or studies. 
-Note, that tracking version-numbers may be easier.
+A number of databases are available on [Bioconductor](https://www.bioconductor.org/) formatted for R. 
+Besides, the tables [UCSC](https://genome.ucsc.edu/cgi-bin/hgTables) are another option.
+Note, that tracking version-numbers may be much easier using this approach.
 
 
 In the context of adding chromosomal annotation to a list of proteins here the following concept is developed :

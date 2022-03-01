@@ -13,14 +13,14 @@
 #' @param minTotNo (integer) minimum total ie max razor number of peptides
 #' @param silent (logical) suppress messages
 #' @param callFrom (character) allows easier tracking of messages produced
-#' @return vector of logical values if corresponding line passes filter criteria  
+#' @return This function returns a vector of logical values if corresponding line passes filter criteria  
 #' @seealso \code{\link[wrMisc]{presenceFilt}} 
 #' @examples
-#' set.seed(2019); datT <- matrix(sample.int(20,60,replace=TRUE),ncol=6,
-#'   dimnames=list(letters[1:10],LETTERS[1:6])) -3
+#' set.seed(2019); datT <- matrix(sample.int(20,60,replace=TRUE), ncol=6,
+#'   dimnames=list(letters[1:10], LETTERS[1:6])) -3
 #' datT[,2] <- datT[,2] +2
 #' datT[which(datT <0)] <- 0
-#' razorNoFilter(datT,speNa="A",totNa="B")
+#' razorNoFilter(datT, speNa="A", totNa="B")
 #' @export
 razorNoFilter <- function(annot, speNa=NULL, totNa=NULL, minRazNa=NULL, minSpeNo=1, minTotNo=2, silent=FALSE, callFrom=NULL) {
   fxNa <- wrMisc::.composeCallName(callFrom, newNa="razorNoFilter")
@@ -47,9 +47,9 @@ razorNoFilter <- function(annot, speNa=NULL, totNa=NULL, minRazNa=NULL, minSpeNo
   ## needed to explicitely call functions of packages
   chPaR <- try(find.package("rmarkdown"), silent=TRUE)
   chPaK <- try(find.package("knitr"), silent=TRUE)
-  if("try-error" %in% class(chPaR)) warning("package 'rmarkdown' not found ! Please install from CRAN") else {
+  if(inherits(chPaR, "try-error")) warning("package 'rmarkdown' not found ! Please install from CRAN") else {
     if(tryF) rmarkdown::pandoc_available() }
-  if("try-error" %in% class(chPaK)) warning("package 'knitr' not found ! Please install from CRAN") else {
+  if(inherits(chPaK, "try-error")) warning("package 'knitr' not found ! Please install from CRAN") else {
     if(tryF) knitr::kable(matrix(1:4, ncol=2)) }
   }  
    

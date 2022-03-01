@@ -9,7 +9,7 @@
 #' @param sep (character) concatenation symbol
 #' @param silent (logical) suppress messages
 #' @param callFrom (character) allows easier tracking of message(s) produced
-#' @return list with $byPep as list of logical matrixes for each peptide (as line) and unique/shared/etc for each species; $byProt as list of matrixes with count data per proten (as line) for each species; $tab with simple summary-type count data   
+#' @return This function returns a list with $byPep as list of logical matrixes for each peptide (as line) and unique/shared/etc for each species; $byProt as list of matrixes with count data per proten (as line) for each species; $tab with simple summary-type count data   
 #' @seealso  \code{\link{readFasta2}} and/or \code{cleave-methods} in package \href{https://bioconductor.org/packages/release/bioc/html/cleaver.html}{cleaver}    
 #' @examples
 #' ## The example mimics a proteomics experiment where extracts form E coli and 
@@ -73,10 +73,10 @@ countNoOfCommonPeptides <- function(...,prefix=c("Hs","Sc","Ec"),sep="_",silent=
     out$byPep[[i]] <- mat
     names(out$byPep)[i] <- prefix[i] 
     ## exploit by prot
-    tmp <- matrix(unlist(by(mat,rep(names(inp[[i]]),nBySet[[i]]),function(x) colSums(as.matrix(x),na.rm=TRUE))),
-      ncol=ncol(mat),byrow=TRUE,dimnames=list(names(inp[[i]]),colnames(mat)))
-    out[["byProt"]][[i]] <- cbind(nPep=nBySet[[i]],matrix(unlist(by(mat,rep(names(inp[[i]]),nBySet[[i]]),function(x) colSums(as.matrix(x),na.rm=TRUE))),
-      ncol=ncol(mat),byrow=TRUE,dimnames=list(names(inp[[i]]),colnames(mat))) )                            # cut in list of matrixes
+    tmp <- matrix(unlist(by(mat, rep(names(inp[[i]]), nBySet[[i]]), function(x) colSums(as.matrix(x),na.rm=TRUE))),
+      ncol=ncol(mat), byrow=TRUE, dimnames=list(names(inp[[i]]),colnames(mat)))
+    out[["byProt"]][[i]] <- cbind(nPep=nBySet[[i]], matrix(unlist(by(mat,rep(names(inp[[i]]), nBySet[[i]]), function(x) colSums(as.matrix(x),na.rm=TRUE))),
+      ncol=ncol(mat), byrow=TRUE, dimnames=list(names(inp[[i]]),colnames(mat))) )                            # cut in list of matrixes
     names(out[["byProt"]])[[i]] <- prefix[i] 
     ## summarize
     supl <- c(

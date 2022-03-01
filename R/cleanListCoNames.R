@@ -10,16 +10,16 @@
 #' @param dat (list) main input
 #' @param rem (character) character string to be removed, may be named 'left' and 'right' for more specific exact pattern matching 
 #'   (this part will be perfomed before character substitutions by \code{subst})
-#' @param subst (character of length=2, or matrix with 2 columns) pair(s) of character-strings for replacepent (1st as search-item and 2nd as replacement); this part is performed after character-removal via \code{rem} 
+#' @param subst (character of length=2, or matrix with 2 columns) pair(s) of character-strings for replacement (1st as search-item and 2nd as replacement); this part is performed after character-removal via \code{rem} 
 #' @param lstE (character, length=1) names of list-elements where colnames should be cleaned
 #' @param silent (logical) suppress messages
-#' @param callFrom (character) allow easier tracking of message(s) produced
+#' @param callFrom (character) allow easier tracking of messages produced
 #' @seealso \code{\link[base]{grep}}  
-#' @return list (equivalent to input \code{dat})
+#' @return This function returns a list (equivalent to input \code{dat})
 #' @examples
 #' dat1 <- matrix(1:12, ncol=4, dimnames=list(1:3, paste0("sample_R.",1:4)))
 #' dat1 <- list(raw=dat1, quant=dat1, notes="other..") 
-#' cleanListCoNames(dat1, rem=c(left="sample_"),c(".","-")) 
+#' cleanListCoNames(dat1, rem=c(left="sample_"), c(".","-")) 
 #' @export
 cleanListCoNames <- function(dat, rem=NULL, subst=c("-","_"), lstE=c("raw","quant","counts"), silent=FALSE, callFrom=NULL) {
   ## clean/stratify columnames

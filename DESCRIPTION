@@ -1,5 +1,5 @@
 Package: wrProteo
-Version: 1.5.0
+Version: 1.6.0
 Title: Proteomics Data Analysis Functions
 Authors@R: person("Wolfgang", "Raffelsberger", email = "w.raffelsberger@gmail.com", role = c("aut", "cre"))
 Author: Wolfgang Raffelsberger [aut, cre]
@@ -24,6 +24,6 @@ Encoding: UTF-8
 VignetteBuilder: knitr
 RoxygenNote: 7.1.2
 NeedsCompilation: no
-Packaged: 2022-01-10 09:41:57 UTC; wraff
+Packaged: 2022-02-28 13:13:09 UTC; wraff
 Repository: CRAN
-Date/Publication: 2022-01-10 12:40:02 UTC
+Date/Publication: 2022-03-01 17:30:02 UTC

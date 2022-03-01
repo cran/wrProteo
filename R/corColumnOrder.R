@@ -9,16 +9,16 @@
 #' @param useListElem (character) in case \code{dat} is list, all list-elements who's columns should get (re-)ordered
 #' @param silent (logical) suppress messages
 #' @param callFrom (character) allow easier tracking of message(s) produced
-#' @return object of same class as input \code{dat}
+#' @return This function returns an object of same class as input \code{dat}  (ie matrix, list or MArrayLM-object from limma) 
 #' @seealso \code{\link{moderTestXgrp}} for single comparisons, \code{\link[base]{order}}  
 #' @examples
 #' grp <- factor(rep(LETTERS[c(3,1,4)], c(2,3,3)))
 #' dat1 <- matrix(1:15, ncol=5, dimnames=list(NULL,c("D","A","C","E","B")))
-#' corColumnOrder(dat1,sampNames=LETTERS[1:5])  
+#' corColumnOrder(dat1, sampNames=LETTERS[1:5])  
 #' 
 #' dat1 <- list(quant=dat1,raw=dat1)
 #'   dat1
-#' corColumnOrder(dat1,sampNames=LETTERS[1:5]) 
+#' corColumnOrder(dat1, sampNames=LETTERS[1:5]) 
 #' @export
 corColumnOrder <- function(dat, sampNames, useListElem=c("quant","raw"), silent=FALSE, callFrom=NULL) {
   ## order columns in list of matrixes (or matrix) according to 'sampNames'

@@ -27,7 +27,7 @@ removeSampleInList(
 \item{callFrom}{(character) allows easier tracking of messages produced}
 }
 \value{
-matrix including imputed values or list of final and matrix with number of imputed by group (plus optional plot)
+This function returns a matrix including imputed values or list of final and matrix with number of imputed by group (plus optional plot)
 }
 \description{
 Remove samples/columns from list of matrixes

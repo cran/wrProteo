@@ -1,7 +1,8 @@
 #' Read proteomics meta-data as sdrf file 
 #'  
 #' This function allows reading proteomics meta-data from sdrf file, as they are provided on https://github.com/bigbio/proteomics-metadata-standard. 
-#' Thus function requires the package utils being installed.
+#' Then, a data.frame with all annotation data will be returned. To stay conform with the (non-obligatory) recommendations, column-names will be shown as lower caps.  
+#' The package utils must be installed.
 #' 
 #' @param fi (character) main input; may be full path or url to the file with meta-annotation. If a short project-name is given, 
 #'   it will be searched based at the location of \code{urlPrefix}  
@@ -10,7 +11,7 @@
 #' @param silent (logical) suppress messages
 #' @param callFrom (character) allows easier tracking of message(s) produced
 #' @param debug (logical) display additional messages for debugging
-#' @return data.frame
+#' @return This function returns the content of Sdrf-file as data.frame 
 #' @seealso  in \code{\link[utils]{read.table}}
 #' @examples
 #' 
@@ -34,20 +35,22 @@ readSdrf <- function(fi, chCol="auto", urlPrefix="github", silent=FALSE, callFro
   if(datOK) {
     chFi <- file.exists(fi)
     if(!chFi & length(urlPrefix)==1 & !grepl("^https?://",fi)) {
-      if(debug) message(fxNa,"could not find as file, content of 'fi' expanded to url")
+      if(debug) {message(fxNa,"could not find as file, content of 'fi' expanded to url  rs1")
+        rs1 <- list(fi=fi,chCol=chCol,urlPrefix=urlPrefix,datOK=datOK,chFi=chFi) }
+      if(identical(urlPrefix,"github")) urlPrefix <- "https://github.com/bigbio/proteomics-metadata-standard/blob/master/annotated-projects/"
       fi <- paste0(urlPrefix, if(grepl("/",fi)) fi else paste0(fi,"/",sub("\\.sdrf\\.tsv$","",fi),".sdrf.tsv") )
   } }
   ## Main reading
   if(datOK) { 
-    if(identical(urlPrefix,"github")) urlPrefix <- "https://github.com/bigbio/proteomics-metadata-standard/blob/master/annotated-projects/"
     if(debug & !grepl("\\.sdrf",fi)) message(fxNa,"Trouble ahead, '",fi,"' does not contain '.sdrf' ...")
     out <- suppressWarnings(try(utils::read.delim(wrMisc::gitDataUrl(fi), sep='\t', header=TRUE, fill=TRUE), silent=!isTRUE(debug)))  
-    if("try-error" %in% class(out)) { message(fxNa," failed reading '",fi,"'  (possibly bad url/path ?)"); return(NULL)
+    if(inherits(out, "try-error")) { message(fxNa," failed reading '",fi,"'  (possibly bad url/path ?)"); return(NULL)
     } else {
       fi2 <- sub("[[:print:]]+/","", sub("\\.sdrf\\.tsv","",fi))
       if(any(length(dim(out)) !=2, dim(out) < 2:1)) { message(fxNa," data in bad format")
       } else {
         ## diagnostic for expected column-names
+        colnames(out) <- tolower(colnames(out))
         if(any(sapply(c("auto","def","default"), identical, chCol))) chCol <- c("source.name", "assay.name",
           "characteristics.biological.replicate.","characteristics.organism.", "comment.data.file.","comment.file.uri." )
           #"characteristics.spiked.compound.","factor.value.spiked.compound.")

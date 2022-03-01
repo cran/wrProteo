@@ -20,6 +20,7 @@ readOpenMSFile(
   wex = 1.6,
   specPref = c(conta = "LYSC_CHICK", mainSpecies = "OS=Homo sapiens"),
   silent = FALSE,
+  debug = FALSE,
   callFrom = NULL
 )
 }
@@ -56,10 +57,12 @@ if list and list-element has multiple values they will be used for exact matchin
 
 \item{silent}{(logical) suppress messages}
 
+\item{debug}{(logical) display additional messages for debugging}
+
 \item{callFrom}{(character) allow easier tracking of message(s) produced}
 }
 \value{
-list with \code{$raw} (initial/raw abundance values), \code{$quant} with final normalized quantitations, \code{$annot}, \code{$counts} an array with number of peptides, \code{$quantNotes},\code{$expSetup} and \code{$notes}; or if \code{separateAnnot=FALSE} the function returns a data.frame with annotation and quantitation only
+This function returns a list with \code{$raw} (initial/raw abundance values), \code{$quant} with final normalized quantitations, \code{$annot}, \code{$counts} an array with number of peptides, \code{$quantNotes},\code{$expSetup} and \code{$notes}; or if \code{separateAnnot=FALSE} the function returns a data.frame with annotation and quantitation only
 }
 \description{
 Protein quantification results form \href{https://www.openms.de/}{OpenMS} 

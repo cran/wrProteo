@@ -17,9 +17,9 @@ vignette: >
 
 
 ## Introduction
-This vignette shows how [UPS1](https://www.sigmaaldrich.com/FR/en/product/sigma/ups1)
-spike-in experiments may be analyzed using the packages [wrProteo](https://CRAN.R-project.org/package=wrProteo),
-[wrMisc](https://CRAN.R-project.org/package=wrMisc) and [wrGraph](https://CRAN.R-project.org/package=wrGraph), all these packages are available on CRAN. 
+This vignette complements the more basic **vignette 'Getting started with wrProteo'** of this package and shows in more detail how [UPS1](https://www.sigmaaldrich.com/FR/en/product/sigma/ups1)
+spike-in experiments may be analyzed, using this package [wrProteo](https://CRAN.R-project.org/package=wrProteo), 
+[wrMisc](https://CRAN.R-project.org/package=wrMisc) and [wrGraph](https://CRAN.R-project.org/package=wrGraph). All these packages are available on CRAN. 
 
 Furthermore, the Bioconductor package [limma](https://bioconductor.org/packages/release/bioc/html/limma.html) will be used internally for it's moderated statistical testing.
 
@@ -43,8 +43,7 @@ BiocManager::install("limma")
 ## You cat also see all vignettes for this package by typing :
 browseVignettes("wrProteo")    #  ... and the select the html output
 ```
-
-Note, [this package](https://CRAN.R-project.org/package=wrProteo) has also a more general introductory vignette.
+As you will see in the interactive window, [this package](https://CRAN.R-project.org/package=wrProteo) has 2 vignettes, a more general introductory vignette and this UPS-1 dedicated vignette.
 
 
 Now let's load the packages needed :
@@ -80,8 +79,12 @@ Briefly, this experiment aims to evaluate and compare various quantification app
 
 ### Experiment Meta-Data
 
-The projcet [proteomics-metadata-standard](https://github.com/bigbio/proteomics-metadata-standard) tries to provide a framework for documenting meta-data as sdrf files.
-This data-set has already been added to this effort and all important information can thus be easily directly imported to this analysis.
+The project [Proteomics Sample Metadata Format](https://github.com/bigbio/proteomics-metadata-standard) aims to provide a framework 
+of providing a uniform format for documenting experimental meta-data (sdrf-format).
+The meta-data for experiments already integrated can be directly read/accessed from [wrProteo](https://CRAN.R-project.org/package=wrProteo).
+
+Either you download the meta-data as file 'sdrf.tsv' from [Pride/PXD001819](https://www.ebi.ac.uk/pride/archive/projects/PXD001819), or you may read it directly from [github/bigbio](https://github.com/bigbio/proteomics-metadata-standard/blob/master/annotated-projects/PXD001819/PXD001819.sdrf.tsv).
+
 
 ```{r metaData1, echo=TRUE}
 ## Read meta-data from  github.com/bigbio/proteomics-metadata-standard/

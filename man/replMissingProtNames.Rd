@@ -23,7 +23,7 @@ column where empty fields are searched and the 2nd and (optional) 3rd will be us
 \item{callFrom}{(character) allow easier tracking of message(s) produced}
 }
 \value{
-list as input, but with missing elments of $annot completed (if available in other columns)
+This function returns a list (like as input), but with missing elments of $annot completed (if available in other columns)
 }
 \description{
 This function helps replacing missing EntryNames (in $annot) after reading quantification results. 

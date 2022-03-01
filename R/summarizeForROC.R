@@ -25,11 +25,11 @@
 #' @param overlPlot (logical) overlay to existing plot if \code{TRUE} 
 #' @param silent (logical) suppress messages
 #' @param callFrom (character) allows easier tracking of message(s) produced
-#' @return matrix including imputed values or list of final and matrix with number of imputed by group (plus optional plot)
+#' @return This function returns a matrix including imputed values or list of final and matrix with number of imputed by group (plus optional plot)
 #' @seealso replot the figure \code{\link{plotROC}}, calculate AUC using \code{\link{AucROC}}, robust test for preparing tables \code{\link{testRobustToNAimputation}}, \code{\link[wrMisc]{moderTest2grp}}, \code{\link{test2grp}}, \code{eBayes} in package \href{https://bioconductor.org/packages/release/bioc/html/limma.html}{limma}, \code{\link[stats]{t.test}}  
 #' @examples
 #' set.seed(2019); test1 <- list(annot=cbind(spec=c(rep("b",35), letters[sample.int(n=3,
-#'   size=150,replace=TRUE)])), BH=matrix(c(runif(35,0,0.01), runif(150)), ncol=1))
+#'   size=150, replace=TRUE)])), BH=matrix(c(runif(35,0,0.01), runif(150)), ncol=1))
 #' tail(roc1 <- summarizeForROC(test1, spec=c("a","b","c")))
 #' 
 #' @export

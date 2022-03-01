@@ -30,10 +30,10 @@ test2grp(
 
 \item{silent}{(logical) suppress messages}
 
-\item{callFrom}{(character) allow easier tracking of message produced}
+\item{callFrom}{(character) allow easier tracking of messages produced}
 }
 \value{
-limma-type S3 object of class 'MArrayLM' which can be accessed; multiple testing correction types or modified testing by ROTS may get included ('p.value','FDR','BY','lfdr' or 'ROTS.BH')
+This function returns a limma-type S3 object of class 'MArrayLM' (which can be accessed like a list); multiple testing correction types or modified testing by ROTS may get included ('p.value','FDR','BY','lfdr' or 'ROTS.BH')
 }
 \description{
 \code{test2grp} performs t-test on two groups of data using \href{https://bioconductor.org/packages/release/bioc/html/limma.html}{limma},
@@ -43,13 +43,13 @@ Furthermore, there is an option to make use of package ROTS (note, this will inc
 }
 \examples{
 set.seed(2018);  datT8 <- matrix(round(rnorm(800)+3,1), nc=8, dimnames=list(paste(
-  "li",1:100,sep=""),paste(rep(LETTERS[1:3],c(3,3,2)),letters[18:25],sep="")))
-datT8[3:6,1:2] <- datT8[3:6,1:2]+3   # augment lines 3:6 (c-f) 
-datT8[5:8,5:6] <- datT8[5:8,5:6]+3   # augment lines 5:8 (e-h) 
+  "li",1:100,sep=""), paste(rep(LETTERS[1:3],c(3,3,2)),letters[18:25],sep="")))
+datT8[3:6,1:2] <- datT8[3:6,1:2] +3   # augment lines 3:6 (c-f) 
+datT8[5:8,5:6] <- datT8[5:8,5:6] +3   # augment lines 5:8 (e-h) 
 grp8 <- gl(3,3,labels=LETTERS[1:3],length=8)
-datL <- list(data=datT8,filt= wrMisc::presenceFilt(datT8,grp=grp8,maxGrpM=1,ratMa=0.8))
-testAvB0 <- wrMisc::moderTest2grp(datT8[,1:6],gl(2,3))
-testAvB <- test2grp(datL,questNo=1)
+datL <- list(data=datT8, filt= wrMisc::presenceFilt(datT8,grp=grp8,maxGrpM=1,ratMa=0.8))
+testAvB0 <- wrMisc::moderTest2grp(datT8[,1:6], gl(2,3))
+testAvB <- test2grp(datL, questNo=1)
 }
 \seealso{
 \code{\link[wrMisc]{moderTest2grp}}, \code{\link[wrMisc]{pVal2lfdr}}, \code{\link[stats]{t.test}}, \code{ROTS} from the Bioconductor package \href{https://www.bioconductor.org/packages/release/bioc/html/ROTS.html}{ROTS}

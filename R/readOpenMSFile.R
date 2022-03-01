@@ -29,8 +29,9 @@
 #' @param separateAnnot (logical) if \code{TRUE} output will be organized as list with \code{$annot}, \code{$abund} for initial/raw abundance values and \code{$quant} with final normalized quantitations
 #' @param plotGraph (logical) optional plot of type vioplot of initial and normalized data (using \code{normalizeMeth}); if integer, it will be passed to \code{layout} when plotting
 #' @param silent (logical) suppress messages
+#' @param debug (logical) display additional messages for debugging
 #' @param callFrom (character) allow easier tracking of message(s) produced
-#' @return list with \code{$raw} (initial/raw abundance values), \code{$quant} with final normalized quantitations, \code{$annot}, \code{$counts} an array with number of peptides, \code{$quantNotes},\code{$expSetup} and \code{$notes}; or if \code{separateAnnot=FALSE} the function returns a data.frame with annotation and quantitation only 
+#' @return This function returns a list with \code{$raw} (initial/raw abundance values), \code{$quant} with final normalized quantitations, \code{$annot}, \code{$counts} an array with number of peptides, \code{$quantNotes},\code{$expSetup} and \code{$notes}; or if \code{separateAnnot=FALSE} the function returns a data.frame with annotation and quantitation only 
 #' @seealso \code{\link[utils]{read.table}}, \code{\link[wrMisc]{normalizeThis}}) , \code{\link{readMaxQuantFile}}, \code{\link{readProlineFile}}, \code{\link{readProtDiscovFile}} 
 #' @examples
 #' path1 <- system.file("extdata", package="wrProteo")
@@ -41,18 +42,20 @@
 #' @export
 readOpenMSFile <- function(fileName=NULL, path=NULL, normalizeMeth="median", refLi=NULL, sampleNames=NULL, quantCol="Intensity", 
   sumMeth="top3", minPepNo=1, protNaCol="ProteinName", separateAnnot=TRUE, plotGraph=TRUE, tit="OpenMS", wex=1.6,
-  specPref=c(conta="LYSC_CHICK", mainSpecies="OS=Homo sapiens"), silent=FALSE, callFrom=NULL) {
+  specPref=c(conta="LYSC_CHICK", mainSpecies="OS=Homo sapiens"), silent=FALSE, debug=FALSE, callFrom=NULL) {
   ## read OpenMS exported csv
   #fileName <- "C:\\E\\projects\\MassSpec\\smallProj\\2021\\OpenMS\\beforeMSstats\\proteomics_lfq\\out.csv"; 
   #specPref <- list(conta="CON_|LYSC_CHICK", mainSpecies="OS=Saccharomyces cerevisiae", spike="UPS")
- 
-  pepNaCol="PeptideSequence";preCol="PrecursorCharge";condCol="Condition";runCol=c("BioReplicate","Run"); mzMLCol="Reference"
-  #protNaCol=protNaCol,pepNaCol=pepNaCol,preCol=preCol,condCol=condCol,runCol=runCol, mzMLCol=mzMLCol,quantCol=quantCol
-  
+
+  ## initialize
+  pepNaCol <- "PeptideSequence"; preCol <- "PrecursorCharge"; condCol <- "Condition"; runCol <- c("BioReplicate","Run"); mzMLCol <- "Reference"
   fxNa <- wrMisc::.composeCallName(callFrom, newNa="readOpenMSFile")
   opar <- graphics::par(no.readonly=TRUE)
   chPa <- try(find.package("utils"), silent=TRUE)
-  if("try-error" %in% class(chPa)) stop("package 'utils' not found ! Please install first")   
+  if(inherits(chPa, "try-error")) stop("package 'utils' not found ! Please install first")   
+  if(isTRUE(debug)) silent <- FALSE
+  if(!isTRUE(silent)) silent <- FALSE
+  if(debug) message("rmso1")
   ## check & read file
   chPa <- length(grep("/",fileName)) >0 | length(grep("\\\\",fileName)) >0       # check for path already in fileName "
   if(length(path) <1) path <- "."
@@ -70,10 +73,9 @@ readOpenMSFile <- function(fileName=NULL, path=NULL, normalizeMeth="median", ref
       tmp[[1]] <- try(utils::read.csv(paFi, stringsAsFactors=FALSE), silent=TRUE)                # read US csv-file
       tmp[[2]] <- try(utils::read.csv2(paFi, stringsAsFactors=FALSE), silent=TRUE)}              # read Euro csv-file
   } else stop("unknown input file format (expecting .csv or .csv.gz)")
-  chCl <- sapply(tmp, class) =="try-error" 
-  if(length(chCl) <1) stop("Failed to recognize file extensions of input data (should be .csv or .csv.gz)")
-  if(any(chCl)) {if(all(chCl)) stop("Failed to extract data from ",fileName," (check format and/or rights to read)")}
-  nCol <- sapply(tmp, function(x) if(length(x) >0) {if(class(x) != "try-error") ncol(x) else NA} else NA)
+  chCl <- sapply(tmp, inherits, "try-error")
+  if(all(chCl)) stop(" Failed to extract data from '",fileName,"'  check format (should be .csv or .csv.gz) & rights to read")
+  nCol <- sapply(tmp, function(x) if(length(x) >0) {if(! inherits(x, "try-error")) ncol(x) else NA} else NA)
   bestT <- which.max(nCol)
   datA <- tmp[[bestT]]
   tmp <- NULL                         # reset
@@ -180,9 +182,12 @@ readOpenMSFile <- function(fileName=NULL, path=NULL, normalizeMeth="median", ref
     if(length(custLay) >0) graphics::layout(custLay) else graphics::layout(1:2)
     graphics::par(mar=c(3, 3, 3, 1))                          # mar: bot,le,top,ri
     if(is.null(tit)) tit <- "OpenMS quantification"
+    
+    
+    
     chGr <- try(find.package("wrGraph"), silent=TRUE)
     chSm <- try(find.package("sm"), silent=TRUE)
-    misPa <- c("try-error" %in% class(chGr),"try-error" %in% class(chSm))
+    misPa <- c(inherits(chGr, "try-error"), inherits(chSm, "try-error"))
     titSu <- if(length(refLi) >0) paste0(c(" by ",if(length(refLiIni) >1) c(length(refLi)," selected lines") else c("'",refLiIni,"'")),collapse="")  else NULL
     if(any(misPa)) { 
       if(!silent) message(fxNa," missing package ",wrMisc::pasteC(c("wrGraph","sm")[which(misPa)],quoteC="'")," for drawing vioplots")

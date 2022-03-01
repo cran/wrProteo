@@ -24,15 +24,15 @@ convAASeq2mass(
 \item{callFrom}{(character) allow easier tracking of message(s) produced}
 }
 \value{
-vector with masses for all amino-acids (argument 'massTy' to switch form mono-isotopic to average mass)
+This functions returns a vector with masses for all amino-acids (argument 'massTy' to switch form mono-isotopic to average mass)
 }
 \description{
 This function calculates the molecular mass of one-letter code amion-acid sequences.
 }
 \examples{
 convAASeq2mass(c("PEPTIDE","fPROTEINES"))
-pep1 <- c(aa="AAAA",de="DEFDEF")
-convAASeq2mass(pep1,seqN=FALSE)
+pep1 <- c(aa="AAAA", de="DEFDEF")
+convAASeq2mass(pep1, seqN=FALSE)
 }
 \seealso{
 \code{\link{massDeFormula}}, \code{\link{AAmass}}, \code{\link[wrMisc]{convToNum}}

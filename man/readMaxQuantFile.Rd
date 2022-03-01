@@ -57,10 +57,10 @@ readMaxQuantFile(
 
 \item{silent}{(logical) suppress messages}
 
-\item{callFrom}{(character) allow easier tracking of message produced}
+\item{callFrom}{(character) allow easier tracking of messages produced}
 }
 \value{
-list with  \code{$raw} (initial/raw abundance values), \code{$quant} with final normalized quantitations, \code{$annot} (columns ), \code{$counts} an array with 'PSM' and 'NoOfRazorPeptides', \code{$quantNotes} and \code{$notes}; or a data.frame with quantitation and annotation if \code{separateAnnot=FALSE}
+This function returns a list with  \code{$raw} (initial/raw abundance values), \code{$quant} with final normalized quantitations, \code{$annot} (columns ), \code{$counts} an array with 'PSM' and 'NoOfRazorPeptides', \code{$quantNotes} and \code{$notes}; or a data.frame with quantitation and annotation if \code{separateAnnot=FALSE}
 }
 \description{
 Quantification results form \href{https://www.maxquant.org/}{MaxQuant} can be read using this function and relevant information extracted. 
@@ -70,7 +70,7 @@ The protein abundance values mat be normalized using multiple methods (median no
 Besides, a graphical display of the distruibution of protein abundance values may be generated.
 }
 \details{
-This function has been developed using MaxQuant versions 1.6.10.x to 1.6.17.x, the format of resulting file 'proteinGroups.txt' is typically well conserved.  
+This function has been developed using MaxQuant versions 1.6.10.x to 2.0.x, the format of the resulting file 'proteinGroups.txt' is typically well conserved between versions.  
 The final output is a list containing these elements: \code{$raw}, \code{$quant}, \code{$annot}, \code{$counts}, \code{$quantNotes}, \code{$notes}, or (if \code{separateAnnot=FALSE}) data.frame 
   with annotation- and main quantification-content.
 }

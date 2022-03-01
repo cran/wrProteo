@@ -16,7 +16,7 @@
 #' @param fileTy (character) file-type to be used with argument \code{filename}, may be 'csvEur' or 'csvUS'
 #' @param silent (logical) suppress messages
 #' @param callFrom (character) allow easier tracking of message(s) produced
-#' @return limma-type MA-object (list)
+#' @return This function returns a limma-type MA-object (which can be handeled like a list)
 #' @seealso \code{\link{moderTest2grp}} for single comparisons, \code{\link{moderTestXgrp}} for multiple comparisons, \code{\link[limma]{lmFit}} and the \code{eBayes}-family of functions in package \href{https://bioconductor.org/packages/release/bioc/html/limma.html}{limma}
 #' @examples
 #' grp <- factor(rep(LETTERS[c(3,1,4)],c(2,3,3)))
@@ -99,7 +99,7 @@ extractTestingResults <- function(stat, compNo=1, statTy="BH",thrsh=0.05, FCthrs
       tmp <- if(identical(fileTy,"csvEur")) {
         try(utils::write.csv2(as.matrix(format(out, digits=digits)), filename, row.names=FALSE,quote=FALSE),silent=silent)
       } else try(utils::write.csv(as.matrix(format(out, digits=digits)), filename, row.names=FALSE,quote=FALSE),silent=silent)
-      if("try-error" %in% class(tmp)) message(fxNa," Note: Did not manage to write results to file '",filename,"', check for rights to write  ...") else {
+      if(inherits(tmp, "try-error")) message(fxNa," Note: Did not manage to write results to file '",filename,"', check for rights to write  ...") else {
         if(!silent) message(fxNa," Wrote results successfully to file '",filename,"'")}
     }
     out
@@ -157,7 +157,7 @@ extractTestingResults <- function(stat, compNo=1, statTy="BH",thrsh=0.05, FCthrs
     tmp <- if(identical(fileTy,"csvEur")) {
      try(utils::write.csv2(as.matrix(format(if(length(stat)>0) out else stat, digits=digits)), filename, row.names=FALSE,quote=FALSE),silent=silent)
     } else try(utils::write.csv(as.matrix(format(out, digits=digits)), filename, row.names=FALSE,quote=FALSE),silent=silent)
-    if("try-error" %in% class(tmp)) message(fxNa," Note: Did not manage to write results to file '",filename,"', check for rights to write  ...") else {
+    if(inherits(tmp, "try-error")) message(fxNa," Note: Did not manage to write results to file '",filename,"', check for rights to write  ...") else {
       if(!silent) message(fxNa," Wrote results successfully to file '",filename,"'")}
   }
   out

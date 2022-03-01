@@ -60,7 +60,7 @@ summarizeForROC(
 \item{callFrom}{(character) allows easier tracking of message(s) produced}
 }
 \value{
-matrix including imputed values or list of final and matrix with number of imputed by group (plus optional plot)
+This function returns a matrix including imputed values or list of final and matrix with number of imputed by group (plus optional plot)
 }
 \description{
 \code{summarizeForROC} takes statistical testing results (obtained using \code{\link{testRobustToNAimputation}} or \code{\link[wrMisc]{moderTest2grp}}, based on \href{https://bioconductor.org/packages/release/bioc/html/limma.html}{limma}) and calculates specifcity and sensitivity values for plotting ROC-curves along a panel of thresholds.  
@@ -73,7 +73,7 @@ Note that numerous other packages also provide support for building and plotting
 }
 \examples{
 set.seed(2019); test1 <- list(annot=cbind(spec=c(rep("b",35), letters[sample.int(n=3,
-  size=150,replace=TRUE)])), BH=matrix(c(runif(35,0,0.01), runif(150)), ncol=1))
+  size=150, replace=TRUE)])), BH=matrix(c(runif(35,0,0.01), runif(150)), ncol=1))
 tail(roc1 <- summarizeForROC(test1, spec=c("a","b","c")))
 
 }

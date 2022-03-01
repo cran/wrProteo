@@ -33,7 +33,7 @@ matrixNAinspect(
 \item{callFrom}{(character) allow easier tracking of messages produced}
 }
 \value{
-graphic only
+This function produces graphics only
 }
 \description{
 \code{matrixNAinspect} makes histograms of the full data and shows sub-population of \code{NA}-neighbour values.  

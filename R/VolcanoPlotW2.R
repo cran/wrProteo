@@ -57,16 +57,6 @@
 #' gr3 <- gl(3,3,labels=c("C","A","B"))
 #' tRes2 <- moderTest2grp(mat[,1:6], gl(2,3), addResults = c("FDR","means"))
 #' # Note: due to the small number of lines only FDR chosen to calculate 
-#' VolcanoPlotW2(tRes2)
-#' ## Add names of points passing custom filters
-#' VolcanoPlotW2(tRes2, FCth=1.3, FdrThrs=0.2, namesNBest="passThr")
-#'
-#' ## assume 3 groups with 3 samples each
-#' tRes <- moderTestXgrp(mat, gr3, addResults = c("FDR","means"))
-#' # Note: due to the small number of lines only FDR chosen to calculate 
-#' VolcanoPlotW2(tRes)
-#' VolcanoPlotW2(tRes, FCth=1.3, FdrThrs=0.2)
-#' VolcanoPlotW2(tRes, FCth=1.3, FdrThrs=0.2, useComp=2)
 #'  
 #' @export
 VolcanoPlotW2 <- function(Mvalue, pValue=NULL, useComp=1, filtFin=NULL, ProjNa=NULL, FCthrs=NULL, FdrList=NULL, FdrThrs=NULL, FdrType=NULL,
@@ -76,7 +66,7 @@ VolcanoPlotW2 <- function(Mvalue, pValue=NULL, useComp=1, filtFin=NULL, ProjNa=N
   ## MA plot
   ## optional arguments for explicit title in batch-mode
   fxNa <- wrMisc::.composeCallName(callFrom, newNa="VolcanoPlotW2")
-  message("++ NOTE : OLD VERSION !! ++ please use VolcanoPlotW() from package wrGraph")
+  .Deprecated("++ NOTE : OLD VERSION !! ++ please use VolcanoPlotW() from package wrGraph")
   opar <- graphics::par(no.readonly=TRUE) 
   on.exit(graphics::par(opar$mar)) 
   on.exit(graphics::par(opar$cex.main)) 

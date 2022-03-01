@@ -9,7 +9,7 @@
 #' @param shortNa (character) the final abbreviation used, order and lengt must fit to argument \code{annot}
 #' @param silent (logical) suppress messages 
 #' @param callFrom (character) allows easier tracking of messages produced
-#' @return character vector with single (last of multiple) term if found in argument \code{annot}
+#' @return This function returns a character vector with single (last of multiple) term if found in argument \code{annot}
 #' @seealso  \code{\link[base]{grep}} 
 #' @examples
 #' spec <- c("keratin_CONT","AB_HUMAN","CD_YEAST","EF_G_HUMAN","HI_HUMAN_ECOLI","_YEAST_012")
@@ -35,8 +35,8 @@ extrSpeciesAnnot <- function(annot,spec=c("_CONT","_HUMAN","_YEAST","_ECOLI"),sh
     if(!silent) message(fxNa," constructing 'shortNa'.. replace by 1st alphanum-character : ",shortNa) }
   ## main
   tmp <- list()
-  out <- rep(NA,length(annot))
-  for(i in 1:length(spec)) {tmp[[i]] <- grep(spec[i],annot)
+  out <- rep(NA, length(annot))
+  for(i in 1:length(spec)) {tmp[[i]] <- grep(spec[i], annot)
     out[tmp[[i]]] <- shortNa[i] }
   che <- table(table(unlist(tmp)))
   if(any(as.numeric(names(che)) >1) & !silent) message(" multiple/conflicting annotation in ",sum(che[which(as.numeric(names(che)) != 1)])," cases")  

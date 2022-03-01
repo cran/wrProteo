@@ -24,7 +24,7 @@ extrSpeciesAnnot(
 \item{callFrom}{(character) allows easier tracking of messages produced}
 }
 \value{
-character vector with single (last of multiple) term if found in argument \code{annot}
+This function returns a character vector with single (last of multiple) term if found in argument \code{annot}
 }
 \description{
 \code{extrSpeciesAnnot} identifies species-related annotation (as suffix to identifyers) for data comnining multiple species and returns alternative (short) names.  

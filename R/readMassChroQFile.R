@@ -27,8 +27,8 @@
 #' @param separateAnnot (logical) if \code{TRUE} output will be organized as list with \code{$annot}, \code{$abund} for initial/raw abundance values and \code{$quant} with final normalized quantitations
 #' @param plotGraph (logical) optional plot of type vioplot of initial and normalized data (using \code{normalizeMeth}); if integer, it will be passed to \code{layout} when plotting
 #' @param silent (logical) suppress messages
-#' @param callFrom (character) allow easier tracking of message(s) produced
-#' @return list with \code{$raw} (initial/raw abundance values), \code{$quant} with final normalized quantitations, \code{$annot}, \code{$counts} an array with number of peptides, \code{$quantNotes} and \code{$notes}; or if \code{separateAnnot=FALSE} the function returns a data.frame with annotation and quantitation only 
+#' @param callFrom (character) allow easier tracking of messages produced
+#' @return This function returns list with \code{$raw} (initial/raw abundance values), \code{$quant} with final normalized quantitations, \code{$annot}, \code{$counts} an array with number of peptides, \code{$quantNotes} and \code{$notes}; or if \code{separateAnnot=FALSE} the function returns a data.frame with annotation and quantitation only 
 #' @seealso \code{\link[utils]{read.table}}, \code{\link[wrMisc]{normalizeThis}}) , \code{\link{readProlineFile}} 
 #' @examples
 #' path1 <- system.file("extdata", package="wrProteo")
@@ -58,7 +58,7 @@ readMassChroQFile <- function(fileName, path=NULL, normalizeMeth="median", sampl
   if(length(c(grep("\\.rda$",fileName), grep("\\.rdata$",tolower(fileName)))) >0) {
     ls1 <- ls()
     tmp[[5]] <- try(load(paFi))
-    if(!"try-error" %in% class(tmp[[5]])) {          # dont know under which name the object was saved in RData..
+    if(!inherits(tmp[[5]], "try-error")) {          # dont know under which name the object was saved in RData..
       if(length(ls1) +2 ==length(ls())) {
         tmp[[5]] <- get(ls()[which(!ls() %in% ls1 & ls() != "ls1")])            # found no way of removing initial object
         if(!silent) message(fxNa,"Loading object '",ls()[which(!ls() %in% ls1 & ls() != "ls1")],"' as quantification data out of ",fileName)
@@ -66,9 +66,9 @@ readMassChroQFile <- function(fileName, path=NULL, normalizeMeth="median", sampl
     } else stop("Failed to load .RData") }
 
   if(length(tmp) <1) stop("Failed to recognize file extensions of input data (unknown format)")
-  chCl <- sapply(tmp, class) =="try-error" 
-  if(any(chCl)) {if(all(chCl)) stop(" Failed to extract data (unknown format) from ",fileName)}
-  nCol <- sapply(tmp, function(x) if(length(x) >0) {if(class(x) != "try-error") ncol(x) else NA} else NA)
+  chCl <- sapply(tmp, inherits, "try-error")
+  if(all(chCl)) stop(" Failed to extract data from '",fileName,"'  (check format & rights to read)")
+  nCol <- sapply(tmp, function(x) if(length(x) >0) {if(!inherits(x, "try-error")) ncol(x) else NA} else NA)
   bestT <- which.max(nCol)
   fiType <- c("txt","UScsv","EURcsv","tsv","RData")[bestT]
   tmp <- tmp[[bestT]]
@@ -108,9 +108,7 @@ readMassChroQFile <- function(fileName, path=NULL, normalizeMeth="median", sampl
   if(plotGraph){
     if(length(custLay) >0) graphics::layout(custLay) else graphics::layout(1:2)
     graphics::par(mar=c(3, 3, 3, 1))                           # mar: bot,le,top,ri
-    chGr <- try(find.package("wrGraph"), silent=TRUE)
-    chSm <- try(find.package("sm"), silent=TRUE)
-    misPa <- c("try-error" %in% class(chGr),"try-error" %in% class(chSm))
+    misPa <- c(requireNamespace("wrGraph", quietly=TRUE), requireNamespace("sm", quietly=TRUE)) 
     if(is.null(tit)) tit <- "MassChroQ Quantification "    
     titSu <- if(length(refLi) >0) paste(" by",length(refLi),"selected lines")  else NULL
 

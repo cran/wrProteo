@@ -35,7 +35,7 @@
 #' @param silent (logical) suppress messages
 #' @param debug (logical) additional messages for debugging
 #' @param callFrom (character) allow easier tracking of messages produced
-#' @return list with \code{$raw} (initial/raw abundance values), \code{$quant} with final normalized quantitations, \code{$annot}, \code{$counts} an array with number of peptides, \code{$quantNotes} 
+#' @return This function returns a list with \code{$raw} (initial/raw abundance values), \code{$quant} with final normalized quantitations, \code{$annot}, \code{$counts} an array with number of peptides, \code{$quantNotes} 
 #'  and \code{$notes}; or if \code{separateAnnot=FALSE} the function returns a data.frame with annotation and quantitation only 
 #' @seealso \code{\link[utils]{read.table}}, \code{\link[wrMisc]{normalizeThis}}) , \code{\link{readMaxQuantFile}}, \code{\link{readProlineFile}} 
 #' @examples
@@ -72,8 +72,8 @@ readProtDiscovFile <- function(fileName, path=NULL, normalizeMeth="median", samp
     if(chFi) paFi <- file.path(path[1], fileName) else {
       if(grepl(paste0("^",path[1]), fileName)) {chFi <- file.exists(fileName); path <- NULL} else chFi <- FALSE       # if path+fileName not found, check if 'path' should be omitted if already contained in fileName
   } } 
-  if(!chFi) stop(" file ",fileName," was NOT found ",if(length(path) >0) paste(" in path ",path)," !")
-  if(!grepl("\\.txt$|\\.txt\\.gz$", fileName)) message(fxNa," Trouble ahead, expecting tabulated text file (this file might not be right format) !!")
+  if(!chFi) stop(" File ",fileName," was NOT found ",if(length(path) >0) paste(" in path ",path)," !")
+  if(!grepl("\\.txt$|\\.txt\\.gz$", fileName)) message(fxNa,"Trouble ahead, expecting tabulated text file (this file might not be right format) !!")
 
   ## prepare for reading files
   ## check for separate file 'infoFile' and store as infoFile
@@ -87,7 +87,7 @@ readProtDiscovFile <- function(fileName, path=NULL, normalizeMeth="median", samp
     if(debug) message(fxNa,"rpd0a ..")
     if(length(infoFi) >0) { if(file.exists(infoFi)) {   ## try reading infoFile 
       infoDat <- try(utils::read.delim(file=if(length(path) >0)file.path(path[1],infoFi[1]) else infoFi[1], stringsAsFactors=FALSE), silent=TRUE)
-      if("try-error" %in% class(infoDat)) {if(!silent) message(fxNa," Failed to open file '",infoFi[1],"' for getting additional information about experiment")
+      if(inherits(infoDat, "try-error")) {if(!silent) message(fxNa,"Failed to open file '",infoFi[1],"' for getting additional information about experiment")
       } else {
         useColInf <- c("File.ID","File.Name","Creation.Date","RT.Range.in.min","RT.Range..min.","Instrument.Name","Software.Revision","Ref.File.ID","Ref..File.ID")
         chCol <- match(useColInf, colnames(infoDat))
@@ -103,7 +103,7 @@ readProtDiscovFile <- function(fileName, path=NULL, normalizeMeth="median", samp
   ## read (main) file
   ## future: look for fast reading of files
   tmp <- try(utils::read.delim(file.path(paFi), stringsAsFactors=FALSE), silent=TRUE)
-  if("try-error" %in% class(tmp)) stop("Unable to read input file ('",paFi,"')!") 
+  if(inherits(tmp, "try-error")) stop("Unable to read input file ('",paFi,"')!") 
   if(debug) { message(fxNa,"rpd2 .. dims of initial data : ", nrow(tmp)," li and ",ncol(tmp)," col ")}
   
   ## locate & extract annotation 
@@ -175,7 +175,7 @@ if(debug) { message(fxNa,"rpd4c") }
     chSp <- if(length(chSp) >1) match(chSp, annot[,annotCol[1]]) else grep(unlist(specPref[i]), annot[,annotCol[2]])    # line-no to set tag a 'SpecType'
     if(length(chSp) >0) {
       chNa <- is.na(annot[chSp,"SpecType"])
-      if(any(!chNa) & !silent) message(fxNa," Beware, ",sum(!chNa)," 'SpecType' will be overwritten by ",naSp)
+      if(any(!chNa) & !silent) message(fxNa,"Beware, ",sum(!chNa)," 'SpecType' will be overwritten by ",naSp)
       annot[chSp,"SpecType"] <- naSp }
   }
   if("Contaminant" %in% colnames(annot)) annot[,"Contam"] <- toupper(gsub(" ","",annot[,colnames(tmp)[contamCol]]))
@@ -184,7 +184,7 @@ if(debug) { message(fxNa,"rpd4c") }
   ## separate multi-species (create columns 'Accession','GeneName','Species','SpecType')
   #if(is.character(contamCol)) contamCol <- which(colnames(annot)==contamCol)
   ## had already message if column for contaminations not soecified/found
-  if(length(specPref) <1) message(fxNa," Note: argument 'specPref' not specifed (empty)")
+  if(length(specPref) <1) message(fxNa,"Note: argument 'specPref' not specifed (empty)")
 
   if(debug) {message(fxNa,"rpd6 ..  ")}
   
@@ -216,7 +216,6 @@ if(debug) { message(fxNa,"rpd4c") }
   if(length(quantCol) >1) { 
     ## explicit columns (for abundance/quantitation data)
     ## problem : extract '^Abundances*' but NOT 'Abundances.Count.*'
-    #abund <- as.matrix(wrMisc::extrColsDeX(tmp, extrCol=quantCol, doExtractCols=TRUE, silent=silent, callFrom=fxNa))
     quantColIni <- quantCol <- grep(quantCol[1],colnames(tmp))
     if(length(quantCol) <1) stop(msg,"  ('",quantCol,"')")
   } else {
@@ -265,7 +264,7 @@ if(debug) { message(fxNa,"rpd4c") }
   ## add custom sample names
   if(length(sampleNames) ==ncol(abund) & ncol(abund) >0) {
     if(length(unique(sampleNames)) < length(sampleNames)) {
-      if(!silent) message(fxNa," custom sample names not unique, correcting to unique")
+      if(!silent) message(fxNa,"Custom sample names not unique, correcting to unique")
       sampleNames <- wrMisc::correctToUnique(sampleNames, callFrom=fxNa) }
     colnames(abund) <- sampleNames 
   } else if(length(infoDat) >0) if(nrow(infoDat)==ncol(abund) & ncol(abund) >0) {  # otherwise try using original raw-file names form file  *InputFiles.txt
@@ -273,7 +272,7 @@ if(debug) { message(fxNa,"rpd4c") }
     if(!silent) message(fxNa,"Using sample names based on .raw filenames from file '",infoFi[1],"'")
     colnames(abund) <- sampleNames }   
   if(isTRUE(read0asNA)) { is0 <- which(abund <= 0)
-    if(length(is0) >0) { if(!silent) message(fxNa," replacing ",length(is0)," (",round(100*length(is0)/prod(dim(abund)),3),"%) instances of '0' by NA")
+    if(length(is0) >0) { if(!silent) message(fxNa,"Replacing ",length(is0)," (",round(100*length(is0)/prod(dim(abund)),3),"%) instances of '0' by NA")
       abund[which(is0)] <- NA }  }    
   if(debug) { message(fxNa,"rpd10 .. sampleNames",wrMisc::pasteC(sampleNames,quoteC="'"))}
 
@@ -363,7 +362,7 @@ if(debug) { message(fxNa,"rpd4c") }
   ## check for reference for normalization
   refLiIni <- refLi
   if(is.character(refLi) & length(refLi)==1) { refLi <- which(annot[,"SpecType"]==refLi)
-    if(length(refLi) <1) message(fxNa," could not find any protein matching argument 'refLi', ignoring ...") else {
+    if(length(refLi) <1) message(fxNa,"Could not find any protein matching argument 'refLi', ignoring ...") else {
       if(!silent) message(fxNa,"Normalize using (custom) subset of ",length(refLi)," lines")}}    # may be "mainSpe"
    #makes no sense#if(length(refLi) <1) refLi <- NULL
   ## take log2 & normalize
@@ -378,16 +377,16 @@ if(debug) { message(fxNa,"rpd4c") }
     if(debug) {message(fxNa,"rpd14 .. length custLay ", length(custLay) )}
     if(length(custLay) >0) graphics::layout(custLay) else {if(!identical(normalizeMeth,"none") & length(quant) >0) graphics::layout(1:2)}
     graphics::par(mar=c(3, 3, 3, 1))                          # mar: bot,le,top,ri
-    if(length(graphTit) >0) message(fxNa,"argument 'graphTit' is depreciated, please rather use 'tit'")
+    if(length(graphTit) >0) message(fxNa,"Argument 'graphTit' is depreciated, please rather use 'tit'")
     if(is.null(tit) & !is.null(graphTit)) tit <- graphTit     # for derpreciated argument
     if(is.null(tit)) tit <- "ProteomeDiscoverer quantification "
     chGr <- try(find.package("wrGraph"), silent=TRUE)
     chSm <- try(find.package("sm"), silent=TRUE)
-    misPa <- c("try-error" %in% class(chGr),"try-error" %in% class(chSm))
+    misPa <- c(inherits(chGr, "try-error"), inherits(chSm, "try-error"))
     titSu <- if(length(refLi) >0) paste0(c(" by ",if(length(refLiIni) >1) c(length(refLi)," selected lines") else c("'",refLiIni,"'")),collapse="")  else NULL
     if(debug) { message(fxNa,"rpd15 .. misPa ", wrMisc::pasteC(misPa,quoteC="'") )}
     if(any(misPa)) { 
-      if(!silent) message(fxNa," missing package ",wrMisc::pasteC(c("wrGraph","sm")[which(misPa)],quoteC="'")," for drawing vioplots")
+      if(!silent) message(fxNa,"Missing package ",wrMisc::pasteC(c("wrGraph","sm")[which(misPa)],quoteC="'")," for drawing vioplots")
       ## wrGraph not available : simple boxplot  
       graphics::boxplot(log2(abund), main=paste(tit,"(initial)",sep=" "), las=1, outline=FALSE) 
       graphics::abline(h=round(log2(stats::median(abund,na.rm=TRUE))) +c(-2:2), lty=2, col=grDevices::grey(0.6)) 

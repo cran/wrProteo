@@ -7,7 +7,7 @@
 #' Besides, a graphical display of the distruibution of protein abundance values may be generated.
 #' 
 #' @details
-#' This function has been developed using MaxQuant versions 1.6.10.x to 1.6.17.x, the format of resulting file 'proteinGroups.txt' is typically well conserved.  
+#' This function has been developed using MaxQuant versions 1.6.10.x to 2.0.x, the format of the resulting file 'proteinGroups.txt' is typically well conserved between versions.  
 #' The final output is a list containing these elements: \code{$raw}, \code{$quant}, \code{$annot}, \code{$counts}, \code{$quantNotes}, \code{$notes}, or (if \code{separateAnnot=FALSE}) data.frame 
 #'   with annotation- and main quantification-content.
 #' 
@@ -27,8 +27,8 @@
 #' @param tit (character) custom title to plot
 #' @param wex (numeric)  relative expansion factor of the violin in plot
 #' @param silent (logical) suppress messages
-#' @param callFrom (character) allow easier tracking of message produced
-#' @return list with  \code{$raw} (initial/raw abundance values), \code{$quant} with final normalized quantitations, \code{$annot} (columns ), \code{$counts} an array with 'PSM' and 'NoOfRazorPeptides', \code{$quantNotes} and \code{$notes}; or a data.frame with quantitation and annotation if \code{separateAnnot=FALSE}
+#' @param callFrom (character) allow easier tracking of messages produced
+#' @return This function returns a list with  \code{$raw} (initial/raw abundance values), \code{$quant} with final normalized quantitations, \code{$annot} (columns ), \code{$counts} an array with 'PSM' and 'NoOfRazorPeptides', \code{$quantNotes} and \code{$notes}; or a data.frame with quantitation and annotation if \code{separateAnnot=FALSE}
 #' @seealso \code{\link[utils]{read.table}}, \code{\link[wrMisc]{normalizeThis}}) , \code{\link{readProlineFile}} 
 #' @examples
 #' path1 <- system.file("extdata", package="wrProteo")
@@ -58,7 +58,7 @@ readMaxQuantFile <- function(path, fileName="proteinGroups.txt", normalizeMeth="
   ## see if checking for gz makes sense 
   chFi <- file.exists(fileName)         # presume (& correct otherwise)
   if(!grepl("\\.gz$",fileName)) { if(file.exists(paste0(fileName,".gz"))) { chFi <- TRUE
-    if(!silent) message(fxNa,"file '",fileName,"' not found, using .gz version")
+    if(!silent) message(fxNa,"File '",fileName,"' not found, using .gz version")
     fileName <- paste0(fileName,".gz") }}
   
   if(length(path) >0) if(!file.exists(path[1])) { path <- NULL
@@ -73,256 +73,260 @@ readMaxQuantFile <- function(path, fileName="proteinGroups.txt", normalizeMeth="
   if(grepl("\\.txt$|\\.txt\\.gz$",fileName)) message(fxNa,"Suspicious filename, this function was designed for reading tabulated text files produced by MaxQuant")
 
   chPa <- try(find.package("utils"), silent=TRUE)
-  if("try-error" %in% class(chPa)) stop("package 'utils' not found ! Please install first frm CRAN")   
+  if(inherits(chPa, "try-error")) stop("package 'utils' not found ! Please install first frm CRAN")   
 
   ## initial read MaxQuant
-  tmp <- utils::read.delim(file.path(path,fileName), stringsAsFactors=FALSE)
-  if(length(uniqPepPat) >1) message(fxNa," NOTE: argument 'uniqPepPat' is depreciated (and it's content ignored), please use 'pepCountCol' instead !")
-  ## check which columns can be extracted (for annotation)
-  if(is.integer(contamCol)) contamCol <- colnames(tmp)[contamCol]   
-  extrColNames <- union(extrColNames, contamCol)                     # add contamCol if not included in extrColNames
-  chCol <- extrColNames %in% colnames(tmp)
-  if(!any(chCol)) { extrColNames <- gsub("\\."," ",extrColNames)
-  chCol <- extrColNames %in% colnames(tmp) }
-  if(all(!chCol)) stop(" Problem locating annotation columns (",wrMisc::pasteC(extrColNames,quote="''"),")")
-  if(any(!chCol) ) {
-    if(!silent) message(fxNa,"Note: Can't find columns ",wrMisc::pasteC(extrColNames[!chCol]),quote="'")
-  }  
-  ## 'REVERSE' peptides
-  chMajProCol <- extrColNames[1] %in% colnames(tmp)
-  if(chMajProCol) {
-    chRev <- grep("REV__",tmp[,extrColNames[1]])
-    if(length(chRev) >0) {
-      if(!silent) message(fxNa,"Note: Found ",length(chRev)," proteins marked as 'REV_' (reverse peptide identification)", if(isTRUE(remRev)) " - Removing")
-      if(isTRUE(remRev)) tmp <- tmp[-1*chRev,]  
-    }}
-  ## further extracting : quantitation  
-  grepX <- function(x) grep(paste0(x,"\\."), colnames(tmp))
-  useDCol <- if(length(quantCol)==1) grepX(quantCol) else unique(as.integer(sapply(quantCol, grepX)))
-  if(length(useDCol) <1) stop("no columns matching terms from 'quantCol' found")
-  MQdat <- as.matrix(tmp[,useDCol])
-  quantColP <- NULL                           # initialize
-  if(length(quantCol) <1) stop(" 'quantCol' must be provided !")
-  if(length(quantCol) >1) { abund <- as.matrix(wrMisc::extrColsDeX(tmp, extrCol=quantCol, doExtractCols=TRUE, silent=silent, callFrom=fxNa))
-  } else { chP <- substr(quantCol, nchar(quantCol), nchar(quantCol)) != "."
-    quantColP <- quantCol
-    quantCol <- if(chP) grep(paste0(quantCol,"\\."), colnames(tmp)) else grep(quantCol, colnames(tmp)) 
-    chNa <- is.na(quantCol)
-    if(all(chNa)) stop("Could not find any of the columns specified in argument 'quantCol' !")
-    if(any(chNa)) { 
-      if(!silent) message(fxNa," Could not find columns ",wrMisc::pasteC(quantCol[which(chNa)],quote="'")," .. omit")
-      quantCol <- wrMisc::naOmit(quantCol)} 
-    abund <- as.matrix(tmp[,quantCol]) }           # abundance val
-  chNum <- is.numeric(abund)
-  if(!chNum) {abund <- apply(tmp[,quantCol], 2, wrMisc::convToNum, convert="allChar", silent=silent, callFrom=fxNa)}
-  if(length(dim(abund)) <2 & !is.numeric(abund)) abund <- matrix(as.numeric(abund), ncol=ncol(abund), dimnames=dimnames(abund))
-  colnames(abund) <- if(length(quantColP)==1) sub(paste0(quantColP,"\\."),"", colnames(abund)) else wrMisc::.trimFromStart(wrMisc::.trimFromEnd(colnames(abund)))
-  ## convert 0 to NA
-  ch1 <- abund <= 0
-  if(any(ch1)) { abund[which(ch1)] <- NA
-    if(!silent) message(fxNa,"Display ",sum(ch1),"(",100*round(sum(ch1)/length(ch1),3),"%) initial '0' values as 'NA'")} 
-
-  ## further extracting : prepare for countig data
-  ch1 <- grep(" $",pepCountCol)
-  if(length(ch1) < length(pepCountCol)) {pepCountCol <- if(length(ch1) >0) paste0(pepCountCol[-1*which(ch1)]," ") else paste0(pepCountCol," ")}  # add tailing ' ' (if not yet present)    
-  if(length(grep("\\\\",pepCountCol)) <1) pepCountCol <- gsub("\\.","\\\\.",pepCountCol)       # protect '.'  "
-  ## prepare for column-name style with '.' or '...'
-  tm2 <- lapply(as.list(pepCountCol), function(x) c(x, gsub(" ",".", sub(" \\+ ","...",x))) )
-  names(tm2) <- pepCountCol
-  usePCol <- lapply(tm2, function(x) {ch1 <- lapply(x, grep, colnames(tmp)); if(length(ch1) >1) ch1[[which.max(sapply(ch1,length))]] else ch1[[1]]})
-  usePCol <- lapply(usePCol, wrMisc::naOmit)	  
-  ch2 <- sapply(usePCol, length)  -ncol(abund)
-  if(any(ch2 >0)) usePCol[which(ch2 >0)] <- lapply(usePCol[which(ch2 >0)], function(x) x[-1])
-  ch2 <- sapply(usePCol, length) ==ncol(abund)
-  if(!silent & any(!ch2)) message(fxNa,"Could not find peptide counts columns (argument 'pepCountCol') matching to '",pepCountCol[which(!ch2)],"'")
-  ## make array of PSM counts etc
-  if(any(ch2 >0)) {
-    counts <- array(dim=c(nrow(tmp),ncol(abund),sum(ch2)), dimnames=list(NULL, colnames(abund), pepCountCol[which(ch2)]))
-    for(i in 1:sum(ch2)) counts[,,i] <- as.numeric(as.matrix(tmp[,usePCol[[which(ch2)[i]]] ]))
-  } else counts <- NULL
-  ## Annotation
-  useACol <- list(annC=match(extrColNames,colnames(tmp)) )
-  MQann <- as.matrix(tmp[,useACol$annC])  
-  specMQ <- rep(NA,nrow(abund))
-
-  .extrAnno <- function(spIn=2, spc=specPref, anno=MQann, exCoNa=extrColNames, extrCoIn=2) {
-    ## extract specific annotation terms out of matrix anno
-    ## 'spc' .. search-term(s)
-    if(length(spc) >= spIn) {
-      if(spIn ==1){
-        union(grep(spc[spIn], anno[,exCoNa[extrCoIn]]), which(gsub(" ","",anno[,exCoNa[extrCoIn]])=="+"))
-      } else {
-        ch1 <- unlist(spc[spIn])  
-        if(length(ch1) >1) unique(sapply(ch1, function(x) grep(x,MQann[,exCoNa[extrCoIn]]))) else grep(spc[spIn], MQann[,exCoNa[extrCoIn]]) 
-      }
-    } else NULL }
-  if(length(specPref) >0) { specMQ0 <- lapply(1:length(specPref), .extrAnno)
-    names(specMQ0) <- c("conta","mainSpe","species2","species3","species4")[1:length(specMQ0)]  
-    if(length(specMQ0$mainSpe) <1) {
-      specMQ0$mainSpe <- (1:nrow(tmp))[-1*unlist(specMQ0)]
-      if(!silent) message(fxNa,"Problem with 'mainSpecies' (none found), assuming that all ",length(specMQ0$mainSpe)," non-assigned proteins are 'mainSpecies' ") }
-    for(i in 1:length(specMQ0)) if(length(specMQ0[[i]]) >0) specMQ[specMQ0[[i]]] <- names(specMQ0)[i]
-  } else specMQ0 <- rep(NA, nrow(MQann))   
-  MQann <- cbind(SpecType=specMQ, MQann)                                       # better to name column 'species' ?? 
-   
-  ## split Annotation
-  remHeader <- c("^conta\\|","^sp\\|") 
-  MQan2 <- strsplit(sub(remHeader[1], "", sub(remHeader[2], "", MQann[,"Majority.protein.IDs"])), "\\|")
-  MQanLe <- sapply(MQan2, length)
-  MQan3 <- matrix(NA, nrow=nrow(MQann), ncol=2, dimnames=list(NULL, c("Accession","EntryName")))
-  chLe <- MQanLe==1
-  if(any(chLe)) MQan3[which(chLe),1] <- unlist(MQan2[which(chLe)])
-  chLe <- MQanLe==2
-  if(any(chLe)) MQan3[which(chLe),] <- matrix(unlist(MQan2[which(chLe)]), ncol=2, byrow=TRUE)
-  chLe <- MQanLe >2
-  locAccNo <- function(x) {      # function to select AccessionNumner (eg P02768) and EntryName (eg ALBU_HUMAN) after strsplit() of concatenated annotation
-    accIn <- grep("^[[:upper:]]+[[:digit:]]+$|^[[:upper:]]+[[:digit:]]+\\-[[:digit:]]+$", x)
-    namId <- grep("[[:upper:]]_[[:upper:]]", x)
-    useInd <- c(acc=if(length(accIn) >0) accIn[1] else NA, name=if(length(namId) >0) namId[1] else NA)
-    chNA <- is.na(useInd)
-    if(any(chNA)) useInd[which(chNA)] <- (1:length(x))[-1*wrMisc::naOmit(unique(c(namId,useInd)))][1:sum(chNA)]
-    x[useInd] }
-  if(any(chLe)) MQan3[which(chLe),] <- t(sapply(MQan2[which(chLe)], locAccNo ))
-  chSemc <- grep(";", MQan3[,2])                                     # look for semicolon separator  (eg "CATA_HUMAN_UPS;conta")
-  if(length(chSemc) >0) MQan3[chSemc,2] <- sub(";[[:print:]]+","",MQan3[chSemc,2])       # remove all after semicolon (eg "CATA_HUMAN_UPS;conta")
-  ## contaminants (fuse from column 'Potential.contaminant' and those found via specPref[1])
-  contam <- rep(FALSE, nrow(MQann))
-  if("Potential.contaminant" %in% colnames(MQann)) {chCo <- "+" %in% sub("^ ","",MQann[,"Potential.contaminant"])
-    if(any(chCo)) contam[which(chCo)] <- TRUE }
-  if(!all(is.na(specMQ0))) if(length(specMQ0$conta) >0) contam[specMQ0$conta] <- TRUE         ## from 'specPref' search
-  ## extract/add GN
-  MQan3 <- cbind(MQan3,GN=NA)
-  GNLi <- grep("\\ GN=[[:upper:]]{2,}", MQann[,"Fasta.headers"])
-    if(length(GNLi) >0) { zz <- sub("[[:print:]]+\\ GN=", "",MQann[GNLi,"Fasta.headers"])   # remove surplus to left
-      MQan3[GNLi,"GN"] <- sub("[[:punct:]]$","", sub("\\ +$","", sub("\\ [[:print:]]+","",zz))) }    # remove surplus to right (and right trailing space) and trailing ';'
+  tmp <- try(utils::read.delim(file.path(path,fileName), stringsAsFactors=FALSE), silent=TRUE)
+  if(length(tmp) <1 | inherits(tmp, "try-error")) {
+    message(fxNa,"Unable to read file 'fileName' !  Returning NULL; check if this is original MaxQuant-file and/or rights to read")
+    NULL
+  } else {    
+    if(length(uniqPepPat) >1) message(fxNa,"NOTE: argument 'uniqPepPat' is depreciated (and it's content ignored), please use 'pepCountCol' instead !")
+    ## check which columns can be extracted (for annotation)
+    if(is.integer(contamCol)) contamCol <- colnames(tmp)[contamCol]   
+    extrColNames <- union(extrColNames, contamCol)                     # add contamCol if not included in extrColNames
+    chCol <- extrColNames %in% colnames(tmp)
+    if(!any(chCol)) { extrColNames <- gsub("\\."," ",extrColNames)
+    chCol <- extrColNames %in% colnames(tmp) }
+    if(all(!chCol)) stop(" Problem locating annotation columns (",wrMisc::pasteC(extrColNames,quote="''"),")")
+    if(any(!chCol) ) {
+      if(!silent) message(fxNa,"Note: Can't find columns ",wrMisc::pasteC(extrColNames[!chCol]),quote="'")
+    }  
+    ## 'REVERSE' peptides
+    chMajProCol <- extrColNames[1] %in% colnames(tmp)
+    if(chMajProCol) {
+      chRev <- grep("REV__",tmp[,extrColNames[1]])
+      if(length(chRev) >0) {
+        if(!silent) message(fxNa,"Note: Found ",length(chRev)," proteins marked as 'REV_' (reverse peptide identification)", if(isTRUE(remRev)) " - Removing")
+        if(isTRUE(remRev)) tmp <- tmp[-1*chRev,]  
+      }}
+    ## further extracting : quantitation  
+    grepX <- function(x) grep(paste0(x,"\\."), colnames(tmp))
+    useDCol <- if(length(quantCol)==1) grepX(quantCol) else unique(as.integer(sapply(quantCol, grepX)))
+    if(length(useDCol) <1) stop("no columns matching terms from 'quantCol' found")
+    MQdat <- as.matrix(tmp[,useDCol])
+    quantColP <- NULL                           # initialize
+    if(length(quantCol) <1) stop(" 'quantCol' must be provided !")
+    if(length(quantCol) >1) { abund <- as.matrix(wrMisc::extrColsDeX(tmp, extrCol=quantCol, doExtractCols=TRUE, silent=silent, callFrom=fxNa))
+    } else { chP <- substr(quantCol, nchar(quantCol), nchar(quantCol)) != "."
+      quantColP <- quantCol
+      quantCol <- if(chP) grep(paste0(quantCol,"\\."), colnames(tmp)) else grep(quantCol, colnames(tmp)) 
+      chNa <- is.na(quantCol)
+      if(all(chNa)) stop("Could not find any of the columns specified in argument 'quantCol' !")
+      if(any(chNa)) { 
+        if(!silent) message(fxNa,"Could not find columns ",wrMisc::pasteC(quantCol[which(chNa)],quote="'")," .. omit")
+        quantCol <- wrMisc::naOmit(quantCol)} 
+      abund <- as.matrix(tmp[,quantCol]) }           # abundance val
+    chNum <- is.numeric(abund)
+    if(!chNum) {abund <- apply(tmp[,quantCol], 2, wrMisc::convToNum, convert="allChar", silent=silent, callFrom=fxNa)}
+    if(length(dim(abund)) <2 & !is.numeric(abund)) abund <- matrix(as.numeric(abund), ncol=ncol(abund), dimnames=dimnames(abund))
+    colnames(abund) <- if(length(quantColP)==1) sub(paste0(quantColP,"\\."),"", colnames(abund)) else wrMisc::.trimFromStart(wrMisc::.trimFromEnd(colnames(abund)))
+    ## convert 0 to NA
+    ch1 <- abund <= 0
+    if(any(ch1)) { abund[which(ch1)] <- NA
+      if(!silent) message(fxNa,"Display ",sum(ch1),"(",100*round(sum(ch1)/length(ch1),3),"%) initial '0' values as 'NA'")} 
   
-  ## finalize annotation 
-  MQann <- cbind(MQan3, Species=NA, Contam=contam, MQann)
-  ## extract species according to custom search parameters 'specPref'
-  .annSpecies <- function(spe=c("_HUMAN","Homo sapiens"), anno=MQann, exCoNa=extrColNames) {
-    ## extract species tags out of MQann[,"Majority.protein.IDs"], place as convert to regular name in anno, return matrix anno
-    ch1 <- grep(spe[1], anno[,exCoNa[2]])
-    if(length(ch1) >0) anno[ch1,"Species"] <- spe[2]  #"Homo sapiens"
-    anno }
-  if(remStrainNo) {
-    commonSpec <- .commonSpecies()
-    for(i in 1:nrow(commonSpec)) MQann <- .annSpecies(commonSpec[i,],MQann,exCoNa=extrColNames)}
-
-  ## now complete (overwrite) by info extracted from fasta : ' OS='
-  overWriteSpecies <- FALSE
-  chSpe <- if(overWriteSpecies) 1:nrow(MQann) else which(is.na(MQann[,"Species"]) | nchar(MQann[,"Species"]) <2)
-  chSpe <- grep("[[:print:]]+\\ OS=[[:upper:]][[:lower:]]+", MQann[chSpe,"Fasta.headers"])   # limit to those not found by species extension on protein name 
-
-  if(length(chSpe) >0) { 
-    OS <- sub("[[:print:]]+\\ OS=","", MQann[chSpe,"Fasta.headers"])
-    if(!remStrainNo) {
-      ## keep strain information : need to first separate entries with (strain ad treat separately from rest (below)
-      ## not finished
-      ## remove remaining tailing semicolon to comma (in Species)
-      ch1 <- grep(";$|,$", OS)
-      if(length(ch1) >0) OS[ch1] <- sub(";+$|,*$","", OS[ch1])      
-      ## remove any other tailing tags (like OX=)
-      ch1 <- grep("\\ [[:upper:]]{2}=",MQann[,"Species"])
-      if(length(ch1) >0) MQann[ch1,"Species"] <- sub("\\ [[:upper:]]{2}=[[:print:]]*","",MQann[ch1,"Species"])
-    } else {    ## strict 2 word after OS=  (strain names will be cut)
-      ch1 <- grep("^[[:upper:]][[:lower:]]*\\ [[:lower:]]+\\ [[:print:]]", OS)
-      if(length(ch1) > 0) { nch <- nchar(sub("^[[:upper:]][[:lower:]]*\\ [[:lower:]]+\\ ", "", OS[ch1]))     # loose strain information
-        OS[ch1] <- substr(OS[ch1], 1, nchar(OS[ch1]) -nch -1) }             
-    MQann[chSpe,"Species"] <- OS }
-    OSna <- unique(MQann[chSpe,"Species"])
-    ch1 <- nchar(OSna) <1
-    if(!all(ch1)) {        ## run only if some names are given
-      if(any(ch1)) OSna <- OSna[which(!ch1)]  # remove empty tags
-      ##
-      if(remStrainNo) {           ## assume strict definition of species name for searching truncated (expand truncated to longest)
-      ## species names occuring inside other ones are assumed as truncated, replace by longer one
-        OSna <- OSna[which(nchar(OSna) >0)]
-        ch1 <- lapply(OSna, grep, OSna)
-        chTr <- sapply(ch1, length) >1
+    ## further extracting : prepare for countig data
+    ch1 <- grep(" $",pepCountCol)
+    if(length(ch1) < length(pepCountCol)) {pepCountCol <- if(length(ch1) >0) paste0(pepCountCol[-1*which(ch1)]," ") else paste0(pepCountCol," ")}  # add tailing ' ' (if not yet present)    
+    if(length(grep("\\\\",pepCountCol)) <1) pepCountCol <- gsub("\\.","\\\\.",pepCountCol)       # protect '.'  "
+    ## prepare for column-name style with '.' or '...'
+    tm2 <- lapply(as.list(pepCountCol), function(x) c(x, gsub(" ",".", sub(" \\+ ","...",x))) )
+    names(tm2) <- pepCountCol
+    usePCol <- lapply(tm2, function(x) {ch1 <- lapply(x, grep, colnames(tmp)); if(length(ch1) >1) ch1[[which.max(sapply(ch1,length))]] else ch1[[1]]})
+    usePCol <- lapply(usePCol, wrMisc::naOmit)	  
+    ch2 <- sapply(usePCol, length)  -ncol(abund)
+    if(any(ch2 >0)) usePCol[which(ch2 >0)] <- lapply(usePCol[which(ch2 >0)], function(x) x[-1])
+    ch2 <- sapply(usePCol, length) ==ncol(abund)
+    if(!silent & any(!ch2)) message(fxNa,"Could not find peptide counts columns (argument 'pepCountCol') matching to '",pepCountCol[which(!ch2)],"'")
+    ## make array of PSM counts etc
+    if(any(ch2 >0)) {
+      counts <- array(dim=c(nrow(tmp),ncol(abund),sum(ch2)), dimnames=list(NULL, colnames(abund), pepCountCol[which(ch2)]))
+      for(i in 1:sum(ch2)) counts[,,i] <- as.numeric(as.matrix(tmp[,usePCol[[which(ch2)[i]]] ]))
+    } else counts <- NULL
+    ## Annotation
+    useACol <- list(annC=match(extrColNames,colnames(tmp)) )
+    MQann <- as.matrix(tmp[,useACol$annC])  
+    specMQ <- rep(NA,nrow(abund))
+  
+    .extrAnno <- function(spIn=2, spc=specPref, anno=MQann, exCoNa=extrColNames, extrCoIn=2) {
+      ## extract specific annotation terms out of matrix anno
+      ## 'spc' .. search-term(s)
+      if(length(spc) >= spIn) {
+        if(spIn ==1){
+          union(grep(spc[spIn], anno[,exCoNa[extrCoIn]]), which(gsub(" ","",anno[,exCoNa[extrCoIn]])=="+"))
+        } else {
+          ch1 <- unlist(spc[spIn])  
+          if(length(ch1) >1) unique(sapply(ch1, function(x) grep(x,MQann[,exCoNa[extrCoIn]]))) else grep(spc[spIn], MQann[,exCoNa[extrCoIn]]) 
+        }
+      } else NULL }
+    if(length(specPref) >0) { specMQ0 <- lapply(1:length(specPref), .extrAnno)
+      names(specMQ0) <- c("conta","mainSpe","species2","species3","species4")[1:length(specMQ0)]  
+      if(length(specMQ0$mainSpe) <1) {
+        specMQ0$mainSpe <- (1:nrow(tmp))[-1*unlist(specMQ0)]
+        if(!silent) message(fxNa,"Problem with 'mainSpecies' (none found), assuming that all ",length(specMQ0$mainSpe)," non-assigned proteins are 'mainSpecies' ") }
+      for(i in 1:length(specMQ0)) if(length(specMQ0[[i]]) >0) specMQ[specMQ0[[i]]] <- names(specMQ0)[i]
+    } else specMQ0 <- rep(NA, nrow(MQann))   
+    MQann <- cbind(SpecType=specMQ, MQann)                                       # better to name column 'species' ?? 
+     
+    ## split Annotation
+    remHeader <- c("^conta\\|","^sp\\|") 
+    MQan2 <- strsplit(sub(remHeader[1], "", sub(remHeader[2], "", MQann[,"Majority.protein.IDs"])), "\\|")
+    MQanLe <- sapply(MQan2, length)
+    MQan3 <- matrix(NA, nrow=nrow(MQann), ncol=2, dimnames=list(NULL, c("Accession","EntryName")))
+    chLe <- MQanLe==1
+    if(any(chLe)) MQan3[which(chLe),1] <- unlist(MQan2[which(chLe)])
+    chLe <- MQanLe==2
+    if(any(chLe)) MQan3[which(chLe),] <- matrix(unlist(MQan2[which(chLe)]), ncol=2, byrow=TRUE)
+    chLe <- MQanLe >2
+    locAccNo <- function(x) {      # function to select AccessionNumner (eg P02768) and EntryName (eg ALBU_HUMAN) after strsplit() of concatenated annotation
+      accIn <- grep("^[[:upper:]]+[[:digit:]]+$|^[[:upper:]]+[[:digit:]]+\\-[[:digit:]]+$", x)
+      namId <- grep("[[:upper:]]_[[:upper:]]", x)
+      useInd <- c(acc=if(length(accIn) >0) accIn[1] else NA, name=if(length(namId) >0) namId[1] else NA)
+      chNA <- is.na(useInd)
+      if(any(chNA)) useInd[which(chNA)] <- (1:length(x))[-1*wrMisc::naOmit(unique(c(namId,useInd)))][1:sum(chNA)]
+      x[useInd] }
+    if(any(chLe)) MQan3[which(chLe),] <- t(sapply(MQan2[which(chLe)], locAccNo ))
+    chSemc <- grep(";", MQan3[,2])                                     # look for semicolon separator  (eg "CATA_HUMAN_UPS;conta")
+    if(length(chSemc) >0) MQan3[chSemc,2] <- sub(";[[:print:]]+","",MQan3[chSemc,2])       # remove all after semicolon (eg "CATA_HUMAN_UPS;conta")
+    ## contaminants (fuse from column 'Potential.contaminant' and those found via specPref[1])
+    contam <- rep(FALSE, nrow(MQann))
+    if("Potential.contaminant" %in% colnames(MQann)) {chCo <- "+" %in% sub("^ ","",MQann[,"Potential.contaminant"])
+      if(any(chCo)) contam[which(chCo)] <- TRUE }
+    if(!all(is.na(specMQ0))) if(length(specMQ0$conta) >0) contam[specMQ0$conta] <- TRUE         ## from 'specPref' search
+    ## extract/add GN
+    MQan3 <- cbind(MQan3,GN=NA)
+    GNLi <- grep("\\ GN=[[:upper:]]{2,}", MQann[,"Fasta.headers"])
+      if(length(GNLi) >0) { zz <- sub("[[:print:]]+\\ GN=", "",MQann[GNLi,"Fasta.headers"])   # remove surplus to left
+        MQan3[GNLi,"GN"] <- sub("[[:punct:]]$","", sub("\\ +$","", sub("\\ [[:print:]]+","",zz))) }    # remove surplus to right (and right trailing space) and trailing ';'
+    
+    ## finalize annotation 
+    MQann <- cbind(MQan3, Species=NA, Contam=contam, MQann)
+    ## extract species according to custom search parameters 'specPref'
+    .annSpecies <- function(spe=c("_HUMAN","Homo sapiens"), anno=MQann, exCoNa=extrColNames) {
+      ## extract species tags out of MQann[,"Majority.protein.IDs"], place as convert to regular name in anno, return matrix anno
+      ch1 <- grep(spe[1], anno[,exCoNa[2]])
+      if(length(ch1) >0) anno[ch1,"Species"] <- spe[2]  #"Homo sapiens"
+      anno }
+    if(remStrainNo) {
+      commonSpec <- .commonSpecies()
+      for(i in 1:nrow(commonSpec)) MQann <- .annSpecies(commonSpec[i,],MQann,exCoNa=extrColNames)}
+  
+    ## now complete (overwrite) by info extracted from fasta : ' OS='
+    overWriteSpecies <- FALSE
+    chSpe <- if(overWriteSpecies) 1:nrow(MQann) else which(is.na(MQann[,"Species"]) | nchar(MQann[,"Species"]) <2)
+    chSpe <- grep("[[:print:]]+\\ OS=[[:upper:]][[:lower:]]+", MQann[chSpe,"Fasta.headers"])   # limit to those not found by species extension on protein name 
+  
+    if(length(chSpe) >0) { 
+      OS <- sub("[[:print:]]+\\ OS=","", MQann[chSpe,"Fasta.headers"])
+      if(!remStrainNo) {
+        ## keep strain information : need to first separate entries with (strain ad treat separately from rest (below)
+        ## not finished
+        ## remove remaining tailing semicolon to comma (in Species)
+        ch1 <- grep(";$|,$", OS)
+        if(length(ch1) >0) OS[ch1] <- sub(";+$|,*$","", OS[ch1])      
+        ## remove any other tailing tags (like OX=)
+        ch1 <- grep("\\ [[:upper:]]{2}=",MQann[,"Species"])
+        if(length(ch1) >0) MQann[ch1,"Species"] <- sub("\\ [[:upper:]]{2}=[[:print:]]*","",MQann[ch1,"Species"])
+      } else {    ## strict 2 word after OS=  (strain names will be cut)
+        ch1 <- grep("^[[:upper:]][[:lower:]]*\\ [[:lower:]]+\\ [[:print:]]", OS)
+        if(length(ch1) > 0) { nch <- nchar(sub("^[[:upper:]][[:lower:]]*\\ [[:lower:]]+\\ ", "", OS[ch1]))     # loose strain information
+          OS[ch1] <- substr(OS[ch1], 1, nchar(OS[ch1]) -nch -1) }             
+      MQann[chSpe,"Species"] <- OS }
+      OSna <- unique(MQann[chSpe,"Species"])
+      ch1 <- nchar(OSna) <1
+      if(!all(ch1)) {        ## run only if some names are given
+        if(any(ch1)) OSna <- OSna[which(!ch1)]  # remove empty tags
+        ##
+        if(remStrainNo) {           ## assume strict definition of species name for searching truncated (expand truncated to longest)
+        ## species names occuring inside other ones are assumed as truncated, replace by longer one
+          OSna <- OSna[which(nchar(OSna) >0)]
+          ch1 <- lapply(OSna, grep, OSna)
+          chTr <- sapply(ch1, length) >1
+          if(any(chTr)) { if(!silent) message(fxNa,"Found ",sum(chTr)," species name(s) appearing inside other ones, assume as truncated (eg  ",OSna[which(chTr)[1]],")") 
+            for(i in which(chTr)) OSna[ch1[[i]][-which(ch1[[i]]==i)]] <- MQann[match(OSna[i],MQann[,"Species"]),"Species"]   }
+        
+      } else {
+      ## check for truncated species names (ie names found) inside other ones 
+        chTr <- sapply(ch1,length) >1
         if(any(chTr)) { if(!silent) message(fxNa,"Found ",sum(chTr)," species name(s) appearing inside other ones, assume as truncated (eg  ",OSna[which(chTr)[1]],")") 
           for(i in which(chTr)) OSna[ch1[[i]][-which(ch1[[i]]==i)]] <- MQann[match(OSna[i],MQann[,"Species"]),"Species"]   }
-      
-    } else {
-    ## check for truncated species names (ie names found) inside other ones 
-      chTr <- sapply(ch1,length) >1
-      if(any(chTr)) { if(!silent) message(fxNa,"Found ",sum(chTr)," species name(s) appearing inside other ones, assume as truncated (eg  ",OSna[which(chTr)[1]],")") 
-        for(i in which(chTr)) OSna[ch1[[i]][-which(ch1[[i]]==i)]] <- MQann[match(OSna[i],MQann[,"Species"]),"Species"]   }
-       
-  } }
-  if(!silent) { chSp <- sum(is.na(MQann[,"Species"]))
-    if(chSp >0) message(fxNa,"Note: ",chSp," proteins with unknown species")
-    tab <- table(MQann[,"Species"])
-    tab <- rbind(names(tab),": ",tab,",  ")
-    if(!silent) message("    by species : ", apply(tab,2,paste)) }               # all lines assigned   
+         
+    } }
+    if(!silent) { chSp <- sum(is.na(MQann[,"Species"]))
+      if(chSp >0) message(fxNa,"Note: ",chSp," proteins with unknown species")
+      tab <- table(MQann[,"Species"])
+      tab <- rbind(names(tab),": ",tab,",  ")
+      if(!silent) message("    by species : ", apply(tab,2,paste)) }               # all lines assigned   
+    
+    ## check for composite Accession names, keep only 1st part
+    ch1 <- grep(",|;|_|\\(|\\|", MQann[,1])    # note: need to not exclude/mark '-'
+    if(length(ch1) >0) {
+      if(!silent) message(fxNa,"Found ",length(ch1)," composite accession-numbers, truncating (eg ",MQann[ch1[1],1],")")
+      ch2 <- grep("^CON_",MQann[ch1,1])        # if composite Acc number starts with CON_, remove this part and rather keep other entry
+      if(length(ch2) >0) {
+        MQann[ch1[ch2],1] <- sub("^CON_[[:punct:]]*","",MQann[ch1[ch2],1]) }
+      ch2 <- grep("[[:alnum:]]+;{0,1}CON__", MQann[ch1,1])              # if composite Acc number is followed by ;CON__ (eg "P02768;CON__P02768-1" or ""P02769CON__A1B2"), keep 1st part
+      if(length(ch2) >0) MQann[ch1[ch2],1] <- sub(";{0,1}CON__[[:print:]]*", "", MQann[ch1[ch2],1]) 
+      ch1 <- grep(",|;|_|\\(|\\|", MQann[,1])
+      if(length(ch1) >0) MQann[ch1,1] <- sub(paste(paste0(c(",",";","_","\\(","\\|"),"[[:print:]]*"), collapse="|"), "", MQann[ch1,1]) }
+    }   
+    ## extract UniProtID as EntryName
+    tmp <- sub("\\ [[:alnum:]][[:print:]]+","",MQann[,"Fasta.headers"])
+    MQann[,"EntryName"] <- sub("^[[:print:]]+\\|[[:alnum:]]+\\|","",tmp)  # also remove _UPS?
+    colnames(MQann)[which(colnames(MQann)=="GN")] <- "GeneName"           # correct colname
+    MQann <- cbind(MQann[,1:6], Description=sub("\\ $","",sub("[[:upper:]]{2}=[[:print:]]+","",substring(MQann[,"Fasta.headers"], nchar(tmp)+2))), MQann[,7:ncol(MQann)])
+    
+    
+    ## look for unique col from $annot to use as rownames
+    chAn <- colSums(apply(MQann[,c(1:min(ncol(MQann),7))], 2, duplicated), na.rm=TRUE)          # look at first 6 cols : how many elements per column duplicated 
+    if(!silent) message(fxNa,"Use column '",colnames(MQann)[which.min(chAn)],"' as identifyer (has fewest, ie ",chAn[which.min(chAn)]," duplicated entries) as rownames")
+    rownames(abund) <- rownames(MQann) <- if(any(chAn==0)) MQann[,which(chAn==0)[1]] else wrMisc::correctToUnique(MQann[,which.min(chAn)], callFrom=fxNa)
+    if(length(counts) >0) rownames(counts) <- rownames(MQann)
   
-  ## check for composite Accession names, keep only 1st part
-  ch1 <- grep(",|;|_|\\(|\\|", MQann[,1])    # note: need to not exclude/mark '-'
-  if(length(ch1) >0) {
-    if(!silent) message(fxNa,"Found ",length(ch1)," composite accession-numbers, truncating (eg ",MQann[ch1[1],1],")")
-    ch2 <- grep("^CON_",MQann[ch1,1])        # if composite Acc number starts with CON_, remove this part and rather keep other entry
-    if(length(ch2) >0) {
-      MQann[ch1[ch2],1] <- sub("^CON_[[:punct:]]*","",MQann[ch1[ch2],1]) }
-    ch2 <- grep("[[:alnum:]]+;{0,1}CON__", MQann[ch1,1])              # if composite Acc number is followed by ;CON__ (eg "P02768;CON__P02768-1" or ""P02769CON__A1B2"), keep 1st part
-    if(length(ch2) >0) MQann[ch1[ch2],1] <- sub(";{0,1}CON__[[:print:]]*", "", MQann[ch1[ch2],1]) 
-    ch1 <- grep(",|;|_|\\(|\\|", MQann[,1])
-    if(length(ch1) >0) MQann[ch1,1] <- sub(paste(paste0(c(",",";","_","\\(","\\|"),"[[:print:]]*"), collapse="|"), "", MQann[ch1,1]) }
-  }   
-  ## extract UniProtID as EntryName
-  tmp <- sub("\\ [[:alnum:]][[:print:]]+","",MQann[,"Fasta.headers"])
-  MQann[,"EntryName"] <- sub("^[[:print:]]+\\|[[:alnum:]]+\\|","",tmp)  # also remove _UPS?
-  colnames(MQann)[which(colnames(MQann)=="GN")] <- "GeneName"           # correct colname
-  MQann <- cbind(MQann[,1:6], Description=sub("\\ $","",sub("[[:upper:]]{2}=[[:print:]]+","",substring(MQann[,"Fasta.headers"], nchar(tmp)+2))), MQann[,7:ncol(MQann)])
+    ## check for reference for normalization
+    refLiIni <- refLi
+    if(is.character(refLi) & length(refLi)==1) { refLi <- which(MQann[,"SpecType"]==refLi)
+      if(length(refLi) <1) message(fxNa,"Could not find any protein matching argument 'refLi', ignoring ...") else {
+        if(!silent) message(fxNa,"Normalize using subset of ",length(refLi))}}           # may be "mainSpe"
+    if(length(refLi) <1) refLi <- NULL
+    ## take log2 & normalize
+    abundN <- wrMisc::normalizeThis(log2(abund), method=normalizeMeth, refLines=refLi, silent=silent, callFrom=fxNa)       #
   
+    ## plot distribution of intensities
+    custLay <- NULL
+    if(length(plotGraph) >0) { if(is.numeric(plotGraph)) {custLay <- plotGraph; plotGraph <- TRUE
+      } else { plotGraph <- isTRUE(plotGraph[1])} }
+    if(plotGraph){
+      if(length(custLay) >0) graphics::layout(custLay) else if(!identical(normalizeMeth,"none") & length(abundN) >0) graphics::layout(1:2)
+      graphics::par(mar=c(3, 3, 3, 1))                           # mar: bot,le,top,ri
+      reqPa <- c("wrGraph","sm")
+      misPa <- !sapply(reqPa, requireNamespace, quietly=TRUE)
+      if(any(misPa)) if(!silent) message(fxNa,"Missing package ",wrMisc::pasteC(c("wrGraph","sm")[which(misPa)],quoteC="'")," for drawing vioplots")
+      if(is.null(tit)) tit <- "MaxQuant Quantification "    
+      titSu <- if(length(refLi) >0) paste0(c(" by ",if(length(refLiIni) >1) c(length(refLi)," selected lines") else c("'",refLiIni,"'")),collapse="")  else NULL
+      if(any(misPa)) { 
+        ## wrGraph not available : simple boxplot  
+        graphics::boxplot(log2(abund), main=paste(tit," (initial)"), las=1, outline=FALSE)
+        graphics::abline(h=round(stats::median(log2(abund), na.rm=TRUE)) +(-2:2)*2, lty=2, col=grDevices::grey(0.6)) 
+        if(!identical(normalizeMeth,"none") & length(abundN) >0) {
+          ## now normalized
+          graphics::boxplot(abundN,main=paste(tit," (",normalizeMeth,"-normalized",titSu,")"), las=1, outline=FALSE)
+          graphics::abline(h=round(stats::median(abundN, na.rm=TRUE)) +(-2:2)*2, lty=2, col=grDevices::grey(0.6)) }
+      } else {                                                  # wrGraph and sm are available
+        wrGraph::vioplotW(log2(abund), tit=paste(tit," (initial)"), wex=wex, silent=silent, callFrom=fxNa) 
+        graphics::abline(h=round(stats::median(log2(abund), na.rm=TRUE)) +(-2:2)*2, lty=2, col=grDevices::grey(0.6)) 
+        if(!identical(normalizeMeth,"none") & length(abundN) >0) {
+          ## now normalized
+          wrGraph::vioplotW((abundN), tit=paste(tit," , ",normalizeMeth,"-normalized",titSu), wex=wex, silent=silent, callFrom=fxNa)
+          graphics::abline(h=round(stats::median(abundN,na.rm=TRUE)) +(-2:2)*2, lty=2, col=grDevices::grey(0.6)) }     
+      }
+      on.exit(graphics::par(opar)) }   #
   
-  ## look for unique col from $annot to use as rownames
-  chAn <- colSums(apply(MQann[,c(1:min(ncol(MQann),7))], 2, duplicated), na.rm=TRUE)          # look at first 6 cols : how many elements per column duplicated 
-  if(!silent) message(fxNa,"Use column '",colnames(MQann)[which.min(chAn)],"' as identifyer (has fewest, ie ",chAn[which.min(chAn)]," duplicated entries) as rownames")
-  rownames(abund) <- rownames(MQann) <- if(any(chAn==0)) MQann[,which(chAn==0)[1]] else wrMisc::correctToUnique(MQann[,which.min(chAn)], callFrom=fxNa)
-  if(length(counts) >0) rownames(counts) <- rownames(MQann)
-
-  ## check for reference for normalization
-  refLiIni <- refLi
-  if(is.character(refLi) & length(refLi)==1) { refLi <- which(MQann[,"SpecType"]==refLi)
-    if(length(refLi) <1) message(fxNa,"Could not find any protein matching argument 'refLi', ignoring ...") else {
-      if(!silent) message(fxNa,"Normalize using subset of ",length(refLi))}}           # may be "mainSpe"
-  if(length(refLi) <1) refLi <- NULL
-  ## take log2 & normalize
-  abundN <- wrMisc::normalizeThis(log2(abund), method=normalizeMeth, refLines=refLi, silent=silent, callFrom=fxNa)       #
-
-  ## plot distribution of intensities
-  custLay <- NULL
-  if(length(plotGraph) >0) { if(is.numeric(plotGraph)) {custLay <- plotGraph; plotGraph <- TRUE
-    } else { plotGraph <- isTRUE(plotGraph[1])} }
-  if(plotGraph){
-    if(length(custLay) >0) graphics::layout(custLay) else if(!identical(normalizeMeth,"none") & length(abundN) >0) graphics::layout(1:2)
-    graphics::par(mar=c(3, 3, 3, 1))                           # mar: bot,le,top,ri
-    reqPa <- c("wrGraph","sm")
-    misPa <- !sapply(reqPa, requireNamespace, quietly=TRUE)
-    if(any(misPa)) if(!silent) message(fxNa,"Missing package ",wrMisc::pasteC(c("wrGraph","sm")[which(misPa)],quoteC="'")," for drawing vioplots")
-    if(is.null(tit)) tit <- "MaxQuant Quantification "    
-    titSu <- if(length(refLi) >0) paste0(c(" by ",if(length(refLiIni) >1) c(length(refLi)," selected lines") else c("'",refLiIni,"'")),collapse="")  else NULL
-    if(any(misPa)) { 
-      ## wrGraph not available : simple boxplot  
-      graphics::boxplot(log2(abund), main=paste(tit," (initial)"), las=1, outline=FALSE)
-      graphics::abline(h=round(stats::median(log2(abund), na.rm=TRUE)) +(-2:2)*2, lty=2, col=grDevices::grey(0.6)) 
-      if(!identical(normalizeMeth,"none") & length(abundN) >0) {
-        ## now normalized
-        graphics::boxplot(abundN,main=paste(tit," (",normalizeMeth,"-normalized",titSu,")"), las=1, outline=FALSE)
-        graphics::abline(h=round(stats::median(abundN, na.rm=TRUE)) +(-2:2)*2, lty=2, col=grDevices::grey(0.6)) }
-    } else {                                                  # wrGraph and sm are available
-      wrGraph::vioplotW(log2(abund), tit=paste(tit," (initial)"), wex=wex, silent=silent, callFrom=fxNa) 
-      graphics::abline(h=round(stats::median(log2(abund), na.rm=TRUE)) +(-2:2)*2, lty=2, col=grDevices::grey(0.6)) 
-      if(!identical(normalizeMeth,"none") & length(abundN) >0) {
-        ## now normalized
-        wrGraph::vioplotW((abundN), tit=paste(tit," , ",normalizeMeth,"-normalized",titSu), wex=wex, silent=silent, callFrom=fxNa)
-        graphics::abline(h=round(stats::median(abundN,na.rm=TRUE)) +(-2:2)*2, lty=2, col=grDevices::grey(0.6)) }     
-    }
-    on.exit(graphics::par(opar)) }   #
-
-  ## meta-data
-  notes <- c(inpFile=file.path(path,fileName), qmethod="MaxQuant", qMethVersion=NA, rawFilePath=NA, normalizeMeth=normalizeMeth, call=match.call(), created=as.character(Sys.time()), 
-    wrProteo.version=utils::packageVersion("wrProteo"), machine=Sys.info()["nodename"])
-  ## prepare for final output
-  if(isTRUE(separateAnnot)) list(raw=abund, quant=abundN, annot=MQann, counts=counts, quantNotes=NULL, notes=notes) else data.frame(abund, MQann)
+    ## meta-data
+    notes <- c(inpFile=file.path(path,fileName), qmethod="MaxQuant", qMethVersion=NA, rawFilePath=NA, normalizeMeth=normalizeMeth, call=match.call(), created=as.character(Sys.time()), 
+      wrProteo.version=utils::packageVersion("wrProteo"), machine=Sys.info()["nodename"])
+    ## prepare for final output
+    if(isTRUE(separateAnnot)) list(raw=abund, quant=abundN, annot=MQann, counts=counts, quantNotes=NULL, notes=notes) else data.frame(abund, MQann) }
 }  
     

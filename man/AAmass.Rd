@@ -14,7 +14,7 @@ AAmass(massTy = "mono", inPept = TRUE, inclSpecAA = FALSE)
 \item{inclSpecAA}{(logical) include ornithine O & selenocysteine U}
 }
 \value{
-vector with masses for all amino-acids (argument 'massTy' to switch form mono-isotopic to average mass)
+This function returns a vector with masses for all amino-acids (argument 'massTy' to switch form mono-isotopic to average mass)
 }
 \description{
 Calculate molecular mass based on atomic composition

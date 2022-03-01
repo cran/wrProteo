@@ -24,7 +24,7 @@ massDeFormula(
 \item{callFrom}{(character) allow easier tracking of messages produced}
 }
 \value{
-numeric vector with mass
+This function returns a numeric vector with mass
 }
 \description{
 Calculate molecular mass based on atomic composition

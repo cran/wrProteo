@@ -42,10 +42,10 @@ combineMultFilterNAimput(
 
 \item{debug}{(logical) additional messages for debugging}
 
-\item{callFrom}{(character) allows easier tracking of message(s) produced}
+\item{callFrom}{(character) allows easier tracking of messages produced}
 }
 \value{
-vector of logical values if corresponding line passes filter criteria
+This function returns a vector of logical values if corresponding line passes filter criteria
 }
 \description{
 In most omics data-analysis one needs to employ a certain number of filtering strategies to avoid getting artifacts to the step of statistical testing.
@@ -61,14 +61,15 @@ and retruns a vector of logical values if corresponding lines passe all filter c
 }
 \examples{
 set.seed(2013)
-datT6 <- matrix(round(rnorm(300)+3,1),ncol=6,dimnames=list(paste("li",1:50,sep=""),letters[19:24]))
+datT6 <- matrix(round(rnorm(300)+3,1), ncol=6,
+  dimnames=list(paste0("li",1:50), letters[19:24]))
 datT6 <- datT6 +matrix(rep(1:nrow(datT6),ncol(datT6)), ncol=ncol(datT6))
 datT6[6:7,c(1,3,6)] <- NA
 datT6[which(datT6 < 11 & datT6 > 10.5)] <- NA
 datT6[which(datT6 < 6 & datT6 > 5)] <- NA
 datT6[which(datT6 < 4.6 & datT6 > 4)] <- NA
 datT6b <- matrixNAneighbourImpute(datT6, gr=gl(2,3))
-datT6c <- combineMultFilterNAimput(datT6, datT6b, grp=gl(2,3),abundThr=2)
+datT6c <- combineMultFilterNAimput(datT6, datT6b, grp=gl(2,3), abundThr=2)
 
 }
 \seealso{

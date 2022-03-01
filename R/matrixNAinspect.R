@@ -19,7 +19,7 @@
 #' @param xLim (numerical,length=2) custom x-axis limits
 #' @param silent (logical) suppress messages
 #' @param callFrom (character) allow easier tracking of messages produced
-#' @return graphic only
+#' @return This function produces graphics only
 #' @seealso  \code{\link[graphics]{hist}}, \code{\link[stats]{na.fail}}, \code{\link[wrMisc]{naOmit}} 
 #' @examples
 #' set.seed(2013)
@@ -32,11 +32,15 @@
 #' matrixNAinspect(datT6,gr=gl(2,3)) 
 #' @export
 matrixNAinspect <- function(dat, gr, retnNA=TRUE, xLab=NULL, tit=NULL, xLim=NULL, silent=FALSE, callFrom=NULL) {
-  fxNa <- wrMisc::.composeCallName(callFrom,newNa="matrixNAinspect")
+  fxNa <- wrMisc::.composeCallName(callFrom, newNa="matrixNAinspect")
   if(length(dim(dat)) !=2) stop("'dat' must be matrix or data.frame with >1 columns")
   if(!isTRUE(silent)) silent <- FALSE
   if(is.data.frame(dat)) dat <- as.matrix(dat)
   if(length(gr) != ncol(dat)) stop("Number of columns in 'dat' and number of (group-)elements in 'gr' do not match !")
+  if(length(gr)==length(unique(gr))) { hasNaNeigh <- TRUE
+    if(!silent) message(fxNa,"NOTE : The argument 'gr' does not designate any replicates, can't determine NA-neighbours !")
+  } else hasNaNeigh <- FALSE
+  
   if(!is.factor(gr)) gr <- as.factor(gr)
   if(is.null(xLab)) xLab <- "(log2) Abundance"
   chRColB <- requireNamespace("RColorBrewer", quietly=TRUE) 
@@ -50,7 +54,7 @@ matrixNAinspect <- function(dat, gr, retnNA=TRUE, xLab=NULL, tit=NULL, xLim=NULL
   chNA <- any(isNA)
   nNAmat <- matrix(0,nrow=nrow(dat), ncol=length(levels(gr)), dimnames=list(NULL,levels(gr)))
   colPanel <- c(grDevices::grey(0.6), grDevices::rgb(0,0.7,0,0.6), grDevices::rgb(0.15,0.15,0.7,0.7))
-  if(chNA) {
+  if(chNA & hasNaNeigh) {
     for(i in c(1:length(levels(gr)))) {
       curCol <- which(gr==levels(gr)[i]) 
       nNAmat[,i] <- if(length(curCol) >1) rowSums(isNA[,curCol]) else (isNA[,curCol])    

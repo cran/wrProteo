@@ -4,7 +4,7 @@
 #' Here, the concept of (technical) replicates is used to investigate what kind of values appear in the other replicates next to NA-values for the same line/protein.
 #' Groups of replicate samples  are defined via argument \code{gr} which descibes the columns of \code{dat}). 
 #' Then, they are inspected for each line to gather NA-neighbour values (ie those values where NAs and regular measures are observed the same time).
-#' Eg, let's consider a line contains a set of 4 replicates. Now, if 2 of them are \code{NA}-values, the remaining 2 non-\code{NA}-values will be considered as NA-neighbours.
+#' Eg, let's consider a line contains a set of 4 replicates for a given group. Now, if 2 of them are \code{NA}-values, the remaining 2 non-\code{NA}-values will be considered as NA-neighbours.
 #' Ultimately, the aim is to replaces all \code{NA}-values based on values from a normal distribution ressembling theire respective NA-neighbours.
 #' 
 #' By default a histogram gets plotted showing the initial, imputed and final distribution to check the global hypothesis that \code{NA}-values arose 
@@ -47,10 +47,10 @@
 #' @param figImputDetail (logical) display details about data (number of NAs) and imputation in graph (min number of NA-neighbours per protein and group, quantile to model, mean and sd of imputed)
 #' @param seedNo (integer) seed-value for normal random values
 #' @param silent (logical) suppress messages
-#' @param callFrom (character) allow easier tracking of message(s) produced
+#' @param callFrom (character) allow easier tracking of messages produced
 #' @param debug (logical) supplemental messages for debugging
-#' @return list with \code{$data} .. matrix of data where \code{NA} are replaced by imputed values, \code{$nNA} .. number of \code{NA} by group, \code{$randParam} .. parameters used for making random data 
-#' @seealso this function gets used by \code{\link{testRobustToNAimputation}}; stimation of mode \code{\link[wrMisc]{stableMode}}; detection of NAs \code{\link[stats]{na.fail}}
+#' @return This function returns a list with \code{$data} .. matrix of data where \code{NA} are replaced by imputed values, \code{$nNA} .. number of \code{NA} by group, \code{$randParam} .. parameters used for making random data 
+#' @seealso this function gets used by \code{\link{testRobustToNAimputation}}; estimation of mode \code{\link[wrMisc]{stableMode}}; detection of NAs \code{\link[stats]{na.fail}}
 #' @examples
 #' set.seed(2013)
 #' datT6 <- matrix(round(rnorm(300)+3,1), ncol=6, dimnames=list(paste("li",1:50,sep=""),
@@ -73,31 +73,33 @@ matrixNAneighbourImpute <- function(dat, gr, imputMethod="mode2", retnNA=TRUE, a
   if(!isTRUE(silent)) silent <- FALSE
   if(isTRUE(debug)) silent <- FALSE
   datOK <- TRUE
+  tx1 <- "; invalid entry - nothing to do"
+  if(datOK) { if(length(unique(gr))==length(gr)) { datOK <- FALSE
+    msg <- "Argument 'gr' does not designate any replicates !  .. ie NA-neighbours can't be determined - nothing to do"} } 
   if(length(dat) <1) { datOK <- FALSE
-    msg <- "'dat' must be list, S3-object, matrix or data.frame with min 2 rows and min 2 cols; invalid entry nothing to do"}   
+    msg <- c("'dat' must be list, S3-object, matrix or data.frame with min 2 rows and min 2 cols",tx1)}   
   if(datOK) if(is.list(dat)) {
     if("quant" %in% names(dat)) {dat <- dat$quant
       if(debug) message(fxNa,"'dat' is list, using element 'quant' as 'dat'")
     } else { datOK <- FALSE
-      msg <- "'dat' is list but does NOT contain element named 'quant'; invalid entry, nothing to do"}
+      msg <- c("'dat' is list but does NOT contain element named 'quant'",tx1)}
   } else { if(any(dim(dat) < c(2,1))) { datOK <- FALSE
-    msg <- "'dat' matrix or data.frame with min 2 rows and min 2 cols; invalid entry nothing to do"}} 
+    msg <- c("'dat' matrix or data.frame with min 2 rows and min 2 cols",tx1)}} 
   if(datOK) { if(length(gr) != ncol(dat)) { datOK <- FALSE
-    msg <- "number of columns of 'dat' must match length of 'gr';  invalid entry nothing to do"}}  
-    
+    msg <- c("Number of columns of 'dat' must match length of 'gr'",tx1)}}  
+        
   if(datOK) {
     if(is.data.frame(dat)) dat <- as.matrix(dat)
     if(!is.factor(gr)) gr <- as.factor(gr)
     if(is.null(xLab)) xLab <- "Values"
     if(length(wrMisc::naOmit(imputMethod)) <1) { imputMethod <- "mode2"
-      if(!silent) message(fxNa," Invalid entry for 'imputMethod' setting to default")}
+      if(!silent) message(fxNa,"Invalid entry for 'imputMethod' setting to default")}
     chMeth <- imputMethod %in% c("datQuant", "medmode", "mode1", "mode2", "mode3", "modeadopt","informed")
     if(!chMeth) { 
-      if(!silent) message(fxNa," Unknown method '",imputMethod,"' as entry for 'imputMethod', setting to default")
+      if(!silent) message(fxNa,"Unknown method '",imputMethod,"' as entry for 'imputMethod', setting to default")
       imputMethod <- "mode2"}
     ## extract elements for 'batch-mode' 
-    if(debug) message(fxNa,"Extract elements for 'batch-mode'")   
-         #cat("mm00\n"); mm00 <<- list(dat=dat,gr=gr,imputMethod=imputMethod,NAneigLst=NAneigLst,seedNo=seedNo)            
+    if(debug) message(fxNa,"Extract elements for 'batch-mode'    mn0")   
     if(is.list(NAneigLst) & length(NAneigLst) >1) { 
       nNaNei <- NAneigLst$nNaNei; charAll <- NAneigLst$charAll;
       medMod <- NAneigLst$medMod 
@@ -111,42 +113,40 @@ matrixNAneighbourImpute <- function(dat, gr, imputMethod="mode2", retnNA=TRUE, a
     medMod <- NULL
     
     ## main
-    if(debug) message(fxNa,"Starting main")
     isNA <- is.na(dat)
     chNA <- any(isNA)
-         #cat("mm0\n"); mm0 <<- list(dat=dat,gr=gr,isNA=isNA,chNA=chNA,imputMethod=imputMethod,NAneigLst=NAneigLst,NAneighbour=NAneighbour)            
+    if(debug) { message(fxNa,"Starting main,  mn0");  mn0 <- list(dat=dat,gr=gr,isNA=isNA,chNA=chNA,imputMethod=imputMethod,NAneigLst=NAneigLst,NAneighbour=NAneighbour)}
   
     if(!chNA) {            
       ## no NAs, nothing to impute ...
-      if(debug) message(fxNa,"no NAs, nothing to impute ...")
+      if(debug) message(fxNa,"No NAs, nothing to impute ...")
       if("hist" %in% plotHist) {graphics::hist(dat, br="FD", border=grDevices::grey(0.85), col=grDevices::grey(0.92), xlab=xLab, las=1, main=tit)
-        graphics::mtext("no NA-replacement needed  ", adj=1, cex=0.6, line=-0.3)    
+        graphics::mtext("No NA-replacement needed  ", adj=1, cex=0.6, line=-0.3)    
         graphics::mtext(paste("  n=",length(dat)), side=3, line=-0.3, cex=0.55, adj=0,col=grDevices::grey(0.3)) }
       return( if(isTRUE(retnNA)) list(data=dat, nNA=0, NAneighbour=NULL, randParam=NULL) else dat)
     } else {
       modNa <- NULL
       if(length(NAneighbour) <1 & (length(grep("mode", imputMethod)) >0 | any(c("informed","datQuant") %in% imputMethod))) {   ## all methods using mode need NA-neighbours ...
-      ### PROBLEM ? wrMisc::matrixNAneighbourImpute() is calling wrProteo::isolNAneighb() !!
-      
-      
-        if(length(NAneighbour) <1) NAneighbour <- wrProteo::isolNAneighb(dat, gr, iniCheck=FALSE)     #
-        ## check:  sum(sapply(NAneighbour, length)) {1142} IS NOT sum(isNA) {2845}      
+        if(debug) message(fxNa," mn1")
+        if(length(NAneighbour) <1) NAneighbour <- isolNAneighb(dat, gr, iniCheck=FALSE, silent=silent, callFrom=fxNa)     #
+        if(debug) {message(fxNa," mn2"); mn2 <- list(NAneighbour=NAneighbour)}
         chLast <- length(NAneighbour[[length(NAneighbour)]])
         if(chLast==0) NAneighbour <- NAneighbour[-1*length(NAneighbour)]     # remove last empty field if empty (as usual)
+
       } else { nNA <- sum(isNA)}
+      if(debug) {message(fxNa," mn3"); mn3 <- list(dat=dat,gr=gr,isNA=isNA,chNA=chNA,chLast=chLast,imputMethod=imputMethod,NAneigLst=NAneigLst,NAneighbour=NAneighbour)}
       nNaNei <- sapply(NAneighbour, length)  
       datIni <- dat
-         #cat("mm1\n"); mm1 <<- list(dat=dat,gr=gr,isNA=isNA,chNA=chNA,imputMethod=imputMethod,nNaNei=nNaNei,NAneighbour=NAneighbour, NAneigLst=NAneigLst,datIni=datIni)      
         
       ## check if sufficient NAs for mode-based methods
-      if(debug) message(fxNa,"Check if sufficient NAs for mode-based methods")
+      if(debug) message(fxNa,"Checking if sufficient NAs for mode-based methods")
       if(sum(nNaNei) <10 & length(grep("mode", imputMethod)) >0) {
         ##number of NA neighb not yet known#
-        if(!silent) message(fxNa," Only ",sum(nNaNei)," NA-neighbour values available, ie insufficient to calculate representative mode, using instead 10%ile of global distribution")
+        if(!silent) message(fxNa,"Only ",sum(nNaNei)," NA-neighbour values available, ie insufficient to calculate representative mode, using instead 10%ile of global distribution")
         imputMethod <- "datQuant"
         avSdH[1] <- 0.1
       }
-         #cat("mm2\n"); mm2 <<- list(dat=dat,gr=gr,isNA=isNA,chNA=chNA,imputMethod=imputMethod,nNaNei=nNaNei,NAneighbour=NAneighbour,NAneigLst=NAneigLst,datIni=datIni,avSdH=avSdH)      
+      if(debug) {message(fxNa," mn4") }
         
       ## IMPUTATIONS
       ## choose method
@@ -164,7 +164,7 @@ matrixNAneighbourImpute <- function(dat, gr, imputMethod="mode2", retnNA=TRUE, a
       if("medmode" %in% tolower(imputMethod)) {        # whatever is lowest: global median or global mode of all NA neighbours     
         if(debug) message(fxNa,"Starting method 'medmode'")
         if(length(medMod) <1) medMod <- c(med=stats::median(unlist(NAneighbour)), mod=wrMisc::stableMode(unlist(NAneighbour), method="density", callFrom=fxNa, silent=silent))
-         #cat("mm3a\n"); mm3a <<- list(dat=dat,gr=gr,isNA=isNA,chNA=chNA,imputMethod=imputMethod,NAneigLst=NAneigLst,NAneighbour=NAneighbour,nNaNei=nNaNei,datIni=datIni,medMod=medMod)      
+        if(debug) {message(fxNa," mn5a") }
         if(length(seedNo) ==1) set.seed(seedNo)
         randVa <- signif(stats::rnorm(sum(isNA), min(medMod), avSdH[2]), 5)      
         msg <- paste("mean=",signif(min(medMod),4),"and sd=", signif(avSdH[2],4))
@@ -176,7 +176,7 @@ matrixNAneighbourImpute <- function(dat, gr, imputMethod="mode2", retnNA=TRUE, a
         randVa <- signif(stats::rnorm(sum(isNA), medMod, avSdH[2]),5)
         msg <- paste("mode=",signif(medMod,4),"and sd=", signif(avSdH[2],4))  # correct ??
       }
-       #cat("mm3b\n"); mm3b <<- list(dat=dat,gr=gr,isNA=isNA,chNA=chNA,imputMethod=imputMethod,NAneigLst=NAneigLst,NAneighbour=NAneighbour,nNaNei=nNaNei,datIni=datIni,medMod=medMod,avSdH=avSdH)      
+        if(debug) {message(fxNa," mn5b") }
           
       if("mode2" %in% imputMethod) {      # selective mode of NA of '2-NA-neighbours' if n.2NA > 300
         if(debug) message(fxNa,"Starting methods 'mode2'")
@@ -192,7 +192,7 @@ matrixNAneighbourImpute <- function(dat, gr, imputMethod="mode2", retnNA=TRUE, a
         NAliCo <- rowSums(isNA)   
         NAli <- which(NAliCo >0 & NAliCo < ncol(dat))             # lines with NA but not all NA
         NAmin <- rep(NA, nrow(dat))
-         #cat("mm3c\n"); mm3c <<- list(dat=dat,gr=gr,isNA=isNA,NAliCo=NAliCo,NAli=NAli,NAmin=NAmin,imputMethod=imputMethod,randVa=randVa,datIni=datIni,nNaNei=nNaNei,NAneighbour=NAneighbour,medMod=medMod)      
+        if(debug) {message(fxNa," mn5c") }
         
          if(length(NAli) >0) {
           ## prepare
@@ -201,6 +201,7 @@ matrixNAneighbourImpute <- function(dat, gr, imputMethod="mode2", retnNA=TRUE, a
           indC <- 0 + isNA + indC                       # is 2 if NA and eligible to min-informed
           isNA2 <- 0 + isNA
           isNA2[which(indC==2)] <- 2                    # matrix (full dim), 2 .. NA eligible to informed cor; 1.. NA not elig
+          if(debug) {message(fxNa," mn5c2") }
           
           NAmin <- apply(dat[NAli,], 1, min, na.rm=TRUE)   # min of line with any (but not all) NA (for biased estimate of NA-replacement
           ReMa <- matrix(rep(NAmin, ncol(isNA)), ncol=ncol(isNA))    # matrix of row-min values
@@ -217,8 +218,7 @@ matrixNAneighbourImpute <- function(dat, gr, imputMethod="mode2", retnNA=TRUE, a
       }    
       if("modeadopt" %in% tolower(imputMethod)) {   # flexible/adopt
         ## median and mode of NA-neighbours all/ by group :
-         #cat("mm3d\n"); mm3d <<- list(dat=dat,gr=gr,isNA=isNA,chNA=chNA,imputMethod=imputMethod,NAneigLst=NAneigLst,NAneighbour=NAneighbour,nNaNei=nNaNei,datIni=datIni,charAll=charAll)      
-        if(debug) message(fxNa,"Starting method 'modeadopt'")
+        if(debug) {message(fxNa,"Starting method 'modeadopt'","  mn5d") }
         if(length(charAll) <1) { charAll <- c(mean=mean(unlist(NAneighbour)), med=stats::median(unlist(NAneighbour)), 
             mode=as.numeric(wrMisc::stableMode(unlist(NAneighbour), method="density", silent=TRUE)))
           charAll <- rbind(charAll,cbind(sapply(NAneighbour, mean), sapply(NAneighbour, stats::median), sapply(NAneighbour, wrMisc::stableMode, method="density", silent=TRUE, callFrom=fxNa)))}
@@ -234,19 +234,19 @@ matrixNAneighbourImpute <- function(dat, gr, imputMethod="mode2", retnNA=TRUE, a
           nNaGrp <- wrMisc::rowGrpNA(dat, gr)            # check : sum(nNaGrp) == sum(isNA)    # here 2845        
           ranOff <- charAll[1,1] - rep(ranOff[nNaGrp], nNaGrp[which(nNaGrp >0)])        # final offset in order for is.na(dat)
           msg <- paste("mean=",wrMisc::pasteC(signif(prLev,4)),"(for",wrMisc::pasteC(1:(1+max(nRa))),"NAs) and sd=", signif(avSdH[2],4))
-          if(!silent) message(fxNa," substituting dynamically based on mean per number of NAs")
+          if(!silent) message(fxNa,"Substituting dynamically based on mean per number of NAs")
         } else {
           ## constant NA-substit, use min of mean, median and mode
           ranOff <- charAll[1,1] - rep(min(charAll[1,]), sum(isNA))
           msg <- paste("mean=",signif(min(charAll[1,]),4),"and sd=", signif(avSdH[2],4))
-          if(!silent) message(fxNa," substituting based on ",c("mean","median","mode")[which.min(charAll[1,])]," of all ",sum(nNaNei)," NA-neighbours")
+          if(!silent) message(fxNa,"Substituting based on ",c("mean","median","mode")[which.min(charAll[1,])]," of all ",sum(nNaNei)," NA-neighbours")
         }
         if(length(seedNo) ==1) set.seed(seedNo)
         randVa <- signif(stats::rnorm(sum(isNA), charAll[1,1], avSdH[2]) -ranOff, 5)    # initial global value (median for all NA-neighb) + offset/correction
       }
       
-      ## replace NAs  
-         #cat("mm4\n"); mm4 <<- list(dat=dat,gr=gr,isNA=isNA,imputMethod=imputMethod,randVa=randVa,datIni=datIni,nNaNei=nNaNei,NAneighbour=NAneighbour,medMod=medMod)      
+      ## replace NAs
+      if(debug) {message(fxNa," mn6") }
       dat[which(isNA)] <- randVa
       chImp <- stats::quantile(datIni, c(0.05,0.15), na.rm=TRUE)
       chImp <- c(mean(randVa) < chImp[1], mean(randVa) > chImp[2])
@@ -299,5 +299,4 @@ matrixNAneighbourImpute <- function(dat, gr, imputMethod="mode2", retnNA=TRUE, a
   dat[which(isNa)] <- impDat[1:sum(isNa)]
   if(inclLowValMod) list(data=dat, datImp=impDat)
   dat }
-     
-  
+       

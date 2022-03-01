@@ -33,7 +33,7 @@ razorNoFilter(
 \item{callFrom}{(character) allows easier tracking of messages produced}
 }
 \value{
-vector of logical values if corresponding line passes filter criteria
+This function returns a vector of logical values if corresponding line passes filter criteria
 }
 \description{
 \code{razorNoFilter} filters based on either a) number of total peptides and specific peptides or b) numer of razor petides.
@@ -42,11 +42,11 @@ The function be (re-)run independently on each of various questions (comparisons
 Note: Non-integer data will be truncated to integer (equivalent to  \code{floor}).
 }
 \examples{
-set.seed(2019); datT <- matrix(sample.int(20,60,replace=TRUE),ncol=6,
-  dimnames=list(letters[1:10],LETTERS[1:6])) -3
+set.seed(2019); datT <- matrix(sample.int(20,60,replace=TRUE), ncol=6,
+  dimnames=list(letters[1:10], LETTERS[1:6])) -3
 datT[,2] <- datT[,2] +2
 datT[which(datT <0)] <- 0
-razorNoFilter(datT,speNa="A",totNa="B")
+razorNoFilter(datT, speNa="A", totNa="B")
 }
 \seealso{
 \code{\link[wrMisc]{presenceFilt}}

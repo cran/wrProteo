@@ -26,7 +26,7 @@
 #' @param addSuplT (logical) add text with information about precision,accuracy and FDR
 #' @param silent (logical) suppress messages
 #' @param callFrom (character) allows easier tracking of messages produced
-#' @return plot with ROC curves only
+#' @return This function returns only a plot with ROC curves
 #' @seealso \code{\link[wrProteo]{summarizeForROC}}, \code{\link[wrMisc]{moderTest2grp}}  
 #' @examples
 #' roc0 <- cbind(alph=c(2e-6,4e-5,4e-4,2.7e-3,1.6e-2,4.2e-2,8.3e-2,1.7e-1,2.7e-1,4.1e-1,5.3e-1,
@@ -35,7 +35,7 @@
 #'   9.93)/10, n.pos.a=c(0,0,0,0,2,4,4,9,14,24,36,41) )
 #' plotROC(roc0)
 #' @export
-plotROC <- function(dat,...,useColumn=2:3, methNames=NULL, col=NULL, pch=1, bg=NULL, tit=NULL, xlim=NULL, ylim=NULL, point05=0.05, pointSi=0.85, nByMeth=NULL,
+plotROC <- function(dat,..., useColumn=2:3, methNames=NULL, col=NULL, pch=1, bg=NULL, tit=NULL, xlim=NULL, ylim=NULL, point05=0.05, pointSi=0.85, nByMeth=NULL,
   speciesOrder=NULL, txtLoc=NULL, legCex=0.72, las=1, addSuplT=TRUE, silent=FALSE, callFrom=NULL) {
   ##
   fxNa <- wrMisc::.composeCallName(callFrom, newNa="plotROC")
@@ -70,21 +70,21 @@ plotROC <- function(dat,...,useColumn=2:3, methNames=NULL, col=NULL, pch=1, bg=N
   if(length(speciesOrder) <length(coColN)) speciesOrder <- c(1:length(coColN))
   coColN <- coColN[speciesOrder]
   coColN1 <- sub("n\\.pos\\.","",coColN)
-  coColN2 <- paste(" n.",paste(coColN1,sep="",collapse="/")," ",sep="")
+  coColN2 <- paste0(" n.",paste0(coColN1,collapse="/")," ")
   if(length(txtLoc) !=3) txtLoc <- graphics::par("usr")
   if(length(txtLoc) !=3) { figDim <- signif(graphics::par("usr"),3)
     txtLoc <- c(x=figDim[1] +0.42*(figDim[2] -figDim[1]), y=figDim[3] + (0.3 +length(inpS))*(figDim[4] -figDim[3])/30, fac=0.037*(figDim[4] -figDim[3])) }
     
   AUC1 <- c( AucROC(dat, silent=silent, callFrom=fxNa),
-    if(length(inpS) >0) sapply(inpS,AucROC, silent=silent, callFrom=fxNa))
+    if(length(inpS) >0) sapply(inpS, AucROC, silent=silent, callFrom=fxNa))
   AUC1 <- sprintf(paste0("%.",nDigLeg[1],"f"),AUC1)           #  format to fixed no of digits
    
   if(addSuplT) {            # add legend-like method-name/descr
-    txt <- if(is.null(nByMeth)) methNames[1] else paste(methNames[1]," (n.test=",nByMeth[1],") ",sep="")
+    txt <- if(is.null(nByMeth)) methNames[1] else paste0(methNames[1]," (n.test=",nByMeth[1],") ")
     graphics::text(txtLoc[1] -txtLoc[3], txtLoc[2] +txtLoc[3], paste("Values at threshold of",point05,":"), cex=0.75, col=grDevices::grey(0.4), adj=0)   
     graphics::text(txtLoc[1], txtLoc[2], txt, cex=legCex+0.02, col=col[1], adj=1)    
     if(addSuplT) graphics::text(txtLoc[1] +0.02, txtLoc[2], paste(paste(paste(c("AUC=","prec=","accur=","FDR="),        #"n.E/S/H="
-      c(AUC1[1],round(cutP[c("prec","accur","FDR")],nDigLeg[-1]))),collapse="  "),coColN2 ,cutP[coColN[1]],cutP[coColN[2]],
+      c(AUC1[1],round(cutP[c("prec","accur","FDR")],nDigLeg[-1]))),collapse="  "), coColN2 ,cutP[coColN[1]],cutP[coColN[2]],
       if(length(coColN)>2) cutP[coColN[3]]), cex=legCex, col=col[1], adj=0) }  
   if(length(inpS) >0) {
     for(i in 1:length(inpS)) {
@@ -93,7 +93,7 @@ plotROC <- function(dat,...,useColumn=2:3, methNames=NULL, col=NULL, pch=1, bg=N
         if(point05) graphics::points(1 -cutP[useColumn[1]], cutP[useColumn[2]], col=col2, pch=pch2[1], bg=col[i+1], cex=pointSi)      # new point at alpha
         graphics::points(1-inpS[[i]][,useColumn[1]],inpS[[i]][,useColumn[2]], type="s",col=col[i+1], pch=pch, bg=bg[i+1])             # new ROC curve
         if(addSuplT) {
-          txt <- if(is.null(nByMeth)) methNames[i+1] else paste(methNames[i+1]," (n.test=",nByMeth[i+1],") ",sep="")
+          txt <- if(is.null(nByMeth)) methNames[i+1] else paste0(methNames[i+1]," (n.test=",nByMeth[i+1],") ")
           graphics::text(txtLoc[1], txtLoc[2]-txtLoc[3]*i,txt, cex=legCex+0.02, col=col[i+1], adj=1)                     # first block
           graphics::text(txtLoc[1]+0.02, txtLoc[2]-txtLoc[3]*i, paste(paste(paste(c("AUC=","prec=","accur=","FDR="),
             c(AUC1[i+1],round(cutP[c("prec","accur","FDR")],nDigLeg[-1]))),collapse="  "),coColN2,cutP[coColN[1]],cutP[coColN[2]],          # first block (with counting data)

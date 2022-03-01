@@ -35,7 +35,7 @@
 #' @param silent (logical) suppress messages
 #' @param debug (logical) additional messages fro debugging
 #' @param callFrom (character) allows easier tracking of messages produced
-#' @return limma-type S3 object of class 'MArrayLM' which can be accessed; multiple results of testing or multiple testing correction types may get included ('p.value','FDR','BY','lfdr' or 'ROTS.BH')
+#' @return This function returns a limma-type S3 object of class 'MArrayLM' (which can be accessed lika a list); multiple results of testing or multiple testing correction types may get included ('p.value','FDR','BY','lfdr' or 'ROTS.BH')
 #' @seealso \code{\link[wrMisc]{moderTest2grp}}, \code{\link[wrMisc]{pVal2lfdr}}, \code{eBayes} in Bioconductor package \href{https://bioconductor.org/packages/release/bioc/html/limma.html}{limma}, \code{\link[stats]{t.test}},\code{ROTS} of Bioconductor package \href{https://bioconductor.org/packages/release/bioc/html/ROTS.html}{ROTS}   
 #' @examples
 #' set.seed(2015); rand1 <- round(runif(600) +rnorm(600,1,2),3)
@@ -63,21 +63,22 @@ testRobustToNAimputation <- function(dat, gr, annot=NULL, retnNA=TRUE, avSdH=c(0
   msg <- NULL
   ## start testing input
   if(is.list(dat)) { if(all(c("quant","annot") %in% names(dat))) {
-    if(length(dim(dat$annot)) ==2 & length(annot) <1) annot <- dat$annot    # recover$annot if not given separately
-    dat <- dat$quant } else {datOK <- FALSE; msg <- "Invalid 'dat' : does NOT contain both '$quant' and '$annot !"}#stop("Invalid 'dat' : does NOT contain both '$quant' and '$annot !")}
+    if(length(dim(dat$annot)) ==2 & length(annot) <1) annot <- dat$annot else if(!silent) message(fxNa,"Invalid '$annot'") # recover$annot if not given separately
+    dat <- dat$quant } else {datOK <- FALSE; msg <- "Invalid 'dat' : does NOT contain both '$quant' and '$annot !"} } 
+  if(datOK) { if(length(unique(gr))==length(gr)) { datOK <- FALSE
+    msg <- "Argument 'gr' does not design any replicates !  (nothing to do)"} } 
   if(datOK) if(length(dim(dat)) !=2) { datOK <- FALSE
     msg <- "'dat' must be matrix or data.frame with >1 columns"}  # stop("'dat' must be matrix or data.frame with >1 columns")
   if(datOK) {
     if(is.data.frame(dat)) dat <- as.matrix(dat)
     if(length(gr) != ncol(dat)) { datOK <- FALSE
       msg <- "Number of columns in 'dat' and number of (group-)elements in 'gr' do not match !"} }
-
   if(datOK) {
     if(!is.factor(gr)) gr <- as.factor(gr)
     if(is.null(xLab)) xLab <- "values"            
     if(length(annot) <1) annot <- matrix(NA, nrow=nrow(dat), ncol=1, dimnames=list(rownames(dat),"rowNa"))
-    if(length(ROTSn) >0) message(fxNa," argument 'ROTSn' is depreciated, please used argument 'multCorMeth' instead (like multCorMeth=c(ROTSn='10'))")
-    if(length(lfdrInclude) >0) message(fxNa," argument 'lfdrInclude' is depreciated, please used argument 'multCorMeth' instead (like multCorMeth='lfdrInclude')")
+    if(length(ROTSn) >0) message(fxNa,"Argument 'ROTSn' is depreciated, please used argument 'multCorMeth' instead (like multCorMeth=c(ROTSn='10'))")
+    if(length(lfdrInclude) >0) message(fxNa,"Argument 'lfdrInclude' is depreciated, please used argument 'multCorMeth' instead (like multCorMeth='lfdrInclude')")
     ## get compatible to old arguments lfdrInclude & ROTSn
     ROTSn <- NULL
     multCorMeth <- if(length(multCorMeth) <1) c("lfdr","FDR","means") else unique(c(multCorMeth, "means"))
@@ -85,11 +86,11 @@ testRobustToNAimputation <- function(dat, gr, annot=NULL, retnNA=TRUE, avSdH=c(0
        multCorMeth <- if(multCorMeth >1) c("lfdr", ROTSn=as.integer(multCorMeth), "means") else "lfdr"}
     
     if("ROTSn" %in% names(multCorMeth)) { ROTSn <- try(as.integer(multCorMeth["ROTSn"]), silent=TRUE)
-      if("try-error" %in% class(ROTSn)) {ROTSn <- NULL; comp<- NULL }} else {ROTSn <- NULL; comp<- NULL }
+      if(inherits(ROTSn, "try-error")) {ROTSn <- NULL; comp<- NULL }} else {ROTSn <- NULL; comp<- NULL }
   
     if("lfdr" %in% multCorMeth) { lfdrInclude <- TRUE
     } else if("lfdr" %in% names(multCorMeth)) { lfdrInclude <- try(as.logical(multCorMeth["lfdr"]), silent=TRUE)
-        if("try-error" %in% class(lfdrInclude)) { lfdrInclude <- FALSE; multCorMeth <- multCorMeth[-which(names(multCorMeth)== "lfdr")] } }
+        if(inherits(lfdrInclude, "try-error")) { lfdrInclude <- FALSE; multCorMeth <- multCorMeth[-which(names(multCorMeth)== "lfdr")] } }
     if(length(lfdrInclude) <1) lfdrInclude <- FALSE            # if for some reason whatsoever ...
         
     ## main
@@ -99,28 +100,25 @@ testRobustToNAimputation <- function(dat, gr, annot=NULL, retnNA=TRUE, avSdH=c(0
     seedNo <- as.integer(seedNo)[1]
     gr <- as.factor(gr)
     callFro <- try(as.factor(gr)) 
-    if(class(callFro) == "try-error") message("+++++\n",fxNa," MAJOR PROBLEM with argument 'gr' !!  (possibly not sufficient level-names ?) \n+++++")
+    if(inherits(callFro, "try-error")) message("+++++\n",fxNa," MAJOR PROBLEM with argument 'gr' !!  (possibly not sufficient level-names ?) \n+++++")
     
     ## 1st pass
-    if(debug) message(fxNa,"start 1st pass,  no of NA: ",sum(isNA))
-         #cat("tt1\n"); tt1 <<- list(dat=dat,gr=gr,imputMethod=imputMethod,seedNo=seedNo, retnNA=retnNA, avSdH=avSdH,ROTSn=ROTSn)
+    if(debug) {message(fxNa,"Starting 1st pass,  no of NA: ",sum(isNA)); tt1 <- list(dat=dat,gr=gr,imputMethod=imputMethod,seedNo=seedNo, retnNA=retnNA, avSdH=avSdH,ROTSn=ROTSn)}
     datI <- matrixNAneighbourImpute(dat, gr, imputMethod=imputMethod, retnNA=retnNA ,avSdH=avSdH, plotHist=plotHist, xLab=xLab, tit=tit, seedNo=seedNo, silent=silent, callFrom=fxNa,debug=debug)
-         #cat("tt2\n"); tt2 <<- list(dat=dat,gr=gr,imputMethod=imputMethod,seedNo=seedNo, retnNA=retnNA, avSdH=avSdH,datI=datI,ROTSn=ROTSn,annot=annot)
-         #  imputed=datI; grp=gr; annDat=annot; abundThr=stats::quantile(dat,0.02,na.rm=TRUE)
-    if(debug) message(fxNa,"start combineMultFilterNAimput ")
+    if(debug) message(fxNa,"Start combineMultFilterNAimput")
     datFi <- combineMultFilterNAimput(dat=dat, imputed=datI, grp=gr, annDat=annot, abundThr=stats::quantile(if(is.list(dat)) dat$quant else dat, 0.02,na.rm=TRUE), silent=silent, callFrom=fxNa)  # number of unique peptides unknown !
-         #cat("tt2b\n"); tt2b <<- list(dat=dat,gr=gr,imputMethod=imputMethod,seedNo=seedNo, retnNA=retnNA, avSdH=avSdH,datI=datI,ROTSn=ROTSn,datFi=datFi)
-    if(debug) message(fxNa,"done combineMultFilterNAimput")          # done combineMultFilterNAimput
+    if(debug) message(fxNa,"Done combineMultFilterNAimput")          # done combineMultFilterNAimput
     ## prepare for testing
     if(lfdrInclude) {
       chLfdr <- try(find.package("fdrtool"), silent=TRUE)
-      if("try-error" %in% class(chLfdr)) { 
-        message(fxNa,"Package 'fdrtool' not found ! Please install first from CRAN for calculating lfdr-values. Omitting (defaut) 'lfdr' option from argument 'multCorMeth' ..")
+      if(inherits(chLfdr, "try-error")) { 
+        message(fxNa,"Package 'fdrtool' NOT found ! Please install first from CRAN for calculating lfdr-values. Omitting (defaut) 'lfdr' option from argument 'multCorMeth' ..")
         lfdrInclude <- FALSE } }
     pwComb <- wrMisc::triCoord(length(levels(gr)))
-    if(debug) message(fxNa,"start 1st moderTestXgrp()")
+    if(debug) message(fxNa,"Start 1st moderTestXgrp()")
     out <- wrMisc::moderTestXgrp(datFi$data, grp=gr, limmaOutput=TRUE, addResults=multCorMeth, silent=silent, callFrom=fxNa)   # can't do question specific filtering w/o explicit loop
-  #cat("tt2c\n");
+    if(debug) message("tt2c")
+      
     
     chFDR <- names(out) =="FDR"
     if(any(chFDR)) names(out)[which(chFDR)] <- "BH"                 # rename $FDR to $BH
@@ -128,12 +126,12 @@ testRobustToNAimputation <- function(dat, gr, annot=NULL, retnNA=TRUE, avSdH=c(0
     ## need to add $ROTS.p
     if(length(ROTSn)==1) if(ROTSn >0 & !is.na(ROTSn)) {  
       chPa <- requireNamespace("ROTS", quietly=TRUE)
-      if(!chPa) { message(fxNa,": package 'RORS' not found/installed, omit argument 'ROTSn'")
+      if(!chPa) { message(fxNa,"Package 'RORS' not found/installed (please install from Bioconductor), omitting argument 'ROTSn'")
         ROTSn <- 0 }
     } else ROTSn <- NULL
     if(length(ROTSn)==1) if(ROTSn >0) {
       ## this requires package ROTS
-      if(debug) message(fxNa,"start ROTS   n=",ROTSn)
+      if(debug) message(fxNa,"Start ROTS   n=",ROTSn)
       comp <- wrMisc::triCoord(length(levels(gr)))
       rownames(comp) <- paste(levels(gr)[comp[,1]], levels(gr)[comp[,2]],sep="-")
       tmRO <- matrix(nrow=nrow(datFi$data), ncol=nrow(comp))
@@ -145,11 +143,11 @@ testRobustToNAimputation <- function(dat, gr, annot=NULL, retnNA=TRUE, avSdH=c(0
       out$ROTS.BH <- apply(tmRO, 2, stats::p.adjust, method="BH") 
       if(lfdrInclude) out$ROTS.lfdr <- apply(tmRO, 2, wrMisc::pVal2lfdr) 
     } 
-  #cat("tt2d\n");
-    
+    if(debug) message("tt2d")
+          
     ## subsequent rounds of NA-imputation  
     if(chNA & nLoop >1) { 
-      if(debug) message(fxNa,"subsequent rounds of NA-imputation   nLoop=",nLoop)
+      if(debug) message(fxNa,"Subsequent rounds of NA-imputation   nLoop=",nLoop)
       pValTab <- tValTab <- array(NA, dim=c(nrow(dat), nrow(pwComb), nLoop))
       datIm <- array(NA, dim=c(nrow(dat), ncol(dat), nLoop))
       datIm[,,1] <- datFi$data
@@ -161,11 +159,10 @@ testRobustToNAimputation <- function(dat, gr, annot=NULL, retnNA=TRUE, avSdH=c(0
       for(i in 2:nLoop) {
         ## the repeated NA-imputation & testing   
         if(length(seedNo)==1) seedNo <- seedNo +i 
-         #cat("tt3\n"); tt3 <<- list(dat=dat,gr=gr,seedNo=seedNo, retnNA=retnNA, avSdH=avSdH,datI=datI, pValTab=pValTab,datIm=datIm,ROTSn=ROTSn)
+        if(debug) {message("tt3"); tt3 <- list(dat=dat,gr=gr,seedNo=seedNo, retnNA=retnNA, avSdH=avSdH,datI=datI, pValTab=pValTab,datIm=datIm,ROTSn=ROTSn)}
+      
         datX <- matrixNAneighbourImpute(dat, gr, imputMethod=imputMethod, seedNo=seedNo, retnNA=retnNA, avSdH=avSdH, NAneigLst=datI$NAneigLst, plotHist=FALSE, silent=TRUE, callFrom=fxNa)$data
-  
-  #cat("tt3b\n");
-      if(debug) message(fxNa,"passed matrixNAneighbourImpute()   in loop no ",i)
+       if(debug) message(fxNa,"Passed matrixNAneighbourImpute()   in loop no ",i,"  tt3b")
   
     #1st round# datI <- matrixNAneighbourImpute(dat, gr, seedNo=seedNo, retnNA=retnNA ,avSdH=avSdH, plotHist=plotHist, xLab=xLab, tit=tit, silent=silent, callFrom=fxNa)
     #1st round# datFi <- combineMultFilterNAimput(dat=dat, imputed=datI, grp=gr, annDat=annot, abundThr=stats::quantile(dat,0.02,na.rm=TRUE), silent=silent, callFrom=fxNa) 
@@ -177,11 +174,11 @@ testRobustToNAimputation <- function(dat, gr, annot=NULL, retnNA=TRUE, avSdH=c(0
         if(length(ROTSn)==1) if(ROTSn >0 & i < min(10, nLoop)) {       # test using ROTS (TAKES MUCH TIME !!)
           for(i in 1:nrow(comp)) tmRO[which(datFi$filt[,i]),i] <- ROTS::ROTS(datFi$data[which(datFi$filt[,i]),which(useCol[,i])], groups=as.numeric(as.factor(gr[which(useCol[,i])])), B=ROTSn)$pvalue   # ,K=500  
           pVaRotsTab[,,i] <- tmRO } }
+      if(debug) message("tt3c")
       
-  #cat("tt3c\n");
       ## propagate filtering results to p-values (disqualify to NA)
       if(any(!datFi$filt)) {
-        fiAr <- rep(datFi$filt,nLoop)    
+        fiAr <- rep(datFi$filt, nLoop)    
         pValTab[which(!fiAr)] <- NA }   
           
       ## resume indiv rounds of imputation, optinal return details 
@@ -197,7 +194,8 @@ testRobustToNAimputation <- function(dat, gr, annot=NULL, retnNA=TRUE, avSdH=c(0
     } else out$datImp <- datFi$data
     out$annot <- annot
     out$filter <- datFi$filt
-  #cat("tt3d\n");
+    if(debug) message("tt3d")
+      
   
     ## update dimnames of out$datImp
     dimnames(out$datImp) <- list(if(is.null(rownames(out$lods))) rownames(out$annot) else rownames(out$lods), colnames(dat))
@@ -221,7 +219,8 @@ testRobustToNAimputation <- function(dat, gr, annot=NULL, retnNA=TRUE, avSdH=c(0
       dimnames(out$ROTS.BH) <- list(rownames(out$lods), colnames(out$contrasts) )
       if(lfdrInclude) {out$ROTS.lfdr <- as.matrix(as.matrix(apply(out$ROTS.p, 2, wrMisc::pVal2lfdr)))
         dimnames(out$ROTS.lfdr) <- list(rownames(out$lods), colnames(out$contrasts))} }
-      out }} else { warning(fxNa,msg)
+      out 
+  } else { warning(fxNa,msg)
     return(NULL) }
   }
    
