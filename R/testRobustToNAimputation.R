@@ -17,8 +17,12 @@
 #' Possible options are 'lfdr','BH','BY','tValTab', ROTSn='100' (name to element necessary) or 'noLimma' (to add initial p.values and BH to limma-results). By default 'lfdr' (local false discovery rate from package 'fdrtools') and 'BH' (Benjamini-Hochberg FDR) are chosen.
 #' The option 'BY' referrs to Benjamini-Yakuteli FDR, 'tValTab' allows exporting all individual t-values from the repeated NA-substitution and subsequent testing.
 #' 
+#' This function is compatible with automatic extraction of experimental setup based on sdrf or other quantitation-specific sample annotation.
+#' In this case, the results of automated importing and mining of sample annotation should be stored as \code{$sampleSetup$groups} or \code{$sampleSetup$lev}  
+#' 
+#' 
 #' @param dat (matrix or data.frame) main data (may contain \code{NA}); if \code{dat} is list containing $quant and $annot as matrix, the element $quant will be used
-#' @param gr (character or factor) replicate association
+#' @param gr (character or factor) replicate association; if \code{dat} contains a list-element \code{$sampleSetup$groups} or \code{$sampleSetup$lev} this may be used in case \code{gr=NULL}
 #' @param annot (matrix or data.frame) annotation (lines must match lines of data !), if \code{annot} is \code{NULL} and argument \code{dat} is a list containing both $quant and $annot, the element $annot will be used 
 #' @param retnNA (logical) retain and report number of \code{NA}
 #' @param avSdH (numeric) population characteristics (mean and sd) for >1 \code{NA} neighbours 'high' (per line)
@@ -26,15 +30,15 @@
 #' @param plotHist (logical) additional histogram of original, imputed and resultant distribution (made using \code{\link{matrixNAneighbourImpute}} )
 #' @param xLab (character) custom x-axis label 
 #' @param tit (character) custom title
-#' @param imputMethod (character) choose the imputation method (may be 'mode2'(default), 'mode1', 'datQuant', 'modeAdopt' or 'informed', for details see \code{\link{matrixNAneighbourImpute}} )
+#' @param imputMethod (character) choose the imputation method (may be 'mode2'(default), 'mode1', 'datQuant', 'modeAdopt', 'informed' or 'none', for details see \code{\link{matrixNAneighbourImpute}} )
 #' @param seedNo (integer) seed-value for normal random values
 #' @param multCorMeth (character) define which method(s) for correction of multipl testing should be run (for choice : 'BH','lfdr','BY','tValTab', choosing several is possible)
 #' @param nLoop (integer) number of runs of independent \code{NA}-imputation
 #' @param lfdrInclude (logical) depreciated, please used \code{multCorMeth} instead (include lfdr estimations, may cause warning message(s) concerning convergence if few too lines/proteins in dataset tested).
 #' @param ROTSn (integer) depreciated, please used \code{multCorMeth} instead (number of repeats by \code{ROTS}, if \code{NULL} \code{ROTS} will not be called)
 #' @param silent (logical) suppress messages
-#' @param debug (logical) additional messages fro debugging
-#' @param callFrom (character) allows easier tracking of messages produced
+#' @param debug (logical) additional messages for debugging
+#' @param callFrom (character) This function allows easier tracking of messages produced
 #' @return This function returns a limma-type S3 object of class 'MArrayLM' (which can be accessed lika a list); multiple results of testing or multiple testing correction types may get included ('p.value','FDR','BY','lfdr' or 'ROTS.BH')
 #' @seealso \code{\link[wrMisc]{moderTest2grp}}, \code{\link[wrMisc]{pVal2lfdr}}, \code{eBayes} in Bioconductor package \href{https://bioconductor.org/packages/release/bioc/html/limma.html}{limma}, \code{\link[stats]{t.test}},\code{ROTS} of Bioconductor package \href{https://bioconductor.org/packages/release/bioc/html/ROTS.html}{ROTS}   
 #' @examples
@@ -53,26 +57,31 @@
 #' PLtestR1 <- testRobustToNAimputation(dat=dat1, gr=grp1, retnNA=TRUE, nLoop=70)
 #' names(PLtestR1)
 #' @export
-testRobustToNAimputation <- function(dat, gr, annot=NULL, retnNA=TRUE, avSdH=c(0.15,0.5), avSdL=NULL, plotHist=FALSE, xLab=NULL, tit=NULL, imputMethod="mode2", 
+testRobustToNAimputation <- function(dat, gr=NULL, annot=NULL, retnNA=TRUE, avSdH=c(0.15,0.5), avSdL=NULL, plotHist=FALSE, xLab=NULL, tit=NULL, imputMethod="mode2", 
   seedNo=NULL,  multCorMeth=NULL, nLoop=100, lfdrInclude=NULL, ROTSn=NULL, silent=FALSE, debug=FALSE, callFrom=NULL) {
   fxNa <- wrMisc::.composeCallName(callFrom, newNa="testRobustToNAimputation")
   if(!isTRUE(silent)) silent <- FALSE
   if(isTRUE(debug)) silent <- FALSE else debug <- FALSE
   if(!isTRUE(plotHist)) plotHist <- FALSE
   datOK <- TRUE
-  msg <- NULL
+  msg <- grIni <- NULL
   ## start testing input
   if(is.list(dat)) { if(all(c("quant","annot") %in% names(dat))) {
     if(length(dim(dat$annot)) ==2 & length(annot) <1) annot <- dat$annot else if(!silent) message(fxNa,"Invalid '$annot'") # recover$annot if not given separately
-    dat <- dat$quant } else {datOK <- FALSE; msg <- "Invalid 'dat' : does NOT contain both '$quant' and '$annot !"} } 
+    if("sampleSetup" %in% names(dat) & length(gr) <1) {
+      gr <- if("groups" %in% names(dat$sampleSetup)) dat$sampleSetup$groups else dat$sampleSetup$lev
+      if(all(match(gr, unique(gr)) ==match(names(gr), unique(names(gr))))) gr <- names(gr)              # rather use name instead of index
+      if(all(length(gr) >1, length(dat$sampleSetup$col) <2, length(names(gr)) <1)) names(gr) <- dat$sampleSetup$sdrf[,dat$sampleSetup$col]       # in case not names provided
+    } else grIni <- gr
+    dat <- dat$quant } else { datOK <- FALSE; msg <- "Invalid 'dat' : does NOT contain both '$quant' and '$annot !"} } 
   if(datOK) { if(length(unique(gr))==length(gr)) { datOK <- FALSE
-    msg <- "Argument 'gr' does not design any replicates !  (nothing to do)"} } 
-  if(datOK) if(length(dim(dat)) !=2) { datOK <- FALSE
-    msg <- "'dat' must be matrix or data.frame with >1 columns"}  # stop("'dat' must be matrix or data.frame with >1 columns")
+    msg <- "Argument 'gr' is empty or does not design any replicates !  (nothing to do)"} } 
+  if(datOK) if(any(length(dim(dat)) !=2, dim(dat) < 1:2, na.rm=TRUE)) { datOK <- FALSE
+    msg <- "'dat' must be matrix or data.frame with >1 columns"}  
   if(datOK) {
     if(is.data.frame(dat)) dat <- as.matrix(dat)
     if(length(gr) != ncol(dat)) { datOK <- FALSE
-      msg <- "Number of columns in 'dat' and number of (group-)elements in 'gr' do not match !"} }
+      msg <- "Number of columns in 'dat' and number of (group-)elements in 'gr' do NOT match !"} }
   if(datOK) {
     if(!is.factor(gr)) gr <- as.factor(gr)
     if(is.null(xLab)) xLab <- "values"            
@@ -98,30 +107,41 @@ testRobustToNAimputation <- function(dat, gr, annot=NULL, retnNA=TRUE, avSdH=c(0
     chNA <- any(isNA)
     nNAmat <- matrix(0, nrow=nrow(dat), ncol=length(levels(gr)), dimnames=list(NULL,levels(gr)))
     seedNo <- as.integer(seedNo)[1]
-    gr <- as.factor(gr)
-    callFro <- try(as.factor(gr)) 
-    if(inherits(callFro, "try-error")) message("+++++\n",fxNa," MAJOR PROBLEM with argument 'gr' !!  (possibly not sufficient level-names ?) \n+++++")
+    gr <- try(as.factor(gr)) 
+    if(inherits(gr, "try-error")) message("+++++\n",fxNa," MAJOR PROBLEM with argument 'gr' !!  (possibly not sufficient level-names ?) \n+++++")
+    
     
     ## 1st pass
-    if(debug) {message(fxNa,"Starting 1st pass,  no of NA: ",sum(isNA)); tt1 <- list(dat=dat,gr=gr,imputMethod=imputMethod,seedNo=seedNo, retnNA=retnNA, avSdH=avSdH,ROTSn=ROTSn)}
-    datI <- matrixNAneighbourImpute(dat, gr, imputMethod=imputMethod, retnNA=retnNA ,avSdH=avSdH, plotHist=plotHist, xLab=xLab, tit=tit, seedNo=seedNo, silent=silent, callFrom=fxNa,debug=debug)
-    if(debug) message(fxNa,"Start combineMultFilterNAimput")
-    datFi <- combineMultFilterNAimput(dat=dat, imputed=datI, grp=gr, annDat=annot, abundThr=stats::quantile(if(is.list(dat)) dat$quant else dat, 0.02,na.rm=TRUE), silent=silent, callFrom=fxNa)  # number of unique peptides unknown !
-    if(debug) message(fxNa,"Done combineMultFilterNAimput")          # done combineMultFilterNAimput
+    if(debug) message(fxNa," imputMethod=",imputMethod,"  tRN1")
+    if("none" %in% tolower(imputMethod)) {
+      if(debug) {message(fxNa,"Starting 1st pass,  no of NA: ",sum(isNA)); tt1 <- list(dat=dat,gr=gr,imputMethod=imputMethod,annot=annot,seedNo=seedNo, retnNA=retnNA, avSdH=avSdH,ROTSn=ROTSn,lfdrInclude=lfdrInclude,multCorMeth=multCorMeth)}
+      nLoop <- 1
+      chFin <- is.finite(dat)
+      if(any(!chFin, na.rm=TRUE)) dat[which(!chFin)] <- NA   # need to replace Inf & -Inf by NA to avoid problems at limma::lmFit() 
+      datI <- list(data=dat)
+      datFi <- combineMultFilterNAimput(dat=dat, imputed=datI, grp=gr, annDat=annot, abundThr=stats::quantile(if(is.list(dat)) dat$quant else dat, 0.02,na.rm=TRUE), silent=silent, callFrom=fxNa)  # number of unique peptides unknown !
+       
+    } else {
+      datI <- matrixNAneighbourImpute(dat, gr, imputMethod=imputMethod, retnNA=retnNA ,avSdH=avSdH, plotHist=plotHist, xLab=xLab, tit=tit, seedNo=seedNo, silent=silent, callFrom=fxNa,debug=debug)
+      if(debug) {message(fxNa,"Start combineMultFilterNAimput   tt2a")}
+      datFi <- combineMultFilterNAimput(dat=dat, imputed=datI, grp=gr, annDat=annot, abundThr=stats::quantile(if(is.list(dat)) dat$quant else dat, 0.02,na.rm=TRUE), silent=silent, callFrom=fxNa)  # number of unique peptides unknown !
+      if(debug) {message(fxNa,"Done combineMultFilterNAimput   tt2b")}     # done combineMultFilterNAimput
+    }
     ## prepare for testing
     if(lfdrInclude) {
       chLfdr <- try(find.package("fdrtool"), silent=TRUE)
       if(inherits(chLfdr, "try-error")) { 
         message(fxNa,"Package 'fdrtool' NOT found ! Please install first from CRAN for calculating lfdr-values. Omitting (defaut) 'lfdr' option from argument 'multCorMeth' ..")
         lfdrInclude <- FALSE } }
+    if(debug) {message(fxNa,"  tRN2"); tRN2 <- list(dat=dat,gr=gr,datFi=datFi,multCorMeth=multCorMeth,datI=datI,datFi=datFi)}
+    
     pwComb <- wrMisc::triCoord(length(levels(gr)))
     if(debug) message(fxNa,"Start 1st moderTestXgrp()")
     out <- wrMisc::moderTestXgrp(datFi$data, grp=gr, limmaOutput=TRUE, addResults=multCorMeth, silent=silent, callFrom=fxNa)   # can't do question specific filtering w/o explicit loop
-    if(debug) message("tt2c")
-      
+   if(debug) {message(fxNa,"  tRN3"); tRN3 <- list(dat=dat,gr=gr,datFi=datFi,multCorMeth=multCorMeth,datI=datI,datFi=datFi,out=out,pwComb=pwComb)}
     
     chFDR <- names(out) =="FDR"
-    if(any(chFDR)) names(out)[which(chFDR)] <- "BH"                 # rename $FDR to $BH
+    if(any(chFDR, na.rm=TRUE)) names(out)[which(chFDR)] <- "BH"                 # rename $FDR to $BH
     rownames(pwComb) <- colnames(out$t) 
     ## need to add $ROTS.p
     if(length(ROTSn)==1) if(ROTSn >0 & !is.na(ROTSn)) {  
@@ -143,7 +163,7 @@ testRobustToNAimputation <- function(dat, gr, annot=NULL, retnNA=TRUE, avSdH=c(0
       out$ROTS.BH <- apply(tmRO, 2, stats::p.adjust, method="BH") 
       if(lfdrInclude) out$ROTS.lfdr <- apply(tmRO, 2, wrMisc::pVal2lfdr) 
     } 
-    if(debug) message("tt2d")
+    if(debug) message(fxNa,"tRN4")
           
     ## subsequent rounds of NA-imputation  
     if(chNA & nLoop >1) { 
@@ -159,10 +179,10 @@ testRobustToNAimputation <- function(dat, gr, annot=NULL, retnNA=TRUE, avSdH=c(0
       for(i in 2:nLoop) {
         ## the repeated NA-imputation & testing   
         if(length(seedNo)==1) seedNo <- seedNo +i 
-        if(debug) {message("tt3"); tt3 <- list(dat=dat,gr=gr,seedNo=seedNo, retnNA=retnNA, avSdH=avSdH,datI=datI, pValTab=pValTab,datIm=datIm,ROTSn=ROTSn)}
+        if(debug) {message("tRN5"); tRN5 <- list(dat=dat,gr=gr,seedNo=seedNo, retnNA=retnNA, avSdH=avSdH,datI=datI, pValTab=pValTab,datIm=datIm,ROTSn=ROTSn)}
       
         datX <- matrixNAneighbourImpute(dat, gr, imputMethod=imputMethod, seedNo=seedNo, retnNA=retnNA, avSdH=avSdH, NAneigLst=datI$NAneigLst, plotHist=FALSE, silent=TRUE, callFrom=fxNa)$data
-       if(debug) message(fxNa,"Passed matrixNAneighbourImpute()   in loop no ",i,"  tt3b")
+       if(debug) message(fxNa,"Passed matrixNAneighbourImpute()   in loop no ",i,"  tRN5b")
   
     #1st round# datI <- matrixNAneighbourImpute(dat, gr, seedNo=seedNo, retnNA=retnNA ,avSdH=avSdH, plotHist=plotHist, xLab=xLab, tit=tit, silent=silent, callFrom=fxNa)
     #1st round# datFi <- combineMultFilterNAimput(dat=dat, imputed=datI, grp=gr, annDat=annot, abundThr=stats::quantile(dat,0.02,na.rm=TRUE), silent=silent, callFrom=fxNa) 
@@ -174,10 +194,10 @@ testRobustToNAimputation <- function(dat, gr, annot=NULL, retnNA=TRUE, avSdH=c(0
         if(length(ROTSn)==1) if(ROTSn >0 & i < min(10, nLoop)) {       # test using ROTS (TAKES MUCH TIME !!)
           for(i in 1:nrow(comp)) tmRO[which(datFi$filt[,i]),i] <- ROTS::ROTS(datFi$data[which(datFi$filt[,i]),which(useCol[,i])], groups=as.numeric(as.factor(gr[which(useCol[,i])])), B=ROTSn)$pvalue   # ,K=500  
           pVaRotsTab[,,i] <- tmRO } }
-      if(debug) message("tt3c")
+      if(debug) message("tRN6")
       
       ## propagate filtering results to p-values (disqualify to NA)
-      if(any(!datFi$filt)) {
+      if(any(!datFi$filt, na.rm=TRUE)) {
         fiAr <- rep(datFi$filt, nLoop)    
         pValTab[which(!fiAr)] <- NA }   
           
@@ -194,19 +214,18 @@ testRobustToNAimputation <- function(dat, gr, annot=NULL, retnNA=TRUE, avSdH=c(0
     } else out$datImp <- datFi$data
     out$annot <- annot
     out$filter <- datFi$filt
-    if(debug) message("tt3d")
-      
+    if(debug) message("tRN7")     
   
     ## update dimnames of out$datImp
     dimnames(out$datImp) <- list(if(is.null(rownames(out$lods))) rownames(out$annot) else rownames(out$lods), colnames(dat))
     rownames(out$t) <- rownames(out$p.value) <- rownames(out$datImp)
     ## integrate column specific filtering
-    if(any(!datFi$filt)) out$p.value[which(!datFi$filt)] <- NA 
+    if(any(!datFi$filt, na.rm=TRUE)) out$p.value[which(!datFi$filt)] <- NA 
     if(lfdrInclude) {out$lfdr <- as.matrix(apply(out$p.value, 2, wrMisc::pVal2lfdr, callFrom=fxNa)) 
       dimnames(out$lfdr) <- list(rownames(out$lods), colnames(out$contrasts))
       if("noLimma" %in% multCorMeth) out$simple.lfdr <- if(ncol(out$simple.p.value) >1) apply(out$simple.p.value, 2, wrMisc::pVal2lfdr) else wrMisc::pVal2lfdr(out$simple.p.value)
     } 
-    if(any(c("FDR","BH") %in% multCorMeth)) { out$BH <- as.matrix(apply(out$p.value, 2, stats::p.adjust, method="BH"))
+    if(any(c("FDR","BH") %in% multCorMeth, na.rm=TRUE)) { out$BH <- as.matrix(apply(out$p.value, 2, stats::p.adjust, method="BH"))
       dimnames(out$BH) <- list(rownames(out$lods), colnames(out$contrasts))
       if("noLimma" %in% multCorMeth) out$simple.BH <- if(ncol(out$simple.p.value) >1) apply(out$simple.p.value, 2, stats::p.adjust, method="BH") else stats::p.adjust(out$simple.p.value, method="BH")
       } 
@@ -214,7 +233,7 @@ testRobustToNAimputation <- function(dat, gr, annot=NULL, retnNA=TRUE, avSdH=c(0
       dimnames(out$BY) <- list(rownames(out$lods), colnames(out$contrasts))}
     if(length(ROTSn)==1) if(ROTSn >0 & chNA & nLoop >1) {
       out$ROTS.p <- apply(pVaRotsTab, 1:2, stats::median, na.rm=TRUE)
-      if(any(!datFi$filt)) out$ROTS.p[which(!datFi$filt)] <- NA    
+      if(any(!datFi$filt, na.rm=TRUE)) out$ROTS.p[which(!datFi$filt)] <- NA    
       out$ROTS.BH <- as.matrix(as.matrix(apply(out$ROTS.p, 2, stats::p.adjust, method="BH")))
       dimnames(out$ROTS.BH) <- list(rownames(out$lods), colnames(out$contrasts) )
       if(lfdrInclude) {out$ROTS.lfdr <- as.matrix(as.matrix(apply(out$ROTS.p, 2, wrMisc::pVal2lfdr)))

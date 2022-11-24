@@ -53,7 +53,7 @@ If \code{tableOut=TRUE} output may be organized as matrix for separating meta-an
 \examples{
 # tiny example with common contaminants 
 path1 <- system.file('extdata',package='wrProteo')
-fiNa <-  "conta1.fasta"
+fiNa <-  "conta1.fasta.gz"
 fasta1 <- readFasta2(file.path(path1,fiNa))
 ## now let's read and further separate annotation-fields
 fasta2 <- readFasta2(file.path(path1,fiNa),tableOut=TRUE)

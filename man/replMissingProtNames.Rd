@@ -2,7 +2,7 @@
 % Please edit documentation in R/replMissingProtNames.R
 \name{replMissingProtNames}
 \alias{replMissingProtNames}
-\title{Complement missing EntryNames in annotation}
+\title{Complement Missing EntryNames In Annotation}
 \usage{
 replMissingProtNames(
   x,

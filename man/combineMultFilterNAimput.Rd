@@ -50,10 +50,10 @@ This function returns a vector of logical values if corresponding line passes fi
 \description{
 In most omics data-analysis one needs to employ a certain number of filtering strategies to avoid getting artifacts to the step of statistical testing.
 \code{combineMultFilterNAimput} takes on one side the origial data and on the other side NA-imputed data to create several differnet filters and to finally combine them.
-A filter aiming to take away the least abundant values (using the imputede data) is fine-tuned by the argument \code{abundThr}. 
+A filter aiming to take away the least abundant values (using the imputede data) can be fine-tuned by the argument \code{abundThr}. 
 This step compares the means for each group and line, at least one grou-mean has to be > the threshold (based on hypothesis 
 that if all conditions represent extrememy low measures their diffrenetial may not be determined with certainty).
-In contratst, the filter addressing the number of missing values (\code{NA}) uses the original data, the arguments \code{colTotNa},\code{minSpeNo} and \code{minTotNo} 
+In contrast, the filter addressing the number of missing values (\code{NA}) uses the original data, the arguments \code{colTotNa},\code{minSpeNo} and \code{minTotNo} 
 are used at this step. Basically, this step allows defining a minimum content of 'real' (ie non-NA) values for further considering the measurements as reliable.
 This part uses internally \code{\link[wrMisc]{presenceFilt}} for filtering elevated content of \code{NA} per line.
 Finally, this function combines both filters (as matrix of \code{FALSE} and \code{TRUE}) on NA-imputed and original data 

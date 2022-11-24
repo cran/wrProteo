@@ -13,19 +13,19 @@ AucROC(dat, useCol = c("spec", "sens"), silent = FALSE, callFrom = NULL)
 
 \item{silent}{(logical) suppress messages}
 
-\item{callFrom}{(character) allows easier tracking of message(s) produced}
+\item{callFrom}{(character) allows easier tracking of messages produced}
 }
 \value{
-This functio returns a matrix including imputed values or list of final and matrix with number of imputed by group (plus optional plot)
+This function returns a matrix including imputed values or list of final and matrix with number of imputed by group (plus optional plot)
 }
 \description{
 This function calculates the AUC (area under the curve) from ROC data in matrix of specificity and sensitivity values,
 as provided in the output from  \code{\link{summarizeForROC}}.
 }
 \examples{
-set.seed(2019); test1 <- list(annot=cbind(spec=c(rep("b",35),letters[sample.int(n=3,
-  size=150,replace=TRUE)])), BH=matrix(c(runif(35,0,0.01),runif(150)),ncol=1))
-roc1 <- summarizeForROC(test1,spec=c("a","b","c"))
+set.seed(2019); test1 <- list(annot=cbind(Species=c(rep("b",35), letters[sample.int(n=3,
+  size=150,replace=TRUE)])), BH=matrix(c(runif(35,0,0.01), runif(150)), ncol=1))
+roc1 <- summarizeForROC(test1, spec=c("a","b","c"), annotCol="Species")
 AucROC(roc1)
 }
 \seealso{

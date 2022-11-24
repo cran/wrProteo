@@ -6,12 +6,13 @@
 \usage{
 matrixNAinspect(
   dat,
-  gr,
+  gr = NULL,
   retnNA = TRUE,
   xLab = NULL,
   tit = NULL,
   xLim = NULL,
   silent = FALSE,
+  debug = FALSE,
   callFrom = NULL
 )
 }
@@ -30,10 +31,12 @@ matrixNAinspect(
 
 \item{silent}{(logical) suppress messages}
 
+\item{debug}{(logical) additional messages for debugging}
+
 \item{callFrom}{(character) allow easier tracking of messages produced}
 }
 \value{
-This function produces graphics only
+This function produces a graphic (to the current graphical device)
 }
 \description{
 \code{matrixNAinspect} makes histograms of the full data and shows sub-population of \code{NA}-neighbour values.  
@@ -49,13 +52,14 @@ Of course, such decisions do have a strong impact on further steps of data-analy
 }
 \examples{
 set.seed(2013)
-datT6 <- matrix(round(rnorm(300)+3,1),ncol=6,dimnames=list(paste("li",1:50,sep=""),letters[19:24]))
-datT6 <- datT6 +matrix(rep(1:nrow(datT6),ncol(datT6)),ncol=ncol(datT6))
+datT6 <- matrix(round(rnorm(300)+3,1), ncol=6, 
+  dimnames=list(paste("li",1:50,sep=""), letters[19:24]))
+datT6 <- datT6 +matrix(rep(1:nrow(datT6),ncol(datT6)), ncol=ncol(datT6))
 datT6[6:7,c(1,3,6)] <- NA
 datT6[which(datT6 < 11 & datT6 > 10.5)] <- NA
 datT6[which(datT6 < 6 & datT6 > 5)] <- NA
 datT6[which(datT6 < 4.6 & datT6 > 4)] <- NA
-matrixNAinspect(datT6,gr=gl(2,3)) 
+matrixNAinspect(datT6, gr=gl(2,3)) 
 }
 \seealso{
 \code{\link[graphics]{hist}}, \code{\link[stats]{na.fail}}, \code{\link[wrMisc]{naOmit}}

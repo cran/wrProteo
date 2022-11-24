@@ -6,7 +6,7 @@
 \usage{
 testRobustToNAimputation(
   dat,
-  gr,
+  gr = NULL,
   annot = NULL,
   retnNA = TRUE,
   avSdH = c(0.15, 0.5),
@@ -28,7 +28,7 @@ testRobustToNAimputation(
 \arguments{
 \item{dat}{(matrix or data.frame) main data (may contain \code{NA}); if \code{dat} is list containing $quant and $annot as matrix, the element $quant will be used}
 
-\item{gr}{(character or factor) replicate association}
+\item{gr}{(character or factor) replicate association; if \code{dat} contains a list-element \code{$sampleSetup$groups} or \code{$sampleSetup$lev} this may be used in case \code{gr=NULL}}
 
 \item{annot}{(matrix or data.frame) annotation (lines must match lines of data !), if \code{annot} is \code{NULL} and argument \code{dat} is a list containing both $quant and $annot, the element $annot will be used}
 
@@ -44,7 +44,7 @@ testRobustToNAimputation(
 
 \item{tit}{(character) custom title}
 
-\item{imputMethod}{(character) choose the imputation method (may be 'mode2'(default), 'mode1', 'datQuant', 'modeAdopt' or 'informed', for details see \code{\link{matrixNAneighbourImpute}} )}
+\item{imputMethod}{(character) choose the imputation method (may be 'mode2'(default), 'mode1', 'datQuant', 'modeAdopt', 'informed' or 'none', for details see \code{\link{matrixNAneighbourImpute}} )}
 
 \item{seedNo}{(integer) seed-value for normal random values}
 
@@ -58,9 +58,9 @@ testRobustToNAimputation(
 
 \item{silent}{(logical) suppress messages}
 
-\item{debug}{(logical) additional messages fro debugging}
+\item{debug}{(logical) additional messages for debugging}
 
-\item{callFrom}{(character) allows easier tracking of messages produced}
+\item{callFrom}{(character) This function allows easier tracking of messages produced}
 }
 \value{
 This function returns a limma-type S3 object of class 'MArrayLM' (which can be accessed lika a list); multiple results of testing or multiple testing correction types may get included ('p.value','FDR','BY','lfdr' or 'ROTS.BH')
@@ -82,6 +82,9 @@ This function returns a \href{https://bioconductor.org/packages/release/bioc/htm
 The argument \code{multCorMeth} allows to choose which multiple correction algorimths will be used and included to the final results.
 Possible options are 'lfdr','BH','BY','tValTab', ROTSn='100' (name to element necessary) or 'noLimma' (to add initial p.values and BH to limma-results). By default 'lfdr' (local false discovery rate from package 'fdrtools') and 'BH' (Benjamini-Hochberg FDR) are chosen.
 The option 'BY' referrs to Benjamini-Yakuteli FDR, 'tValTab' allows exporting all individual t-values from the repeated NA-substitution and subsequent testing.
+
+This function is compatible with automatic extraction of experimental setup based on sdrf or other quantitation-specific sample annotation.
+In this case, the results of automated importing and mining of sample annotation should be stored as \code{$sampleSetup$groups} or \code{$sampleSetup$lev}
 }
 \examples{
 set.seed(2015); rand1 <- round(runif(600) +rnorm(600,1,2),3)

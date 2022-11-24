@@ -1,5 +1,6 @@
-#' Remove samples/columns from list of matrixes
+#' Remove Samples/Columns From list of matrixes
 #'   
+#' @description
 #' Remove samples (ie columns) from every instance of list of matrixes.
 #' Note: This function assumes same order of columns in list-elements 'listElem' !
 #'  

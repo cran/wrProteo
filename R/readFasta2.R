@@ -18,7 +18,7 @@
 #' @examples
 #' # tiny example with common contaminants 
 #' path1 <- system.file('extdata',package='wrProteo')
-#' fiNa <-  "conta1.fasta"
+#' fiNa <-  "conta1.fasta.gz"
 #' fasta1 <- readFasta2(file.path(path1,fiNa))
 #' ## now let's read and further separate annotation-fields
 #' fasta2 <- readFasta2(file.path(path1,fiNa),tableOut=TRUE)
@@ -43,7 +43,7 @@ readFasta2 <- function(filename, delim="|", databaseSign=c("sp","tr","generic","
   ## abandon using scan due to cases of EOL during text read interfering with ...
   newLi <- grep("^>", sca)
   newLi <- if(is.list(newLi)) newLi <- sort(unlist(newLi))  else as.numeric(newLi)
-  if(length(newLi) <1) stop(fxNa," no instances of 'databaseSign', ie '",paste(databaseSign,collapse=""),"' found")
+  if(length(newLi) <1) stop(fxNa," no instances of 'databaseSign', ie '",paste(databaseSign,collapse=""),"' found !  Maybe this is NOT a real fasta-file ?")
   byDBsig <- sapply(databaseSign, function(x) grep(paste0("^>",x), sca[newLi]))
   names(byDBsig) <- databaseSign
   if(debug) {message(fxNa," checking for database signs ",wrMisc::pasteC(databaseSign, quoteC="'"))}
@@ -51,8 +51,8 @@ readFasta2 <- function(filename, delim="|", databaseSign=c("sp","tr","generic","
   ## count occurance of prefix types
   chLe <- sapply(byDBsig,length)
   out <- NULL
-  if(any(chLe >0)) {  # has prefix
-    if(any(chLe <1)) byDBsig <- byDBsig[which(chLe >0)]   # eliminate prefix types not found
+  if(any(chLe >0, na.rm=TRUE)) {  # has prefix
+    if(any(chLe <1, na.rm=TRUE)) byDBsig <- byDBsig[which(chLe >0)]   # eliminate prefix types not found
     dbSig <- rep(names(byDBsig)[1],length(newLi))
     if(length(byDBsig) >1) for(i in 2:length(byDBsig)) dbSig[byDBsig[[i]]] <- names(byDBsig)[i]
     id0 <- substr(sca[newLi], nchar(dbSig) +2 +nchar(delim), nchar(sca[newLi]))     # head wo prefix
@@ -65,7 +65,7 @@ readFasta2 <- function(filename, delim="|", databaseSign=c("sp","tr","generic","
   ## note : if single line of sequence both values on same line have same index
   #won't work# if(useLi[nrow(useLi),2] - useLi[nrow(useLi),1] ==0) useLi <- useLi[-nrow(useLi),]    # omit last if empty
   chLe <- useLi[,2] - useLi[,1] <0
-  if(any(c("empty","removeempty") %in% tolower(removeEntries)) & any(chLe)) {
+  if(any(c("empty","removeempty") %in% tolower(removeEntries), na.rm=TRUE) & any(chLe, na.rm=TRUE)) {
     if(!silent) message(fxNa," found ",sum(chLe)," case(s) of entries without any sequence underneith - omitting; bizzare !")
     useLi <- useLi[which(!chLe),] 
     id0 <- id0[which(!chLe)]
@@ -78,16 +78,16 @@ readFasta2 <- function(filename, delim="|", databaseSign=c("sp","tr","generic","
   chLe <- sapply(sep1, length)
   id <- sub("^ ","",sub(" $","",sapply(sep1, function(x) x[1])))    # remove heading or tailing space 
   chNa <- is.na(id)
-  if(any(chNa)) {
+  if(any(chNa, na.rm=TRUE)) {
    if(!silent) message(fxNa,"Note:  ",sum(chNa)," entries have no names, will be given names 'NONAME01'", if(sum(chNa)>1)" etc...")
    id[which(chNa)] <- paste0("NONAME",sprintf(paste0("%0",max(2,nchar(sum(chNa))),"d"), 1:sum(chNa)))
   }
   entryName <- id
   ## Try extracting 2nd part after ID
-  if(any(chLe >1)) {           # use 1st as ID and last as names+further
+  if(any(chLe >1, na.rm=TRUE)) {           # use 1st as ID and last as names+further
     entryName <- unlist(sapply(sep1, function(x) if(length(x) <1) NA else x[min(2,length(x))])) }   # use 2nd after separator (or 1st if)
   chNa <- is.na(entryName)
-  if(any(chNa)) entryName[which(chNa)] <- id[which(chNa)]      # no separator, use text available as ID and as name 
+  if(any(chNa, na.rm=TRUE)) entryName[which(chNa)] <- id[which(chNa)]      # no separator, use text available as ID and as name 
 
   if(debug) {message(fxNa," isolated ",length(id)," ids ( ",sum(chNa)," with same text as ID and sequence name)" )}
   entryName <- sub("^ ","",sub("\\.$","",entryName))          # remove heading space or tailing point
@@ -95,9 +95,9 @@ readFasta2 <- function(filename, delim="|", databaseSign=c("sp","tr","generic","
 
   if(debug) {message(fxNa," rf5")}
 
-  if(any(c("duplicate","duplicated") %in% tolower(removeEntries)) ) {
+  if(any(c("duplicate","duplicated") %in% tolower(removeEntries), na.rm=TRUE) ) {
     chDup <- duplicated(seqs, fromLast=FALSE) & duplicated(entryName, fromLast=FALSE)
-    if(any(chDup)) {
+    if(any(chDup, na.rm=TRUE)) {
       if(!silent) message(fxNa,"Removing ",sum(chDup)," duplicated entries (same sequence AND same header)")
       seqs <- seqs[which(!chDup)]
       entryName <- entryName[which(!chDup)]
@@ -119,7 +119,7 @@ readFasta2 <- function(filename, delim="|", databaseSign=c("sp","tr","generic","
     entryNameS <- sub(aftS, "", entryName)                                    # get everything before Uniprot like sparator  (space+2upper+"="+anyText)
     nch <- nchar(entryName)
     ncha <- nchar(entryNameS)
-    suplID <- if(any(ncha >0)) substr(entryName, 1, nch -1-ncha) else rep(NA, length(entryName))
+    suplID <- if(any(ncha >0, na.rm=TRUE)) substr(entryName, 1, nch -1-ncha) else rep(NA, length(entryName))
     chS <- ncha == nchar(entryName)
     out[,c("database","uniqueIdentifier","entryName","proteinName","sequence")] <- cbind(dbSig,id,entryNameS,suplID,seqs)
     if(debug) {message(fxNa," rf7")}
@@ -128,14 +128,14 @@ readFasta2 <- function(filename, delim="|", databaseSign=c("sp","tr","generic","
     grUni <- lapply(UniprSep, grep, entryNameS)                   # which entires/lines concerned
     chUni <- which(sapply(grUni, length) >0)              # which separators concerned
     UniprSep <- c(UniprSep, "ZYXWVUTSR=")                 # need to add dummy sequence for last
-    if(any(chUni)) for(i in chUni) {
+    if(any(chUni, na.rm=TRUE)) for(i in chUni) {
       aftS <- paste(sapply(UniprSep[-1*(1:i)],function(x) paste0("\ ",x,"[[:alnum:]]+[[:print:]]*")),collapse="|")
       curS <- paste(sapply(UniprSep[i], function(x) paste0("^[[:print:]]* ",x)),collapse="|")
       out[grUni[[i]], sub("=$","",UniprSep[i]) ] <- sub(aftS,"", sub(curS,"",entryNameS[grUni[[i]]]))           # c(3,5+i)
     }
     ## propagate NONAME to empty proteinName
     ch1 <- grepl("NONAME",out[,2]) & nchar(out[,"proteinName"]) <1
-    if(any(ch1)) out[which(ch1),"proteinName"] <- out[which(ch1),2] 
+    if(any(ch1, na.rm=TRUE)) out[which(ch1),"proteinName"] <- out[which(ch1),2] 
     
     ## remove cols with all NA
     chNA <- colSums(!is.na(out)) <1

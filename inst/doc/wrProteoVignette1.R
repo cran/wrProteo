@@ -54,7 +54,7 @@ convAASeq2mass(pep1, seqN=FALSE)
 
 ## ----readFasta, echo=TRUE-----------------------------------------------------
 path1 <- system.file('extdata', package='wrProteo')
-fiNa <-  "conta1.fasta"
+fiNa <- "conta1.fasta.gz"
 ## basic reading of Fasta
 fasta1 <- readFasta2(file.path(path1,fiNa))
 str(fasta1)
@@ -63,19 +63,16 @@ str(fasta1)
 fasta1b <- readFasta2(file.path(path1,fiNa), tableOut=TRUE)
 str(fasta1b)
 
-## ----treatFasta1, echo=TRUE---------------------------------------------------
-
+## ----treatFasta2, echo=TRUE---------------------------------------------------
 dupEntry <- duplicated(fasta1)
-
 table(dupEntry)
 
-
-## ----treatFasta2, echo=TRUE---------------------------------------------------
+## ----treatFasta3, echo=TRUE---------------------------------------------------
 fasta3 <- fasta1[which(!dupEntry)]
 
 length(fasta3)
 
-## ----writeFasta, echo=TRUE, eval=FALSE----------------------------------------
+## ----writeFasta1, echo=TRUE, eval=FALSE---------------------------------------
 #  writeFasta2(fasta3, fileNa="testWrite.fasta")
 
 ## ----metaData1, echo=TRUE-----------------------------------------------------
@@ -88,35 +85,75 @@ str(pxd001819meta)
 path1 <- system.file("extdata", package="wrProteo")
 dataMQ <- readMaxQuantFile(path1, specPref=NULL, normalizeMeth="median")
 
-## ----readMaxQuant2,  echo=TRUE------------------------------------------------
+## ----readMaxQuant2, fig.height=8, fig.width=9.5, fig.align="center", echo=TRUE----
+specPrefMQ <- list(conta="CON_|LYSC_CHICK", mainSpecies="OS=Saccharomyces cerevisiae")
+dataMQ <- readMaxQuantFile(path1, specPref=specPrefMQ, sdrf="PXD001819", suplAnnotFile=TRUE, plotGraph=FALSE)
+
+## ----readMaxQuant3,  echo=TRUE------------------------------------------------
 ## the number of lines and colums
 dim(dataMQ$quant)
-## a summary of the quantitation data
+## A quick summary of some columns of quantitation data
 summary(dataMQ$quant[,1:8])        # the first 8 cols
 
-## ----sampNa1,  echo=TRUE------------------------------------------------------
-UPSconc <- c(50,125,250,500,2500,5000,12500,25000,50000)  
-sampNa <- paste0(rep(UPSconc, each=3),"amol_",rep(1:3,length(UPSconc))) 
-grp9 <- paste0(rep(UPSconc,each=3),"amol") 
+## ----readMaxQuant4,  echo=TRUE------------------------------------------------
+## The grouping of replicates from automatically mining column-names of quantitation data
+grp9 <- dataMQ$sampleSetup$groups
 head(grp9)
+
+## ----readMaxQuantPeptides,  echo=TRUE-----------------------------------------
+MQpepFi1 <- "peptides_tinyMQ.txt.gz"
+path1 <- system.file("extdata", package="wrProteo")
+specPref1 <- c(conta="conta|CON_|LYSC_CHICK", mainSpecies="YEAST", spec2="HUMAN")
+dataMQpep <- readMaxQuantPeptides(path1, file=MQpepFi1, specPref=specPref1, tit="Tiny MaxQuant Peptides")
+summary(dataMQpep$quant)
+
+## ----readProteomeDiscovererProt1,  echo=TRUE----------------------------------
+fiNa <- "tinyPD_allProteins.txt.gz"
+dataPD <- readProtDiscovFile(file=fiNa, path=path1, suplAnnotFile=FALSE, plotGraph=FALSE)
+summary(dataPD$quant)
+
+## ----readProlineProt1,  echo=TRUE---------------------------------------------
+fiNa <- "exampleProlineABC.csv.gz"                  # gz compressed data can be read, too
+dataPL <- readProlineFile(file=fiNa, path=path1, plotGraph=FALSE)
+summary(dataPL$quant)
+
+## ----readMassChroq1,  echo=TRUE-----------------------------------------------
+MCproFi1 <- "tinyMC.RData"
+dataMC <- readMassChroQFile(path1, file=MCproFi1, tit="Tiny MassChroq Example", plotGraph=FALSE)
+summary(dataMC$quant)
+
+## ----readFragpipe1,  echo=TRUE------------------------------------------------
+FPproFi1 <- "tinyFragpipe1.tsv.gz"
+## let's define the main species and allow tagging some contaminants
+specPref1 <- c(conta="conta|CON_|LYSC_CHICK", mainSpecies="MOUSE")
+dataFP <- readFragpipeFile(path1, file=FPproFi1, specPref=specPref1, tit="Tiny Fragpipe Example", plotGraph=FALSE)
+summary(dataFP$quant)
+
+## ----readSampleMetaData1,  echo=TRUE------------------------------------------
+specPrefMQ <- list(conta="CON_|LYSC_CHICK", mainSpecies="OS=Saccharomyces cerevisiae")
+dataMQ <- readMaxQuantFile(path1, specPref=specPrefMQ, sdrf="PXD001819", suplAnnotFile=TRUE, plotGraph=FALSE)
+
+## ----readSampleMetaData2,  echo=TRUE------------------------------------------
+MQsdrf001819Setup <- readSampleMetaData("PXD001819", path=path1, suplAnnotFile="summary.txt.gz", abund=dataMQ$quant, quantMeth="MQ")
+str(MQsdrf001819Setup)
 
 ## ----NA_MaxQuant, echo=TRUE---------------------------------------------------
 ## Let's inspect NA values as graphic
-matrixNAinspect(dataMQ$quant, gr=grp9, tit="Histogram of Protein Abundances and NA-Neighbours") 
+matrixNAinspect(dataMQ$quant, gr=grp9, tit="Histogram of Protein Abundances and NA-Neighbours")
 
 ## ----NArepl_MaxQuant, echo=TRUE-----------------------------------------------
 ## MaxQuant simple NA-imputation (single round)
-dataMQimp <- matrixNAneighbourImpute(dataMQ$quant, gr=grp9, tit="Histogram of Imputed and Final Data") 
+dataMQimp <- matrixNAneighbourImpute(dataMQ$quant, gr=grp9, tit="Histogram of Imputed and Final Data")
 
 ## ----testRobustToNAimputation_MQ1, echo=TRUE----------------------------------
 ## Impute NA-values repeatedly and run statistical testing after each round of imputations
-testMQ <- testRobustToNAimputation(dataMQ, gr=grp9) 
+testMQ <- testRobustToNAimputation(dataMQ, gr=grp9)
 
-## the data after repeated NA-imputation
-head(testMQ$datImp[,1:8])
+## Example of the data after repeated NA-imputation
+head(testMQ$datImp[,1:6])
 
 ## ----PCA1MQ, fig.height=12, fig.width=9.5, fig.align="center", echo=TRUE------
-# limit to UPS1 
+# limit to UPS1
 plotPCAw(testMQ$datImp, sampleGrp=grp9, tit="PCA on Protein Abundances (MaxQuant,NAs imputed)", rowTyName="proteins", useSymb2=0)
 
 ## ----MAplot1, fig.height=6.5, fig.width=9.5, fig.align="center", echo=TRUE----
@@ -124,7 +161,8 @@ plotPCAw(testMQ$datImp, sampleGrp=grp9, tit="PCA on Protein Abundances (MaxQuant
 MAplotW(testMQ)
 
 ## ----MAplot2, fig.height=6.5, fig.width=9.5, fig.align="center", echo=TRUE----
-MAplotW(testMQ, useComp=2, namesNBest="passFC") 
+res1 <- NULL
+MAplotW(testMQ, useComp=2, namesNBest="passFC")
 
 ## ----VolcanoPlot1MQ, fig.height=6.5, fig.width=9.5, fig.align="center", echo=TRUE----
 ## by default the first pairwise comparison is taken
@@ -135,7 +173,7 @@ VolcanoPlotW(testMQ, useComp=2, namesNBest="passFDR")
 res1 <- extractTestingResults(testMQ, compNo=1, thrsh=0.05, FCthrs=2)
 
 ## ----results2, echo=TRUE------------------------------------------------------
-kable(res1[,-1], caption="5%-FDR (BH) Significant results for 1st pairwise set", align="c")
+knitr::kable(res1[,-1], caption="5%-FDR (BH) Significant results for 1st pairwise set", align="c")
 
 ## ----readUCSC1, echo=TRUE-----------------------------------------------------
 path1 <- system.file("extdata", package="wrProteo")
@@ -146,7 +184,7 @@ UcscAnnot1 <- readUCSCtable(gtfFi)
 head(UcscAnnot1)
 
 ## ----readUCSC2, echo=TRUE-----------------------------------------------------
-# Here we'll redo reading the UCSC table, plus immediatley write the file for UniProt conversion 
+# Here we'll redo reading the UCSC table, plus immediatley write the file for UniProt conversion
 #  (in this vignette we write to tempdir() to keep things tidy)
 expFi <- file.path(tempdir(),"deUcscForUniProt2.txt")
 UcscAnnot1 <- readUCSCtable(gtfFi, exportFileNa=expFi)

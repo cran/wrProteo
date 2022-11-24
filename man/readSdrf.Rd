@@ -2,11 +2,7 @@
 % Please edit documentation in R/readSdrf.R
 \name{readSdrf}
 \alias{readSdrf}
-\title{Read proteomics meta-data as sdrf file 
- 
-This function allows reading proteomics meta-data from sdrf file, as they are provided on https://github.com/bigbio/proteomics-metadata-standard. 
-Then, a data.frame with all annotation data will be returned. To stay conform with the (non-obligatory) recommendations, column-names will be shown as lower caps.  
-The package utils must be installed.}
+\title{Read proteomics meta-data as sdrf file}
 \usage{
 readSdrf(
   fi,
@@ -27,24 +23,25 @@ it will be searched based at the location of \code{urlPrefix}}
 
 \item{silent}{(logical) suppress messages}
 
-\item{callFrom}{(character) allows easier tracking of message(s) produced}
+\item{callFrom}{(character) allows easier tracking of messages produced}
 
 \item{debug}{(logical) display additional messages for debugging}
 }
 \value{
-This function returns the content of Sdrf-file as data.frame
+This function returns the content of sdrf-file as data.frame (or \code{NULL} if the corresponding file was not found)
 }
 \description{
-Read proteomics meta-data as sdrf file 
- 
 This function allows reading proteomics meta-data from sdrf file, as they are provided on https://github.com/bigbio/proteomics-metadata-standard. 
-Then, a data.frame with all annotation data will be returned. To stay conform with the (non-obligatory) recommendations, column-names will be shown as lower caps.  
-The package utils must be installed.
+A data.frame containing all annotation data will be returned. To stay conform with the (non-obligatory) recommendations, columnnames are shown as lower caps.
+}
+\details{
+The packages utils and wrMisc must be installed.
+Please note that reading sdrf files (if not provided as local copy) will take a few seconds, depending on the responsiveness of github.
 }
 \examples{
-
-pxd001819 <- readSdrf("PXD001819")
-str(pxd001819)
+## This may take a few sconds...
+sdrf001819 <- readSdrf("PXD001819") 
+str(sdrf001819)
 
  
 }

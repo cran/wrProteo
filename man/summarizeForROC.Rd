@@ -12,7 +12,7 @@ summarizeForROC(
   columnTest = NULL,
   FCthrs = NULL,
   spec = c("H", "E", "S"),
-  annotCol = "spec",
+  annotCol = "Species",
   filterMat = "filter",
   tit = NULL,
   color = 1,
@@ -21,25 +21,26 @@ summarizeForROC(
   bg = NULL,
   overlPlot = FALSE,
   silent = FALSE,
+  debug = FALSE,
   callFrom = NULL
 )
 }
 \arguments{
-\item{test}{(class \code{MArrayLM}, S3-object from limma) from testing (eg \code{\link{testRobustToNAimputation}} or \code{\link{test2grp}}}
+\item{test}{(list or class \code{MArrayLM}, S3-object from limma) from testing (eg \code{\link{testRobustToNAimputation}} or \code{\link{test2grp}}}
 
 \item{useComp}{(character or integer) in case multiple comparisons (ie multiple columns 'test$tyThr'); which pairwise comparison to used}
 
-\item{tyThr}{(character,length=1) type of stat test-result to be used for sensitivity and specificity calculations (eg 'BH','lfdr' or 'p.value'), must be list-element of 'test'}
+\item{tyThr}{(character,length=1) type of statistical test-result to be used for sensitivity and specificity calculations (eg 'BH','lfdr' or 'p.value'), must be list-element of 'test'}
 
 \item{thr}{(numeric) stat test (FDR/p-value) threshold, if \code{NULL} a panel of 108 p-value threshold-levels values will be used for calculating specifcity and sensitivity}
 
 \item{columnTest}{depreciated, please use 'useComp' instead}
 
-\item{FCthrs}{(numeric) Fold-Change threshold (display as line) give as Fold-change and NOT log2(FC), default at 1.5, set to \code{NA} for omitting}
+\item{FCthrs}{(numeric) Fold-Change threshold (display as line) give as Fold-change and NOT as log2(FC), default at 1.5, set to \code{NA} for omitting}
 
-\item{spec}{(character) labels for species will be matched to column 'spec' of test$annot and used for sensitivity and specificity calculations. Important : 1st label for matrix (expected as constant) and subsequent labels for spike-ins (variable)}
+\item{spec}{(character) labels for those species which should be matched to column \code{annotCol} ('spec') of test$annot and used for sensitivity and specificity calculations. Important : 1st entry for species designed as constant (ie matrix) and subsequent labels for spike-ins (expected variable)}
 
-\item{annotCol}{(character) column name of \code{test$annot} to use to separate species}
+\item{annotCol}{(character, length=1) column name of \code{test$annot} to use to separate species}
 
 \item{filterMat}{(character) name (or index) of element of \code{test} containing matrix or vector of logical filtering results}
 
@@ -57,26 +58,44 @@ summarizeForROC(
 
 \item{silent}{(logical) suppress messages}
 
-\item{callFrom}{(character) allows easier tracking of message(s) produced}
+\item{debug}{(logical) additional messages for debugging}
+
+\item{callFrom}{(character) allows easier tracking of messages produced}
 }
 \value{
-This function returns a matrix including imputed values or list of final and matrix with number of imputed by group (plus optional plot)
+This function returns a numeric matrix containing the columns 'alph', 'spec', 'sens', 'prec', 'accur', 'FD' plus two columns with absolute numbers of lines (genes/proteins) passing the current threshold level alpha (1st species, all other species)
 }
 \description{
-\code{summarizeForROC} takes statistical testing results (obtained using \code{\link{testRobustToNAimputation}} or \code{\link[wrMisc]{moderTest2grp}}, based on \href{https://bioconductor.org/packages/release/bioc/html/limma.html}{limma}) and calculates specifcity and sensitivity values for plotting ROC-curves along a panel of thresholds.  
-Based on column from test$annot and argument 'spec' TP,FP,FN and TN are determined. Special consideration is made to 3 species mix samples as found in proteomics benchmark-tests.  
+This function takes statistical testing results (obtained using \code{\link{testRobustToNAimputation}} or \code{\link[wrMisc]{moderTest2grp}}, 
+based on \href{https://bioconductor.org/packages/release/bioc/html/limma.html}{limma}) and calculates specifcity and sensitivity values for plotting ROC-curves along a panel of thresholds.  
+Based on annotation (from test$annot) with the user-defined column for species (argument 'spec') the counts of TP (true positives), FP (false positves), FN (false negatives) and TN are determined. 
+In addition, an optional plot may be produced.
+}
+\details{
+Determining TP and FP counts requires 'ground trouth' experiments, where it is known in advance which proteins are expected to change abundance between two groups of samples.
+Typically this is done by mixing proteins of different species origin, the first species noted by argument 'spec' designes the species to be considered constant (expected as FN in statistical tests).
+Then, one or mutiple additional spike-in species can be defined. As the spike-in cocentration should have been altered between different gruops of samples, they are expected as TP. 
+ 
+The main aim of this function consists in providing specifcity and sensitivity values, plus counts of TP (true positives), FP (false positves), FN (false negatives) and TN (true negatives),  
+along various thrsholds (specified in column 'alph') for statistical tests preformed prior to calling this function.
+ 
+Note, that the choice of species-annotation plays a crucial role who the counting results are obtained. 
+In case of multiple spike-in species the user should pay attention if they all are expected to change abundance at the same ratio.
+If not, it is advised to run this function multiple times sperately only with the subset of those species expected to change at same ratio.
+  
+The dot on the plotted curve shows the results at the level of the single threshold alpha=0.05.   
+For plotting multiple ROC curves as overlay and additional graphical parameters/options you may use \code{\link{plotROC}}.
+ 
 See also \href{https://en.wikipedia.org/wiki/Receiver_operating_characteristic}{ROC on Wkipedia} for explanations of TP,FP,FN and TN as well as examples.
-An optional plot may be produced, too.
-Return matrix with TP,FP,FN,TN,spec,sens,prec,accur and FDR count values along the various thrsholds specified in column 'alph'.
 Note that numerous other packages also provide support for building and plotting ROC-curves : Eg \href{https://CRAN.R-project.org/package=dlstats}{rocPkgShort}, 
  \href{https://CRAN.R-project.org/package=ROCR}{ROCR}, \href{https://CRAN.R-project.org/package=pROC}{pROC} or \href{https://CRAN.R-project.org/package=ROCit}{ROCit}
 }
 \examples{
-set.seed(2019); test1 <- list(annot=cbind(spec=c(rep("b",35), letters[sample.int(n=3,
+set.seed(2019); test1 <- list(annot=cbind(Species=c(rep("b",35), letters[sample.int(n=3,
   size=150, replace=TRUE)])), BH=matrix(c(runif(35,0,0.01), runif(150)), ncol=1))
-tail(roc1 <- summarizeForROC(test1, spec=c("a","b","c")))
+tail(roc1 <- summarizeForROC(test1, spec=c("a","b","c"), annotCol="Species"))
 
 }
 \seealso{
-replot the figure \code{\link{plotROC}}, calculate AUC using \code{\link{AucROC}}, robust test for preparing tables \code{\link{testRobustToNAimputation}}, \code{\link[wrMisc]{moderTest2grp}}, \code{\link{test2grp}}, \code{eBayes} in package \href{https://bioconductor.org/packages/release/bioc/html/limma.html}{limma}, \code{\link[stats]{t.test}}
+replot the figure using \code{\link{plotROC}}, calculate AUC using \code{\link{AucROC}}, robust test for preparing tables \code{\link{testRobustToNAimputation}}, \code{\link[wrMisc]{moderTest2grp}}, \code{\link{test2grp}}, \code{eBayes} in package \href{https://bioconductor.org/packages/release/bioc/html/limma.html}{limma}, \code{\link[stats]{t.test}}
 }

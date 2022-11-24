@@ -6,15 +6,15 @@
 #' @param dat (matrix or data.frame) main inut containig sensitivity and specificity data (from \code{summarizeForROC}) 
 #' @param useCol (character or integer) column names to be used: 1st for specificity and 2nd for sensitivity count columns   
 #' @param silent (logical) suppress messages
-#' @param callFrom (character) allows easier tracking of message(s) produced
-#' @return This functio returns a matrix including imputed values or list of final and matrix with number of imputed by group (plus optional plot)
+#' @param callFrom (character) allows easier tracking of messages produced
+#' @return This function returns a matrix including imputed values or list of final and matrix with number of imputed by group (plus optional plot)
 #' @seealso preparing ROC data \code{\link{summarizeForROC}}, (re)plot the ROC figure \code{\link{plotROC}};   
 #'   note that numerous other packages also provide support for working with ROC-curves : Eg \href{https://CRAN.R-project.org/package=dlstats}{rocPkgShort}, 
 #'    \href{https://CRAN.R-project.org/package=ROCR}{ROCR}, \href{https://CRAN.R-project.org/package=pROC}{pROC} or \href{https://CRAN.R-project.org/package=ROCit}{ROCit} 
 #' @examples
-#' set.seed(2019); test1 <- list(annot=cbind(spec=c(rep("b",35),letters[sample.int(n=3,
-#'   size=150,replace=TRUE)])), BH=matrix(c(runif(35,0,0.01),runif(150)),ncol=1))
-#' roc1 <- summarizeForROC(test1,spec=c("a","b","c"))
+#' set.seed(2019); test1 <- list(annot=cbind(Species=c(rep("b",35), letters[sample.int(n=3,
+#'   size=150,replace=TRUE)])), BH=matrix(c(runif(35,0,0.01), runif(150)), ncol=1))
+#' roc1 <- summarizeForROC(test1, spec=c("a","b","c"), annotCol="Species")
 #' AucROC(roc1)
 #' @export
 AucROC <- function(dat, useCol=c("spec","sens"), silent=FALSE, callFrom=NULL) {
@@ -27,10 +27,10 @@ AucROC <- function(dat, useCol=c("spec","sens"), silent=FALSE, callFrom=NULL) {
   if(is.numeric(useCol) & length(useCol) >1) if(all(useCol >0 | useCol <= ncol(dat))) dataOK <- TRUE 
   if(is.character(useCol) & length(useCol) >1) {
     useCol <- which(colnames(dat) %in% useCol[1:2])
-    dataOK <- if(any(is.na(useCol))) FALSE else TRUE }
+    dataOK <- !any(is.na(useCol)) }
   ## check for NA
   chNa <- is.na(dat[,useCol])
-  if(any(chNa)) { ch1 <- is.na(dat[1,useCol])
+  if(any(chNa)) { ch1 <- is.na(dat[1, useCol])
     if(!silent) message(fxNa," NOTE : the data conatain ",sum(chNa)," NAs, replacing by preceeding value")    
     if(any(ch1)) dat[1,useCol] <- c(if(ch1[1]) 1 else dat[1,useCol[1]], if(ch1[2]) 0 else dat[1,useCol[2]])
     for(i in 1:2) {ch1 <- is.na(dat[,useCol[i]])  

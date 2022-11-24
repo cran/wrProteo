@@ -7,7 +7,7 @@
 readProlineFile(
   fileName,
   path = NULL,
-  normalizeMeth = NULL,
+  normalizeMeth = "median",
   logConvert = TRUE,
   sampleNames = NULL,
   quantCol = "^abundance_",
@@ -23,6 +23,9 @@ readProlineFile(
   graphTit = NULL,
   wex = 2,
   specPref = c(conta = "_conta\\\\|", mainSpecies = "OS=Homo sapiens"),
+  gr = NULL,
+  sdrf = NULL,
+  suplAnnotFile = TRUE,
   silent = FALSE,
   callFrom = NULL,
   debug = FALSE
@@ -61,9 +64,17 @@ readProlineFile(
 
 \item{wex}{(integer) relative expansion factor of the violin-plot (will be passed to \code{\link[wrGraph]{vioplotW}})}
 
-\item{specPref}{(character or list) define characteristic text for recognizing (main) groups of species (1st for comtaminants - will be marked as 'conta', 2nd for main species- marked as 'mainSpe', 
-and optional following ones for supplemental tags/species - maked as 'species2','species3',...); 
+\item{specPref}{(character or list) define characteristic text for recognizing (main) groups of species (1st for comtaminants - will be marked as 'conta', 2nd for main species- marked as 'mainSpe',
+and optional following ones for supplemental tags/species - maked as 'species2','species3',...);
 if list and list-element has multiple values they will be used for exact matching of accessions (ie 2nd of argument \code{annotCol})}
+
+\item{gr}{(character or factor) custom defined pattern of replicate association, will override final grouping of replicates from \code{sdrf} and/or \code{suplAnnotFile} (if provided)   \code{}}
+
+\item{sdrf}{(character, list or data.frame) optional extraction and adding of experimenal meta-data: if character, this may be the ID at ProteomeExchange. Besides, the output from \code{readSdrf} or a list from \code{defineSamples} may be provided; if \code{gr} is provided, it gets priority for grouping of replicates}
+
+\item{suplAnnotFile}{(logical or character) optional reading of supplemental files produced by quantification software; however, if \code{gr} is provided, \code{gr} gets priority for grouping of replicates;
+if \code{TRUE} defaults to file '*InputFiles.txt' (needed to match information of \code{sdrf}) which can be exported next to main quantitation results;
+if \code{character} the respective file-name (relative or absolute path)}
 
 \item{silent}{(logical) suppress messages}
 
@@ -77,17 +88,17 @@ This function returns a list with \code{$raw} (initial/raw abundance values), \c
 \description{
 Quantification results form MS-Angel and Proline \href{http://www.profiproteomics.fr/proline/}{Proline} exported as xlsx format can be read directly.
 Besides, files in tsv, csv (European and US format) or tabulated txt can be read, too.
-Then relevant information gets extracted, the data can optionally normalized and displayed as boxplot or vioplot. 
-The final output is a list containing 6 elements: \code{$raw}, \code{$quant},  \code{$annot}, \code{$counts}, \code{$quantNotes} and \code{$notes}. 
+Then relevant information gets extracted, the data can optionally normalized and displayed as boxplot or vioplot.
+The final output is a list containing 6 elements: \code{$raw}, \code{$quant},  \code{$annot}, \code{$counts}, \code{$quantNotes} and \code{$notes}.
 Alternatively, a data.frame with annotation and quantitation data may be returned if \code{separateAnnot=FALSE}.
-Note: There is no normalization by default since quite frequently data produced by Proline are already sufficiently normalized. 
+Note: There is no normalization by default since quite frequently data produced by Proline are already sufficiently normalized.
 The figure produced using the argument \code{plotGraph=TRUE} may help judging if the data appear sufficiently normalized (distribtions should align).
 }
 \details{
-This function has been developed using Proline version 1.6.1 coupled with MS-Angel 1.6.1. 
+This function has been developed using Proline version 1.6.1 coupled with MS-Angel 1.6.1.
 The classical way of using ths function consists in exporting results produced by Proline and MS-Angel as xlsx file.
-Besides, other formats may be read, too. This includes csv (eg the main sheet/table of ths xlsx exported file saved as csv). 
-\href{https://github.com/wombat-p}{WOMBAT} represents an effort to automatize quantitative proteomics experiments, using this route 
+Besides, other formats may be read, too. This includes csv (eg the main sheet/table of ths xlsx exported file saved as csv).
+\href{https://github.com/wombat-p}{WOMBAT} represents an effort to automatize quantitative proteomics experiments, using this route
 data get exported as txt files which can be read, too.
 }
 \examples{

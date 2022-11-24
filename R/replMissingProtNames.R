@@ -1,4 +1,4 @@
-#' Complement missing EntryNames in annotation 
+#' Complement Missing EntryNames In Annotation 
 #'
 #' This function helps replacing missing EntryNames (in $annot) after reading quantification results. 
 #' To do so the comumn-names of \code{annCol} will be used : 
@@ -17,7 +17,7 @@
 #'   "YP010_YEAST","",""),Accession=c("A5Z2X5","P01966","P35900"), SpecType=c("Yeast",NA,NA)))
 #' replMissingProtNames(dat)
 #' @export
-replMissingProtNames <- function(x,annCol=c("EntryName","Accession","SpecType"), silent=FALSE, callFrom=NULL) {
+replMissingProtNames <- function(x, annCol=c("EntryName","Accession","SpecType"), silent=FALSE, callFrom=NULL) {
   ## replace in $annot missing EntryNames by concatenating Accession + SpecType (ie 2nd & 3rd of annCol)
   ## move to wrProteo ?
   fxNa <- wrMisc::.composeCallName(callFrom, newNa="replreplMissingProtNames")

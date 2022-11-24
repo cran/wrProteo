@@ -83,7 +83,7 @@ matrixNAneighbourImpute <- function(dat, gr, imputMethod="mode2", retnNA=TRUE, a
       if(debug) message(fxNa,"'dat' is list, using element 'quant' as 'dat'")
     } else { datOK <- FALSE
       msg <- c("'dat' is list but does NOT contain element named 'quant'",tx1)}
-  } else { if(any(dim(dat) < c(2,1))) { datOK <- FALSE
+  } else { if(any(dim(dat) < c(2,1), na.rm=TRUE)) { datOK <- FALSE
     msg <- c("'dat' matrix or data.frame with min 2 rows and min 2 cols",tx1)}} 
   if(datOK) { if(length(gr) != ncol(dat)) { datOK <- FALSE
     msg <- c("Number of columns of 'dat' must match length of 'gr'",tx1)}}  
@@ -94,7 +94,7 @@ matrixNAneighbourImpute <- function(dat, gr, imputMethod="mode2", retnNA=TRUE, a
     if(is.null(xLab)) xLab <- "Values"
     if(length(wrMisc::naOmit(imputMethod)) <1) { imputMethod <- "mode2"
       if(!silent) message(fxNa,"Invalid entry for 'imputMethod' setting to default")}
-    chMeth <- imputMethod %in% c("datQuant", "medmode", "mode1", "mode2", "mode3", "modeadopt","informed")
+    chMeth <- imputMethod %in% c("datQuant", "medmode", "mode1", "mode2", "mode3", "modeadopt","informed","none")
     if(!chMeth) { 
       if(!silent) message(fxNa,"Unknown method '",imputMethod,"' as entry for 'imputMethod', setting to default")
       imputMethod <- "mode2"}
@@ -108,10 +108,10 @@ matrixNAneighbourImpute <- function(dat, gr, imputMethod="mode2", retnNA=TRUE, a
     } else { NAneighbour <- NAneigLst <- nNaNei <- medMod <- all.lm <- charAll <- NULL }    # initialize
     if(length(seedNo) >1) { seedNo <- seedNo[1]
       if(!silent) message(fxNa,"Invalid entry for argument 'seedNo', it may be single integer or NULL, setting to NULL")}  
-    if(length(seedNo) >0) if(any(is.na(seedNo))) seedNo <- NULL
+    if(length(seedNo) >0) if(any(is.na(seedNo), na.rm=TRUE)) seedNo <- NULL
     if(is.logical(plotHist)) { plotHist <- if(identical(TRUE,plotHist)) c("hist","quant","mode") else NULL}
     medMod <- NULL
-    
+
     ## main
     isNA <- is.na(dat)
     chNA <- any(isNA)
@@ -126,7 +126,7 @@ matrixNAneighbourImpute <- function(dat, gr, imputMethod="mode2", retnNA=TRUE, a
       return( if(isTRUE(retnNA)) list(data=dat, nNA=0, NAneighbour=NULL, randParam=NULL) else dat)
     } else {
       modNa <- NULL
-      if(length(NAneighbour) <1 & (length(grep("mode", imputMethod)) >0 | any(c("informed","datQuant") %in% imputMethod))) {   ## all methods using mode need NA-neighbours ...
+      if(length(NAneighbour) <1 & (length(grep("mode", imputMethod)) >0 | any(c("informed","datQuant") %in% imputMethod, na.rm=TRUE))) {   ## all methods using mode need NA-neighbours ...
         if(debug) message(fxNa," mn1")
         if(length(NAneighbour) <1) NAneighbour <- isolNAneighb(dat, gr, iniCheck=FALSE, silent=silent, callFrom=fxNa)     #
         if(debug) {message(fxNa," mn2"); mn2 <- list(NAneighbour=NAneighbour)}
@@ -134,6 +134,7 @@ matrixNAneighbourImpute <- function(dat, gr, imputMethod="mode2", retnNA=TRUE, a
         if(chLast==0) NAneighbour <- NAneighbour[-1*length(NAneighbour)]     # remove last empty field if empty (as usual)
 
       } else { nNA <- sum(isNA)}
+      
       if(debug) {message(fxNa," mn3"); mn3 <- list(dat=dat,gr=gr,isNA=isNA,chNA=chNA,chLast=chLast,imputMethod=imputMethod,NAneigLst=NAneigLst,NAneighbour=NAneighbour)}
       nNaNei <- sapply(NAneighbour, length)  
       datIni <- dat
@@ -149,6 +150,7 @@ matrixNAneighbourImpute <- function(dat, gr, imputMethod="mode2", retnNA=TRUE, a
       if(debug) {message(fxNa," mn4") }
         
       ## IMPUTATIONS
+      randVa <- NULL                  # initialize for 'none'
       ## choose method
       if("datQuant" %in% imputMethod) {   # quantile of data
         if(debug) message(fxNa,"Starting method 'datQuant'")
@@ -169,7 +171,7 @@ matrixNAneighbourImpute <- function(dat, gr, imputMethod="mode2", retnNA=TRUE, a
         randVa <- signif(stats::rnorm(sum(isNA), min(medMod), avSdH[2]), 5)      
         msg <- paste("mean=",signif(min(medMod),4),"and sd=", signif(avSdH[2],4))
       }
-      if(any(c("mode1","mode3","informed") %in% imputMethod)) {      # global mode of all NA neighbours
+      if(any(c("mode1","mode3","informed") %in% imputMethod, na.rm=TRUE)) {      # global mode of all NA neighbours
         if(debug) message(fxNa,"Prepare for methods 'mode1','mode2' and 'informed'")
         if(length(medMod) <1) medMod <- wrMisc::stableMode(unlist(NAneighbour), method="density",silent=silent,callFrom=fxNa) 
         if(length(seedNo) ==1) set.seed(seedNo)
@@ -210,7 +212,7 @@ matrixNAneighbourImpute <- function(dat, gr, imputMethod="mode2", retnNA=TRUE, a
           ## compare to level of regualar NA-neighb
           corF <- wrMisc::naOmit(as.numeric(ReMa)) - medMod
           chUp <- corF >0
-          if(any(chUp)) corF[which(chUp)] <- 0            # don't use if higher than mode of NA-neighb
+          if(any(chUp, na.rm=TRUE)) corF[which(chUp)] <- 0            # don't use if higher than mode of NA-neighb
           ##  apply min-informed cor
           randVa[useInd] <- randVa[useInd] +corF          # mean of imputed and non-biased rand Va
         }
@@ -247,24 +249,24 @@ matrixNAneighbourImpute <- function(dat, gr, imputMethod="mode2", retnNA=TRUE, a
       
       ## replace NAs
       if(debug) {message(fxNa," mn6") }
-      dat[which(isNA)] <- randVa
+      if(!"none" %in% tolower(imputMethod)) dat[which(isNA)] <- randVa
       chImp <- stats::quantile(datIni, c(0.05,0.15), na.rm=TRUE)
-      chImp <- c(mean(randVa) < chImp[1], mean(randVa) > chImp[2])
+      chImp <- c(mean(randVa, na.rm=TRUE) < chImp[1], mean(randVa, na.rm=TRUE) > chImp[2])
   
       msg <- list(li1=c(" n.woNA=",sum(!isNA),", n.NA =",sum(isNA)),
         li2=c("impute based on",paste0("'",imputMethod,"'"),"using",msg),
-        li3=if(any(chImp)) c("note mean for impuation is ",if(chImp[1]) "below 0.05 " else "above 0.15", "quantile !!") )
+        li3=if(any(chImp, na.rm=TRUE)) c("note mean for impuation is ",if(chImp[1]) "below 0.05 " else "above 0.15", "quantile !!") )
       if(!silent) message(fxNa, paste(sapply(msg, paste, collapse=" "), collapse="\n    "))
   
       ## FIGURE  
       if("hist" %in% tolower(plotHist)) {              
         hi1 <- graphics::hist(as.numeric(dat), breaks="FD", col=grDevices::grey(0.9), border=grDevices::grey(0.8),
-          xlab=xLab, ylab=yLab, las=1, ylim=yLim, main=paste(tit,"at NA-replacement"))     #xlim=xLim, #  grey cols (final distr)      
+          xlab=xLab, ylab=yLab, las=1, ylim=yLim, main=paste(tit,"at NA-Replacement"))     #xlim=xLim, #  grey cols (final distr)      
         colPanel <- c(grDevices::grey(0.6), grDevices::rgb(0,0.7,0,0.6), grDevices::rgb(0.15,0.15,0.7,0.7), grDevices::rgb(0.7,0.5,0.2,0.6), grDevices::rgb(0.8,0.2,0.7,0.7))
         graphics::hist(datIni, breaks=hi1$breaks, border=grDevices::grey(0.75), col=grDevices::rgb(0.1,1,0.1,0.15), add=TRUE)                  # orig data in green
         if(length(randVa) >5) graphics::hist(randVa, br=hi1$breaks, border=grDevices::grey(0.75), col=grDevices::rgb(0,0,0.7,0.2), add=TRUE)           # add purple hist to
         nextLi <- -1.7
-        if(any(c("quant","quantile") %in% plotHist)) {
+        if(any(c("quant","quantile") %in% plotHist, na.rm=TRUE)) {
           graphics::abline(v=stats::quantile(datIni, c(0.05,0.1,0.15), na.rm=TRUE), lty=2, col=c(colPanel[4:5],"tomato4"))
           nextLi <- nextLi -c(0, 0.5, 1.1)
           graphics::mtext(paste(" - - ",c(0.05,0.1,0.15),"quantile (initial data)"), col=c(colPanel[4:5],"tomato4"), cex=0.7, adj=0, line=nextLi, side=3)
@@ -272,7 +274,7 @@ matrixNAneighbourImpute <- function(dat, gr, imputMethod="mode2", retnNA=TRUE, a
   
         if(length(modNa) >0) {    # display mode
           yLim <- signif(graphics::par("usr")[3:4], 3)             # current y-limits
-          if(any(c("mode") %in% plotHist)) {
+          if(any(c("mode") %in% plotHist, na.rm=TRUE)) {
             graphics::mtext(paste(" (arrow) mode of", NULL, " NA-neighbours :", signif(modNa,4)), col="sienna2", cex=0.7, adj=0, line=nextLi, side=3)
             graphics::arrows(modNa, yLim[1] - (yLim[2] -yLim[1])/18, modNa, 0, length=0.1, col="sienna2",lwd=2) }
         }    

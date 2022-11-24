@@ -2,10 +2,7 @@
 % Please edit documentation in R/removeSampleInList.R
 \name{removeSampleInList}
 \alias{removeSampleInList}
-\title{Remove samples/columns from list of matrixes
-  
-Remove samples (ie columns) from every instance of list of matrixes.
-Note: This function assumes same order of columns in list-elements 'listElem' !}
+\title{Remove Samples/Columns From list of matrixes}
 \usage{
 removeSampleInList(
   dat,
@@ -30,8 +27,6 @@ removeSampleInList(
 This function returns a matrix including imputed values or list of final and matrix with number of imputed by group (plus optional plot)
 }
 \description{
-Remove samples/columns from list of matrixes
-  
 Remove samples (ie columns) from every instance of list of matrixes.
 Note: This function assumes same order of columns in list-elements 'listElem' !
 }
