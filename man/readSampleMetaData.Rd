@@ -10,6 +10,7 @@ readSampleMetaData(
   quantMeth = "MQ",
   path = ".",
   abund = NULL,
+  groupPref = list(lowNumberOfGroups = TRUE),
   silent = FALSE,
   debug = FALSE,
   callFrom = NULL
@@ -20,14 +21,18 @@ readSampleMetaData(
 if character, this may be the ID at ProteomeExchange or a similarly formatted local file. \code{sdrf} will get priority over \code{suplAnnotFile}, if provided.}
 
 \item{suplAnnotFile}{(logical or character) optional reading of supplemental files produced by MaxQuant; if \code{gr} is provided, it gets priority for grouping of replicates
-if \code{TRUE} default to files 'summary.txt' (needed to match information of \code{sdrf}) and 'parameters.txt' which can be found in the same folder as the main quantitation results;
-if \code{character} the respective file-names (relative ro absolute path), 1st is expected to correspond to 'summary.txt' (tabulated text, the samples as given to MaxQuant) and 2nd to 'parameters.txt' (tabulated text, all parameters given to MaxQuant)}
+if \code{TRUE} in case of \code{method=="MQ"} (MaxQuant) default to files 'summary.txt' (needed to match information of \code{sdrf}) and 'parameters.txt' which can be found in the same folder as the main quantitation results;
+if \code{character} the respective file-names (relative ro absolute path), 1st is expected to correspond to 'summary.txt' (tabulated text, the samples as given to MaxQuant) and 2nd to 'parameters.txt' (tabulated text, all parameters given to MaxQuant)
+in case of \code{method=="PL"} (Proline), this argument should contain the initial file-name (for the identification and quantification data) in the first position}
 
 \item{quantMeth}{(character) quantification method used}
 
 \item{path}{(character) optional path of file(s) to be read}
 
 \item{abund}{(matrix or data.frame) experimental quantitation data; only column-names will be used for aligning order of annotated samples}
+
+\item{groupPref}{(list) additional parameters for interpreting meta-data to identify structure of groups (replicates);
+May contain \code{lowNumberOfGroups=FALSE} for automatically choosing a rather elevated number of groups if possible (defaults to low number of groups, ie higher number of samples per group)}
 
 \item{silent}{(logical) suppress messages}
 

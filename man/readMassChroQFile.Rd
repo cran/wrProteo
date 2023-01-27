@@ -18,6 +18,7 @@ readMassChroQFile(
   gr = NULL,
   sdrf = NULL,
   suplAnnotFile = FALSE,
+  groupPref = list(lowNumberOfGroups = TRUE),
   plotGraph = TRUE,
   silent = FALSE,
   debug = FALSE,
@@ -53,6 +54,9 @@ if list and list-element has multiple values they will be used for exact matchin
 
 \item{suplAnnotFile}{(logical or character) optional reading of supplemental files; however, if \code{gr} is provided, \code{gr} gets priority for grouping of replicates;
 if \code{character} the respective file-name (relative or absolute path)}
+
+\item{groupPref}{(list) additional parameters for interpreting meta-data to identify structure of groups (replicates), will be passed to \code{readSampleMetaData}.
+May contain \code{lowNumberOfGroups=FALSE} for automatically choosing a rather elevated number of groups if possible (defaults to low number of groups, ie higher number of samples per group)}
 
 \item{plotGraph}{(logical) optional plot of type vioplot of initial and normalized data (using \code{normalizeMeth}); if integer, it will be passed to \code{layout} when plotting}
 

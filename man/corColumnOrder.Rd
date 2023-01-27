@@ -6,10 +6,11 @@
 \usage{
 corColumnOrder(
   dat,
+  replNames = NULL,
   sampNames,
-  newNames = NULL,
   useListElem = c("quant", "raw", "counts"),
   annotElem = "sampleSetup",
+  newNames = NULL,
   silent = FALSE,
   debug = FALSE,
   callFrom = NULL
@@ -18,13 +19,15 @@ corColumnOrder(
 \arguments{
 \item{dat}{(matrix, list or MArrayLM-object from limma) main input of which columns should get re-ordered, may be output from \code{\link{moderTestXgrp}} or \code{\link{moderTest2grp}}.}
 
-\item{sampNames}{(character) column-names in desired order for output (must match colnames of \code{dat} or \code{newNames}, if used)}
+\item{replNames}{(character) new column-names (in order as input from \code{dat}), allows renaming colnames before defining new order}
 
-\item{newNames}{(character) new column-names (in order as input from \code{dat}), allows renaming colnames before defining new order}
+\item{sampNames}{(character) column-names in desired order for output (must match colnames of \code{dat} or \code{replNames}, if used)}
 
 \item{useListElem}{(character) in case \code{dat} is list, all list-elements who's columns should get (re-)ordered}
 
 \item{annotElem}{(character) name of list-element of \code{dat} with annotation data to get in new order}
+
+\item{newNames}{depreciated, plese use \code{replNames} instead}
 
 \item{silent}{(logical) suppress messages}
 

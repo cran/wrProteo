@@ -3,6 +3,7 @@
 export(.atomicMasses)
 export(.checkKnitrProt)
 export(.commonSpecies)
+export(.extrSpecPref)
 export(.extractTestingResultsOld)
 export(.imputeNA)
 export(.nNAbyGroup)

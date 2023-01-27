@@ -14,7 +14,7 @@ readSdrf(
 )
 }
 \arguments{
-\item{fi}{(character) main input; may be full path or url to the file with meta-annotation. If a short project-name is given, 
+\item{fi}{(character) main input; may be full path or url to the file with meta-annotation. If a short project-name is given,
 it will be searched based at the location of \code{urlPrefix}}
 
 \item{chCol}{(character, length=1) optional checking of column-names}
@@ -31,7 +31,7 @@ it will be searched based at the location of \code{urlPrefix}}
 This function returns the content of sdrf-file as data.frame (or \code{NULL} if the corresponding file was not found)
 }
 \description{
-This function allows reading proteomics meta-data from sdrf file, as they are provided on https://github.com/bigbio/proteomics-metadata-standard. 
+This function allows reading proteomics meta-data from sdrf file, as they are provided on https://github.com/bigbio/proteomics-metadata-standard.
 A data.frame containing all annotation data will be returned. To stay conform with the (non-obligatory) recommendations, columnnames are shown as lower caps.
 }
 \details{
@@ -40,10 +40,10 @@ Please note that reading sdrf files (if not provided as local copy) will take a 
 }
 \examples{
 ## This may take a few sconds...
-sdrf001819 <- readSdrf("PXD001819") 
+sdrf001819 <- readSdrf("PXD001819")
 str(sdrf001819)
 
- 
+
 }
 \seealso{
 in \code{\link[utils]{read.table}}

@@ -1,4 +1,4 @@
-#' Combine multiple filters on NA-imputed data
+#' Combine Multiple Filters On NA-imputed Data
 #'
 #' In most omics data-analysis one needs to employ a certain number of filtering strategies to avoid getting artifacts to the step of statistical testing.
 #' \code{combineMultFilterNAimput} takes on one side the origial data and on the other side NA-imputed data to create several differnet filters and to finally combine them.
@@ -43,7 +43,7 @@ combineMultFilterNAimput <- function(dat, imputed, grp, annDat=NULL, abundThr=NU
   if(isTRUE(debug)) silent <- FALSE else debug <- FALSE
   if(!isTRUE(silent)) silent <- FALSE
   datFi <- wrMisc::presenceFilt(dat, grp=grp, maxGrpM=1, ratMa=0.8, silent=silent, callFrom=fxNa)
-  if(!silent) message(fxNa,"   at presenceFilt:  ",paste(colSums(datFi),collapse=" "),"  out of ",nrow(dat))
+  if(debug) message(fxNa,"   at presenceFilt:  ",paste(colSums(datFi),collapse=" "),"  out of ",nrow(dat))
   if(length(colRazNa) >0 & length(annDat) >0) {
     razFilt <- razorNoFilter(annot=annDat, totNa=colTotNa, minRazNa=colRazNa, minSpeNo=minSpeNo, minTotNo=minTotNo, silent=silent,callFrom=fxNa)
     datFi[which(!razFilt),] <- rep(FALSE,ncol(datFi)) 
@@ -58,7 +58,7 @@ combineMultFilterNAimput <- function(dat, imputed, grp, annDat=NULL, abundThr=NU
     for(i in 1:nrow(pwComb)) {                                                # loop along all pair-wise questions => (update filter) datFi
       chLi <- grpMeans[,pwComb[i,1]] < abundThr & grpMeans[,pwComb[i,2]] < abundThr
       if(any(chLi)) datFi[which(chLi),i] <- FALSE}
-    if(!silent) message(fxNa,"   at abundanceFilt: ",paste(colSums(datFi),collapse=" ")) }
+    if(debug) message(fxNa,"   at abundanceFilt: ",paste(colSums(datFi),collapse=" ")) }
   ## check if set of mostly imputed data higher than measured -> filter
   ## number of NAs per line & group
   nNAbyGroup <- wrMisc::rowGrpNA(dat,grp)
@@ -72,8 +72,8 @@ combineMultFilterNAimput <- function(dat, imputed, grp, annDat=NULL, abundThr=NU
       chLi2 <- cbind(chLi[,1] & grpMeans[,pwComb[i,1]] > grpMeans[,pwComb[i,2]], chLi[,2] & grpMeans[,pwComb[i,2]] > grpMeans[,pwComb[i,1]]) # is T if bad
       datFi[,i] <- datFi[,i] & !chLi[,1] & !chLi[,2] }
   }                
-  if(!silent) message(fxNa,"   at NA> mean:   ",wrMisc::pasteC(colSums(datFi)))    
+  if(debug) message(fxNa,"   at NA> mean:   ",wrMisc::pasteC(colSums(datFi)))    
   imputed$filt <- datFi
   if(!is.null(annDat)) imputed$annot <- annDat    
   imputed }
-   
+    

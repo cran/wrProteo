@@ -11,6 +11,7 @@ readMaxQuantFile(
   quantCol = "LFQ.intensity",
   contamCol = "Potential.contaminant",
   pepCountCol = c("Razor + unique peptides", "Unique peptides", "MS.MS.count"),
+  read0asNA = TRUE,
   uniqPepPat = NULL,
   refLi = NULL,
   extrColNames = c("Majority.protein.IDs", "Fasta.headers", "Number.of.proteins"),
@@ -21,7 +22,8 @@ readMaxQuantFile(
   gr = NULL,
   sdrf = NULL,
   suplAnnotFile = NULL,
-  tit = NULL,
+  groupPref = list(lowNumberOfGroups = TRUE),
+  titGraph = NULL,
   wex = 1.6,
   plotGraph = TRUE,
   silent = FALSE,
@@ -41,6 +43,8 @@ readMaxQuantFile(
 \item{contamCol}{(character or integer, length=1) which columns should be used for contaminants}
 
 \item{pepCountCol}{(character) pattern to search among column-names for count data (1st entry for 'Razor + unique peptides', 2nd fro 'Unique peptides', 3rd for 'MS.MS.count' (PSM))}
+
+\item{read0asNA}{(logical) decide if initial quntifications at 0 should be transformed to NA (thus avoid -Inf in log2 results)}
 
 \item{uniqPepPat}{depreciated, please use \code{pepCountCol} instead}
 
@@ -64,7 +68,10 @@ readMaxQuantFile(
 if \code{TRUE} default to files 'summary.txt' (needed to match information of \code{sdrf}) and 'parameters.txt' which can be found in the same folder as the main quantitation results;
 if \code{character} the respective file-names (relative ro absolute path), 1st is expected to correspond to 'summary.txt' (tabulated text, the samples as given to MaxQuant) and 2nd to 'parameters.txt' (tabulated text, all parameters given to MaxQuant)}
 
-\item{tit}{(character) custom title to plot}
+\item{groupPref}{(list) additional parameters for interpreting meta-data to identify structure of groups (replicates), will be passed to \code{readSampleMetaData}.
+May contain \code{lowNumberOfGroups=FALSE} for automatically choosing a rather elevated number of groups if possible (defaults to low number of groups, ie higher number of samples per group)}
+
+\item{titGraph}{(character) custom title to plot}
 
 \item{wex}{(numeric)  relative expansion factor of the violin in plot}
 
@@ -81,7 +88,7 @@ This function returns a list with  \code{$raw} (initial/raw abundance values), \
   \code{$quantNotes}, \code{$notes} and optional \code{setup} for meta-data from \code{sdrf}; or a data.frame with quantitation and annotation if \code{separateAnnot=FALSE}
 }
 \description{
-Quantification results form \href{https://www.maxquant.org/}{MaxQuant} can be read using this function and relevant information extracted.
+Quantification results form \href{https://www.maxquant.org}{MaxQuant} can be read using this function and relevant information extracted.
 Input files compressed as .gz can be read as well.
 The protein abundance values (XIC), peptide counting information like number of unique razor-peptides or PSM values and sample-annotation (if available) can be extracted, too.
 The protein abundance values may be normalized using multiple methods (median normalization as default), the determination of normalization factors can be restricted to specific proteins
@@ -90,7 +97,7 @@ The protein annotation data gets parsed to extract specific fields (ID, name, de
 Besides, a graphical display of the distribution of protein abundance values may be generated before and after normalization.
 }
 \details{
-\href{https://www.maxquant.org/}{MaxQuant} is proteomics quantification software provided by the MaxPlanck institute.
+\href{https://www.maxquant.org}{MaxQuant} is proteomics quantification software provided by the MaxPlanck institute.
 By default MaxQuant writes the results of each run to the path \code{combined/txt}, from there (only) the files
  'proteinGroups.txt' (main quantitation at protein level), 'summary.txt' and 'parameters.txt' will be used.
 
@@ -105,7 +112,7 @@ In tricky cases it is also possible to precise the column-name to use for defini
 Please note, that sdrf is still experimental and only a small fraction of proteomics-data on Pride have been annotated accordingly.
 If a valid sdrf is furnished, it's information has priority over the information extracted from the MaxQuant produced file summary.txt.
 
-This function has been developed using MaxQuant versions 1.6.10.x to 2.0.x, the format of the resulting file 'proteinGroups.txt' is typically well conserved between versions.
+This import-function has been developed using MaxQuant versions 1.6.10.x to 2.0.x, the format of the resulting file 'proteinGroups.txt' is typically well conserved between versions.
 The final output is a list containing these elements: \code{$raw}, \code{$quant}, \code{$annot}, \code{$counts}, \code{$sampleSetup}, \code{$quantNotes}, \code{$notes}, or (if \code{separateAnnot=FALSE}) data.frame
   with annotation- and main quantification-content. If \code{sdrf} information has been found, an add-tional list-element \code{setup}
 will be added containg the entire meta-data as \code{setup$meta} and the suggested organization as \code{setup$lev}.

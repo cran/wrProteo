@@ -2,7 +2,7 @@
 % Please edit documentation in R/readProlineFile.R
 \name{readProlineFile}
 \alias{readProlineFile}
-\title{Read csv or txt files exported from Proline and MS-Angel}
+\title{Read xlsx, csv or tsv files exported from Proline and MS-Angel}
 \usage{
 readProlineFile(
   fileName,
@@ -26,6 +26,7 @@ readProlineFile(
   gr = NULL,
   sdrf = NULL,
   suplAnnotFile = TRUE,
+  groupPref = list(lowNumberOfGroups = TRUE),
   silent = FALSE,
   callFrom = NULL,
   debug = FALSE
@@ -76,9 +77,12 @@ if list and list-element has multiple values they will be used for exact matchin
 if \code{TRUE} defaults to file '*InputFiles.txt' (needed to match information of \code{sdrf}) which can be exported next to main quantitation results;
 if \code{character} the respective file-name (relative or absolute path)}
 
+\item{groupPref}{(list) additional parameters for interpreting meta-data to identify structure of groups (replicates), will be passed to \code{readSampleMetaData}.
+May contain \code{lowNumberOfGroups=FALSE} for automatically choosing a rather elevated number of groups if possible (defaults to low number of groups, ie higher number of samples per group)}
+
 \item{silent}{(logical) suppress messages}
 
-\item{callFrom}{(character) allow easier tracking of message(s) produced}
+\item{callFrom}{(character) allow easier tracking of messages produced}
 
 \item{debug}{(logical) display additional messages for debugging}
 }
@@ -104,7 +108,7 @@ data get exported as txt files which can be read, too.
 \examples{
 path1 <- system.file("extdata", package="wrProteo")
 fiNa <- "exampleProlineABC.csv.gz"
-dataABC <- readProlineFile(file.path(path1, fiNa))
+dataABC <- readProlineFile(path=path1, file=fiNa)
 summary(dataABC$quant)
 }
 \seealso{

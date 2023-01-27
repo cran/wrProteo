@@ -1,4 +1,4 @@
-#' Read csv or txt files exported from Proline and MS-Angel
+#' Read xlsx, csv or tsv files exported from Proline and MS-Angel
 #'
 #' Quantification results form MS-Angel and Proline \href{http://www.profiproteomics.fr/proline/}{Proline} exported as xlsx format can be read directly.
 #' Besides, files in tsv, csv (European and US format) or tabulated txt can be read, too.
@@ -39,21 +39,23 @@
 #' @param suplAnnotFile (logical or character) optional reading of supplemental files produced by quantification software; however, if \code{gr} is provided, \code{gr} gets priority for grouping of replicates;
 #'  if \code{TRUE} defaults to file '*InputFiles.txt' (needed to match information of \code{sdrf}) which can be exported next to main quantitation results;
 #'  if \code{character} the respective file-name (relative or absolute path)
+#' @param groupPref (list) additional parameters for interpreting meta-data to identify structure of groups (replicates), will be passed to \code{readSampleMetaData}.
+#'   May contain \code{lowNumberOfGroups=FALSE} for automatically choosing a rather elevated number of groups if possible (defaults to low number of groups, ie higher number of samples per group)
 #' @param silent (logical) suppress messages
-#' @param callFrom (character) allow easier tracking of message(s) produced
+#' @param callFrom (character) allow easier tracking of messages produced
 #' @param debug (logical) display additional messages for debugging
 #' @return This function returns a list with \code{$raw} (initial/raw abundance values), \code{$quant} with final normalized quantitations, \code{$annot} (columns ), \code{$counts} an array with 'PSM' and 'NoOfPeptides', \code{$quantNotes} and \code{$notes}; or a data.frame with quantitation and annotation if \code{separateAnnot=FALSE}
 #' @seealso \code{\link[utils]{read.table}}
 #' @examples
 #' path1 <- system.file("extdata", package="wrProteo")
 #' fiNa <- "exampleProlineABC.csv.gz"
-#' dataABC <- readProlineFile(file.path(path1, fiNa))
+#' dataABC <- readProlineFile(path=path1, file=fiNa)
 #' summary(dataABC$quant)
 #' @export
 readProlineFile <- function(fileName, path=NULL, normalizeMeth="median", logConvert=TRUE, sampleNames=NULL, quantCol="^abundance_",
   annotCol=c("accession","description","is_validated","protein_set_score","X.peptides","X.specific_peptides"), remStrainNo=TRUE,
   pepCountCol=c("^psm_count_","^peptides_count_"), trimColnames=FALSE, refLi=NULL, separateAnnot=TRUE, plotGraph=TRUE, tit=NULL, graphTit=NULL,
-  wex=2, specPref=c(conta="_conta\\|", mainSpecies="OS=Homo sapiens"), gr=NULL, sdrf=NULL, suplAnnotFile=TRUE, silent=FALSE, callFrom=NULL, debug=FALSE) {
+  wex=2, specPref=c(conta="_conta\\|", mainSpecies="OS=Homo sapiens"), gr=NULL, sdrf=NULL, suplAnnotFile=TRUE, groupPref=list(lowNumberOfGroups=TRUE), silent=FALSE, callFrom=NULL, debug=FALSE) {
   ## 'quantCol', 'annotCol' (character) exact col-names or if length=1 pattern to search among col-names for $quant or $annot
   fxNa <- wrMisc::.composeCallName(callFrom, newNa="readProlineFile")
   oparMar <- if(plotGraph) graphics::par("mar") else NULL       # only if figure might be drawn
@@ -85,28 +87,35 @@ readProlineFile <- function(fileName, path=NULL, normalizeMeth="median", logConv
     }
   txt }
 
+
   ## check if path & file exist
-  msg <- "invalid entry for 'fileName'"
-  if(length(fileName) >1) { #fileName <- fileName[1]
-    if(!silent) message(fxNa," using 1st value of 'fileName' ")
-  } else { if(length(fileName[1]) <1) stop(msg) else if(nchar(fileName[1]) <0) stop(msg)}
-  chPa <- FALSE
-  if(length(path) >0) if(!is.na(path[1])) chPa <- dir.exists(path[1])
-  paFi <- if(chPa) file.path(path[1], fileName[1]) else fileName[1]                      # presume (& correct if path is given)
-  chFi <- file.exists(paFi)
-  if(!chFi & chPa) {        # if path+fileName not found, check if 'path' should be omitted if already contained in fileName
-    if(grepl(paste0("^",path[1]), fileName[1])) { paFi <- sub(path[1],"",paFi); chFi <- file.exists(paFi)} }
-  if(!chFi) stop(" file ",fileName[1]," was NOT found ",if(length(path) >0) paste(" in path ",path)," !")
-  if(!chPa & nchar(dirname(fileName[1])) >0) path[1] <- dirname(fileName[1])   # recover path   # if(length(paFi) >0) if(
-  chFi <- file.info(paFi)$size > 1
-  if(debug) {message(fxNa," rpf1b"); rpf1b <- list(fileName=fileName,chFi=chFi,chPa=chPa,path=path,paFi=paFi)}
-  if(!chFi) stop(" File ",fileName," was found BUT TOO SMALL (size ",file.info(paFi)$size," bytes) !")
+  msg <- "Invalid entry for 'path'  "
+  ## check path
+  if(length(path) >0) { path <- path[1]
+     if(is.na(path)) { stop(msg,"(must be character-string for valid path or NULL)")}
+     if(!dir.exists(path)) { path <- "."
+       if(!silent) message(fxNa,msg, path[1],"'  (not existing), ignoring...")
+     } } else path <- "."
+  ## check for 'fileName'
+  msg <- "Invalid entry for 'fileName'"
+  if(length(fileName) >1) { fileName <- fileName[1]
+    if(!silent) message(fxNa," 'fileName' shoud be of length=1, using 1st value")
+  } else { if(length(fileName) <1) stop(msg) else if(is.na(fileName) | nchar(fileName) <1) stop(msg)}
+  if(!grepl("\\.csv$|\\.xlsx$|\\.tsv$|\\.csv\\.gz$|\\.tsv\\.gz$", fileName)) message(fxNa,"Trouble ahead ? Expecting .xlsx, .csv or .tsv file (the file'",fileName,"' might not be right format) !!")
+
+  ## check for compressed version of 'fileName'
+  chFi <- file.exists( file.path(path, fileName) )
+  if(!chFi & grepl("\\.csv$|\\.xlsx$|\\.tsv$",fileName)) { fiNa2 <- paste0(fileName,".gz")
+    chFi <- file.exists(file.path(path, fiNa2))
+    if(chFi) {if(!silent) message(fxNa,"Note : file '",fileName,"'  was NOT FOUND, but a .gz compressed version exists, using compressed file.."); fileName <- fiNa2}
+  }
+  if(chFi) { paFi <- file.path(path, fileName)
+  } else stop(" File '",fileName,"'  was NOT found ",if(length(path) >0) paste(" in path ",path)," !")
 
   if(debug) {message(fxNa," rpf2")}
 
   ## read file
   out <- counts <- fileTy <- NULL                    # initialize default
-  NULL
   if(length(grep("\\.xlsx$", fileName)) >0) {
     ## Extract out of Excel
     reqPa <- c("readxl")
@@ -233,18 +242,9 @@ readProlineFile <- function(fileName, path=NULL, normalizeMeth="median", logConv
     OSLi <- grep("\\ OS=[[:upper:]][[:lower:]]+", tmp3)
       if(length(OSLi) >0) { zz <- sub("[[:print:]]+\\ OS=", "",tmp3[OSLi])             # remove surplus to left
         tmp2[OSLi,"Species"] <- sub("\\ [[:upper:]]{2}=[[:print:]]+","",zz) }          # remove surplus to right (next tag)
-    ## locate special groups, column "SpecType"
-    if(length(specPref) >0) for(i in 1:length(specPref)) {         # locate specPref
-      naSp <- if(i==1) "conta" else {if(i==2) "mainSpe" else paste0("species",i-1)}
-      chSp <- unlist(specPref[i])
-      chSp <- if(length(chSp) >1) match(chSp, annot[,annotCol[1]]) else grep(unlist(specPref[i]), annot[,annotCol[2]])    # line-no to set tag a 'SpecType'
-      if(length(chSp) >0) {
-        chNa <- is.na(tmp2[chSp,"SpecType"])
-        if(any(!chNa) & !silent) message(fxNa," Beware, ",sum(!chNa)," 'SpecType' will be overwritten by ",naSp)
-        tmp2[chSp,"SpecType"] <- naSp }
-    }
     if(debug) {message(fxNa," rpf13")}
 
+    ## extract/check on Description
     annot <- cbind(tmp2,annot[,-1*match(annotCol[1], colnames(annot))])
     chDesc <- colnames(annot) %in% "description"
     if(any(chDesc)) colnames(annot)[which(chDesc)] <- "Description"                # make uniform to other
@@ -258,11 +258,15 @@ readProlineFile <- function(fileName, path=NULL, normalizeMeth="median", logConv
       if(length(chSp) >0) { nch1 <- nchar(sub("^[[:upper:]][[:lower:]]+\\ [[:lower:]]+", "", annot[chSp,"Species"]))
         annot[chSp,"Species"] <- substr(annot[chSp,"Species"], 1, nchar(annot[chSp,"Species"]) - nch1) }
     }
-    if(debug) {message(fxNa," rpf14")}
+    if(debug) {message(fxNa," rpf14"); rpf14 <- list(out=out,annot=annot,specPref=specPref,quantCol=quantCol,rowNa=rowNa,tmp=tmp)}
 
     ## set protein/gene annotation to common format
     chNa <- match(c("GN","ProteinName"), colnames(annot))
     colnames(annot)[chNa] <- c("GeneName","Description")
+
+    ## locate special groups, column "SpecType"
+    if(length(specPref) >0) {
+      annot <- .extrSpecPref(specPref, annot, useColumn=c("Species","EntryName","GeneName","Accession"), silent=silent, debug=debug, callFrom=fxNa) }
 
     ## locate & extract abundance/quantitation data
     if(length(quantCol) >1) { rawD <- as.matrix(wrMisc::extrColsDeX(out, extrCol=quantCol, doExtractCols=TRUE, silent=silent, callFrom=fxNa))
@@ -283,7 +287,7 @@ readProlineFile <- function(fileName, path=NULL, normalizeMeth="median", logConv
         for(i in 1:sum(chLe)) pepCount[,,i] <- as.matrix(out[,supCol[[which(chLe)[i]]]])
       } else pepCount <- NULL
     }
-    if(debug) {message(fxNa," rpf15")}
+    if(debug) {message(fxNa," rpf15"); rpf15 <- list(out=out,annot=annot,specPref=specPref,quantCol=quantCol,rowNa=rowNa,tmp=tmp)}
 
     ## check abundance/quantitation data
     chNum <- is.numeric(rawD)
@@ -297,44 +301,49 @@ readProlineFile <- function(fileName, path=NULL, normalizeMeth="median", logConv
       colnames(rawD) <- sub(if(length(quantCol) >1) "^abundance" else quantCol, "", colnames(rawD))
       if(trimColnames) colnames(rawD) <- wrMisc::.trimFromStart(wrMisc::.trimFromEnd(colnames(rawD)))
     }
-    if(debug) { message(fxNa," rpf16"); rpf16 <- list(rawD=rawD,annot=annot,sampleNames=sampleNames,normalizeMeth=normalizeMeth,refLi=refLi,sdrf=sdrf,suplAnnotFile=suplAnnotFile,path=path,fxNa=fxNa,silent=silent)}
 
-
-    ## treat colnames () eg problem with pxd001819 : some colnames writen as amol, other as fmol
+    ## treat colnames, eg problem with pxd001819 : some colnames writen as amol, other as fmol
     adjDecUnits <- FALSE
     if(adjDecUnits) {
       colnames(rawD) <- sub("^ +","", .adjustDecUnit(wrMisc::trimRedundText(colnames(rawD), silent=silent, debug=debug, callFrom=fxNa)))
     }
+    if(debug) { message(fxNa," rpf16"); rpf16 <- list(rawD=rawD,annot=annot,sampleNames=sampleNames,normalizeMeth=normalizeMeth,refLi=refLi,sdrf=sdrf,suplAnnotFile=suplAnnotFile,path=path,fxNa=fxNa,silent=silent)}
 
     ## check for reference for normalization
     refLiIni <- refLi
     if(is.character(refLi) & length(refLi)==1) { refLi <- which(annot[,"SpecType"]==refLi)
-      if(length(refLi) <1) message(fxNa,"Could not find any protein matching argument 'refLi', ignoring ...") else {
-        if(!silent) message(fxNa,"Normalize using (custom) subset of ",length(refLi)," lines")}}    # may be "mainSpe"
+      if(length(refLi) <1) { message(fxNa,"Could not find any protein matching argument 'refLi', ignoring ..."); refLi <- 1:nrow(rawD)
+      } else if(!silent) message(fxNa,"Normalize using (custom) subset of ",length(refLi)," lines") }    # may be "mainSpe"
+    if(debug) { message(fxNa," rpf16b"); rpf16b <- list(rawD=rawD,annot=annot,sampleNames=sampleNames,normalizeMeth=normalizeMeth,refLi=refLi,sdrf=sdrf,suplAnnotFile=suplAnnotFile,path=path,fxNa=fxNa,silent=silent)}
+
     ## take log2 & normalize
     if(length(normalizeMeth) <1) normalizeMeth <- "median"
     quant <- if(utils::packageVersion("wrMisc") > "1.10") {
         try(wrMisc::normalizeThis(log2(rawD), method=normalizeMeth, mode="additive", refLines=refLi, silent=silent, debug=debug, callFrom=fxNa), silent=!debug)
       } else try(wrMisc::normalizeThis(log2(rawD), method=normalizeMeth, refLines=refLi, silent=silent, callFrom=fxNa), silent=TRUE)       #
 
-    if(debug) { message(fxNa,"rpf17 .. dim quant: ", nrow(quant)," li and  ",ncol(quant)," cols; colnames : ",wrMisc::pasteC(colnames(quant))," ")}
+    if(debug) { message(fxNa,"rpf16c .. dim quant: ", nrow(quant)," li and  ",ncol(quant)," cols; colnames : ",wrMisc::pasteC(colnames(quant))," ")}
+
+    ## need to transform fmol in amol for proper understanding & matching with metadata
 
 
     ### IMPORT SAMPLE META-DATA, GROUPING OF REPLICATES
     if(debug) {message(fxNa,"rpf17a"); rpf17a <- list(rawD=rawD,quant=quant,annot=annot,sampleNames=sampleNames,normalizeMeth=normalizeMeth,refLi=refLi,sdrf=sdrf,suplAnnotFile=suplAnnotFile,path=path,paFi=paFi,fxNa=fxNa,silent=silent)}
-    if(length(suplAnnotFile) >0) {
-      if(isTRUE(suplAnnotFile)) suplAnnotFile <- if(grepl("\\.xlsx$", paFi[1])) paFi else FALSE  # expand further to  add tsv & csv ?
-      setupSd <- readSampleMetaData(sdrf=sdrf, suplAnnotFile=suplAnnotFile, quantMeth="PL", path=path, abund=utils::head(quant), silent=silent, debug=debug, callFrom=fxNa)
-      ## STILL NEED TO RE-ADJUST colnames(abund) etc according to setupSd$
-
+    if((!isFALSE(suplAnnotFile) & length(suplAnnotFile) >0) | length(sdrf) >0) {
+      if(isTRUE(suplAnnotFile)) suplAnnotFile <- if(grepl("\\.xlsx$|\\.csv$|\\.tsv$", paFi[1])) paFi else FALSE  # expand further to  add tsv & csv ?
+      setupSd <- readSampleMetaData(sdrf=sdrf, suplAnnotFile=suplAnnotFile, quantMeth="PL", path=path, abund=utils::head(quant), groupPref=groupPref, silent=silent, debug=debug, callFrom=fxNa)
+      setupSd$groups <- setupSd$lev
     }
-    if(debug) {message(fxNa,"rpf17b")}
+    if(debug) {message(fxNa,"rpf17b"); rpf17b <- list(tmp=tmp,quant=quant,setupSd=setupSd,annot=annot,sdrf=sdrf,fileName=fileName,path=path,paFi=paFi,tmp=tmp,
+       normalizeMeth=normalizeMeth,sampleNames=sampleNames,quantCol=quantCol,annotCol=annotCol,refLi=refLi,separateAnnot=separateAnnot,gr=gr )}
 
-    ## finish groups of replicates & annotation setupSd
+
+#    ## finish groups of replicates & annotation setupSd
     if(length(setupSd) >0 & length(setupSd$groups) <1) {                       # if nothing found/matching from sdrf & file, try getting sample-setup from colnames (use if at least 1 replicate found)
       if(length(gr) ==ncol(rawD)) setupSd$groups <- gr else {
         if(debug) {message(fxNa,"rpd13e  Note: setupSd$groups is still empty ! ")}
         if(length(setupSd$lev) ==ncol(rawD)) setupSd$groups <- setupSd$lev else {
+          if(length(setupSd$lev) >0 & ncol(quant) >0) warning(fxNa," sdrf sample-metadata dot not fit (sdrf suggests ",length(setupSd$lev)," but real data consist of ",ncol(quant)," samples) !")
           ## try defining groups based on colnames
           if(debug) {message(fxNa,"rpd13f  Note: setupSd is still empty !  .. try getting sample-setup from colnames")}
           delPat <- "_[[:digit:]]+$|\\ [[:digit:]]+$|\\-[[:digit:]]+$"       # remove enumerators, ie trailing numbers after separator
@@ -363,7 +372,6 @@ readProlineFile <- function(fileName, path=NULL, normalizeMeth="median", logConv
     if(debug) {message(fxNa,"rpf17d"); rpf17d <- list(rawD=rawD,quant=quant,annot=annot,sampleNames=sampleNames,normalizeMeth=normalizeMeth,refLi=refLi,sdrf=sdrf,setupSd=setupSd,suplAnnotFile=suplAnnotFile,path=path,fxNa=fxNa,silent=silent)}
 
 
-
     ##
     ## main plotting of distribution of intensities
     custLay <- NULL
@@ -389,8 +397,9 @@ readProlineFile <- function(fileName, path=NULL, normalizeMeth="median", logConv
           graphics::boxplot(log2(rawD), main=paste(tit," (initial)"), las=1, outline=FALSE)
           graphics::abline(h=round(log2(stats::median(rawD, na.rm=TRUE))) +c(-2:2)*2, lty=2, col=grDevices::grey(0.6))
         } else {                                          # wrGraph & sm are available
-          wrGraph::vioplotW(log2(rawD), tit=paste(tit," (initial)"), wex=wex, silent=silent, callFrom=fxNa)
-          graphics::abline(h=round(log2(stats::median(rawD, na.rm=TRUE))) +(-2:2)*2, lty=2, col=grDevices::grey(0.6))
+          ch1 <- try(wrGraph::vioplotW(log2(rawD), tit=paste(tit," (initial)"), wex=wex, silent=silent, callFrom=fxNa), silent=TRUE)
+          if(inherits(ch1, "try-error")) { plotGraph <- FALSE; message(fxNa,"UNABLE to plot vioplotW !!")
+          } else graphics::abline(h=round(log2(stats::median(rawD, na.rm=TRUE))) +(-2:2)*2, lty=2, col=grDevices::grey(0.6))
         }
       }
       if(length(normalizeMeth) >0) tit <- paste(tit," (normalized)")
@@ -399,8 +408,9 @@ readProlineFile <- function(fileName, path=NULL, normalizeMeth="median", logConv
         graphics::boxplot(quant, main=tit, las=1, outline=FALSE)
         graphics::abline(h=round(stats::median(quant, na.rm=TRUE)) +c(-2:2)*2, lty=2, col=grDevices::grey(0.6))
       } else {                                          # wrGraph & sm are available
-        wrGraph::vioplotW(quant, tit=tit, wex=wex, silent=silent, callFrom=fxNa)
-        graphics::abline(h=round(stats::median(quant, na.rm=TRUE)) +(-2:2)*2, lty=2, col=grDevices::grey(0.6))
+        ch1 <- try(wrGraph::vioplotW(quant, tit=tit, wex=wex, silent=silent, callFrom=fxNa), silent=TRUE)
+        if(inherits(ch1, "try-error")) {plotGraph <- FALSE; message(fxNa,"UNABLE to plot vioplotW !!")
+        } else graphics::abline(h=round(stats::median(quant, na.rm=TRUE)) +(-2:2)*2, lty=2, col=grDevices::grey(0.6))
       }
       on.exit(graphics::par(mar=oparMar)) }
     ## meta-data to export
@@ -414,4 +424,4 @@ readProlineFile <- function(fileName, path=NULL, normalizeMeth="median", logConv
   }
   ## final Proline-import
   out }
-
+  

@@ -33,7 +33,7 @@ pxd001819meta <- readSdrf("PXD001819")
 
 ## The concentration of the UPS1 spike-in proteins in the samples
 if(length(pxd001819meta) >0) {
-  UPSconc <- sort(unique(as.numeric(trimRedundText(pxd001819meta$characteristics.spiked.compound.))))  # trim to get to 'essential' info
+  UPSconc <- sort(unique(as.numeric(wrMisc::trimRedundText(pxd001819meta$characteristics.spiked.compound.))))  # trim to get to 'essential' info
 } else {
   UPSconc <- c(50, 125, 250, 500, 2500, 5000, 12500, 25000, 50000)       # in case access to github failed
 }
@@ -76,9 +76,9 @@ plotConcHist <- function(mat, ref, refColumn=3:4, matCluNa="cluNo", lev=NULL, yl
 }
 
 plotMultRegrPar <- function(dat, methInd, tit=NULL, useColumn=c("logp","slope","medAbund","startFr"), lineGuide=list(v=c(-12,-10),h=c(0.7,0.75),col="grey"), xlim=NULL,ylim=NULL,subTit=NULL) {
-  ## scatter plot logp (x) vs slope (y) for all UPS proteins, symbol by useColumn[4], color by hist of useColumn[3] 
+  ## scatter plot logp (x) vs slope (y) for all UPS proteins, symbol by useColumn[4], color by hist of useColumn[3]
   ## dat (array) UPS1 data
-  ## useColumn (character) 1st as 'logp', 2nd as 'slope', 3rd as median abundance, 4th as starting best regression from this point 
+  ## useColumn (character) 1st as 'logp', 2nd as 'slope', 3rd as median abundance, 4th as starting best regression from this point
   fxNa <- "plotMultRegrPar"
    #fxNa <- wrMisc::.composeCallName(callFrom,newNa="plotMultRegrPar")
   if(length(dim(dat)) !=3) stop("invalid input, expecting as 'dat' array with 3 dimensions (proteins,Softw,regrPar)")
@@ -90,10 +90,10 @@ plotMultRegrPar <- function(dat, methInd, tit=NULL, useColumn=c("logp","slope","
   graphics::points(dat[,methInd,useColumn[1:2]], col=1, bg=useCol, pch=20+dat[,methInd,useColumn[4]],)
   graphics::legend("topright",paste("best starting from ",1:5), text.col=1, pch=21:25, col=1, pt.bg="white", cex=0.9, xjust=0.5, yjust=0.5)
   if(length(subTit)==1) graphics::mtext(subTit,cex=0.9)
-  if(is.list(lineGuide) & length(lineGuide) >0) {if(length(lineGuide$v) >0) graphics::abline(v=lineGuide$v,lty=2,col=lineGuide$col) 
+  if(is.list(lineGuide) & length(lineGuide) >0) {if(length(lineGuide$v) >0) graphics::abline(v=lineGuide$v,lty=2,col=lineGuide$col)
     if(length(lineGuide$h) >0) graphics::abline(h=lineGuide$h,lty=2,col=lineGuide$col)}
   hi1 <- graphics::hist(dat[,methInd,useColumn[3]], plot=FALSE)
-  wrGraph::legendHist(sort(dat[,methInd,useColumn[3]]), colRamp=useCol[order(dat[,methInd,useColumn[3]])][cumsum(hi1$counts)], 
+  wrGraph::legendHist(sort(dat[,methInd,useColumn[3]]), colRamp=useCol[order(dat[,methInd,useColumn[3]])][cumsum(hi1$counts)],
     cex=0.5, location="bottomleft", legTit="median raw abundance")  #
 }
 
@@ -101,44 +101,42 @@ plotMultRegrPar <- function(dat, methInd, tit=NULL, useColumn=c("logp","slope","
 path1 <- system.file("extdata", package="wrProteo")
 fiNaMQ <- "proteinGroups.txt.gz"
 
-## We need to define the setup of species 
+## We need to define the setup of species
 specPrefMQ <- list(conta="CON_|LYSC_CHICK", mainSpecies="OS=Saccharomyces cerevisiae", spike=UPS1$ac)
-
-dataMQ <- readMaxQuantFile(path1, file=fiNaMQ, specPref=specPrefMQ, refLi="mainSpe", sdrf="PXD001819", suplAnnotFile=TRUE)
+dataMQ <- readMaxQuantFile(path1, file=fiNaMQ, specPref=specPrefMQ, refLi="mainSpe", sdrf="PXD001819", suplAnnotFile=TRUE, groupPref=list(lowNumberOfGroups=FALSE))
 
 ## ----readMaxQuant2, fig.height=8, fig.width=9.5, fig.align="center", echo=TRUE----
 ## The number of lines and colums
 dim(dataMQ$quant)
 ## A quick summary of some columns of quantitation data
-summary(dataMQ$quant[,1:8])                # the first 8 cols
+summary(dataMQ$quant[,1:7])                # the first 8 cols
+table(dataMQ$annot[,"SpecType"])
 
 ## ----readProteomeDiscoverer1, fig.height=8, fig.width=9.5, fig.align="center", echo=TRUE----
 path1 <- system.file("extdata", package="wrProteo")
 fiNaPd <- "pxd001819_PD24_Proteins.txt.gz"
-## Next, we define the setup of species 
-specPrefPD <- list(conta="Bos tauris|Gallus", mainSpecies="OS=Saccharomyces cerevisiae", spike=UPS1$ac)
-
-dataPD <- readProtDiscovFile(file=fiNaPd, path=path1, refLi="mainSpe", specPref=specPrefPD, sdrf="PXD001819")
+## Next, we define the setup of species
+specPrefPD <- list(conta="Bos tauris|Gallus", mainSpecies="Saccharomyces cerevisiae", spike=UPS1$ac)
+dataPD <- readProtDiscovFile(file=fiNaPd, path=path1, refLi="mainSpe", specPref=specPrefPD, sdrf="PXD001819", groupPref=list(lowNumberOfGroups=FALSE))
 
 ## ----readProteomeDiscoverer2, fig.height=8, fig.width=9.5, fig.align="center", echo=TRUE----
 ## The number of lines and colums
 dim(dataPD$quant)
 ## A quick summary of some columns of quantitation data
-summary(dataPD$quant[,1:8])        # the first 8 cols
-
-## There are proteins where the 'OS='-tag won't be visible as Species (orig Fasta-header and Protein-name not accessible) :
-which(is.na(dataPD$annot[,"Species"]) & dataPD$annot[,"SpecType"]=="species2")    # is NA as Species
+summary(dataPD$quant[,1:7])        # the first 8 cols
+table(dataPD$annot[,"SpecType"])
 
 ## ----readProline, fig.height=8, fig.width=9.5, fig.align="center", echo=TRUE----
 path1 <- system.file("extdata", package="wrProteo")
 fiNaPl <- "pxd001819_PL.xlsx"
 
-specPrefPL <- c(conta="_conta", mainSpecies="OS=Saccharomyces cerevisiae", spike="_ups")  
-dataPL <- readProlineFile(file.path(path1,fiNaPl), specPref=specPrefPL, normalizeMeth="median", refLi="mainSpe", sdrf="PXD001819", silent=TRUE)
+specPrefPL <- list(conta="_conta", mainSpecies="Saccharomyces cerevisiae", spike=UPS1$ac)
+dataPL <- readProlineFile(fiNaPl, path=path1, specPref=specPrefPL, normalizeMeth="median", refLi="mainSpe", sdrf="PXD001819", groupPref=list(lowNumberOfGroups=FALSE))
 
 ## ----postTreatmPL, echo=TRUE--------------------------------------------------
-head(colnames(dataPL$raw), 8)
-dataPL <- cleanListCoNames(dataPL, rem=c("abundance_","Levure2ug+ UPS1"))
+head(colnames(dataPL$raw), 7)
+dataPL <- cleanListCoNames(dataPL, rem=c("Levure2ug+ UPS1-"), subst=cbind(c("fmol","mol-"),c("000amol","mol_R")), mathOper="/2")
+
 ## let's check the result
 head(colnames(dataPL$raw),8)
 
@@ -147,6 +145,7 @@ head(colnames(dataPL$raw),8)
 dim(dataPL$quant)
 ## A quick summary of some columns of quantitation data
 summary(dataPL$quant[,1:8])        # the first 8 cols
+table(dataPL$annot[,"SpecType"])
 
 ## ----rearrange1, echo=TRUE----------------------------------------------------
 ## bring all results (MaxQuant,ProteomeDiscoverer, ...) in same ascending order
@@ -155,41 +154,40 @@ sampNa <- colnames(dataPD$quant)
 
 ## it is more convenient to re-order columns this way in each project
 dataPD <- corColumnOrder(dataPD, sampNames=sampNa)          # already in good order
-dataMQ <- corColumnOrder(dataMQ, sampNames=sampNa, newNames=sub("amol_", "amol_R", colnames(dataMQ$quant)))
-dataPL <- corColumnOrder(dataPL, sampNames=sampNa) 
+dataMQ <- corColumnOrder(dataMQ, replNames=sub("amol_", "amol_R", colnames(dataMQ$quant)), sampNames=sampNa)  # incl canged names
+dataPL <- corColumnOrder(dataPL, sampNames=sampNa)
 
 ## ----postTreatm1, echo=TRUE---------------------------------------------------
-## Need to rename $annot[,"SpecType"]  
+## Need to rename $annot[,"SpecType"]
 dataPD <- replSpecType(dataPD, replBy=cbind(old=c("mainSpe","species2"), new=c("Yeast","UPS1")))
 dataMQ <- replSpecType(dataMQ, replBy=cbind(old=c("mainSpe","species2"), new=c("Yeast","UPS1")))
 dataPL <- replSpecType(dataPL, replBy=cbind(old=c("mainSpe","species2"), new=c("Yeast","UPS1")))
 
 ## Need to address missing ProteinNames (UPS1) due to missing tags in Fasta
-dataPD <- replMissingProtNames(dataPD) 
-dataMQ <- replMissingProtNames(dataMQ) 
-dataPL <- replMissingProtNames(dataPL) 
+dataPD <- replMissingProtNames(dataPD)
+dataMQ <- replMissingProtNames(dataMQ)
+dataPL <- replMissingProtNames(dataPL)
+    table(dataPD$annot[,"SpecType"])
 
-## add some grouping/sample annotation to PL
-dataPL$sampleSetup$groups <- dataPD$sampleSetup$groups
+## synchronize order of groups
+(grp9 <- dataPD$sampleSetup$level)
+names(grp9) <- rep(paste0(UPSconc,"amol"), each=3)
+dataPL$sampleSetup$groups <- dataMQ$sampleSetup$groups <- dataPD$sampleSetup$groups <- grp9  # synchronize order of groups
 
 ## ----postTreatmCheck, echo=TRUE-----------------------------------------------
 ## extract names of quantified UPS1-proteins
-NamesUpsPD <- dataPD$annot[which(dataPD$annot[,"SpecType"]=="UPS1"), "Accession"]
-NamesUpsMQ <- dataMQ$annot[which(dataMQ$annot[,"SpecType"]=="UPS1"), "Accession"]
-NamesUpsPL <- dataPL$annot[which(dataPL$annot[,"SpecType"]=="UPS1"), "Accession"]
+NamesUpsPD <- dataPD$annot[which(dataPD$annot[,"SpecType"]=="spike"), "Accession"]
+NamesUpsMQ <- dataMQ$annot[which(dataMQ$annot[,"SpecType"]=="spike"), "Accession"]
+NamesUpsPL <- dataPL$annot[which(dataPL$annot[,"SpecType"]=="spike"), "Accession"]
 
 ## ----postTreatmTables, echo=TRUE----------------------------------------------
-tabS <- mergeVectors(PD=table(dataPD$annot[,"SpecType"]), MQ=table(dataMQ$annot[,"SpecType"]), PL=table(dataPL$annot[,"SpecType"]))  
-tabT <- mergeVectors(PD=table(dataPD$annot[,"Species"]), MQ=table(dataMQ$annot[,"Species"]), PL=table(dataPL$annot[,"Species"]))  
+tabS <- mergeVectors(PD=table(dataPD$annot[,"SpecType"]), MQ=table(dataMQ$annot[,"SpecType"]), PL=table(dataPL$annot[,"SpecType"]))
+tabT <- mergeVectors(PD=table(dataPD$annot[,"Species"]), MQ=table(dataMQ$annot[,"Species"]), PL=table(dataPL$annot[,"Species"]))
 tabT[which(is.na(tabT))] <- 0
 kable(cbind(tabS[,2:1], tabT), caption="Number of proteins identified, by custom tags, species and software")
 
-## ----extrSampGrp9, echo=TRUE--------------------------------------------------
-grp9 <- dataMQ$sampleSetup$groups <- dataPD$sampleSetup$groups
-head(grp9)
-
 ## ----metaData2, echo=TRUE-----------------------------------------------------
-kable(cbind(dataMQ$sampleSetup$sdrf[,c(1,7,19,22,23)], groups=dataMQ$sampleSetup$groups))
+kable(cbind(dataMQ$sampleSetup$sdrf[,c(23,7,19,22)], groups=dataMQ$sampleSetup$groups))
 
 ## ----NA_ProteomeDiscoverer, echo=TRUE-----------------------------------------
 ## Let's inspect NA values from ProteomeDiscoverer as graphic
@@ -201,12 +199,11 @@ matrixNAinspect(dataMQ$quant, gr=grp9, tit="MaxQuant")
 
 ## ----NA_Proline, echo=TRUE----------------------------------------------------
 ## Let's inspect NA values from Proline as graphic
-matrixNAinspect(dataPL$quant, gr=grp9, tit="Proline") 
+matrixNAinspect(dataPL$quant, gr=grp9, tit="Proline")
 
 ## ----nNA1, echo=TRUE----------------------------------------------------------
 ## Let's look at the number of NAs. Is there an accumulated number in lower UPS1 samples ?
 tabSumNA <- rbind(PD=sumNAperGroup(dataPD$raw, grp9), MQ=sumNAperGroup(dataMQ$raw, grp9), PL=sumNAperGroup(dataPL$raw, grp9) )
-colnames(tabSumNA) <- paste(unique(names(dataMQ$sampleSetup$groups)), "amol")
 kable(tabSumNA, caption="Number of NAs per group of samples", align="r")
 
 ## ----testProteomeDiscoverer, echo=TRUE----------------------------------------
@@ -223,9 +220,8 @@ dataPD$datImp <- testPD$datImp       # recuperate imputeded data to main data-ob
 dataMQ$datImp <- testMQ$datImp
 dataPL$datImp <- testPL$datImp
 
-
 ## ----pairWise2, echo=TRUE-----------------------------------------------------
-## The number of differentially abundant proteins passing 5% FDR (ProteomeDiscoverer and MaxQuant) 
+## The number of differentially abundant proteins passing 5% FDR (ProteomeDiscoverer and MaxQuant)
 signCount <- cbind( sig.PD.BH=colSums(testPD$BH < 0.05, na.rm=TRUE), sig.PD.lfdr=if("lfdr" %in% names(testPD)) colSums(testPD$lfdr < 0.05, na.rm=TRUE),
   sig.MQ.BH=colSums(testMQ$BH < 0.05, na.rm=TRUE), sig.MQ.lfdr=if("lfdr" %in% names(testMQ)) colSums(testMQ$lfdr < 0.05, na.rm=TRUE),
   sig.PL.BH=colSums(testPL$BH < 0.05, na.rm=TRUE), sig.PL.lfdr=if("lfdr" %in% names(testPL)) colSums(testPL$lfdr < 0.05, na.rm=TRUE)  )
@@ -241,40 +237,38 @@ resMQ1 <- extractTestingResults(testMQ, compNo=1, thrsh=0.05, FCthrs=2)
 resPD1 <- extractTestingResults(testPD, compNo=1, thrsh=0.05, FCthrs=2)
 resPL1 <- extractTestingResults(testPL, compNo=1, thrsh=0.05, FCthrs=2)
 
-
-
 ## ----pairWise3, fig.height=4.5, fig.width=9.5, fig.align="center", echo=TRUE----
-par(mar=c(5.5, 4.7, 4, 1))   
+par(mar=c(5.5, 4.7, 4, 1))
 imageW(table1[,c("sig.PD.BH","sig.MQ.BH","sig.PL.BH" )], col=RColorBrewer::brewer.pal(9,"YlOrRd"),
   transp=FALSE, tit="Number of BH.FDR passing proteins by the quantification approaches")
 mtext("Dark red for high number signif proteins", cex=0.75)
 
 ## ----pairWiseSelect2, echo=TRUE-----------------------------------------------
-## Selection in Ramus paper 
+## Selection in Ramus paper
 kable(table1[which(rownames(table1) %in% colnames(testPD$BH)[c(2,21,27)]),], caption="Selected pairwise comparisons (as in Ramus et al)", align="c")
 
 ## ----ROC_main1, echo=TRUE-----------------------------------------------------
+## calulate  AUC for each ROC
 layout(1)
-rocPD <- lapply(table1[,1], function(x) summarizeForROC(testPD, useComp=x, annotCol="SpecType", spec=c("Yeast","UPS1"), tyThr="BH", plotROC=FALSE,silent=TRUE))
-rocMQ <- lapply(table1[,1], function(x) summarizeForROC(testMQ, useComp=x, annotCol="SpecType", spec=c("Yeast","UPS1"), tyThr="BH", plotROC=FALSE,silent=TRUE))
-rocPL <- lapply(table1[,1], function(x) summarizeForROC(testPL, useComp=x, annotCol="SpecType", spec=c("Yeast","UPS1"), tyThr="BH", plotROC=FALSE,silent=TRUE))
+rocPD <- lapply(table1[,1], function(x) summarizeForROC(testPD, useComp=x, annotCol="SpecType", spec=c("mainSpecies","spike"), tyThr="BH", plotROC=FALSE,silent=TRUE))
+rocMQ <- lapply(table1[,1], function(x) summarizeForROC(testMQ, useComp=x, annotCol="SpecType", spec=c("mainSpecies","spike"), tyThr="BH", plotROC=FALSE,silent=TRUE))
+rocPL <- lapply(table1[,1], function(x) summarizeForROC(testPL, useComp=x, annotCol="SpecType", spec=c("mainSpecies","spike"), tyThr="BH", plotROC=FALSE,silent=TRUE))
 
 # we still need to add the names for the pair-wise groups:
 names(rocPD) <- names(rocMQ) <- names(rocPL) <- rownames(table1)
 
 ## ----ROC_main2, echo=TRUE-----------------------------------------------------
-## calulate  AUC for each ROC 
-AucAll <- cbind(ind=table1[match(names(rocPD), rownames(table1)),"index"], clu=NA, 
+AucAll <- cbind(ind=table1[match(names(rocPD), rownames(table1)),"index"], clu=NA,
   PD=sapply(rocPD, AucROC), MQ=sapply(rocMQ, AucROC), PL=sapply(rocPL, AucROC) )
 
 ## ----ROC_biplot, fig.height=9, fig.width=9.5, fig.align="center", echo=TRUE----
-biplot(prcomp(AucAll[,names(methNa)]), cex=0.7, main="PCA of AUC from ROC Curves")   
+try(biplot(prcomp(AucAll[,names(methNa)]), cex=0.7, main="PCA of AUC from ROC Curves"))
 
 ## ----ROC_segm, fig.height=9, fig.width=9.5, fig.align="center", echo=TRUE-----
 ## number of groups for clustering
 nGr <- 5
 ## K-Means clustering
-kMAx <- stats::kmeans(standardW(AucAll[,c("PD","MQ","PL")]), nGr)$cluster  
+kMAx <- stats::kmeans(standardW(AucAll[,c("PD","MQ","PL")]), nGr)$cluster
    table(kMAx)
 AucAll[,"clu"] <- kMAx
 
@@ -286,43 +280,43 @@ AucAll[,"cluNo"] <- rep(nGr:1, table(AucAll[,"cluNo"]))        # make cluNo desc
 
 kMAx <- AucAll[,"cluNo"]      # update
   table(AucAll[,"cluNo"])
- ## note : column 'index' is relative to table1, iniInd to ordering inside objects from clustering 
+ ## note : column 'index' is relative to table1, iniInd to ordering inside objects from clustering
 
 ## ----ROC_profFig, echo=TRUE---------------------------------------------------
-profileAsClu(AucAll[,c(1:length(methNa),(length(methNa)+2:3))], clu="cluNo", meanD="geoMean", tit="Pairwise Comparisons as Clustered AUC from ROC Curves",
-  xlab="Comparison number", ylab="AUC", meLty=1, meLwd=3)
+try(profileAsClu(AucAll[,c(1:length(methNa),(length(methNa)+2:3))], clu="cluNo", meanD="geoMean", tit="Pairwise Comparisons as Clustered AUC from ROC Curves",
+  xlab="Comparison number", ylab="AUC", meLty=1, meLwd=3))
 
 ## ----ROC_segmTable, echo=TRUE-------------------------------------------------
 AucRep <- table(AucAll[,"cluNo"])[rank(unique(AucAll[,"cluNo"]))]   # representative for each cluster
-AucRep <- round(cumsum(AucRep) -AucRep/2 +0.1) 
+AucRep <- round(cumsum(AucRep) -AucRep/2 +0.1)
 
 ## select representative for each cluster
-kable(round(AucAll[AucRep,c("Auc.PD","Auc.MQ","Auc.PL","cluNo")],3), caption="Selected representative for each cluster ", align="c")  
+kable(round(AucAll[AucRep,c("Auc.PD","Auc.MQ","Auc.PL","cluNo")],3), caption="Selected representative for each cluster ", align="c")
 
 ## ----freqOfFCperClu, echo=TRUE------------------------------------------------
 ratTab <- sapply(5:1, function(x) { y <- table1[match(rownames(AucAll),rownames(table1)),]
-  table(factor(signif(y[which(AucAll[,"cluNo"]==x),"log2rat"],1), levels=unique(signif(table1[,"log2rat"],1))) )}) 
+  table(factor(signif(y[which(AucAll[,"cluNo"]==x),"log2rat"],1), levels=unique(signif(table1[,"log2rat"],1))) )})
 colnames(ratTab) <- paste0("\nclu",5:1,"\nn=",rev(table(kMAx)))
 layout(1)
 imageW(ratTab, tit="Frequency of rounded log2FC in the 5 clusters", xLab="log2FC (rounded)", col=RColorBrewer::brewer.pal(9,"YlOrRd"),las=1)
-mtext("dark red for high number signif proteins", cex=0.7)
+mtext("dark red for low number signif proteins", cex=0.7)
 
 ## ----ROC_grp5tab, echo=TRUE---------------------------------------------------
 colPanel <- 2:5
-gr <- 5 
-j <- match(rownames(AucAll)[AucRep[6-gr]], colnames(testPD$t)) 
+gr <- 5
+j <- match(rownames(AucAll)[AucRep[6-gr]], colnames(testPD$t))
 
 ## table of all proteins in cluster
 useLi <- which(AucAll[,"cluNo"]==gr)
-tmp <- cbind(round(as.data.frame(AucAll)[useLi,c("cluNo","Auc.PD","Auc.MQ","Auc.PL")],3), 
+tmp <- cbind(round(as.data.frame(AucAll)[useLi,c("cluNo","Auc.PD","Auc.MQ","Auc.PL")],3),
   as.data.frame(table1)[match(names(useLi),rownames(table1)), c(2,5,7,9)])
-kable(tmp, caption="AUC details for best pairwise-comparisons ", align="c")  
+kable(tmp, caption="AUC details for best pairwise-comparisons ", align="c")
 
 ## ----ROC_grp5fig, fig.height=9, fig.width=9.5, fig.align="center", echo=TRUE----
 ## frequent concentrations :
-layout(matrix(1:2), heights=c(1,2.5)) 
+layout(matrix(1:2), heights=c(1,2.5))
 plotConcHist(mat=tmp, ref=table1)
-    
+
 ## representative ROC
 jR <- match(rownames(AucAll)[AucRep[6-gr]], names(rocPD))
 plotROC(rocPD[[jR]], rocMQ[[jR]], rocPL[[jR]], col=colPanel, methNames=methNa, pointSi=0.8, xlim=c(0,0.45),
@@ -332,25 +326,25 @@ plotROC(rocPD[[jR]], rocMQ[[jR]], rocPL[[jR]], col=colPanel, methNames=methNa, p
 ## This required package 'wrGraph' at version 1.2.5 (or higher)
 if(packageVersion("wrGraph")  >= "1.2.5") {
   layout(matrix(1:4,ncol=2))
-  try(VolcanoPlotW(testPD, useComp=j, FCthrs=1.5, FdrThrs=0.05, annColor=c(4,2,3), ProjNa=methNa[1], expFCarrow=TRUE, silent=TRUE),silent=TRUE) 
+  try(VolcanoPlotW(testPD, useComp=j, FCthrs=1.5, FdrThrs=0.05, annColor=c(4,2,3), ProjNa=methNa[1], expFCarrow=TRUE, silent=TRUE),silent=TRUE)
   try(VolcanoPlotW(testMQ, useComp=j, FCthrs=1.5, FdrThrs=0.05, annColor=c(4,2,3), ProjNa=methNa[2], expFCarrow=TRUE, silent=TRUE),silent=TRUE)
   try(VolcanoPlotW(testPL, useComp=j, FCthrs=1.5, FdrThrs=0.05, annColor=c(4,2,3), ProjNa=methNa[3], expFCarrow=TRUE, silent=TRUE),silent=TRUE)}
 
 ## ----ROC_grp4tab, echo=TRUE---------------------------------------------------
 gr <- 4
-j <- match(rownames(AucAll)[AucRep[6-gr]], colnames(testPD$t)) 
+j <- match(rownames(AucAll)[AucRep[6-gr]], colnames(testPD$t))
 
 ## table of all proteins in cluster
 useLi <- which(AucAll[,"cluNo"]==gr)
-tmp <- cbind(round(as.data.frame(AucAll)[useLi,c("cluNo","Auc.PD","Auc.MQ","Auc.PL")],3), 
+tmp <- cbind(round(as.data.frame(AucAll)[useLi,c("cluNo","Auc.PD","Auc.MQ","Auc.PL")],3),
   as.data.frame(table1)[match(names(useLi),rownames(table1)), c(2,5,7,9)])
 kable(tmp, caption="AUC details for cluster '++++' pairwise-comparisons ", align="c")
 
 ## ----ROC_grp4fig, fig.height=10, fig.width=9.5, fig.align="center", echo=TRUE----
 ## frequent concentrations :
-layout(matrix(1:2), heights=c(1,2.5)) 
+layout(matrix(1:2), heights=c(1,2.5))
 plotConcHist(mat=tmp, ref=table1)
-    
+
 ## representative ROC
 jR <- match(rownames(AucAll)[AucRep[6-gr]], names(rocPD))
 plotROC(rocPD[[jR]], rocMQ[[jR]], rocPL[[jR]], col=colPanel, methNames=methNa, pointSi=0.8, xlim=c(0,0.45),
@@ -359,23 +353,23 @@ plotROC(rocPD[[jR]], rocMQ[[jR]], rocPL[[jR]], col=colPanel, methNames=methNa, p
 ## ----VolcanoClu4, fig.height=10, fig.width=9.5, fig.align="center", echo=TRUE----
 if(packageVersion("wrGraph")  >= "1.2.5"){
   layout(matrix(1:4,ncol=2))
-  try(VolcanoPlotW(testPD, useComp=j, FCthrs=1.5, FdrThrs=0.05, annColor=c(4,2,3), ProjNa=methNa[1], expFCarrow=TRUE, silent=TRUE),silent=TRUE) 
+  try(VolcanoPlotW(testPD, useComp=j, FCthrs=1.5, FdrThrs=0.05, annColor=c(4,2,3), ProjNa=methNa[1], expFCarrow=TRUE, silent=TRUE),silent=TRUE)
   try(VolcanoPlotW(testMQ, useComp=j, FCthrs=1.5, FdrThrs=0.05, annColor=c(4,2,3), ProjNa=methNa[2], expFCarrow=TRUE, silent=TRUE),silent=TRUE)
   try(VolcanoPlotW(testPL, useComp=j, FCthrs=1.5, FdrThrs=0.05, annColor=c(4,2,3), ProjNa=methNa[3], expFCarrow=TRUE, silent=TRUE),silent=TRUE)}
 
 ## ----ROC_grp3tab, echo=TRUE---------------------------------------------------
-gr <- 3 
-j <- match(rownames(AucAll)[AucRep[6-gr]], colnames(testPD$t)) 
+gr <- 3
+j <- match(rownames(AucAll)[AucRep[6-gr]], colnames(testPD$t))
 
 ## table of all proteins in cluster
 useLi <- which(AucAll[,"cluNo"]==gr)
-tmp <- cbind(round(as.data.frame(AucAll)[useLi,c("cluNo","Auc.PD","Auc.MQ","Auc.PL")],3), 
+tmp <- cbind(round(as.data.frame(AucAll)[useLi,c("cluNo","Auc.PD","Auc.MQ","Auc.PL")],3),
   as.data.frame(table1)[match(names(useLi),rownames(table1)), c(2,5,7,9)])
 kable(tmp, caption="AUC details for cluster '+++' pairwise-comparisons ", align="c")
 
 ## ----ROC_grp3fig, fig.height=10, fig.width=9.5, fig.align="center", echo=TRUE----
 ## frequent concentrations :
-layout(matrix(1:2), heights=c(1,2.5)) 
+layout(matrix(1:2), heights=c(1,2.5))
 plotConcHist(mat=tmp, ref=table1)
 
 ## representative ROC
@@ -386,23 +380,23 @@ plotROC(rocPD[[jR]],rocMQ[[jR]],rocPL[[jR]], col=colPanel, methNames=methNa, poi
 ## ----VolcanoClu3, fig.height=10, fig.width=9.5, fig.align="center", echo=TRUE----
 if(packageVersion("wrGraph")  >= "1.2.5"){
   layout(matrix(1:4,ncol=2))
-  try(VolcanoPlotW(testPD, useComp=j, FCthrs=1.5, FdrThrs=0.05, annColor=c(4,2,3), ProjNa=methNa[1], expFCarrow=TRUE, silent=TRUE),silent=TRUE) 
+  try(VolcanoPlotW(testPD, useComp=j, FCthrs=1.5, FdrThrs=0.05, annColor=c(4,2,3), ProjNa=methNa[1], expFCarrow=TRUE, silent=TRUE),silent=TRUE)
   try(VolcanoPlotW(testMQ, useComp=j, FCthrs=1.5, FdrThrs=0.05, annColor=c(4,2,3), ProjNa=methNa[2], expFCarrow=TRUE, silent=TRUE),silent=TRUE)
   try(VolcanoPlotW(testPL, useComp=j, FCthrs=1.5, FdrThrs=0.05, annColor=c(4,2,3), ProjNa=methNa[3], expFCarrow=TRUE, silent=TRUE),silent=TRUE)}
 
 ## ----ROC_grp2tab, echo=TRUE---------------------------------------------------
-gr <- 2 
-j <- match(rownames(AucAll)[AucRep[6-gr]], colnames(testPD$t)) 
+gr <- 2
+j <- match(rownames(AucAll)[AucRep[6-gr]], colnames(testPD$t))
 
 ## table of all proteins in cluster
 useLi <- which(AucAll[,"cluNo"]==gr)
-tmp <- cbind(round(as.data.frame(AucAll)[useLi,c("cluNo","Auc.PD","Auc.MQ","Auc.PL")],3), 
+tmp <- cbind(round(as.data.frame(AucAll)[useLi,c("cluNo","Auc.PD","Auc.MQ","Auc.PL")],3),
   as.data.frame(table1)[match(names(useLi),rownames(table1)), c(2,5,7,9)])
 kable(tmp, caption="AUC details for cluster '++' pairwise-comparisons ", align="c")
 
 ## ----ROC_grp2fig, fig.height=10, fig.width=9.5, fig.align="center", echo=TRUE----
 ## frequent concentrations :
-layout(matrix(1:2), heights=c(1,2.5)) 
+layout(matrix(1:2), heights=c(1,2.5))
 plotConcHist(mat=tmp, ref=table1)
 
 ## representative ROC
@@ -413,25 +407,25 @@ plotROC(rocPD[[jR]], rocMQ[[jR]], rocPL[[jR]], col=colPanel, methNames=methNa, p
 ## ----VolcanoClu2, fig.height=10, fig.width=9.5, fig.align="center", echo=TRUE----
 if(packageVersion("wrGraph")  >= "1.2.5"){
   layout(matrix(1:4,ncol=2))
-  try(VolcanoPlotW(testPD, useComp=j, FCthrs=1.5, FdrThrs=0.05, annColor=c(4,2,3), ProjNa=methNa[1], expFCarrow=TRUE, silent=TRUE),silent=TRUE) 
+  try(VolcanoPlotW(testPD, useComp=j, FCthrs=1.5, FdrThrs=0.05, annColor=c(4,2,3), ProjNa=methNa[1], expFCarrow=TRUE, silent=TRUE),silent=TRUE)
   try(VolcanoPlotW(testMQ, useComp=j, FCthrs=1.5, FdrThrs=0.05, annColor=c(4,2,3), ProjNa=methNa[2], expFCarrow=TRUE, silent=TRUE),silent=TRUE)
   try(VolcanoPlotW(testPL, useComp=j, FCthrs=1.5, FdrThrs=0.05, annColor=c(4,2,3), ProjNa=methNa[3], expFCarrow=TRUE, silent=TRUE),silent=TRUE)}
 
 ## ----ROC_grp1tab, echo=TRUE---------------------------------------------------
-gr <- 1 
+gr <- 1
 j <- match(rownames(AucAll)[AucRep[6-gr]], colnames(testPD$t))
 
 ## table of all proteins in cluster
 useLi <- which(AucAll[,"cluNo"]==gr)
-tmp <- cbind(round(as.data.frame(AucAll)[useLi,c("cluNo","Auc.PD","Auc.MQ","Auc.PL")],3), 
+tmp <- cbind(round(as.data.frame(AucAll)[useLi,c("cluNo","Auc.PD","Auc.MQ","Auc.PL")],3),
   as.data.frame(table1)[match(names(useLi),rownames(table1)), c(2,5,7,9)])
 kable(tmp, caption="AUC details for cluster '+' pairwise-comparisons ", align="c")
 
 ## ----ROC_grp1fig, fig.height=10, fig.width=9.5, fig.align="center", echo=TRUE----
 ## frequent concentrations :
-layout(matrix(1:2, ncol=1), heights=c(1,2.5)) 
+layout(matrix(1:2, ncol=1), heights=c(1,2.5))
 plotConcHist(mat=tmp, ref=table1)
-    
+
 ## representative ROC
 jR <- match(rownames(AucAll)[AucRep[6-gr]], names(rocPD))
 plotROC(rocPD[[jR]], rocMQ[[jR]], rocPL[[jR]], col=colPanel, methNames=methNa, pointSi=0.8, xlim=c(0,0.45),
@@ -440,62 +434,62 @@ plotROC(rocPD[[jR]], rocMQ[[jR]], rocPL[[jR]], col=colPanel, methNames=methNa, p
 ## ----VolcanoClu1, fig.height=10, fig.width=9.5, fig.align="center", echo=TRUE----
 if(packageVersion("wrGraph")  >= "1.2.5"){
   layout(matrix(1:4,ncol=2))
-  try(VolcanoPlotW(testPD, useComp=j, FCthrs=1.5, FdrThrs=0.05, annColor=c(4,2,3), ProjNa=methNa[1], expFCarrow=TRUE, silent=TRUE),silent=TRUE) 
+  try(VolcanoPlotW(testPD, useComp=j, FCthrs=1.5, FdrThrs=0.05, annColor=c(4,2,3), ProjNa=methNa[1], expFCarrow=TRUE, silent=TRUE),silent=TRUE)
   try(VolcanoPlotW(testMQ, useComp=j, FCthrs=1.5, FdrThrs=0.05, annColor=c(4,2,3), ProjNa=methNa[2], expFCarrow=TRUE, silent=TRUE),silent=TRUE)
   try(VolcanoPlotW(testPL, useComp=j, FCthrs=1.5, FdrThrs=0.05, annColor=c(4,2,3), ProjNa=methNa[3], expFCarrow=TRUE, silent=TRUE),silent=TRUE)}
 
 ## ----nNA2, echo=TRUE----------------------------------------------------------
 tab1 <- rbind(PD=sumNAperGroup(dataPD$raw[which(dataPD$annot[,"SpecType"]=="UPS1"),], grp9),
   MQ=sumNAperGroup(dataMQ$raw[which(dataMQ$annot[,"SpecType"]=="UPS1"),], grp9),
-  PL= sumNAperGroup(dataPL$raw[which(dataPL$annot[,"SpecType"]=="UPS1"),], grp9)  ) 
+  PL= sumNAperGroup(dataPL$raw[which(dataPL$annot[,"SpecType"]=="UPS1"),], grp9)  )
 kable(tab1, caption="The number of NAs in the UPS1 proteins", align="c")
 
 ## ----nNAfig1, fig.height=3.5, fig.width=9.5, fig.align="center", echo=TRUE----
 countRawNA <- function(dat, newOrd=UPS1$ac, relative=FALSE) {  # count number of NAs per UPS protein and order as UPS
-  out <- rowSums(is.na(dat$raw[match(newOrd,rownames(dat$raw)),])) 
+  out <- rowSums(is.na(dat$raw[match(newOrd,rownames(dat$raw)),]))
   if(relative) out/nrow(dat$raw) else out }
 
 sumNAperMeth <- cbind(PD=countRawNA(dataPD), MQ=countRawNA(dataMQ), PL=countRawNA(dataPL) )
 UPS1na <- sub("_UPS","",dataPL$annot[UPS1$ac,"EntryName"])
-par(mar=c(6.8, 3.5, 4, 1))   
-imageW(sumNAperMeth, rowNa=UPS1na, tit="Number of NAs in UPS proteins", xLab="", yLab="", 
+par(mar=c(6.8, 3.5, 4, 1))
+imageW(sumNAperMeth, rowNa=UPS1na, tit="Number of NAs in UPS proteins", xLab="", yLab="",
   transp=FALSE, col=RColorBrewer::brewer.pal(9,"YlOrRd"))
 mtext("dark red for high number of NAs",cex=0.7)
 
 ## ----PCA2PD, fig.height=12, fig.width=9.5, fig.align="center", echo=TRUE------
-plotPCAw(testPD$datImp[which(testPD$annot[,"SpecType"]=="UPS1"),], sampleGrp=grp9, tit="PCA on ProteomeDiscoverer, UPS1 only (NAs imputed)", rowTyName="proteins", useSymb2=0)
+try(plotPCAw(testPD$datImp[which(testPD$annot[,"SpecType"]=="spike"),], sampleGrp=grp9, tit="PCA on ProteomeDiscoverer, UPS1 only (NAs imputed)", rowTyName="proteins", useSymb2=0))
 
 ## ----PCA2MQ, fig.height=12, fig.width=9.5, fig.align="center", echo=TRUE------
-plotPCAw(testMQ$datImp[which(testMQ$annot[,"SpecType"]=="UPS1"),], sampleGrp=grp9, tit="PCA on MaxQuant, UPS1 only (NAs imputed)", rowTyName="proteins", useSymb2=0)
+try(plotPCAw(testMQ$datImp[which(testMQ$annot[,"SpecType"]=="spike"),], sampleGrp=grp9, tit="PCA on MaxQuant, UPS1 only (NAs imputed)", rowTyName="proteins", useSymb2=0))
 
 ## ----PCA2PL, fig.height=12, fig.width=9.5, fig.align="center", echo=TRUE------
-plotPCAw(testPL$datImp[which(testPL$annot[,"SpecType"]=="UPS1"),], sampleGrp=grp9, tit="PCA on Proline, UPS1 only (NAs imputed)", rowTyName="proteins", useSymb2=0)
+try(plotPCAw(testPL$datImp[which(testPL$annot[,"SpecType"]=="spike"),], sampleGrp=grp9, tit="PCA on Proline, UPS1 only (NAs imputed)", rowTyName="proteins", useSymb2=0))
 
 ## ----intraReplicCV1, fig.height=10, fig.width=12, fig.align="center", echo=TRUE----
 ## combined plot : all data (left), Ups1 (right)
 layout(1:3)
 sumNAinPD <- list(length=18)
 sumNAinPD[2*(1:length(unique(grp9))) -1] <- as.list(as.data.frame(log2(rowGrpCV(testPD$datImp, grp9))))
-sumNAinPD[2*(1:length(unique(grp9))) ] <- as.list(as.data.frame(log2(rowGrpCV(testPD$datImp[which(testPD$annot[,"SpecType"]=="UPS1"),], grp9))))
+sumNAinPD[2*(1:length(unique(grp9))) ] <- as.list(as.data.frame(log2(rowGrpCV(testPD$datImp[which(testPD$annot[,"SpecType"]=="spike"),], grp9))))
 names(sumNAinPD)[2*(1:length(unique(grp9))) -1] <-  sub("amol","",unique(grp9))
 names(sumNAinPD)[2*(1:length(unique(grp9))) ] <- paste(sub("amol","",unique(grp9)),"Ups",sep=".")
-vioplotW(sumNAinPD, halfViolin="pairwise", tit="CV Intra Replicate, ProteomeDiscoverer", cexNameSer=0.6) 
+try(vioplotW(sumNAinPD, halfViolin="pairwise", tit="CV Intra Replicate, ProteomeDiscoverer", cexNameSer=0.6))
 mtext("left part : all data\nright part: UPS1",adj=0,cex=0.8)
 
 sumNAinMQ <- list(length=18)
 sumNAinMQ[2*(1:length(unique(grp9))) -1] <- as.list(as.data.frame(log2(rowGrpCV(testMQ$datImp, grp9))))
-sumNAinMQ[2*(1:length(unique(grp9))) ] <- as.list(as.data.frame(log2(rowGrpCV(testMQ$datImp[which(testMQ$annot[,"SpecType"]=="UPS1"),], grp9))))
+sumNAinMQ[2*(1:length(unique(grp9))) ] <- as.list(as.data.frame(log2(rowGrpCV(testMQ$datImp[which(testMQ$annot[,"SpecType"]=="spike"),], grp9))))
 names(sumNAinMQ)[2*(1:length(unique(grp9))) -1] <- sub("amol","",unique(grp9))                        # paste(unique(grp9),"all",sep=".")
 names(sumNAinMQ)[2*(1:length(unique(grp9))) ] <- paste(sub("amol","",unique(grp9)),"Ups",sep=".")      #paste(unique(grp9),"Ups1",sep=".")
-vioplotW(sumNAinMQ, halfViolin="pairwise", tit="CV intra replicate, MaxQuant",cexNameSer=0.6) 
+try(vioplotW(sumNAinMQ, halfViolin="pairwise", tit="CV intra replicate, MaxQuant",cexNameSer=0.6))
 mtext("left part : all data\nright part: UPS1",adj=0,cex=0.8)
 
 sumNAinPL <- list(length=18)
 sumNAinPL[2*(1:length(unique(grp9))) -1] <- as.list(as.data.frame(log2(rowGrpCV(testPL$datImp, grp9))))
-sumNAinPL[2*(1:length(unique(grp9))) ] <- as.list(as.data.frame(log2(rowGrpCV(testPL$datImp[which(testPL$annot[,"SpecType"]=="UPS1"),], grp9))))
+sumNAinPL[2*(1:length(unique(grp9))) ] <- as.list(as.data.frame(log2(rowGrpCV(testPL$datImp[which(testPL$annot[,"SpecType"]=="spike"),], grp9))))
 names(sumNAinPL)[2*(1:length(unique(grp9))) -1] <-  sub("amol","",unique(grp9))
 names(sumNAinPL)[2*(1:length(unique(grp9))) ] <- paste(sub("amol","",unique(grp9)),"Ups",sep=".")
-vioplotW(sumNAinPL, halfViolin="pairwise", tit="CV Intra Replicate, Proline", cexNameSer=0.6) 
+try(vioplotW(sumNAinPL, halfViolin="pairwise", tit="CV Intra Replicate, Proline", cexNameSer=0.6))
 mtext("left part : all data\nright part: UPS1",adj=0,cex=0.8)
 
 ## ----linModel0, echo=TRUE-----------------------------------------------------
@@ -506,40 +500,40 @@ datUPS1 <- array(NA, dim=c(length(UPS1$ac),length(methNa),7), dimnames=list(UPS1
 ## ----linModelPD, fig.height=17, fig.width=9.5, fig.align="center", echo=TRUE----
 lmPD <- list(length=length(NamesUpsPD))
 doPl <- FALSE
-lmPD[1:length(NamesUpsPD)] <- lapply(NamesUpsPD[1:length(NamesUpsPD)], linModelSelect, dat=dataPD, 
-  expect=grp9, startLev=1:5, cexXAxis=0.7, logExpect=TRUE, plotGraph=doPl, silent=TRUE)
+lmPD[1:length(NamesUpsPD)] <- lapply(NamesUpsPD[1:length(NamesUpsPD)], linModelSelect, dat=dataPD,
+  expect=names(grp9), startLev=1:5, cexXAxis=0.7, logExpect=TRUE, plotGraph=doPl, silent=TRUE)
 names(lmPD) <- NamesUpsPD
 
 ## ----linModelPD2, echo=TRUE---------------------------------------------------
 ## We make a little summary of regression-results (ProteomeDiscoverer)
 linIn <- match(names(lmPD), UPS1$ac)
-datUPS1[linIn,1,c("logp","slope","startFr")] <- cbind(log10(sapply(lmPD, function(x) x$coef[2,4])), 
+datUPS1[linIn,1,c("logp","slope","startFr")] <- cbind(log10(sapply(lmPD, function(x) x$coef[2,4])),
   sapply(lmPD, function(x) x$coef[2,1]), sapply(lmPD, function(x) x$startLev) )
-## need correct rownames in  dataPD$datImp !!! 
+## need correct rownames in  dataPD$datImp !!!
 datUPS1[,1,"medAbund"] <- apply(wrMisc::.scale01(dataPD$datImp)[match(UPS1$ac,rownames(dataPD$datImp)),],1,median,na.rm=TRUE)
 
 ## ----linModelMQ, echo=TRUE----------------------------------------------------
 lmMQ <- list(length=length(NamesUpsMQ))
-lmMQ[1:length(NamesUpsMQ)] <- lapply(NamesUpsMQ[1:length(NamesUpsMQ)], linModelSelect, dat=dataMQ, 
-  expect=grp9, startLev=1:5, cexXAxis=0.7, logExpect=TRUE, plotGraph=doPl, silent=TRUE)
+lmMQ[1:length(NamesUpsMQ)] <- lapply(NamesUpsMQ[1:length(NamesUpsMQ)], linModelSelect, dat=dataMQ,
+  expect=names(grp9), startLev=1:5, cexXAxis=0.7, logExpect=TRUE, plotGraph=doPl, silent=TRUE)
 names(lmMQ) <- NamesUpsMQ
 
 ## ----linModelMQ2, fig.height=17, fig.width=9.5, fig.align="center", echo=TRUE----
 ## We make a little summary of regression-results (MaxQuant)
 linIn <- match(names(lmMQ), UPS1$ac)
-datUPS1[linIn,2,c("logp","slope","startFr")] <- cbind( log10(sapply(lmMQ, function(x) x$coef[2,4])), 
+datUPS1[linIn,2,c("logp","slope","startFr")] <- cbind( log10(sapply(lmMQ, function(x) x$coef[2,4])),
   sapply(lmMQ, function(x) x$coef[2,1]), sapply(lmMQ, function(x) x$startLev) )
 datUPS1[,2,"medAbund"] <- apply(wrMisc::.scale01(dataMQ$datImp)[match(UPS1$ac,rownames(dataMQ$datImp)),],1,median,na.rm=TRUE)
 
 ## ----linModelPL, echo=TRUE----------------------------------------------------
 lmPL <- list(length=length(NamesUpsPL))
-lmPL[1:length(NamesUpsPL)] <- lapply(NamesUpsPL[1:length(NamesUpsPL)], linModelSelect, dat=dataPL, 
-  expect=grp9, startLev=1:5, cexXAxis=0.7, logExpect=TRUE, plotGraph=doPl, silent=TRUE)
-names(lmPL) <- NamesUpsPL   
+lmPL[1:length(NamesUpsPL)] <- lapply(NamesUpsPL[1:length(NamesUpsPL)], linModelSelect, dat=dataPL,
+  expect=names(grp9), startLev=1:5, cexXAxis=0.7, logExpect=TRUE, plotGraph=doPl, silent=TRUE)
+names(lmPL) <- NamesUpsPL
 
 ## ----linModelPLsum, fig.height=17, fig.width=9.5, fig.align="center", echo=TRUE----
 linIn <- match(names(lmPL), UPS1$ac)
-datUPS1[linIn,3,c("logp","slope","startFr")] <- cbind(log10(sapply(lmPL, function(x) x$coef[2,4])), 
+datUPS1[linIn,3,c("logp","slope","startFr")] <- cbind(log10(sapply(lmPL, function(x) x$coef[2,4])),
   sapply(lmPL, function(x) x$coef[2,1]), sapply(lmPL, function(x) x$startLev) )
 datUPS1[,3,"medAbund"] <- apply(wrMisc::.scale01(dataPL$datImp)[match(UPS1$ac,rownames(dataPL$datImp)),],1,median,na.rm=TRUE)
 
@@ -553,9 +547,9 @@ kable(stTab, caption = "Frequency of starting levels for regression")
 layout(matrix(1:4,ncol=2))
 subTi <- "fill according to median abundance (blue=low - green - red=high)"
 
-plotMultRegrPar(datUPS1, 1, xlim=c(-25,-1), ylim=c(0.1,1.6),tit="ProteomeDiscoverer UPS1, p-value vs slope",subTit=subTi)
-plotMultRegrPar(datUPS1, 2, xlim=c(-25,-1), ylim=c(0.1,1.6),tit="MaxQuant UPS1, p-value vs slope",subTit=subTi)
-plotMultRegrPar(datUPS1, 3, xlim=c(-25,-1), ylim=c(0.1,1.6),tit="Proline UPS1, p-value vs slope",subTit=subTi)
+plotMultRegrPar(datUPS1, 1, xlim=c(-25,-4), ylim=c(0.1,1.9),tit="ProteomeDiscoverer UPS1, p-value vs slope",subTit=subTi)
+plotMultRegrPar(datUPS1, 2, xlim=c(-25,-4), ylim=c(0.1,1.9),tit="MaxQuant UPS1, p-value vs slope",subTit=subTi)
+plotMultRegrPar(datUPS1, 3, xlim=c(-25,-4), ylim=c(0.1,1.9),tit="Proline UPS1, p-value vs slope",subTit=subTi)
 
 ## ----combRegrScore1, echo=TRUE------------------------------------------------
 for(i in 1:(dim(datUPS1)[2])) datUPS1[,i,"sco"] <- -datUPS1[,i,"logp"] - (datUPS1[,i,"slope"] -1)^2    # cut at > 8
@@ -568,7 +562,7 @@ datUPS1[,3,2] <- rowSums(dataPL$count[match(UPS1$ac,dataPL$annot[,1]),,"NoOfPept
 ## ----combRegrScore3, fig.height=6, fig.width=9.5, fig.align="center", echo=TRUE----
 layout(matrix(1:4, ncol=2))
 par(mar=c(5.5, 2.2, 4, 0.4))
-col1 <- RColorBrewer::brewer.pal(9,"YlOrRd")  
+col1 <- RColorBrewer::brewer.pal(9,"YlOrRd")
 imageW(datUPS1[,,1], col=col1, tit="Linear regression score", xLab="",yLab="",transp=FALSE)
 mtext("red for bad score", cex=0.75)
 
@@ -588,7 +582,7 @@ mtext("dark red for high (good) lmScore/abundance ratio)", cex=0.75)
 nGr <- 5
 
 ## clustering using kMeans
-kMx <- stats::kmeans(standardW(datUPS1[,,"sco"], byColumn=FALSE), nGr)$cluster  
+kMx <- stats::kmeans(standardW(datUPS1[,,"sco"], byColumn=FALSE), nGr)$cluster
 datUPS1[,,"cluNo"] <- matrix(rep(kMx,dim(datUPS1)[2]), nrow=length(kMx))
 
 geoM <- apply(datUPS1[,,"sco"], 1, function(x) prod(x)^(1/length(x)))        # geometric mean across analysis soft
@@ -596,9 +590,9 @@ geoM2 <- lrbind(by(cbind(geoM,datUPS1[,,"sco"], clu=kMx), kMx, function(x) x[ord
 tmp <- tapply(geoM2[,"geoM"], geoM2[,"clu"], median)
 geoM2[,"clu"] <- rep(rank(tmp, ties.method="first"), table(kMx))
 geoM2 <- geoM2[order(geoM2[,"clu"],geoM2[,"geoM"],decreasing=TRUE),]         # order as decreasing median.per.cluster
-geoM2[,"clu"] <- rep(1:max(kMx), table(geoM2[,"clu"])[rank(unique(geoM2[,"clu"]))])    # replace cluster-names to increasing 
+geoM2[,"clu"] <- rep(1:max(kMx), table(geoM2[,"clu"])[rank(unique(geoM2[,"clu"]))])    # replace cluster-names to increasing
 
-profileAsClu(geoM2[,2:4], geoM2[,"clu"], tit="Clustered Regression Results for UPS1 Proteins", ylab="Linear regression score") 
+try(profileAsClu(geoM2[,2:4], geoM2[,"clu"], tit="Clustered Regression Results for UPS1 Proteins", ylab="Linear regression score"))
 
 ## ----combScore2, echo=TRUE----------------------------------------------------
 datUPS1 <- datUPS1[match(rownames(geoM2), rownames(datUPS1)),,]               # bring in new order
@@ -612,76 +606,74 @@ annUPS1[,2] <- substr(sub("_UPS","",sub("generic_ups\\|[[:alnum:]]+-{0,1}[[:digi
 ## index of representative for each cluster  (median position inside cluster)
 UPSrep <- tapply(geoM2[,"geoM"], geoM2[,"clu"], function(x) floor(length(x)/2))+ c(0,cumsum(table(geoM2[,"clu"])[-5]))
 
-
 ## ----regr5star, echo=TRUE-----------------------------------------------------
 gr <- 1
 useLi <- which(datUPS1[,1,"cluNo"]==gr)
 colNa <- c("Protein",paste(colnames(datUPS1), rep(c("slope","logp"), each=ncol(datUPS1)), sep=" "))
-try(kable(cbind(annUPS1[useLi,2], signif(datUPS1[useLi,,"slope"],3), signif(datUPS1[useLi,,"logp"],3)), 
-  caption="Regression details for cluster of best UPS1 proteins ", col.names=colNa, align="l"),silent=TRUE)
+try(kable(cbind(annUPS1[useLi,2], signif(datUPS1[useLi,,"slope"],3), signif(datUPS1[useLi,,"logp"],3)),
+  caption="Regression details for cluster of the ",length(useLi)," best UPS1 proteins ", col.names=colNa, align="l"),silent=TRUE)
 
 ## ----regrPlot5star, fig.height=9, fig.width=9.5, fig.align="center", echo=TRUE----
 ## Plotting the best regressions, this required package wrGraph version 1.2.5 (or higher)
 if(packageVersion("wrGraph")  >= "1.2.5"){
   layout(matrix(1:4, ncol=2))
   tit <- paste0(methNa,", ",annUPS1[UPSrep[gr],1])
-  try(tm <- linModelSelect(annUPS1[UPSrep[gr],1], dat=dataPD, tit=tit[1], expect=grp9, startLev=1:5, cexXAxis=0.7, logExpect=TRUE, plotGraph=TRUE, silent=TRUE),silent=TRUE)
-  try(tm <- linModelSelect(annUPS1[UPSrep[gr],1], dat=dataMQ, tit=tit[2], expect=grp9, startLev=1:5, cexXAxis=0.7, logExpect=TRUE, plotGraph=TRUE, silent=TRUE),silent=TRUE)
-  try(tm <- linModelSelect(annUPS1[UPSrep[gr],1], dat=dataPL, tit=tit[3], expect=grp9, startLev=1:5, cexXAxis=0.7, logExpect=TRUE, plotGraph=TRUE, silent=TRUE),silent=TRUE) }
+  try(tm <- linModelSelect(annUPS1[UPSrep[gr],1], dat=dataPD, tit=tit[1], expect=names(grp9), startLev=1:5, cexXAxis=0.7, logExpect=TRUE, plotGraph=TRUE, silent=TRUE),silent=TRUE)
+  try(tm <- linModelSelect(annUPS1[UPSrep[gr],1], dat=dataMQ, tit=tit[2], expect=names(grp9), startLev=1:5, cexXAxis=0.7, logExpect=TRUE, plotGraph=TRUE, silent=TRUE),silent=TRUE)
+  try(tm <- linModelSelect(annUPS1[UPSrep[gr],1], dat=dataPL, tit=tit[3], expect=names(grp9), startLev=1:5, cexXAxis=0.7, logExpect=TRUE, plotGraph=TRUE, silent=TRUE),silent=TRUE) }
 
 ## ----regr4star, echo=TRUE-----------------------------------------------------
 gr <- 2
 useLi <- which(datUPS1[,1,"cluNo"]==gr)
-try(kable(cbind(annUPS1[useLi,2], signif(datUPS1[useLi,,"slope"],3), signif(datUPS1[useLi,,"logp"],3)), 
-  caption="Regression details for cluster of 2nd best UPS1 proteins ", col.names=colNa, align="l"),silent=TRUE)
+try(kable(cbind(annUPS1[useLi,2], signif(datUPS1[useLi,,"slope"],3), signif(datUPS1[useLi,,"logp"],3)),
+  caption="Regression details for cluster of the ",length(useLi)," 2nd best UPS1 proteins ", col.names=colNa, align="l"),silent=TRUE)
 
 ## ----regrPlot4star, fig.height=9, fig.width=9.5, fig.align="center", echo=TRUE----
 if(packageVersion("wrGraph")  >= "1.2.5"){
   layout(matrix(1:4, ncol=2))
   tit <- paste0(methNa,", ",annUPS1[UPSrep[gr],1])
-  try(tm <- linModelSelect(annUPS1[UPSrep[gr],1], dat=dataPD, tit=tit[1], expect=grp9, startLev=1:5, cexXAxis=0.7, logExpect=TRUE, plotGraph=TRUE, silent=TRUE),silent=TRUE)
-  try(tm <- linModelSelect(annUPS1[UPSrep[gr],1], dat=dataMQ, tit=tit[2], expect=grp9, startLev=1:5, cexXAxis=0.7, logExpect=TRUE, plotGraph=TRUE, silent=TRUE),silent=TRUE)
-  try(tm <- linModelSelect(annUPS1[UPSrep[gr],1], dat=dataPL, tit=tit[3], expect=grp9, startLev=1:5, cexXAxis=0.7, logExpect=TRUE, plotGraph=TRUE, silent=TRUE),silent=TRUE) }
+  try(tm <- linModelSelect(annUPS1[UPSrep[gr],1], dat=dataPD, tit=tit[1], expect=names(grp9), startLev=1:5, cexXAxis=0.7, logExpect=TRUE, plotGraph=TRUE, silent=TRUE),silent=TRUE)
+  try(tm <- linModelSelect(annUPS1[UPSrep[gr],1], dat=dataMQ, tit=tit[2], expect=names(grp9), startLev=1:5, cexXAxis=0.7, logExpect=TRUE, plotGraph=TRUE, silent=TRUE),silent=TRUE)
+  try(tm <- linModelSelect(annUPS1[UPSrep[gr],1], dat=dataPL, tit=tit[3], expect=names(grp9), startLev=1:5, cexXAxis=0.7, logExpect=TRUE, plotGraph=TRUE, silent=TRUE),silent=TRUE) }
 
 ## ----regr3star, echo=TRUE-----------------------------------------------------
 gr <- 3
 useLi <- which(datUPS1[,1,"cluNo"]==gr)
-try(kable(cbind(annUPS1[useLi,2], signif(datUPS1[useLi,,"slope"],3), signif(datUPS1[useLi,,"logp"],3)), 
+try(kable(cbind(annUPS1[useLi,2], signif(datUPS1[useLi,,"slope"],3), signif(datUPS1[useLi,,"logp"],3)),
   caption="Regression details for 3rd cluster UPS1 proteins ", col.names=colNa, align="l"),silent=TRUE)
 
 ## ----regrPlot3star, fig.height=9, fig.width=9.5, fig.align="center", echo=TRUE----
 if(packageVersion("wrGraph")  >= "1.2.5"){
   layout(matrix(1:4, ncol=2))
   tit <- paste0(methNa,", ",annUPS1[UPSrep[gr],1])
-  try(tm <- linModelSelect(annUPS1[UPSrep[gr],1], dat=dataPD, tit=tit[1], expect=grp9, startLev=1:5, cexXAxis=0.7, logExpect=TRUE, plotGraph=TRUE, silent=TRUE),silent=TRUE)
-  try(tm <- linModelSelect(annUPS1[UPSrep[gr],1], dat=dataMQ, tit=tit[2], expect=grp9, startLev=1:5, cexXAxis=0.7, logExpect=TRUE, plotGraph=TRUE, silent=TRUE),silent=TRUE)
-  try(tm <- linModelSelect(annUPS1[UPSrep[gr],1], dat=dataPL, tit=tit[3], expect=grp9, startLev=1:5, cexXAxis=0.7, logExpect=TRUE, plotGraph=TRUE, silent=TRUE),silent=TRUE) }
-
+  try(tm <- linModelSelect(annUPS1[UPSrep[gr],1], dat=dataPD, tit=tit[1], expect=names(grp9), startLev=1:5, cexXAxis=0.7, logExpect=TRUE, plotGraph=TRUE, silent=TRUE),silent=TRUE)
+  try(tm <- linModelSelect(annUPS1[UPSrep[gr],1], dat=dataMQ, tit=tit[2], expect=names(grp9), startLev=1:5, cexXAxis=0.7, logExpect=TRUE, plotGraph=TRUE, silent=TRUE),silent=TRUE)
+  try(tm <- linModelSelect(annUPS1[UPSrep[gr],1], dat=dataPL, tit=tit[3], expect=names(grp9), startLev=1:5, cexXAxis=0.7, logExpect=TRUE, plotGraph=TRUE, silent=TRUE),silent=TRUE) }
 
 ## ----regrPlot2star, fig.height=9, fig.width=9.5, fig.align="center", echo=TRUE----
 gr <- 4
 useLi <- which(datUPS1[,1,"cluNo"]==gr)
-try(kable(cbind(annUPS1[useLi,2], signif(datUPS1[useLi,,"slope"],3), signif(datUPS1[useLi,,"logp"],3)), 
+try(kable(cbind(annUPS1[useLi,2], signif(datUPS1[useLi,,"slope"],3), signif(datUPS1[useLi,,"logp"],3)),
   caption="Regression details for 3rd cluster UPS1 proteins ", col.names=colNa, align="l"),silent=TRUE)
 
 if(packageVersion("wrGraph")  >= "1.2.5"){
   layout(matrix(1:4, ncol=2))
   tit <- paste0(methNa,", ",annUPS1[UPSrep[gr],1])
-  try(tm <- linModelSelect(annUPS1[UPSrep[gr],1], dat=dataPD, tit=tit[1], expect=grp9, startLev=1:5, cexXAxis=0.7, logExpect=TRUE, plotGraph=TRUE, silent=TRUE),silent=TRUE)
-  try(tm <- linModelSelect(annUPS1[UPSrep[gr],1], dat=dataMQ, tit=tit[2], expect=grp9, startLev=1:5, cexXAxis=0.7, logExpect=TRUE, plotGraph=TRUE, silent=TRUE),silent=TRUE)
-  try(tm <- linModelSelect(annUPS1[UPSrep[gr],1], dat=dataPL, tit=tit[3], expect=grp9, startLev=1:5, cexXAxis=0.7, logExpect=TRUE, plotGraph=TRUE, silent=TRUE),silent=TRUE) }
+  try(tm <- linModelSelect(annUPS1[UPSrep[gr],1], dat=dataPD, tit=tit[1], expect=names(grp9), startLev=1:5, cexXAxis=0.7, logExpect=TRUE, plotGraph=TRUE, silent=TRUE),silent=TRUE)
+  try(tm <- linModelSelect(annUPS1[UPSrep[gr],1], dat=dataMQ, tit=tit[2], expect=names(grp9), startLev=1:5, cexXAxis=0.7, logExpect=TRUE, plotGraph=TRUE, silent=TRUE),silent=TRUE)
+  try(tm <- linModelSelect(annUPS1[UPSrep[gr],1], dat=dataPL, tit=tit[3], expect=names(grp9), startLev=1:5, cexXAxis=0.7, logExpect=TRUE, plotGraph=TRUE, silent=TRUE),silent=TRUE) }
 
 ## ----regrPlot1star, fig.height=9, fig.width=9.5, fig.align="center", echo=TRUE----
 gr <- 5
 useLi <- which(datUPS1[,1,"cluNo"]==gr)
-try(kable(cbind(annUPS1[useLi,2], signif(datUPS1[useLi,,"slope"],3), signif(datUPS1[useLi,,"logp"],3)), 
+try(kable(cbind(annUPS1[useLi,2], signif(datUPS1[useLi,,"slope"],3), signif(datUPS1[useLi,,"logp"],3)),
   caption="Regression details for 5th cluster UPS1 proteins ", col.names=colNa, align="l"),silent=TRUE)
 if(packageVersion("wrGraph")  >= "1.2.5"){
   layout(matrix(1:4, ncol=2))
   tit <- paste0(methNa,", ",annUPS1[UPSrep[gr],1])
-  try(tm <- linModelSelect(annUPS1[UPSrep[gr],1], dat=dataPD, tit=tit[1], expect=grp9, startLev=1:5, cexXAxis=0.7, logExpect=TRUE, plotGraph=TRUE, silent=TRUE),silent=TRUE)
-  try(tm <- linModelSelect(annUPS1[UPSrep[gr],1], dat=dataMQ, tit=tit[2], expect=grp9, startLev=1:5, cexXAxis=0.7, logExpect=TRUE, plotGraph=TRUE, silent=TRUE),silent=TRUE)
-  try(tm <- linModelSelect(annUPS1[UPSrep[gr],1], dat=dataPL, tit=tit[3], expect=grp9, startLev=1:5, cexXAxis=0.7, logExpect=TRUE, plotGraph=TRUE, silent=TRUE),silent=TRUE) }
+  try(tm <- linModelSelect(annUPS1[UPSrep[gr],1], dat=dataPD, tit=tit[1], expect=names(grp9), startLev=1:5, cexXAxis=0.7, logExpect=TRUE, plotGraph=TRUE, silent=TRUE),silent=TRUE)
+  try(tm <- linModelSelect(annUPS1[UPSrep[gr],1], dat=dataMQ, tit=tit[2], expect=names(grp9), startLev=1:5, cexXAxis=0.7, logExpect=TRUE, plotGraph=TRUE, silent=TRUE),silent=TRUE)
+  try(tm <- linModelSelect(annUPS1[UPSrep[gr],1], dat=dataPL, tit=tit[3], expect=names(grp9), startLev=1:5, cexXAxis=0.7, logExpect=TRUE, plotGraph=TRUE, silent=TRUE),silent=TRUE) }
 
 ## ----sessionInfo, echo=FALSE--------------------------------------------------
 sessionInfo()

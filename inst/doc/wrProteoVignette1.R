@@ -56,11 +56,11 @@ convAASeq2mass(pep1, seqN=FALSE)
 path1 <- system.file('extdata', package='wrProteo')
 fiNa <- "conta1.fasta.gz"
 ## basic reading of Fasta
-fasta1 <- readFasta2(file.path(path1,fiNa))
+fasta1 <- readFasta2(file.path(path1, fiNa))
 str(fasta1)
 
 ## now let's read and further separate details in annotation-fields
-fasta1b <- readFasta2(file.path(path1,fiNa), tableOut=TRUE)
+fasta1b <- readFasta2(file.path(path1, fiNa), tableOut=TRUE)
 str(fasta1b)
 
 ## ----treatFasta2, echo=TRUE---------------------------------------------------
@@ -75,30 +75,37 @@ length(fasta3)
 ## ----writeFasta1, echo=TRUE, eval=FALSE---------------------------------------
 #  writeFasta2(fasta3, fileNa="testWrite.fasta")
 
-## ----metaData1, echo=TRUE-----------------------------------------------------
-## Read meta-data from  github.com/bigbio/proteomics-metadata-standard/
-pxd001819meta <- readSdrf("PXD001819")
-
-str(pxd001819meta)
-
 ## ----readMaxQuant1, fig.height=8, fig.width=9.5, fig.align="center", echo=TRUE----
 path1 <- system.file("extdata", package="wrProteo")
 dataMQ <- readMaxQuantFile(path1, specPref=NULL, normalizeMeth="median")
+## number of lines and columns of quantitation data
+dim(dataMQ$quant)
 
 ## ----readMaxQuant2, fig.height=8, fig.width=9.5, fig.align="center", echo=TRUE----
-specPrefMQ <- list(conta="CON_|LYSC_CHICK", mainSpecies="OS=Saccharomyces cerevisiae")
-dataMQ <- readMaxQuantFile(path1, specPref=specPrefMQ, sdrf="PXD001819", suplAnnotFile=TRUE, plotGraph=FALSE)
+## The grouping of replicates
+grp9 <- rep(1:9,each=3)
+head(grp9)
+
+## special group of proteins (we want to highlight lateron)
+UPS1ac <- c("P00915", "P00918", "P01031", "P69905", "P68871", "P41159", "P02768", "P62988",
+  "P04040", "P00167", "P01133", "P02144", "P15559", "P62937", "Q06830", "P63165", "P00709", "P06732",
+  "P12081", "P61626", "Q15843", "P02753", "P16083", "P63279", "P01008", "P61769", "P55957", "O76070",
+  "P08263", "P01344", "P01127", "P10599", "P99999", "P06396", "P09211", "P01112", "P01579", "P02787",
+  "O00762", "P51965", "P08758", "P02741", "P05413", "P10145", "P02788", "P10636-8", "P00441", "P01375")
+
+specPrefMQ <- list(conta="CON_|LYSC_CHICK", mainSpecies="OS=Saccharomyces cerevisiae", spike=UPS1ac)
+
+dataMQ <- readMaxQuantFile(path1, specPref=specPrefMQ, suplAnnotFile=TRUE, groupPref=list(lowNumberOfGroups=FALSE), gr=grp9, plotGraph=FALSE)
+
+## the quantifiation data is the same as before
+dim(dataMQ$quant)
 
 ## ----readMaxQuant3,  echo=TRUE------------------------------------------------
-## the number of lines and colums
-dim(dataMQ$quant)
-## A quick summary of some columns of quantitation data
-summary(dataMQ$quant[,1:8])        # the first 8 cols
+## count of tags based on argument specPref
+table(dataMQ$annot[,"SpecType"])
 
 ## ----readMaxQuant4,  echo=TRUE------------------------------------------------
-## The grouping of replicates from automatically mining column-names of quantitation data
-grp9 <- dataMQ$sampleSetup$groups
-head(grp9)
+dataMQ <- readMaxQuantFile(path1, specPref=specPrefMQ, sdrf="PXD001819", suplAnnotFile=TRUE, groupPref=list(lowNumberOfGroups=FALSE), plotGraph=FALSE)
 
 ## ----readMaxQuantPeptides,  echo=TRUE-----------------------------------------
 MQpepFi1 <- "peptides_tinyMQ.txt.gz"
@@ -115,7 +122,7 @@ summary(dataPD$quant)
 ## ----readProlineProt1,  echo=TRUE---------------------------------------------
 fiNa <- "exampleProlineABC.csv.gz"                  # gz compressed data can be read, too
 dataPL <- readProlineFile(file=fiNa, path=path1, plotGraph=FALSE)
-summary(dataPL$quant)
+summary(dataPL$quant[,1:8])
 
 ## ----readMassChroq1,  echo=TRUE-----------------------------------------------
 MCproFi1 <- "tinyMC.RData"
@@ -128,10 +135,6 @@ FPproFi1 <- "tinyFragpipe1.tsv.gz"
 specPref1 <- c(conta="conta|CON_|LYSC_CHICK", mainSpecies="MOUSE")
 dataFP <- readFragpipeFile(path1, file=FPproFi1, specPref=specPref1, tit="Tiny Fragpipe Example", plotGraph=FALSE)
 summary(dataFP$quant)
-
-## ----readSampleMetaData1,  echo=TRUE------------------------------------------
-specPrefMQ <- list(conta="CON_|LYSC_CHICK", mainSpecies="OS=Saccharomyces cerevisiae")
-dataMQ <- readMaxQuantFile(path1, specPref=specPrefMQ, sdrf="PXD001819", suplAnnotFile=TRUE, plotGraph=FALSE)
 
 ## ----readSampleMetaData2,  echo=TRUE------------------------------------------
 MQsdrf001819Setup <- readSampleMetaData("PXD001819", path=path1, suplAnnotFile="summary.txt.gz", abund=dataMQ$quant, quantMeth="MQ")

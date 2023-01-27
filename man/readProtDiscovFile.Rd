@@ -16,14 +16,15 @@ readProtDiscovFile(
   refLi = NULL,
   separateAnnot = TRUE,
   FDRCol = list(c("^Protein.FDR.Confidence", "High"), c("^Found.in.Sample.", "High")),
+  gr = NULL,
+  sdrf = NULL,
+  suplAnnotFile = TRUE,
+  groupPref = list(lowNumberOfGroups = TRUE),
   plotGraph = TRUE,
   tit = "Proteome Discoverer",
   graphTit = NULL,
   wex = 1.6,
   specPref = c(conta = "CON_|LYSC_CHICK", mainSpecies = "OS=Homo sapiens"),
-  gr = NULL,
-  sdrf = NULL,
-  suplAnnotFile = TRUE,
   silent = FALSE,
   debug = FALSE,
   callFrom = NULL
@@ -53,6 +54,17 @@ If a column named \code{contamCol} is found, the data will be lateron filtered t
 
 \item{FDRCol}{(list) optional indication to search for protein FDR information}
 
+\item{gr}{(character or factor) custom defined pattern of replicate association, will override final grouping of replicates from \code{sdrf} and/or \code{suplAnnotFile} (if provided)   \code{}}
+
+\item{sdrf}{(character, list or data.frame) optional extraction and adding of experimenal meta-data: if character, this may be the ID at ProteomeExchange. Besides, the output from \code{readSdrf} or a list from \code{defineSamples} may be provided; if \code{gr} is provided, it gets priority for grouping of replicates}
+
+\item{suplAnnotFile}{(logical or character) optional reading of supplemental files produced by ProteomeDiscoverer; however, if \code{gr} is provided, \code{gr} gets priority for grouping of replicates;
+if \code{TRUE} defaults to file '*InputFiles.txt' (needed to match information of \code{sdrf}) which can be exported next to main quantitation results;
+if \code{character} the respective file-name (relative or absolute path)}
+
+\item{groupPref}{(list) additional parameters for interpreting meta-data to identify structure of groups (replicates), will be passed to \code{readSampleMetaData}.
+May contain \code{lowNumberOfGroups=FALSE} for automatically choosing a rather elevated number of groups if possible (defaults to low number of groups, ie higher number of samples per group)}
+
 \item{plotGraph}{(logical or integer) optional plot of type vioplot of initial and normalized data (using \code{normalizeMeth}); if integer, it will be passed to \code{layout} when plotting}
 
 \item{tit}{(character) custom title to plot}
@@ -64,14 +76,6 @@ If a column named \code{contamCol} is found, the data will be lateron filtered t
 \item{specPref}{(character or list) define characteristic text for recognizing (main) groups of species (1st for comtaminants - will be marked as 'conta', 2nd for main species- marked as 'mainSpe',
 and optional following ones for supplemental tags/species - maked as 'species2','species3',...);
 if list and list-element has multiple values they will be used for exact matching of accessions (ie 2nd of argument \code{annotCol})}
-
-\item{gr}{(character or factor) custom defined pattern of replicate association, will override final grouping of replicates from \code{sdrf} and/or \code{suplAnnotFile} (if provided)   \code{}}
-
-\item{sdrf}{(character, list or data.frame) optional extraction and adding of experimenal meta-data: if character, this may be the ID at ProteomeExchange. Besides, the output from \code{readSdrf} or a list from \code{defineSamples} may be provided; if \code{gr} is provided, it gets priority for grouping of replicates}
-
-\item{suplAnnotFile}{(logical or character) optional reading of supplemental files produced by ProteomeDiscoverer; however, if \code{gr} is provided, \code{gr} gets priority for grouping of replicates;
-if \code{TRUE} defaults to file '*InputFiles.txt' (needed to match information of \code{sdrf}) which can be exported next to main quantitation results;
-if \code{character} the respective file-name (relative or absolute path)}
 
 \item{silent}{(logical) suppress messages}
 

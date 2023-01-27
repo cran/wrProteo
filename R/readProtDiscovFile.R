@@ -29,12 +29,13 @@
 #' @param specPref (character or list) define characteristic text for recognizing (main) groups of species (1st for comtaminants - will be marked as 'conta', 2nd for main species- marked as 'mainSpe',
 #'  and optional following ones for supplemental tags/species - maked as 'species2','species3',...);
 #'  if list and list-element has multiple values they will be used for exact matching of accessions (ie 2nd of argument \code{annotCol})
-
 #' @param gr (character or factor) custom defined pattern of replicate association, will override final grouping of replicates from \code{sdrf} and/or \code{suplAnnotFile} (if provided)   \code{}
 #' @param sdrf (character, list or data.frame) optional extraction and adding of experimenal meta-data: if character, this may be the ID at ProteomeExchange. Besides, the output from \code{readSdrf} or a list from \code{defineSamples} may be provided; if \code{gr} is provided, it gets priority for grouping of replicates
 #' @param suplAnnotFile (logical or character) optional reading of supplemental files produced by ProteomeDiscoverer; however, if \code{gr} is provided, \code{gr} gets priority for grouping of replicates;
 #'  if \code{TRUE} defaults to file '*InputFiles.txt' (needed to match information of \code{sdrf}) which can be exported next to main quantitation results;
 #'  if \code{character} the respective file-name (relative or absolute path)
+#' @param groupPref (list) additional parameters for interpreting meta-data to identify structure of groups (replicates), will be passed to \code{readSampleMetaData}.
+#'   May contain \code{lowNumberOfGroups=FALSE} for automatically choosing a rather elevated number of groups if possible (defaults to low number of groups, ie higher number of samples per group)
 #' @param plotGraph (logical or integer) optional plot of type vioplot of initial and normalized data (using \code{normalizeMeth}); if integer, it will be passed to \code{layout} when plotting
 #' @param silent (logical) suppress messages
 #' @param debug (logical) additional messages for debugging
@@ -49,10 +50,10 @@
 #' summary(dataPD$quant)
 #'
 #' @export
-readProtDiscovFile <- function(fileName, path=NULL, normalizeMeth="median", sampleNames=NULL, read0asNA=TRUE, quantCol="^Abundances*",
-  annotCol=NULL, contamCol="Contaminant", refLi=NULL, separateAnnot=TRUE, FDRCol=list(c("^Protein.FDR.Confidence","High"), c("^Found.in.Sample.","High")),
-  plotGraph=TRUE, tit="Proteome Discoverer", graphTit=NULL, wex=1.6, specPref=c(conta="CON_|LYSC_CHICK", mainSpecies="OS=Homo sapiens"),
-  gr=NULL, sdrf=NULL, suplAnnotFile=TRUE, silent=FALSE, debug=FALSE, callFrom=NULL) {
+readProtDiscovFile <- function(fileName, path=NULL, normalizeMeth="median", sampleNames=NULL, read0asNA=TRUE, quantCol="^Abundances*", annotCol=NULL, contamCol="Contaminant",
+  refLi=NULL, separateAnnot=TRUE, FDRCol=list(c("^Protein.FDR.Confidence","High"), c("^Found.in.Sample.","High")), gr=NULL, sdrf=NULL, suplAnnotFile=TRUE,
+  groupPref=list(lowNumberOfGroups=TRUE), plotGraph=TRUE, tit="Proteome Discoverer", graphTit=NULL, wex=1.6, specPref=c(conta="CON_|LYSC_CHICK", mainSpecies="OS=Homo sapiens"),
+  silent=FALSE, debug=FALSE, callFrom=NULL) {
   ## read ProteomeDiscoverer exported txt
   fxNa <- wrMisc::.composeCallName(callFrom, newNa="readProtDiscovFile")
   oparMar <- if(plotGraph) graphics::par("mar") else NULL       # only if figure might be drawn
@@ -79,7 +80,7 @@ readProtDiscovFile <- function(fileName, path=NULL, normalizeMeth="median", samp
   if(length(path) >0) { chFi <- file.exists(file.path(path[1], fileName))
     if(chFi) paFi <- file.path(path[1], fileName) else {
       if(file.exists(fileName)) {paFi <- fileName
-        if(!silent) message(fxNa,"NOTE : Unable to find file '",fileName,"' in path '",path,"' but found without specified path !")
+        if(!silent) message(fxNa,"Note : Unable to find file '",fileName,"' in path '",path,"' but found without specified path !")
       } else chFi <- FALSE                      # if path+fileName not found, check without path
   } }
   if(!chFi) stop(" File ",fileName," was NOT found ",if(length(path) >0) paste(" in path ",path)," !")
@@ -101,17 +102,18 @@ readProtDiscovFile <- function(fileName, path=NULL, normalizeMeth="median", samp
       if(!silent) message(fxNa,"Content of  file '",paFi,"' seeps empty or non-conform !  Returning NULL; check if this is really a ProteomeDiscoverer-file") }
     NULL
   } else {
-    if(debug) { message(fxNa,"rpd1 .. dims of initial data : ", nrow(tmp)," li and ",ncol(tmp)," col ")}
+    if(debug) { message(fxNa,"rpd1 ... dims of initial data : ", nrow(tmp)," li and ",ncol(tmp)," col ")
+      rpd1 <- list(tmp=tmp,paFi=paFi,annotCol=annotCol,fileName=fileName) }
 
     ## locate & extract annotation
-    if(length(annotCol) <1) annotCol <- c("Accession","Description","Gene","Contaminant","Sum.PEP.Score","Coverage....","X..Peptides","X..PSMs","X..Unique.Peptides", "X..AAs","MW..kDa.")
+    if(length(annotCol) <1) annotCol <- c("Protein.ID","Description","Gene","Contaminant","Sum.PEP.Score","Coverage....","X..Peptides","X..PSMs","X..Unique.Peptides", "X..AAs","MW..kDa.")
     ## option for future: also extract column "MarkedAs"
     PSMCol <- "^Number.of.PSMs.by.Search.Engine"             # pattern searching tag for PSM-data
     PepCol <- "^Number.of.Peptides.by.Search.Engine"         # pattern searching tag for Number of peptides
     ## future option : lateron rename columns called as "Description" to annotCol[2]
     ## below use explicit colnames "Accession","Description", rename if tolower() fits
 
-    .chColNa <- function(x, mat, renameTo=NULL, silent=FALSE, fxNa=NULL){
+    .chColNa <- function(x, mat, altern=NULL, renameTo=NULL, silent=FALSE, fxNa=NULL){
       ## check in 'matr' for column-name 'x', if required rename best hit (if no direct hit look using grep, then grep wo case); return corrected mat
       chX <- x %in% colnames(mat)
       if(all(chX)) {
@@ -122,17 +124,23 @@ readProtDiscovFile <- function(fileName, path=NULL, normalizeMeth="median", samp
           if(is.character(renameTo) & length(renameTo) ==1) colnames(mat)[chX[1]] <- renameTo else x
           if(!silent & length(chX) >1) message(fxNa,"Found multiple columns containing '",x,"' : ",wrMisc::pasteC(colnames(mat)[chX], quoteC="'"),", using 1st")
         } else {
-          chX <- grep(tolower(x), tolower(colnames(mat)))
+          if(length(altern==1)) chX <- grep(altern, colnames(mat))
           if(length(chX) >0) {
             if(is.character(renameTo) & length(renameTo) ==1) colnames(mat)[chX[1]] <- renameTo else x
-            if(!silent & length(chX) >1) message(fxNa,"Found multiple columns containing '",tolower(x),"' : ",wrMisc::pasteC(colnames(mat)[chX], quoteC="'"),", using 1st")
-          } else stop("Could NOT find column '",x,"' !!\n  (available columns ",wrMisc::pasteC(colnames(mat), quoteC="'"),")") }
+            if(!silent & length(chX) >1) message(fxNa,"Found multiple columns containing '",x,"' : ",wrMisc::pasteC(colnames(mat)[chX], quoteC="'"),", using 1st")
+          } else {
+            chX <- grep(tolower(x), tolower(colnames(mat)))
+            if(length(chX) >0) {
+              if(is.character(renameTo) & length(renameTo) ==1) colnames(mat)[chX[1]] <- renameTo else x
+              if(!silent & length(chX) >1) message(fxNa,"Found multiple columns containing '",tolower(x),"' : ",wrMisc::pasteC(colnames(mat)[chX], quoteC="'"),", using 1st")
+            } else stop("Could NOT find column '",x,"' !!\n  (available columns ",wrMisc::pasteC(colnames(mat), quoteC="'"),")") } }
       }
     mat }
 
     ## check for essential colnames !
-    tmp <- .chColNa(annotCol[1], tmp, rename="Accession", silent=silent, fxNa=fxNa)
+    tmp <- .chColNa(annotCol[1], tmp, altern="Accession", rename="Accession", silent=silent, fxNa=fxNa)
     tmp <- .chColNa(annotCol[2], tmp, rename="Description", silent=silent, fxNa=fxNa)
+    annotCol[1:2] <- c("Accession","Description")                     # update (just in case..)
     if(is.character(annotCol)) annotColNo <- match(annotCol, colnames(tmp))
     if(length(contamCol) >0) {
       contamCol <- if(is.character(contamCol)) which(colnames(tmp)==contamCol[1]) else as.integer(contamCol[1])
@@ -140,7 +148,7 @@ readProtDiscovFile <- function(fileName, path=NULL, normalizeMeth="median", samp
       annotColNo <- union(annotColNo, contamCol)
     }
     if(debug) { message(fxNa,"rpd2 .. annotColNo : ", wrMisc::pasteC(annotColNo),"     contamCol : ",wrMisc::pasteC(contamCol)," ")
-      rpd2 <- list()}
+      rpd2 <- list(tmp=tmp,annotCol=annotCol,PSMCol=PSMCol,PepCol=PepCol,fileName=fileName)}
 
     ## check for R-friendly export
     Rfriendly <- FALSE
@@ -155,8 +163,8 @@ readProtDiscovFile <- function(fileName, path=NULL, normalizeMeth="median", samp
     if(any(is.na(annotColNo), na.rm=TRUE)) { if(!identical(annotCol, annotCol2)) message(fxNa,"Can't find column(s) ",wrMisc::pasteC(annotCol[is.na(annotColNo)],quote="'"))
       annotCol <- annotCol[!is.na(annotColNo)] }
     annot <- as.matrix(tmp[,wrMisc::naOmit(annotColNo)])
-    if(debug) { message(fxNa,"rpd4 .. Rfriendly: ",Rfriendly,"   ncol annot ",ncol(annot)," cols; colnames : ",wrMisc::pasteC(colnames(annot))," ")
-      rpd4 <- list()}
+    if(debug) { message(fxNa,"rpd3 .. Rfriendly: ",Rfriendly,"   ncol annot ",ncol(annot)," cols; colnames : ",wrMisc::pasteC(colnames(annot))," ")
+      rpd3 <- list(tmp=tmp,annotCol=annotCol,PSMCol=PSMCol,PepCol=PepCol,fileName=fileName)}
 
     ## clean 'Description' entries: remove tailing punctuation or open brackets (ie not closed) at end of (truncated) fasta header
     if(cleanDescription) {
@@ -167,24 +175,9 @@ readProtDiscovFile <- function(fileName, path=NULL, normalizeMeth="median", samp
 
     tmp <- .chColNa("Accession", tmp, silent=silent, fxNa=fxNa)
     annot <- cbind(Accession=annot[,"Accession"], EntryName=NA, GeneName=NA, Species=NA, Contam=NA, SpecType=NA, annot[,-1])   # may be better to name column 'species'
-    if(debug) { message(fxNa,"rpd3b"); rpd3b <- list(annot=annot,tmp=tmp,specPref=specPref,annotCol=annotCol,Rfriendly=Rfriendly,contamCol=contamCol,PSMCol=PSMCol,PepCol=PepCol) }
 
-    if(debug) {message(fxNa,"rpd4 .. dim annot: ", nrow(annot)," li and  ",ncol(annot)," cols; colnames : ",wrMisc::pasteC(colnames(annot))," ")}
-    .MultGrep <- function(pat, y) if(length(pat)==1) grep(pat, y) else unlist(sapply(pat, grep, y))  # (multiple) grep() when length of pattern 'pat' >0
+    if(debug) {message(fxNa,"rpd4 .. dim annot: ", nrow(annot)," li and  ",ncol(annot)," cols; colnames : ",wrMisc::pasteC(colnames(annot))," "); rpd4 <- list(annot=annot,tmp=tmp,specPref=specPref,annotCol=annotCol,Rfriendly=Rfriendly,contamCol=contamCol,PSMCol=PSMCol,PepCol=PepCol)}
 
-    if(length(specPref) >0) {
-      ## rewrite 30mar22 : look for specPref tags in cols "Majority.protein.IDs" and "Fasta.headers"
-      ## get index where specPref are located
-      specPD0 <- lapply(specPref, .MultGrep, annot[,annotCol[2]])   # in Description
-      tm2 <- lapply(specPref, .MultGrep, annot[,annotCol[1]])       # in Accession
-      for(i in 1:length(specPD0)) {if(length(tm2[[i]]) >0) {specPD0[[i]] <- union(specPD0[[i]], tm2[[i]])
-        if(debug) message(fxNa,"i=",i,"  adding/fusing specPref info from fasta-headers")} }
-      names(specPD0) <- if(length(specPref) <3) c("conta","mainSpe")[1:length(specPref)] else c("conta","mainSpe", paste0("species", 2:(length(specPref) -1)))
-      chOv <- duplicated(unlist(specPD0))
-      if(any(chOv, na.rm=TRUE) & !silent) message(fxNa,"Attention, ",sum(chOv)," terms from 'specPref' were found in the same protein-IDs ! (overwriting)")
-      spec1 <- sapply(specPD0, length) >0
-      if(any(spec1, na.rm=TRUE)) for(i in which(spec1)) annot[specPD0[[i]],"SpecType"] <- names(specPD0)[i]
-    } else if(!silent) message(fxNa,"Note: Argument 'specPref' not specifed (empty)")
     if("Contaminant" %in% colnames(annot)) annot[,"Contam"] <- toupper(gsub(" ","",annot[,colnames(tmp)[contamCol]]))
 
     ## try extract GeneNames from 'Description'
@@ -212,23 +205,29 @@ readProtDiscovFile <- function(fileName, path=NULL, normalizeMeth="median", samp
       if(!all(chSp)) { tab <- table(annot[,"Species"])
         tab <- rbind(names(tab),": ",tab," ;  ")
         if(!silent) message(fxNa,"Count by 'specPref' : ",apply(tab,2,paste)) }}             # all lines assigned
-    if(debug) {message(fxNa,"rpd7 ..  "); rpd7 <- list(annot=annot,specPref=specPref)}
+
+    if(length(specPref) >0) {
+      annot <- .extrSpecPref(specPref, annot, useColumn=c("Species","EntryName","GeneName","Accession","Majority.protein.IDs","Fasta.headers"), suplInp=tmp, silent=silent, debug=debug, callFrom=fxNa) }
+
+
+    if(debug) {message(fxNa,"rpd7 ..  "); rpd7 <- list(annot=annot,specPref=specPref,chSp=chSp,tmp=tmp,quantCol=quantCol )}
 
     ## locate & extract abundance/quantitation data
     msg <- " CANNOT find ANY quantification columns"
     if(length(quantCol) >1) {
       ## explicit columns (for abundance/quantitation data)
       ## problem : extract '^Abundances*' but NOT 'Abundances.Count.*'
-      quantColIni <- quantCol <- grep(quantCol[1],colnames(tmp))
+      quantColIni <- quantCol <- grep(quantCol[1], colnames(tmp))
       if(length(quantCol) <1) stop(msg,"  ('",quantCol,"')")
     } else {
       ## pattern search (for abundance/quantitation data)
       if(length(quantCol) <1) { quantCol <- "^Abundance"
         if(!silent) message(fxNa,"Setting argument 'quantCol' to '^Abundance'")}
       quantCol <- grep(quantCol, colnames(tmp))
+      if(length(quantCol) <1) quantCol <- grep("^abundance", tolower(colnames(tmp)))
+      if(length(quantCol) <1) quantCol <- grep("Intensity$", colnames(tmp))
+      if(length(quantCol) <1) quantCol <- grep("intensity$", tolower(colnames(tmp)))
       quantColIni <- quantCol
-      if(length(quantCol) <1) { quantCol <- grep(tolower(quantColIni), tolower(colnames(tmp)))
-        if(!silent) message(fxNa,msg,", trying all as lower caps : now ",length(quantCol), "columns") }
       if(length(quantCol) <1) stop(msg," specified in argument 'quantCol' !") }
     ## check for columns to exclude (like 'Abundances.Count.')
     if(length(excluCol)==1) {
@@ -240,8 +239,7 @@ readProtDiscovFile <- function(fileName, path=NULL, normalizeMeth="median", samp
       }
     }
     abund <- as.matrix(tmp[,quantCol])                      # abundance val
-    if(debug) {message(fxNa,"rpd8 ..  "); rpd8 <- list()}
-
+    if(debug) {message(fxNa,"rpd8 ..  "); rpd8 <- list(annot=annot,specPref=specPref,abund=abund,quantCol=quantCol)}
 
     ## check & clean abudances
     chNorm <- grep("\\.Normalized\\.", colnames(abund))
@@ -264,8 +262,6 @@ readProtDiscovFile <- function(fileName, path=NULL, normalizeMeth="median", samp
     chCo <- unique(unlist(ch1))
     annot[,chCo] <- sub("^ +","",sub(" +$","",annot[,chCo]))   # remove heading/tailing spaces
     if(debug) { message(fxNa,"rpd9 .. dim annot ",nrow(annot)," and ",ncol(annot)); rpd9 <- list(annot=annot,tmp=tmp,abund=abund,sampleNames=sampleNames,specPref=specPref,annotCol=annotCol,Rfriendly=Rfriendly,contamCol=contamCol,PSMCol=PSMCol,PepCol=PepCol,infoDat=infoDat) }
-
-
 
     ## add custom sample names (if provided)
     if(length(sampleNames) ==ncol(abund) & ncol(abund) >0) {
@@ -342,7 +338,7 @@ readProtDiscovFile <- function(fileName, path=NULL, normalizeMeth="median", samp
         annot <- annot[,-ncol(annot) +(1:0)]                  # remove extra columns (ie "iniIndex","nNA")
         abund <- abund[,-ncol(abund)]                         # remove extra column (ie "iniIndex")
         chAc <- duplicated(annot[,"Accession"], fromLast=FALSE)
-        if(debug) { message(fxNa,"rpd11b .. dim abund ",nrow(abund)," and ",ncol(abund))}
+        if(debug) { message(fxNa,"rpd11b .. dim abund ",nrow(abund)," and ",ncol(abund)); rpd9 <- list(annot=annot,tmp=tmp,abund=abund,sampleNames=sampleNames,specPref=specPref,annotCol=annotCol,Rfriendly=Rfriendly,contamCol=contamCol,PSMCol=PSMCol,PepCol=PepCol,infoDat=infoDat)}
         }}
     ## Now we are ready to add unique rownames
     if(any(chAc, na.rm=TRUE)) {
@@ -359,25 +355,25 @@ readProtDiscovFile <- function(fileName, path=NULL, normalizeMeth="median", samp
       if("PSM" %in% usTy) counts[,,"PSM"] <- as.matrix(tmp[,PSMCol])
       if("NoOfPeptides" %in% usTy) counts[,,"NoOfPeptides"] <- as.matrix(tmp[,PepCol])
     } else counts <- NULL
-    if(debug) {message(fxNa,"rpd12 .. ")}
+    if(debug) {message(fxNa,"rpd12 .. "); rpd12 <- list(annot=annot,tmp=tmp,abund=abund,sampleNames=sampleNames,specPref=specPref,annotCol=annotCol,refLi=refLi,Rfriendly=Rfriendly,contamCol=contamCol,PSMCol=PSMCol,PepCol=PepCol,infoDat=infoDat)}
 
     ## check for reference for normalization
     refLiIni <- refLi
-    if(is.character(refLi) & length(refLi)==1) { refLi <- which(annot[,"SpecType"]==refLi)
-      if(length(refLi) <1) message(fxNa,"Could not find any protein matching argument 'refLi', ignoring ...") else {
-        if(!silent) message(fxNa,"Normalize using (custom) subset of ",length(refLi)," lines")}}    # may be "mainSpe"
+    if(is.character(refLi) & length(refLi)==1) refLi <- which(annot[,"SpecType"]==refLi)
+    if(length(refLi) <1) { refLi <- 1:nrow(annot); if(length(refLiIni) >0) message(fxNa,"Could not find any protein matching argument 'refLi', ignoring ...")
+    } else { if(!silent) message(fxNa,"Normalize using (custom) subset of ",length(refLi)," lines",  if(length(refLiIni)==1) c("  (marked as '",refLiIni,"')"))}    # may be "mainSpe"
     ## take log2 & normalize
     quant <- if(utils::packageVersion("wrMisc") > "1.10") {
         try(wrMisc::normalizeThis(log2(abund), method=normalizeMeth, mode="additive", refLines=refLi, silent=silent, debug=debug, callFrom=fxNa), silent=TRUE)
       } else try(wrMisc::normalizeThis(log2(abund), method=normalizeMeth, refLines=refLi, silent=silent, callFrom=fxNa), silent=TRUE)       #
 
-    if(debug) { message(fxNa,"rpd13 .. dim quant: ", nrow(quant)," li and  ",ncol(quant)," cols; colnames : ",wrMisc::pasteC(colnames(quant))," ")}
+    if(debug) { message(fxNa,"rpd13 .. dim quant: ", nrow(quant)," li and  ",ncol(quant)," cols; colnames : ",wrMisc::pasteC(colnames(quant))," "); rpd13 <- list(annot=annot,tmp=tmp,abund=abund,quant=quant,sampleNames=sampleNames,specPref=specPref,annotCol=annotCol,Rfriendly=Rfriendly,contamCol=contamCol,PSMCol=PSMCol,PepCol=PepCol,infoDat=infoDat)}
 
     ### GROUPING OF REPLICATES AND SAMPLE META-DATA
     if(length(suplAnnotFile) >0) {
-      setupSd <- readSampleMetaData(sdrf=sdrf, suplAnnotFile=suplAnnotFile, quantMeth="PD", path=path, abund=utils::head(quant), silent=silent, debug=debug, callFrom=fxNa)
+      setupSd <- readSampleMetaData(sdrf=sdrf, suplAnnotFile=suplAnnotFile, quantMeth="PD", path=path, abund=utils::head(quant), groupPref=groupPref, silent=silent, debug=debug, callFrom=fxNa)
     }
-    if(debug) {message(fxNa,"rpd13b"); rpd13b <- list(sdrf=sdrf,gr=gr,suplAnnotFile=suplAnnotFile,abund=abund, quant=quant,refLi=refLi,annot=annot,setupSd=setupSd,sampleNames=sampleNames)}
+    if(debug) {message(fxNa,"rpd13b .."); rpd13b <- list(sdrf=sdrf,gr=gr,suplAnnotFile=suplAnnotFile,abund=abund, quant=quant,refLi=refLi,annot=annot,setupSd=setupSd,sampleNames=sampleNames)}
 
     ## finish groups of replicates & annotation setupSd
     if(length(setupSd) >0 & length(setupSd$groups) <1) {                       # if nothing found/matching from sdrf & file, try getting sample-setup from colnames (use if at least 1 replicate found)
@@ -420,6 +416,7 @@ readProtDiscovFile <- function(fileName, path=NULL, normalizeMeth="median", samp
       if(debug) {message(fxNa,"rpd18a .. length custLay ", length(custLay) )}
       if(length(custLay) >0) graphics::layout(custLay) else {if(!identical(normalizeMeth,"none") & length(quant) >0) graphics::layout(1:2)}
       graphics::par(mar=c(3, 3, 3, 1))                          # mar: bot,le,top,ri
+      on.exit(graphics::par(mar=oparMar))                       # restaure old settings
       if(length(graphTit) >0) message(fxNa,"Argument 'graphTit' is depreciated, please rather use 'tit'")
       if(is.null(tit) & !is.null(graphTit)) tit <- graphTit     # for derpreciated argument
       if(is.null(tit)) tit <- "ProteomeDiscoverer quantification "
@@ -440,18 +437,18 @@ readProtDiscovFile <- function(fileName, path=NULL, normalizeMeth="median", samp
           graphics::abline(h=round(stats::median(quant, na.rm=TRUE)) +c(-2:2), lty=2, col=grDevices::grey(0.6)) }
       } else {                                            # wrGraph and sm are available
         if(debug) {message(fxNa,"rpd19  print vioplotW "  )}
-        wrGraph::vioplotW(log2(abund), tit=paste(tit,"(initial)",sep=" "), wex=wex, silent=silent, callFrom=fxNa)
-        graphics::abline(h=round(stats::median(log2(abund), na.rm=TRUE)) +c(-2:2), lty=2, col=grDevices::grey(0.6))
+        ch1 <- try(wrGraph::vioplotW(log2(abund), tit=paste(tit,"(initial)",sep=" "), wex=wex, silent=silent, callFrom=fxNa), silent=TRUE)
+        if(inherits(ch1, "try-error")) {plotGraph <- FALSE; message(fxNa,"UNABLE to plot vioplotW !!")
+        } else graphics::abline(h=round(stats::median(log2(abund), na.rm=TRUE)) +c(-2:2), lty=2, col=grDevices::grey(0.6))
         ## now normalized
         if(debug) {message(fxNa,"rpd20  print norm vioplotW() ",identical(normalizeMeth,"none")," ou ", length(quant) <0)}
         if(!identical(normalizeMeth,"none") | length(quant) >0) {
           if(debug) {message(fxNa,"rpd21  print vioplotW() for normalized")}            ## now normalized
-          wrGraph::vioplotW(quant, tit=paste(tit,", ",normalizeMeth,"-normalized",titSu), wex=wex, silent=silent, callFrom=fxNa)
-          graphics::abline(h=round(stats::median(quant, na.rm=TRUE)) +c(-2:2), lty=2, col=grDevices::grey(0.6)) }
+          ch1 <- try(wrGraph::vioplotW(quant, tit=paste(tit,", ",normalizeMeth,"-normalized",titSu), wex=wex, silent=silent, callFrom=fxNa), silent=TRUE)
+          if(inherits(ch1, "try-error")) {message(fxNa,"UNABLE to plot vioplotW !!")
+          } else graphics::abline(h=round(stats::median(quant, na.rm=TRUE)) +c(-2:2), lty=2, col=grDevices::grey(0.6)) }
       }
-      on.exit(graphics::par(mar=oparMar))             # restaure old settings
     }
-
 
     ## meta-data
     notes <- c(inpFile=paFi, qmethod="ProteomeDiscoverer", qMethVersion=if(length(infoDat) >0) unique(infoDat$Software.Revision) else NA,
@@ -461,4 +458,63 @@ readProtDiscovFile <- function(fileName, path=NULL, normalizeMeth="median", samp
     if(isTRUE(separateAnnot)) list(raw=abund, quant=quant, annot=annot, counts=counts, sampleSetup=setupSd, quantNotes=parametersD, notes=notes) else data.frame(quant,annot)
   }
 }
-    
+
+#' @export
+.extrSpecPref <- function(specPref, annot, useColumn=c("Species","EntryName","GeneName","Accession"), suplInp=NULL, silent=FALSE, debug=FALSE, callFrom=NULL) {
+  ## create column annot[,'SpecType']
+  ## if $mainSpecies or $conta: match to annot[,"Species"], annot[,"EntryName"], annot[,"GeneName"], if length==1 grep in  annot[,"Species"]
+  ## if other : match to annot[,"Species"], annot[,"Accession"], annot[,"EntryName"], annot[,"GeneName"], if length==1 grep in   annot[,"EntryName"], annot[,"GeneName"], annot[,"Species"]
+  ## 'suplInp' add'l matrix of annot (really needed ?)
+  ## return results in column annot[,"SpecType"] (starting with 'mainSpecies','conta' and others - later may overwrite prev settings)
+  ## special for PD : optional useColumn[5:6] : look by grep for specPref tags in cols "Majority.protein.IDs" and "Fasta.headers"
+  fxNa <- wrMisc::.composeCallName(callFrom, newNa=".extrSpecPref")
+  if(debug){ message(fxNa," eSP0"); eSP0 <- list(specPref=specPref,annot=annot,useColumn=useColumn,suplInp=suplInp)}
+
+  if(length(annot) <1 | length(dim(annot)) !=2) stop("invalid 'annot' (must be matrix or data.frame)")
+  ## check suplInp & match to useColumn
+  if(length(useColumn) >4 & length(suplInp) >0 & length(dim(suplInp))==2) {
+    chAnn <- useColumn[5:length(useColumn)] %in% colnames(suplInp)
+    if(any(!chAnn)) useColumn <- c(useColumn[1:4], useColumn[(5:length(useColumn))[which(chAnn)]])
+    if(length(useColumn) <5) suplInp <- NULL
+  } else suplInp <- NULL
+  ## check useColumn
+  chAnn <- useColumn[1:min(length(useColumn), 4)] %in% colnames(annot)
+  if(any(!chAnn)) stop("Unknown/Non-standard 'annot' (missing colnames ",wrMisc::pasteC(useColumn[which(!chAnn)], quoteC="'"),")")
+
+  if(!"SpecType" %in% colnames(annot)) {annot <- cbind(annot, SpecType=rep(NA, nrow(annot))); if(debug) message(fxNa,"Adding column 'SpecType' to 'annot'")}
+  if(length(specPref) > 0) specPref <- specPref[which(sapply(specPref, length) >0)]
+  if(length(specPref) > 0) if(is.list(specPref)) {    # remove NA from specPref
+    chNA <- sapply(specPref, is.na)
+    if(any(unlist(chNA))) specPref <- sapply(specPref, wrMisc::naOmit)
+  } else { chNA  <- is.na(specPref)
+    if(all(chNA)) specPref <- NULL else { spNames <- names(specPref[which(!chNA)]); specPref <- as.list(specPref[which(!chNA)]); names(specPref) <- spNames}}
+  if(length(specPref) > 0) {
+    if(debug) {message(fxNa,"eSP1"); eSP1 <- list(specPref=specPref,annot=annot,useColumn=useColumn,suplInp=suplInp)}
+    chNa <- c("mainSpecies","conta") %in% names(specPref)
+    if(any(!chNa) & ! silent) message(fxNa," ",wrMisc::pasteC(c("mainSpecies","conta")[which(!chNa)], quoteC="'")," Seem absent from 'specPref' !")
+
+    # .MultGrep <- function(pat, y) if(length(pat)==1) grep(pat, y) else unlist(sapply(pat, grep, y))     # (multiple) grep() when length of pattern 'pat' >0
+    # .MultGrepL <- function(pat, y) if(length(pat)==1) grepl(pat, y) else unlist(sapply(pat, grepl, y))  # (multiple) grepl() when length of pattern 'pat' >0
+    #  mulP <- lapply(specPref, .MultGrepL, annot[,useColumn])     #
+
+    .MultGrep2 <- function(y, pat) if(length(pat)==1) grepl(pat, y) else unlist(sapply(pat, grepl, y))  # (multiple) grepl() when length of pattern 'pat' >0
+    .MultGrepM <- function(patt, anno) if(length(dim(anno)) >1) apply(anno, 2, .MultGrep2, patt) else  .MultGrep2(anno, patt)
+     mulP <- lapply(specPref, .MultGrepM, annot[,useColumn])     #
+     mulP <- lapply(mulP, function(x) if(length(dim(x)) >1) rowSums(x, na.rm=TRUE) >0)
+     chLe <- sapply(mulP, length)
+     if(sum(duplicated(chLe)) < length(mulP) -1) {    # unequal length
+       for(i in which(chLe > min(chLe, na.rm=TRUE))) mulP[[i]] <- rowSums(matrix(mulP[[i]], nrow=min(chLe, na.rm=TRUE)), na.rm=TRUE) >0 }
+
+     #chDim <- lapply(mulP, dim)
+     #ch2D <- sapply(chDim, length) ==2
+     #if(any(ch2D)) for(i in which(ch2D)) {mulP[[i]] <- rowSums(mulP[[i]], na.rm=TRUE) >0 }   # reduce matrix to vector of 1st col
+     chMulP <- sapply(mulP, length) >0
+     if(sum(chMulP, na.rm=TRUE) >0) {
+       if(any(!chMulP)) mulP <- mulP[which(!chMulP)]                                # remove empty/non-successfull searches (ie reduce list)
+       mulP <- lapply(mulP, function(x) if(length(x)== nrow(annot)) which(x) else unique(which(x) %% nrow(annot)))    # as index (correct for multiple of nrow(annot))
+       if(length(mulP) >0) for(i in 1:length(mulP)) annot[mulP[[i]],"SpecType"] <- names(mulP)[i] }  # set results in annot
+     rm(mulP)
+  }
+  annot
+}
+  

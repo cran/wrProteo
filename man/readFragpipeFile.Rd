@@ -15,8 +15,9 @@ readFragpipeFile(
   refLi = NULL,
   separateAnnot = TRUE,
   FDRCol = list("Protein.Probability", lim = 0.99),
+  groupPref = list(lowNumberOfGroups = TRUE),
   plotGraph = TRUE,
-  tit = "Fragpipe",
+  tit = "FragPipe",
   graphTit = NULL,
   wex = 1.6,
   specPref = c(conta = "CON_|LYSC_CHICK", mainSpecies = "OS=Homo sapiens"),
@@ -37,7 +38,7 @@ readFragpipeFile(
 
 \item{sampleNames}{(character) new column-names for quantification data (ProteomeDiscoverer does not automatically use file-names from spectra); this argument has priority over \code{suplAnnotFile}}
 
-\item{read0asNA}{(logical) decide if initial quntifications at 0 should be transformed to NA}
+\item{read0asNA}{(logical) decide if initial quntifications at 0 should be transformed to NA (thus avoid -Inf in log2 results)}
 
 \item{quantCol}{(character or integer) exact col-names, or if length=1 content of \code{quantCol} will be used as pattern to search among column-names for $quant using \code{grep}}
 
@@ -48,6 +49,9 @@ readFragpipeFile(
 \item{separateAnnot}{(logical) if \code{TRUE} output will be organized as list with \code{$annot}, \code{$abund} for initial/raw abundance values and \code{$quant} with final log2 (normalized) quantitations}
 
 \item{FDRCol}{(list) optional indication to search for protein FDR information}
+
+\item{groupPref}{(list) additional parameters for interpreting meta-data to identify structure of groups (replicates), will be passed to \code{readSampleMetaData}.
+May contain \code{lowNumberOfGroups=FALSE} for automatically choosing a rather elevated number of groups if possible (defaults to low number of groups, ie higher number of samples per group)}
 
 \item{plotGraph}{(logical or integer) optional plot of type vioplot of initial and normalized data (using \code{normalizeMeth}); if integer, it will be passed to \code{layout} when plotting}
 
@@ -79,15 +83,14 @@ This function returns a list with \code{$raw} (initial/raw abundance values), \c
  and \code{$notes}; or if \code{separateAnnot=FALSE} the function returns a data.frame with annotation and quantitation only
 }
 \description{
-Protein identification and quantification results form \href{https://fragpipe.nesvilab.org/}{Fragpipe}
-which were exported as tabulated text can be imported and relevant information extracted.
-The final output is a list containing 3 elements: \code{$annot}, \code{$raw} and optional \code{$quant}, or returns data.frame with entire content of file if \code{separateAnnot=FALSE}.
+This function allos importing protein identification and quantification results form \href{https://fragpipe.nesvilab.org/}{Fragpipe}
+which were previously exported as tabulated text (tsv). Quantification data and other relevant information will be extracted similar like the other import-functions from this package.
+The final output is a list containing the elements: \code{$annot}, \code{$raw} and \code{$quant}, or a data.frame with the quantication data and a part of the annotation if argument \code{separateAnnot=FALSE}.
 }
 \details{
-This function has been developed using Fragpipe versions 18.0.
-The
-Using the argument \code{suplAnnotFile} it is possible to specify a specific file (or search for default file) to read for extracting file-names as sample-names and other experiment realted information.
-This function replaces the depreciated function \code{readPDExport}.
+This function has been developed using Fragpipe versions 18.0 and 19.0.
+
+Using the argument \code{suplAnnotFile} it is possible to specify a specific file (or search for default file) to read for extracting file-names as sample-names and other experiment related information.
 }
 \examples{
 FPproFi1 <- "tinyFragpipe1.tsv.gz"

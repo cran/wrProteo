@@ -29,6 +29,8 @@
 #' @param sdrf (character, list or data.frame) optional extraction and adding of experimenal meta-data: if character, this may be the ID at ProteomeExchange. Besides, the output from \code{readSdrf} or a list from \code{defineSamples} may be provided; if \code{gr} is provided, it gets priority for grouping of replicates
 #' @param suplAnnotFile (logical or character) optional reading of supplemental files; however, if \code{gr} is provided, \code{gr} gets priority for grouping of replicates;
 #'  if \code{character} the respective file-name (relative or absolute path)
+#' @param groupPref (list) additional parameters for interpreting meta-data to identify structure of groups (replicates), will be passed to \code{readSampleMetaData}.
+#'   May contain \code{lowNumberOfGroups=FALSE} for automatically choosing a rather elevated number of groups if possible (defaults to low number of groups, ie higher number of samples per group)
 #' @param plotGraph (logical) optional plot of type vioplot of initial and normalized data (using \code{normalizeMeth}); if integer, it will be passed to \code{layout} when plotting
 #' @param silent (logical) suppress messages
 #' @param debug (logical) additional messages for debugging
@@ -42,7 +44,7 @@
 #'
 #' @export
 readMassChroQFile <- function(fileName, path=NULL, normalizeMeth="median", sampleNames=NULL, refLi=NULL, separateAnnot=TRUE, tit="MassChroQ", graphTit=NULL, wex=NULL,
-  specPref=c(conta="CON_|LYSC_CHICK", mainSpecies="OS=Homo sapiens"), gr=NULL, sdrf=NULL, suplAnnotFile=FALSE, plotGraph=TRUE, silent=FALSE, debug=FALSE, callFrom=NULL) {
+  specPref=c(conta="CON_|LYSC_CHICK", mainSpecies="OS=Homo sapiens"), gr=NULL, sdrf=NULL, suplAnnotFile=FALSE, groupPref=list(lowNumberOfGroups=TRUE), plotGraph=TRUE, silent=FALSE, debug=FALSE, callFrom=NULL) {
   ## read MassChroQ (pre-)treated data
   fxNa <- wrMisc::.composeCallName(callFrom, newNa="readMassChroQFile")
   oparMar <- if(plotGraph) graphics::par("mar") else NULL       # only if figure might be drawn
@@ -118,7 +120,7 @@ readMassChroQFile <- function(fileName, path=NULL, normalizeMeth="median", sampl
 
   ### GROUPING OF REPLICATES AND SAMPLE META-DATA
   if(any((!isFALSE(suplAnnotFile) & length(suplAnnotFile) >0), length(sdrf) >0)) {
-    setupSd <- readSampleMetaData(sdrf=sdrf, suplAnnotFile=suplAnnotFile, quantMeth="MC", path=path, abund=utils::head(tmp), silent=silent, debug=debug, callFrom=fxNa)
+    setupSd <- readSampleMetaData(sdrf=sdrf, suplAnnotFile=suplAnnotFile, quantMeth="MC", path=path, abund=utils::head(tmp),  groupPref=groupPref, silent=silent, debug=debug, callFrom=fxNa)
   }
   if(debug) {message(fxNa,"mc13b")}
 

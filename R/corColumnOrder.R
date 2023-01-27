@@ -6,8 +6,9 @@
 #' The input may also be MArrayLM-type object from package \href{https://bioconductor.org/packages/release/bioc/html/limma.html}{limma} or from \code{\link{moderTestXgrp}} or \code{\link{moderTest2grp}}.
 #'
 #' @param dat (matrix, list or MArrayLM-object from limma) main input of which columns should get re-ordered, may be output from \code{\link{moderTestXgrp}} or \code{\link{moderTest2grp}}.
-#' @param sampNames (character) column-names in desired order for output (must match colnames of \code{dat} or \code{newNames}, if used)
-#' @param newNames (character) new column-names (in order as input from \code{dat}), allows renaming colnames before defining new order
+#' @param replNames (character) new column-names (in order as input from \code{dat}), allows renaming colnames before defining new order
+#' @param sampNames (character) column-names in desired order for output (must match colnames of \code{dat} or \code{replNames}, if used)
+#' @param newNames depreciated, plese use \code{replNames} instead
 #' @param useListElem (character) in case \code{dat} is list, all list-elements who's columns should get (re-)ordered
 #' @param annotElem (character) name of list-element of \code{dat} with annotation data to get in new order
 #' @param silent (logical) suppress messages
@@ -24,7 +25,7 @@
 #'   dat1
 #' corColumnOrder(dat1, sampNames=LETTERS[1:5])
 #' @export
-corColumnOrder <- function(dat, sampNames, newNames=NULL, useListElem=c("quant","raw","counts"), annotElem="sampleSetup", silent=FALSE, debug=FALSE, callFrom=NULL) {
+corColumnOrder <- function(dat, replNames=NULL, sampNames, useListElem=c("quant","raw","counts"), annotElem="sampleSetup", newNames=NULL, silent=FALSE, debug=FALSE, callFrom=NULL) {
   ## order columns in list of matrixes (or matrix) according to 'sampNames'
   ## This function can be used to adjust/correct the order of samples after reading data using \code{readMaxQuantFile()}, \code{readPDExport()} etc.
   ## dat (list or matrix) main input of which columns should get re-ordered
@@ -52,7 +53,7 @@ corColumnOrder <- function(dat, sampNames, newNames=NULL, useListElem=c("quant",
   alreadyOK <- FALSE
   newO <- NA            # initialize
   chSetupNa <- c("groups","level","lev", "sdrfDat", "annotBySoft")
-
+  ## checks
   if(length(dat) <0) { datOK <- FALSE
     msg <- "'dat' is empty, nothing to do" }
   if(datOK & length(names(dat)) <0) { datOK <- FALSE
@@ -62,19 +63,24 @@ corColumnOrder <- function(dat, sampNames, newNames=NULL, useListElem=c("quant",
       } else {datOK <- FALSE; if(!silent) message(fxNa,"list-elements ",wrMisc::pasteC(useListElem),"  not found in 'dat'")}}
   if(debug) {message(fxNa,"cCO1")}
 
+  if(length(useListElem) >0) {
+    chEl <- useListElem %in% names(dat)
+    if(any(!chEl, na.rm=TRUE)) useListElem <- useListElem[which(chEl)]
+  }
+
   ## main
-  if(all(datOK, length(newNames) >0, length(newNames)==length(sampNames))) {
+  if(all(datOK, length(replNames) >0, length(replNames)==length(sampNames))) {
     ## replace colnames (if needed)
     if(debug) {message(fxNa,"replace colnames    cCO1b")}
-    if(is.list(dat)) { for(i in useListElem) colnames(dat[[i]]) <- newNames
+    if(is.list(dat)) { for(i in useListElem) colnames(dat[[i]]) <- replNames
     } else if(is.matrix(dat)) {
       if(ncol(dat) != length(sampNames)) warning(fxNa,"'dat' has different number of columns as length of 'sampNames' !!  The function might be using the wrong ones !")
-      colnames(dat)[1:length(sampNames)] <- newNames }
-    if(debug) {message(fxNa,"cCO1b"); cCO1b <- list(dat=dat,sampNames=sampNames,newNames=newNames,useListElem=useListElem,datOK=datOK) }
+      for(i in useListElem) colnames(dat[[i]])[1:length(sampNames)] <- replNames }
+    if(debug) {message(fxNa,"cCO1b"); cCO1b <- list(at=dat,sampNames=sampNames,replNames=replNames,useListElem=useListElem,datOK=datOK) }
   }
 
   if(datOK) {
-    if(debug) {message(fxNa,"cCO2"); ; cCO2 <- list(dat=dat,sampNames=sampNames,newNames=newNames, datOK=datOK,useListElem=useListElem) }
+    if(debug) {message(fxNa,"cCO2"); cCO2 <- list(dat=dat,sampNames=sampNames,replNames=replNames, datOK=datOK,useListElem=useListElem) }
     ## compare sampNames & colnames of $quant
     ## Note : comparing by $sampleSetup$groups won't work well due to repeated levels
     newO <- match(sampNames, colnames(dat[[useListElem[1]]]))
@@ -101,10 +107,11 @@ corColumnOrder <- function(dat, sampNames, newNames=NULL, useListElem=c("quant",
     }
   } else if(!silent) message(fxNa,"Failed to adjust quantitative/count data")
   if(debug) {message(fxNa,"cCO3"); cCO3 <- list(dat=dat,sampNames=sampNames,useListElem=useListElem,annotElem=annotElem,newO=newO)}
-  if(datOK) {
+  if(datOK & !alreadyOK) {
     ## try adjusting order of $quant, $raw and $counts
     ## Continue adjusting order, now sample annotation
-    ## check if $sampleSetup present, => look for filenames in $sampleSetup : $sampleSetup$sdrfDat$comment.file.uri. or $comment.data.file.  OR   $sampleSetup$annotBySoft$File.Name
+    ## check if $sampleSetup present, => look for filenames in $sampleSetup : $sampleSetup$sdrfDat$comment.file.uri. or $comment.data.file.  OR   $sampleSetup$annotBySoft$File.Name 
+    ##  .. this part won't work with PL ??
     setupOK <- length(annotElem) >0
     if(setupOK) { if(length(annotElem) >1) annotElem <- annotElem[1]
       setupOK <- annotElem[1] %in% names(dat)}
@@ -124,10 +131,10 @@ corColumnOrder <- function(dat, sampNames, newNames=NULL, useListElem=c("quant",
             ch5 <- .corEnum(sub("\\.RAW$|\\.Raw$|\\.raw$","", basename(.corPathW(dat[[annotElem]][["annotBySoft"]][,useCol]))))
             newO <- match(sampNames, ch5)  # update
             if(any(is.na(newO))) newO <- match(wrMisc::trimRedundText(sampNames,silent=silent,callFrom=fxNa), wrMisc::trimRedundText(ch5,silent=silent, callFrom=fxNa))  # update
-        } 
-      }  
+        }
+      }
       if(debug) {message(fxNa,"cCO3c"); cCO3c <- list(dat=dat,newO=newO,sampNames=sampNames,newNames=newNames,useListElem=useListElem,datOK=datOK) }
-      
+
       } else {
         if("sdrfDat" %in% names(dat[[annotElem]])) {
           if(debug) message(fxNa," Since $annotBySoft not found, trying to check order based on sdrfDat")
@@ -157,5 +164,5 @@ corColumnOrder <- function(dat, sampNames, newNames=NULL, useListElem=c("quant",
       if(debug) message(fxNa,"Sucessfully adjusted sample annotation to new order")
     } else { if(!silent & !alreadyOK) message(fxNa,"Failed to adjust order of sample annotation")} }
   }                    ## end corColumnOrder
-  dat }  
+  dat }
   

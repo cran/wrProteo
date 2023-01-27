@@ -9,7 +9,9 @@ cleanListCoNames(
   rem = NULL,
   subst = c("-", "_"),
   lstE = c("raw", "quant", "counts"),
+  mathOper = NULL,
   silent = FALSE,
+  debug = FALSE,
   callFrom = NULL
 )
 }
@@ -23,7 +25,11 @@ cleanListCoNames(
 
 \item{lstE}{(character, length=1) names of list-elements where colnames should be cleaned}
 
+\item{mathOper}{(character, length=1) optional mathematical operation on numerical part of sample-names (eg \code{mathOper='/2'} for deviding numeric part of colnames by 2)}
+
 \item{silent}{(logical) suppress messages}
+
+\item{debug}{(logical) additional messages for debugging}
 
 \item{callFrom}{(character) allow easier tracking of messages produced}
 }

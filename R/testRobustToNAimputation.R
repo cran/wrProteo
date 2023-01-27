@@ -75,7 +75,7 @@ testRobustToNAimputation <- function(dat, gr=NULL, annot=NULL, retnNA=TRUE, avSd
     } else grIni <- gr
     dat <- dat$quant } else { datOK <- FALSE; msg <- "Invalid 'dat' : does NOT contain both '$quant' and '$annot !"} } 
   if(datOK) { if(length(unique(gr))==length(gr)) { datOK <- FALSE
-    msg <- "Argument 'gr' is empty or does not design any replicates !  (nothing to do)"} } 
+    msg <- "Argument 'gr' is empty or does NOT design any replicates !  (nothing to do)"} } 
   if(datOK) if(any(length(dim(dat)) !=2, dim(dat) < 1:2, na.rm=TRUE)) { datOK <- FALSE
     msg <- "'dat' must be matrix or data.frame with >1 columns"}  
   if(datOK) {

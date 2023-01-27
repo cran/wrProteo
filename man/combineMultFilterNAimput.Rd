@@ -2,7 +2,7 @@
 % Please edit documentation in R/combineMultFilterNAimput.R
 \name{combineMultFilterNAimput}
 \alias{combineMultFilterNAimput}
-\title{Combine multiple filters on NA-imputed data}
+\title{Combine Multiple Filters On NA-imputed Data}
 \usage{
 combineMultFilterNAimput(
   dat,
