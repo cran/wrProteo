@@ -91,7 +91,7 @@ summarizeForROC <- function(test, useComp=1, tyThr="BH", thr=NULL, columnTest=NU
   if(debug) {message(fxNa,"sROC1b")}
   
   ## look for (global) filtering (from test[[filterMat]])
-  if(length(filterMat) ==1) if(filterMat %in% names(test) & inclFilter) {
+  if(length(filterMat) ==1) if(filterMat %in% names(test) && inclFilter) {
     chLe <- (if(length(dim(test[[filterMat]])) >1) nrow(test[[filterMat]]) else length(test[[filterMat]])) ==nrow(test[[tyThr]])   # check if filtFin seems to fit to testing results 
     if(chLe) {
       if(length(dim(test[[filterMat]])) >1) test[[filterMat]] <- test[[filterMat]][,useComp]
@@ -107,7 +107,7 @@ summarizeForROC <- function(test, useComp=1, tyThr="BH", thr=NULL, columnTest=NU
   if(debug) {message(fxNa,"sROC2"); sROC2 <- list(test=test, chLst=chLst,tyThr=tyThr,thr=thr,useComp=useComp,chSpec=chSpec,pp=pp,oriKeep=oriKeep,filterMat=filterMat,inclFilter=inclFilter)}
   
   ## FC-filtering
-  if(length(FCthrs) ==1) if(is.numeric(FCthrs) & !is.na(FCthrs)) {
+  if(length(FCthrs) ==1) if(is.numeric(FCthrs) && !is.na(FCthrs)) {
     ## FC-threshold, need to locate means to construct FC
     chM <- "means" %in% names(test)
     if("means" %in% names(test)) {

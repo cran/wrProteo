@@ -13,6 +13,7 @@ countNoOfCommonPeptides(
   prefix = c("Hs", "Sc", "Ec"),
   sep = "_",
   silent = FALSE,
+  debug = FALSE,
   callFrom = NULL
 )
 }
@@ -25,7 +26,9 @@ countNoOfCommonPeptides(
 
 \item{silent}{(logical) suppress messages}
 
-\item{callFrom}{(character) allows easier tracking of message(s) produced}
+\item{debug}{(logical) display additional messages for debugging}
+
+\item{callFrom}{(character) allow easier tracking of message(s) produced}
 }
 \value{
 This function returns a list with $byPep as list of logical matrixes for each peptide (as line) and unique/shared/etc for each species; $byProt as list of matrixes with count data per proten (as line) for each species; $tab with simple summary-type count data

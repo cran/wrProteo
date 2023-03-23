@@ -20,7 +20,6 @@
 #' @return This function writes the sequences from \code{prot} as fasta formatted-file
 #' @seealso \code{\link{readFasta2}} for reading fasta, \code{write.fasta} from the package \href{https://CRAN.R-project.org/package=seqinr}{seqinr} 
 #' @examples
-#' #  
 #' prots <- c(SEQU1="ABCDEFGHIJKL", SEQU2="CDEFGHIJKLMNOP")
 #' writeFasta2(prots, fileNa=file.path(tempdir(),"testWrite.fasta"), lineLength=6)
 #' @export
@@ -35,7 +34,7 @@ writeFasta2 <- function(prot, fileNa=NULL, ref=NULL, lineLength=60, eol="\n", tr
   chN <- length(names(prot)) <1                    # check names of 'prot'
 
   ## compare to 'ref' -if provided
-  if(length(ref)==length(prot) & length(prot) >1) {
+  if(length(ref)==length(prot) && length(prot) >1) {
     if(length(names(ref)) <1) { if(!silent) message(fxNa," NOTE: '",namesInp[2],"' has no names ! Assuming same order as '",namesInp[1],"' !")
     } else {
       ## check order based on names
@@ -44,7 +43,7 @@ writeFasta2 <- function(prot, fileNa=NULL, ref=NULL, lineLength=60, eol="\n", tr
       if(!all(heP==heR)) {
         message(fxNa,"...adjusting order realtif to '",namesInp[2],"'")
         newOrd <- match(heR, heP)
-        if(sum(is.na(newOrd)) >0 & !silent) message(fxNa," NOTE : ",sum(is.na(newOrd))," entries of 'ref' not found in 'prot'" )
+        if(sum(is.na(newOrd)) >0 && !silent) message(fxNa," NOTE : ",sum(is.na(newOrd))," entries of 'ref' not found in 'prot'" )
         prot <- prot[newOrd] }
     }
     ## compare proteins : count number of characters (AAs)
@@ -54,7 +53,7 @@ writeFasta2 <- function(prot, fileNa=NULL, ref=NULL, lineLength=60, eol="\n", tr
     ## propagate names from ref, adj if truncated
     if(debug) {message("wF1\n"); wF1 <- list(prot=prot,ref=ref,heP=heP,heR=heR,chLe=chLe,chLeRe=chLeRe,chN=chN)}
     ## adjust names
-    if(chN & length(names(ref))==length(ref)) names(prot) <- names(ref)    
+    if(chN && length(names(ref))==length(ref)) names(prot) <- names(ref)    
     ## look for truncated proteins
     if(any(chLe < chLeRe)) { 
       redLe <- which(chLe < chLeRe)
@@ -63,7 +62,7 @@ writeFasta2 <- function(prot, fileNa=NULL, ref=NULL, lineLength=60, eol="\n", tr
       if(!ch1) truSuf <- paste0(truSuf[1]," ")
       names(prot)[redLe] <- sub(" ", truSuf, names(prot)[redLe]) }      # append suffix to truncated protein sequences 
   } else { 
-    if(length(ref) >0 & !silent) message(fxNa,"NOTE : '",namesInp[2],"' does NOT match '",namesInp[1],"', ignoring ...")
+    if(length(ref) >0 && !silent) message(fxNa,"NOTE : '",namesInp[2],"' does NOT match '",namesInp[1],"', ignoring ...")
     if(chN) { if(!silent) message(fxNa," Note : '",namesInp[1],"' has NO NAMES, renaming to protein01 ... proteinN for fasta headers")
       names(prot) <- paste0("protein",sprintf(paste("%0",nchar(length(prot)),"d",sep=""),1:length(prot)))} }
 
@@ -76,7 +75,7 @@ writeFasta2 <- function(prot, fileNa=NULL, ref=NULL, lineLength=60, eol="\n", tr
   out <- rep(">", length(prot)*2)
   out[2*(1:length(prot)) -1] <- names(prot)
   if(all(length(lineLength)==1, is.numeric(lineLength), !is.na(lineLength))) {
-    if(lineLength <2 | lineLength >= 1e4) { lineLength <- 60
+    if(lineLength <2 || lineLength >= 1e4) { lineLength <- 60
     if(!silent) message(fxNa,"Invalid entry for 'lineLength' (setting to default=60)")}
   }
   if(all(length(lineLength)==1, is.numeric(lineLength), !is.na(lineLength))) {
@@ -101,11 +100,11 @@ writeFasta2 <- function(prot, fileNa=NULL, ref=NULL, lineLength=60, eol="\n", tr
   if(debug) {message("wF7"); wF7 <- list(prot=prot, ch1=ch1,ref=ref,fileNa=fileNa,lineLength=lineLength,con=con,out=out)}
 
   if(inherits(tmp, "try-error")) warning("Failed to open connection to file '",fileNa,"' (check authorization/access)") else {
-    if(debug) message(" open connection error ", inherits(tmp, "try-error"))
+    if(debug) message(fxNa,"Open connection error ", inherits(tmp, "try-error"))
     on.exit(try(close(con), silent=TRUE), add=TRUE)
     ## write to file
     tmp <- try(writeLines(as.character(out), con=con, sep=eol), silent=TRUE)    #
-    if(debug) message(" writeLines error ",  "try-error" %in% class(tmp))
+    if(debug) message(fxNa," writeLines() error ",  "try-error" %in% class(tmp))
     ## close connection                
     close(con)
  }

@@ -1,6 +1,6 @@
 #' Read csv files exported by OpenMS
 #'
-#' Protein quantification results form \href{https://www.openms.de/}{OpenMS} 
+#' Protein quantification results form \href{https://openms.de/}{OpenMS} 
 #' which were exported as \code{.csv} can be imported and relevant information extracted. 
 #' Peptide data get summarized by protein by top3 or sum methods.
 #' The final output is a list containing the elements: \code{$annot}, \code{$raw}, \code{$quant} ie normaized final quantifications, or returns data.frame with entire content of file if \code{separateAnnot=FALSE}.
@@ -210,14 +210,5 @@ readOpenMSFile <- function(fileName=NULL, path=NULL, normalizeMeth="median", ref
     call=match.call(), created=as.character(Sys.time()), wrProteo.version=utils::packageVersion("wrProteo"), machine=Sys.info()["nodename"])
   ## final output
   if(separateAnnot) list(raw=abund[,,1], quant=quant, annot=annot, counts=abund[,,2], expSetup=expSetup, notes=notes) else data.frame(quant,annot)  
-}
-
-
-#' @export
-.commonSpecies <- function() {
-  ## matrix with UniProt abbreviations for common species
-  cbind(c("_HUMAN","_MOUSE","_RAT","_PIG","_BOVIN","_SHEEP","_CAEEL", "_DROME","_YEAST","_ARATH","_ECOLI","_MYCTU"),
-      c("Homo sapiens","Mus muscullus","Rattus norvegicus","Sus scrofa","Bos taurus","Ovis aries","Caenorhabditis elegans",
-        "Drosophila melanogaster","Saccharomyces cerevisiae", "Arabidopsis thaliana", "Escherichia coli", "Mycobacterium tuberculosis"))
 }
   

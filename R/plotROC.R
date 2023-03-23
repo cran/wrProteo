@@ -25,7 +25,8 @@
 #' @param las (numeric) factor for text-orientation (see also \code{\link[graphics]{par}})
 #' @param addSuplT (logical) add text with information about precision,accuracy and FDR
 #' @param silent (logical) suppress messages
-#' @param callFrom (character) allows easier tracking of messages produced
+#' @param debug (logical) display additional messages for debugging
+#' @param callFrom (character) allow easier tracking of message(s) produced
 #' @return This function returns only a plot with ROC curves
 #' @seealso \code{\link[wrProteo]{summarizeForROC}}, \code{\link[wrMisc]{moderTest2grp}}  
 #' @examples
@@ -36,14 +37,15 @@
 #' plotROC(roc0)
 #' @export
 plotROC <- function(dat,..., useColumn=2:3, methNames=NULL, col=NULL, pch=1, bg=NULL, tit=NULL, xlim=NULL, ylim=NULL, point05=0.05, pointSi=0.85, nByMeth=NULL,
-  speciesOrder=NULL, txtLoc=NULL, legCex=0.72, las=1, addSuplT=TRUE, silent=FALSE, callFrom=NULL) {
+  speciesOrder=NULL, txtLoc=NULL, legCex=0.72, las=1, addSuplT=TRUE, silent=FALSE, debug=FALSE, callFrom=NULL) {
   ##
   fxNa <- wrMisc::.composeCallName(callFrom, newNa="plotROC")
   if(!isTRUE(silent)) silent <- FALSE
+  if(isTRUE(debug)) silent <- FALSE else debug <- FALSE
   if(!isFALSE(addSuplT)) addSuplT <- TRUE
   
   inpS <- list(...)
-  chInp <- lapply(c("dat","useColumn","methNames","col","pch","bg","tit","point05","pointSi","nByMeth","txtLoc","legCex"),wrMisc::.seqCutStr,startFr=2,reverse=TRUE)
+  chInp <- lapply(c("dat","useColumn","methNames","col","pch","bg","tit","point05","pointSi","nByMeth","txtLoc","legCex"), wrMisc::.cutStr, startFr=2,reverse=TRUE)
   chAr <- names(inpS) %in% unlist(chInp)
   if(any(chAr)) {
     ## if argument names changed/ not complete need to change/adjust code here !!
@@ -54,7 +56,7 @@ plotROC <- function(dat,..., useColumn=2:3, methNames=NULL, col=NULL, pch=1, bg=
   xLab <- "1 - Specificity"
   yLab <- "Sensitivity"
   nDigLeg <- c(3,2,2,2)           # number of digits for supl info /legend (AUC/prec/accur/FDR)
-  if(!is.numeric(xlim) | length(xlim) !=2) xlim <- c(0,1)
+  if(!is.numeric(xlim) || length(xlim) !=2) xlim <- c(0,1)
   graphics::plot(1 -dat[,useColumn[1]], dat[,useColumn[2]], type="n", col=col[1], pch=pch, bg=bg, main=tit, xlab=xLab, ylab=yLab, xlim=xlim, ylim=if(length(ylim)==2) ylim else c(0,1),las=las)
   col2 <- col
   cutP <- dat[which(dat[,1]==point05),]
@@ -101,4 +103,4 @@ plotROC <- function(dat,..., useColumn=2:3, methNames=NULL, col=NULL, pch=1, bg=
         }   
     } } }
 }
-     
+      

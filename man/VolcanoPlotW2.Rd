@@ -2,7 +2,7 @@
 % Please edit documentation in R/VolcanoPlotW2.R
 \name{VolcanoPlotW2}
 \alias{VolcanoPlotW2}
-\title{Volcano-plot (Statistical Test Outcome versus Relative Change)}
+\title{Deprecialed Volcano-plot}
 \usage{
 VolcanoPlotW2(
   Mvalue,
@@ -24,7 +24,7 @@ VolcanoPlotW2(
   cexLa = 1.1,
   limM = NULL,
   limp = NULL,
-  annotColumn = c("SpecType", "GeneName", "EntryName", "Accession", "Species", "Contam"),
+  annotColumn = NULL,
   annColor = NULL,
   cexPt = NULL,
   cexSub = NULL,
@@ -112,30 +112,15 @@ if the initial object \code{Mvalue} contains a list-element called 'annot' the s
 \item{debug}{(logical) additional messages for debugging}
 }
 \value{
-MA-plot only
+deprecated - returns nothing
 }
 \description{
-This type of plot is very common in high-throughput biology, see \href{https://en.wikipedia.org/wiki/Volcano_plot_(statistics)}{Volcano-plot}.
-Basically, this plot allows comparing the outcome of a statistical test to the differential of the group means (ie log fold-change),
-}
-\details{
-In high-throughput biology data are typically already transformed to log2 and thus, the 'M'-value represents a relative change.
-Besides, output from statistical testing by \code{\link[wrMisc]{moderTest2grp}} or \code{\link[wrMisc]{moderTestXgrp}} can be directly read to produce Volcano plots for diagnostic reasons.
-Please note, that plotting a very number of points in transparency (eg >10000) may take several seconds.
+Please use VolcanoPlotW() from package wrGraph.
+This function does NOT produce a plot any more.
 }
 \examples{
-library(wrMisc)
 set.seed(2005); mat <- matrix(round(runif(900),2), ncol=9)
-rownames(mat) <- paste0(rep(letters[1:25],each=4), rep(letters[2:26],4))
-mat[1:50,4:6] <- mat[1:50,4:6] + rep(c(-1,1)*0.1,25)
-mat[3:7,4:9] <- mat[3:7,4:9] + 0.7
-mat[11:15,1:6] <- mat[11:15,1:6] - 0.7
-## assume 2 groups with 3 samples each
-gr3 <- gl(3,3,labels=c("C","A","B"))
-tRes2 <- moderTest2grp(mat[,1:6], gl(2,3), addResults = c("FDR","means"))
-# Note: due to the small number of lines only FDR chosen to calculate 
- 
 }
 \seealso{
-(for PCA) \code{\link[wrGraph]{plotPCAw}})
+this function was replaced by \code{\link[wrGraph]{plotPCAw}})
 }

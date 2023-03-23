@@ -16,7 +16,8 @@
 #'   may be given as character like \code{chr11:1-135,086,622} or as \code{list} with a first component characterizing the chromosome and a integer-vector with start- and end- sites 
 #' @param useUniPrCol (character) optional declaration which colums from UniProt exported file should be used/imported (default 'EnsID','Entry','Entry.name','Status','Protein.names','Gene.names','Length').
 #' @param silent (logical) suppress messages
-#' @param callFrom (character) allows easier tracking of message(s) produced
+#' @param debug (logical) display additional messages for debugging
+#' @param callFrom (character) allow easier tracking of message(s) produced
 #' @return This function returns a data.frame (with columns $EnsID, $Entry, $Entry.name, $Status, $Protein.names, $Gene.names, $Length; if \code{deUcsc} is integrated plus: $chr, $type, $start, $end, $score, $strand, $Ensrnot, $avPos) 
 #' @seealso \code{\link{readUCSCtable}}
 #' @examples
@@ -36,29 +37,30 @@
 #' ## Now UniProt IDs and genomic locations are both available :
 #' str(deUniPr1)
 #' @export
-readUniProtExport <- function(UniProtFileNa, deUcsc=NULL, targRegion=NULL, useUniPrCol=NULL, silent=FALSE, callFrom=NULL) {         
+readUniProtExport <- function(UniProtFileNa, deUcsc=NULL, targRegion=NULL, useUniPrCol=NULL, silent=FALSE, debug=FALSE, callFrom=NULL) {         
   ## read annotation exported from https://www.uniprot.org/uploadlists/  upload  Ensemble Transcript => UniprotKB => export 
   ## targRegion : list('chr1',pos=c(198110001,198570000)) or 'chr11:1-135,086,622'
   fxNa <- wrMisc::.composeCallName(callFrom,newNa="readUniProtExport")
-  if(!isTRUE(silent)) silent <- FALSE  
+  if(!isTRUE(silent)) silent <- FALSE
+  if(isTRUE(debug)) silent <- FALSE else debug <- FALSE
   if(length(UniProtFileNa) >1) UniProtFileNa <- UniProtFileNa[1] else {if(length(UniProtFileNa) < 1) stop(" argument 'UniProtFileNa' seems empty")}
   chFi <- file.exists(UniProtFileNa)
   if(!chFi) stop(" file '",UniProtFileNa,"' not found !")
   chExt <- length(grep("\\.gz$", UniProtFileNa, fixed=FALSE, perl=FALSE)) >0  
   chPa <- try(find.package("utils"),silent=TRUE)
-  if(inherits(chPa, "try-error")) stop("package 'utils' not found ! Please install first")   
+  if(inherits(chPa, "try-error")) stop("Package 'utils' not found ! Please install first")   
   ## main  
   deUniProt <- try(utils::read.delim(UniProtFileNa,stringsAsFactors=FALSE), silent=TRUE)
   errMsg1 <- " seems not to be in UniProt 'tab-separated' format (does not contain sufficent number of columns) !"
   if(inherits(deUniProt, "try-error")) { 
     deUniProt <- try(wrMisc::readVarColumns(if(chExt) unz(UniProtFileNa) else UniProtFileNa,callFrom=fxNa), silent=TRUE)
     if(inherits(deUniProt, "try-error")) stop("Can't read file '",UniProtFileNa,"' - please check format !") else {
-      if(!silent) message(fxNa," Managed to read file using readVarColumns()") }
+      if(!silent) message(fxNa,"Managed to read file using readVarColumns()") }
     if(ncol(deUniProt) <9) stop("file ",UniProtFileNa,errMsg1)  
     colnames(deUniProt)[1:9] <- c("EnsTraID","xx","UniprotID",colnames(deUniProt)[c(2:7)])  # initial colnames by readVarColumns are shifted    
   } 
   if(ncol(deUniProt) <7) stop("file ",UniProtFileNa,errMsg1)     # check if (in)sufficient numer of columns
-  if(nrow(deUniProt) <2 & !silent) message(fxNa," CAUTION, file '",UniProtFileNa,"' contains only ",nrow(deUniProt)," lines !") 
+  if(nrow(deUniProt) <2 && !silent) message(fxNa," CAUTION, file '",UniProtFileNa,"' contains only ",nrow(deUniProt)," lines !") 
   ## correct colnames
   chCol <- c(grep("yourlist.",colnames(deUniProt)[1]) >0, grep("isomap.",colnames(deUniProt)[2]) >0, "Entry" %in% colnames(deUniProt))
   if(chCol[1]) colnames(deUniProt)[1] <- "EnsTraID"
@@ -108,7 +110,7 @@ readUniProtExport <- function(UniProtFileNa, deUcsc=NULL, targRegion=NULL, useUn
       round(rowMeans(combAllChrDB[,c("start","end")])) } else NA)    # add mean gene-position for easier sorting
     ## mark if genimic positions in targer region
     if(!all(c("chr","start") %in% colnames(combAllChrDB))) targRegion <- NULL
-    if(length(targRegion) >0) if(is.character(targRegion) & length(targRegion)==1) {
+    if(length(targRegion) >0) if(is.character(targRegion) && length(targRegion) ==1) {
       targRegion <- unlist(strsplit(targRegion,":"))
       targRegion <- list(targRegion[1],gsub(",","",unlist(strsplit(targRegion[2],"-")))) }
     combAllChrDB <- cbind(combAllChrDB,inTarg=if(length(targRegion) >0) {

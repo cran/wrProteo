@@ -5,9 +5,9 @@
 \title{Read Sample Meta-data from Quantification-Software And/Or Sdrf And Align To Experimental Data}
 \usage{
 readSampleMetaData(
+  quantMeth,
   sdrf = NULL,
   suplAnnotFile = NULL,
-  quantMeth = "MQ",
   path = ".",
   abund = NULL,
   groupPref = list(lowNumberOfGroups = TRUE),
@@ -17,6 +17,8 @@ readSampleMetaData(
 )
 }
 \arguments{
+\item{quantMeth}{(character, length=1) quantification method used; 2-letter abbreviations like 'MQ','PD','PL','FP' etc may be used}
+
 \item{sdrf}{(character, list or data.frame) optional extraction and adding of experimenal meta-data:
 if character, this may be the ID at ProteomeExchange or a similarly formatted local file. \code{sdrf} will get priority over \code{suplAnnotFile}, if provided.}
 
@@ -24,8 +26,6 @@ if character, this may be the ID at ProteomeExchange or a similarly formatted lo
 if \code{TRUE} in case of \code{method=="MQ"} (MaxQuant) default to files 'summary.txt' (needed to match information of \code{sdrf}) and 'parameters.txt' which can be found in the same folder as the main quantitation results;
 if \code{character} the respective file-names (relative ro absolute path), 1st is expected to correspond to 'summary.txt' (tabulated text, the samples as given to MaxQuant) and 2nd to 'parameters.txt' (tabulated text, all parameters given to MaxQuant)
 in case of \code{method=="PL"} (Proline), this argument should contain the initial file-name (for the identification and quantification data) in the first position}
-
-\item{quantMeth}{(character) quantification method used}
 
 \item{path}{(character) optional path of file(s) to be read}
 
@@ -46,7 +46,7 @@ This function returns a list with \code{$lev} and \code{$level} (grouping of sam
  If all entries are invalid or entries do not pass the tests, this functions returns an empty \code{list}.
 }
 \description{
-Sample annotation meta-data form \href{https://www.maxquant.org/}{MaxQuant}, ProteomeDiscoverer or similar, can be read using this function and relevant information extracted.
+Sample/experimental annotation meta-data form \href{https://www.maxquant.org/}{MaxQuant}, ProteomeDiscoverer, FragPipe, Proline or similar, can be read using this function and relevant information extracted.
 Furthermore, annotation in \href{https://github.com/bigbio/proteomics-metadata-standard}{sdrf-format} can be added (the order of sdrf will be adjated automatically, if possible).
 This functions returns a list with grouping of samples into replicates and additional information gathered.
 Input files compressed as .gz can be read as well.
@@ -64,10 +64,10 @@ Both types can be imported and checked in the same run, if valid sdrf-informatio
 For more information about the sdrf format please see \href{https://github.com/bigbio/proteomics-metadata-standard}{sdrf on github}.
 }
 \examples{
-sdrf001819Setup <- readSampleMetaData("PXD001819")
+sdrf001819Setup <- readSampleMetaData(quantMeth=NA, sdrf="PXD001819")
 str(sdrf001819Setup)
 
 }
 \seealso{
-this function is used internally by \code{\link{readMaxQuantFile}} or \code{\link{readProtDiscovFile}}; \code{\link{readSdrf}} for reading sdrf-files, \code{\link[wrMisc]{replicateStructure}} for mining annotation columns
+this function is used internally by \code{\link{readMaxQuantFile}}, \code{\link{readProtDiscovFile}} etc; use \code{\link{readSdrf}} for reading sdrf-files, \code{\link[wrMisc]{replicateStructure}} for mining annotation columns
 }

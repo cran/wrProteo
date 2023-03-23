@@ -18,10 +18,13 @@
 #' @param path (character) path of file to be read
 #' @param normalizeMeth (character) normalization method, defaults to \code{median}, for more details see \code{\link[wrMisc]{normalizeThis}})
 #' @param sampleNames (character) new column-names for quantification data (ProteomeDiscoverer does not automatically use file-names from spectra); this argument has priority over \code{suplAnnotFile}
-##' @param sdrf (character, list or data.frame) optional extraction and adding of experimenal meta-data: if character, this may be the ID at ProteomeExchange. Besides, the output from \code{readSdrf} or a list from \code{defineSamples} may be provided; if \code{gr} is provided, it gets priority for grouping of replicates
-#' @param suplAnnotFile (logical or character) optional reading of supplemental files produced by MaxQuant; if \code{gr} is provided, it gets priority for grouping of replicates
-#'  if \code{TRUE} default to files 'summary.txt' (needed to match information of \code{sdrf}) and 'parameters.txt' which can be found in the same folder as the main quantitation results;
-#'  if \code{character} the respective file-names (relative ro absolute path), 1st is expected to correspond to 'summary.txt' (tabulated text, the samples as given to MaxQuant) and 2nd to 'parameters.txt' (tabulated text, all parameters given to MaxQuant)
+#' @param gr (character or factor) custom defined pattern of replicate association, will override final grouping of replicates from \code{sdrf} and/or \code{suplAnnotFile} (if provided)   \code{}
+#' @param sdrf (character, list or data.frame) optional extraction and adding of experimenal meta-data: if character, this may be the ID at ProteomeExchange,
+#'   the second element may give futher indicatations for automatic organization of groups of replicates.
+#'   Besides, the output from \code{readSdrf} or a list from \code{defineSamples} may be provided; if \code{gr} is provided, \code{gr} gets priority for grouping of replicates
+#' @param suplAnnotFile (logical or character) optional reading of supplemental files produced by ProteomeDiscoverer; however, if \code{gr} is provided, \code{gr} gets priority for grouping of replicates;
+#'  if \code{TRUE} defaults to file '*InputFiles.txt' (needed to match information of \code{sdrf}) which can be exported next to main quantitation results;
+#'  if \code{character} the respective file-name (relative or absolute path)
 #' @param read0asNA (logical) decide if initial quntifications at 0 should be transformed to NA
 #' @param quantCol (character or integer) exact col-names, or if length=1 content of \code{quantCol} will be used as pattern to search among column-names for $quant using \code{grep}
 #' @param contamCol (character or integer, length=1) which columns should be used for contaminants marked by ProteomeDiscoverer.
@@ -30,8 +33,8 @@
 #' @param separateAnnot (logical) if \code{TRUE} output will be organized as list with \code{$annot}, \code{$abund} for initial/raw abundance values and \code{$quant} with final normalized quantitations
 #' @param annotCol (character) column names to be read/extracted for the annotation section (default  c("Accession","Description","Gene","Contaminant","Sum.PEP.Score","Coverage....","X..Peptides","X..PSMs","X..Unique.Peptides", "X..AAs","MW..kDa.") )
 #' @param FDRCol (list) optional indication to search for protein FDR information
-#' @param tit (character) custom title to plot
-#' @param graphTit (character) depreciated custom title to plot, please use 'tit'
+#' @param titGraph (character) custom title to plot
+#' @param titGraph (character) depreciated custom title to plot, please use 'tit'
 #' @param wex (integer) relative expansion factor of the violin-plot (will be passed to \code{\link[wrGraph]{vioplotW}})
 #' @param specPref (character or list) define characteristic text for recognizing (main) groups of species (1st for comtaminants - will be marked as 'conta', 2nd for main species- marked as 'mainSpe',
 #'  and optional following ones for supplemental tags/species - maked as 'species2','species3',...);
@@ -47,9 +50,9 @@
 #' path1 <- system.file("extdata", package="wrProteo")
 #'
 #' @export
-readProtDiscovPeptides <- function(fileName, path=NULL, normalizeMeth="median", sampleNames=NULL, suplAnnotFile=TRUE, sdrf=NULL,read0asNA=TRUE, quantCol="^Abundances*",
-  annotCol=NULL, contamCol="Contaminant", refLi=NULL, separateAnnot=TRUE, FDRCol=list(c("^Protein.FDR.Confidence","High"), c("^Found.in.Sample.","High")), plotGraph=TRUE, tit="Proteome Discoverer", graphTit=NULL, wex=1.6,
-  specPref=c(conta="CON_|LYSC_CHICK", mainSpecies="OS=Homo sapiens"), silent=FALSE, debug=FALSE, callFrom=NULL) {
+readProtDiscovPeptides <- function(fileName, path=NULL, normalizeMeth="median", sampleNames=NULL, suplAnnotFile=TRUE, gr=NULL, sdrf=NULL, read0asNA=TRUE, quantCol="^Abundances*",
+  annotCol=NULL, contamCol="Contaminant", refLi=NULL, separateAnnot=TRUE, FDRCol=list(c("^Protein.FDR.Confidence","High"), c("^Found.in.Sample.","High")), plotGraph=TRUE,
+  titGraph="Proteome Discoverer", wex=1.6, specPref=c(conta="CON_|LYSC_CHICK", mainSpecies="OS=Homo sapiens"), silent=FALSE, debug=FALSE, callFrom=NULL) {
   ## read ProteomeDiscoverer exported txt
   fxNa <- wrMisc::.composeCallName(callFrom, newNa="readProtDiscovPeptides")
   oparMar <- if(plotGraph) graphics::par("mar") else NULL       # only if figure might be drawn
@@ -61,8 +64,9 @@ readProtDiscovPeptides <- function(fileName, path=NULL, normalizeMeth="median", 
   if(isTRUE(debug)) silent <- FALSE else debug <- FALSE
   excluCol <- "^Abundances.Count"   # exclude this from quantifications columns  # needed ?
   cleanDescription <- TRUE          # clean 'Description' for artifacts of truncated text (tailing ';' etc)
+  infoDat <- infoFi <- setupSd <- parametersD <- quant <- NULL        # initialize
   modifSensible <- TRUE             # separate modified from unmodified peptides (by attaching modif to seq)
-  setupSd <- quant <-NULL           # initialize
+ .corPathW <- function(x) gsub("\\\\", "/", x)
 
   ## check if path & file exist
   msg <- "Invalid entry for 'fileName'"
@@ -86,7 +90,7 @@ readProtDiscovPeptides <- function(fileName, path=NULL, normalizeMeth="median", 
   if(debug) message(fxNa,"rPDP2a ..")
   ## prepare for reading files
   if(debug) { message(fxNa,"rPDP3 .. Ready to read", if(length(path) >0) c(" from path ",path[1])," the file  ",fileName[1])
-    }
+  }
 
   ## read (main) file
   ## future: look for fast reading of files
@@ -191,39 +195,42 @@ readProtDiscovPeptides <- function(fileName, path=NULL, normalizeMeth="median", 
   } else abund <- NULL
 
   ## take log2 & normalize
-  if(length(abund) >0) { 
-    quant <- if(utils::packageVersion("wrMisc") > "1.10") { 
+  if(length(abund) >0) {
+    quant <- if(utils::packageVersion("wrMisc") > "1.10") {
       try(wrMisc::normalizeThis(log2(abund), method=normalizeMeth, mode="additive", refLines=refLi, silent=silent, callFrom=fxNa), silent=TRUE)
     } else try(wrMisc::normalizeThis(log2(abund), method=normalizeMeth, refLines=refLi, silent=silent, callFrom=fxNa), silent=TRUE)       #
     if(debug) { message(fxNa,"rPDP4d .. dim quant: ", nrow(quant)," li and  ",ncol(quant)," cols; colnames : ",wrMisc::pasteC(colnames(quant))," ")} }
 
   ## PD colnames are typically very cryptic, replace ..
-  if(length(sampleNames)==ncol(abund) & all(!is.na(sampleNames)) ) {   # custom sample names given
+  if(length(sampleNames)==ncol(abund) && all(!is.na(sampleNames)) ) {   # custom sample names given
     colnames(abund) <- colnames(abund) <- sampleNames
     if(length(counts) >0) colnames(counts) <- sampleNames }
-    ### GROUPING OF REPLICATES AND SAMPLE META-DATA
-    ## META-DATA : read additional annotation & documentation files produced by PD
-  if(length(suplAnnotFile) >0 | length(sdrf) >0) {
+
+  ### GROUPING OF REPLICATES AND SAMPLE META-DATA
+  ## META-DATA : read additional annotation & documentation files produced by PD
+  if(length(suplAnnotFile) >0 || length(sdrf) >0) {
     setupSd <- readSampleMetaData(sdrf=sdrf, suplAnnotFile=suplAnnotFile, quantMeth="PD", path=path, abund=utils::head(abund), silent=silent, debug=debug, callFrom=fxNa)
   }
-  ## finish sample-names: use file-names from meta-data if no custom 'sampleNames' furnished
-  if(any(length(sampleNames) <1, length(sampleNames) != ncol(quant), na.rm=TRUE)) {
-    if(length(setupSd) >0) {
-      tmp <- if(length(setupSd$sdrf) >0) setupSd$sdrf$simpleNa else setupSd$sampleSummary[,"File.Name"]
-      colnames(abund) <- wrMisc::trimRedundText(gsub("\\\\","/",tmp))      # no possibility to match colnames
-      if(length(counts) >0) colnames(counts) <- colnames(abund) }
-  }
 
-  if(debug) {message(fxNa,"rPDP5")
-    }
-  ## add count-data ?
-  counts=NULL
-  ## meta-data
-  notes <- c(inpFile=paFi, qmethod="ProteomeDiscoverer", qMethVersion=if(length(setupSd) >0) unique(setupSd$Software.Revision) else NA,
-        rawFilePath= if(length(setupSd) >0) setupSd$File.Name[1] else NA, normalizeMeth=normalizeMeth, call=match.call(),
-    created=as.character(Sys.time()), wrProteo.version=utils::packageVersion("wrProteo"), machine=Sys.info()["nodename"])
-  if(debug) {message(fxNa,"rPDP6")}
-  ## final output
-  if(isTRUE(separateAnnot)) list(raw=NA, quant=quant, pepSeq=pepSeq, annot=annot, counts=counts, notes=notes) else data.frame(quant, annot)
+    ## finish groups of replicates & annotation setupSd
+    setupSd <- .checkSetupGroups(abund=abund, setupSd=setupSd, gr=gr, sampleNames=sampleNames, quantMeth="PD", silent=silent, debug=debug, callFrom=fxNa)
+    colnames(quant) <- colnames(abund) <- if(length(setupSd$sampleNames)==ncol(abund)) setupSd$sampleNames else setupSd$groups
+    if(length(dim(counts)) >1 && length(counts) >0) colnames(counts) <- setupSd$sampleNames
+
+    if(debug) {message(fxNa,"Read sample-meta data, rPDP14"); rPDP14 <- list(sdrf=sdrf,suplAnnotFile=suplAnnotFile,abund=abund, quant=quant,refLi=refLi,annot=annot,setupSd=setupSd,sampleNames=sampleNames)}
+
+    ## main plotting of distribution of intensities
+    custLay <- NULL
+    if(is.numeric(plotGraph) && length(plotGraph) >0) {custLay <- as.integer(plotGraph); plotGraph <- TRUE} else {
+        if(!isTRUE(plotGraph)) plotGraph <- FALSE}
+    if(plotGraph) .plotQuantDistr(abund=abund, quant=quant, custLay=custLay, normalizeMeth=normalizeMeth, softNa="Proteome Discoverer",
+      refLi=refLi, refLiIni=nrow(abund), tit=titGraph, silent=silent, callFrom=fxNa, debug=debug)
+
+    ## meta-data
+    notes <- c(inpFile=paFi, qmethod="ProteomeDiscoverer", qMethVersion=if(length(infoDat) >0) unique(infoDat$Software.Revision) else NA,
+    	rawFilePath= if(length(infoDat) >0) infoDat$File.Name[1] else NA, normalizeMeth=normalizeMeth, call=match.call(),
+      created=as.character(Sys.time()), wrProteo.version=utils::packageVersion("wrProteo"), machine=Sys.info()["nodename"])
+    ## final output
+    if(isTRUE(separateAnnot)) list(raw=abund, quant=quant, annot=annot, counts=counts, sampleSetup=setupSd, quantNotes=parametersD, notes=notes) else data.frame(quant,annot)
 }
   

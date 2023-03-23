@@ -16,7 +16,8 @@
 #'  for the 3rd (typically gene start site) will be taken the minimum, 
 #'  for the 4th (typically gene end site) will be taken the maximum, for the 5th and 6th a representative values will be reported;  
 #' @param silent (logical) suppress messages
-#' @param callFrom (character) allows easier tracking of message(s) produced
+#' @param debug (logical) display additional messages for debugging
+#' @param callFrom (character) allow easier tracking of message(s) produced
 #' @return This function returns a matrix, optionally the file 'exportFileNa' may be written
 #' @seealso \code{\link{readUniProtExport}}
 #' @examples
@@ -32,10 +33,12 @@
 #'   targRegion="chr11:1-135,086,622")  
 #' deUniPr1[1:5,-5] 
 #' @export
-readUCSCtable <- function(fiName, exportFileNa=NULL, gtf=NA, simplifyCols=c("gene_id","chr","start","end","strand","frame"), silent=FALSE, callFrom=NULL) {
+readUCSCtable <- function(fiName, exportFileNa=NULL, gtf=NA, simplifyCols=c("gene_id","chr","start","end","strand","frame"), silent=FALSE, debug=FALSE, callFrom=NULL) {
   ## read & parse ensGene.gtf type file from UCSC, (optional) export to file for batch conversion on UniProt, return annotation (matrix)
   fxNa <- wrMisc::.composeCallName(callFrom, newNa="readUCSCtable")
   if(length(fiName) >1) fiName <- fiName[1] else {if(length(fiName) < 1) stop(" argument 'fiName' seems empty")}
+  if(!isTRUE(silent)) silent <- FALSE
+  if(isTRUE(debug)) silent <- FALSE else debug <- FALSE
   chFi <- file.exists(fiName)
   if(!chFi) stop(" File '",fiName,"' not found ! (maybe you are not pointing to the correct direcory ?)")
   chPa1 <- try(find.package("utils"), silent=TRUE)
@@ -56,6 +59,7 @@ readUCSCtable <- function(fiName, exportFileNa=NULL, gtf=NA, simplifyCols=c("gen
       if(!silent) message(fxNa," File '",basename(fiName),"' is gtf : ",gtf)
     }
   }
+  if(debug) message(fxNa,"rUC1")
   if(inherits(chPa2, "try-error")) {                # R.utils not available for reliable test if file is gz zipped
     if(!silent) message(fxNa," Package 'R.utils' not available, assuming by file-extension if file is gz-compressed")
     chGz <- length(grep("\\.gz$", tolower(fiName))) >0 
@@ -101,12 +105,12 @@ readUCSCtable <- function(fiName, exportFileNa=NULL, gtf=NA, simplifyCols=c("gen
     ## try to use the columns wo colnames as 'gene_id'
     NAcol <- colnames(ensG1) %in% "NA" | is.na(colnames(ensG1))
     if(any(NAcol)) { chGeId <- which.max(apply(utils::head(ensG1), 2, function(x) sum(x==simplifyCols[1])))
-      if(length(chGeId) >0 & chGeId[1] +1 %in% which(NAcol)) colnames(ensG1)[chGeId[1] +1] <- simplifyCols[1] else {
+      if(length(chGeId) >0 && chGeId[1] +1 %in% which(NAcol)) colnames(ensG1)[chGeId[1] +1] <- simplifyCols[1] else {
         if(!silent) message(fxNa," failed to locate column to use as '",simplifyCols[1],"'")}      
   } }
   ## option to summarize by first column of 'simplifyCols'
   if(length(simplifyCols) >5) { simplifyCols <- simplifyCols[which(simplifyCols %in% colnames(ensG1))]
-    if(length(simplifyCols) <6 & !silent) message(fxNa," Cannot find sufficient column-names given in argument 'simplifyCols', ignoring ..") }  
+    if(length(simplifyCols) <6 && !silent) message(fxNa," Cannot find sufficient column-names given in argument 'simplifyCols', ignoring ..") }  
   if(length(simplifyCols) >5) { 
     iniDim <- dim(ensG1)
     ensG1 <- matrix(unlist(by(ensG1[,simplifyCols[1:6]], ensG1[,simplifyCols[1]], 

@@ -20,11 +20,10 @@ readProtDiscovFile(
   sdrf = NULL,
   suplAnnotFile = TRUE,
   groupPref = list(lowNumberOfGroups = TRUE),
-  plotGraph = TRUE,
-  tit = "Proteome Discoverer",
-  graphTit = NULL,
-  wex = 1.6,
   specPref = c(conta = "CON_|LYSC_CHICK", mainSpecies = "OS=Homo sapiens"),
+  plotGraph = TRUE,
+  wex = 1.6,
+  titGraph = "Proteome Discoverer",
   silent = FALSE,
   debug = FALSE,
   callFrom = NULL
@@ -37,7 +36,7 @@ readProtDiscovFile(
 
 \item{normalizeMeth}{(character) normalization method, defaults to \code{median}, for more details see \code{\link[wrMisc]{normalizeThis}})}
 
-\item{sampleNames}{(character) new column-names for quantification data (ProteomeDiscoverer does not automatically use file-names from spectra); this argument has priority over \code{suplAnnotFile}}
+\item{sampleNames}{(character) custom column-names for quantification data (ProteomeDiscoverer does not automatically use file-names from spectra); this argument has priority over \code{suplAnnotFile}}
 
 \item{read0asNA}{(logical) decide if initial quntifications at 0 should be transformed to NA}
 
@@ -56,7 +55,9 @@ If a column named \code{contamCol} is found, the data will be lateron filtered t
 
 \item{gr}{(character or factor) custom defined pattern of replicate association, will override final grouping of replicates from \code{sdrf} and/or \code{suplAnnotFile} (if provided)   \code{}}
 
-\item{sdrf}{(character, list or data.frame) optional extraction and adding of experimenal meta-data: if character, this may be the ID at ProteomeExchange. Besides, the output from \code{readSdrf} or a list from \code{defineSamples} may be provided; if \code{gr} is provided, it gets priority for grouping of replicates}
+\item{sdrf}{(character, list or data.frame) optional extraction and adding of experimenal meta-data: if character, this may be the ID at ProteomeExchange,
+the second element may give futher indicatations for automatic organization of groups of replicates.
+Besides, the output from \code{readSdrf} or a list from \code{defineSamples} may be provided; if \code{gr} is provided, \code{gr} gets priority for grouping of replicates}
 
 \item{suplAnnotFile}{(logical or character) optional reading of supplemental files produced by ProteomeDiscoverer; however, if \code{gr} is provided, \code{gr} gets priority for grouping of replicates;
 if \code{TRUE} defaults to file '*InputFiles.txt' (needed to match information of \code{sdrf}) which can be exported next to main quantitation results;
@@ -65,17 +66,15 @@ if \code{character} the respective file-name (relative or absolute path)}
 \item{groupPref}{(list) additional parameters for interpreting meta-data to identify structure of groups (replicates), will be passed to \code{readSampleMetaData}.
 May contain \code{lowNumberOfGroups=FALSE} for automatically choosing a rather elevated number of groups if possible (defaults to low number of groups, ie higher number of samples per group)}
 
-\item{plotGraph}{(logical or integer) optional plot of type vioplot of initial and normalized data (using \code{normalizeMeth}); if integer, it will be passed to \code{layout} when plotting}
-
-\item{tit}{(character) custom title to plot}
-
-\item{graphTit}{(character) depreciated custom title to plot, please use 'tit'}
-
-\item{wex}{(integer) relative expansion factor of the violin-plot (will be passed to \code{\link[wrGraph]{vioplotW}})}
-
 \item{specPref}{(character or list) define characteristic text for recognizing (main) groups of species (1st for comtaminants - will be marked as 'conta', 2nd for main species- marked as 'mainSpe',
 and optional following ones for supplemental tags/species - maked as 'species2','species3',...);
 if list and list-element has multiple values they will be used for exact matching of accessions (ie 2nd of argument \code{annotCol})}
+
+\item{plotGraph}{(logical or integer) optional plot of type vioplot of initial and normalized data (using \code{normalizeMeth}); if integer, it will be passed to \code{layout} when plotting}
+
+\item{wex}{(integer) relative expansion factor of the violin-plot (will be passed to \code{\link[wrGraph]{vioplotW}})}
+
+\item{titGraph}{(character) custom title to plot of distribution of quantitation values}
 
 \item{silent}{(logical) suppress messages}
 
@@ -88,9 +87,11 @@ This function returns a list with \code{$raw} (initial/raw abundance values), \c
  and \code{$notes}; or if \code{separateAnnot=FALSE} the function returns a data.frame with annotation and quantitation only
 }
 \description{
-Protein identification and quantification results form \href{https://www.thermofisher.com/order/catalog/product/OPTON-30812}{Thermo ProteomeDiscoverer}
+Protein identification and quantification results from
+\href{https://www.thermofisher.com/order/catalog/product/OPTON-30812}{Thermo ProteomeDiscoverer}
 which were exported as tabulated text can be imported and relevant information extracted.
-The final output is a list containing 3 elements: \code{$annot}, \code{$raw} and optional \code{$quant}, or returns data.frame with entire content of file if \code{separateAnnot=FALSE}.
+The final output is a list containing 3 elements: \code{$annot}, \code{$raw} and optional \code{$quant},
+or returns data.frame with entire content of file if \code{separateAnnot=FALSE}.
 }
 \details{
 This function has been developed using Thermo ProteomeDiscoverer versions 2.2 to 2.5.
@@ -107,5 +108,5 @@ summary(dataPD$quant)
 
 }
 \seealso{
-\code{\link[utils]{read.table}}, \code{\link[wrMisc]{normalizeThis}}) , \code{\link{readMaxQuantFile}}, \code{\link{readProlineFile}}
+\code{\link[utils]{read.table}}, \code{\link[wrMisc]{normalizeThis}}) , \code{\link{readMaxQuantFile}}, \code{\link{readProlineFile}}, \code{\link{readFragpipeFile}}
 }

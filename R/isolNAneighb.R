@@ -1,14 +1,12 @@
 #' Isolate NA-neighbours
-#' 
-#' This functions extracts all replicate-values where at least one of the replicates is \code{NA}. 
-#' Then, the non-\code{NA} values are sorted by the number of \code{NA}s which occored in this group of replicates.
-#' A list with all \code{NA}-neighbours organized by the number of \code{NA}s gets returned.           
-#' 
+#'
+#' This functions extracts all replicate-values where at least one of the replicates is \code{NA} and sorts by number of \code{NA}s per group.
+#' A list with all \code{NA}-neighbours organized by the number of \code{NA}s gets returned.
+#'
 #' @param mat (matrix or data.frame) main data (may contain \code{NA})
 #' @param gr (character or factor) grouping of columns of 'mat', replicate association
-#' @param maxHi (integer) maximum count of NAs to consider separately (higher ones will be counted/pooled as maxHi)
-#' @param iniCheck (logical) check at beginning if executing this function is useful (presence any \code{NA})
 #' @param silent (logical) suppress messages
+#' @param debug (logical) display additional messages for debugging
 #' @param callFrom (character) allow easier tracking of messages produced
 #' @return This function returns a list with NA-neighbours sorted by number of NAs in replicate group
 #' @seealso This function gets used by \code{\link{matrixNAneighbourImpute}} and \code{\link{testRobustToNAimputation}}; estimation of mode \code{\link[wrMisc]{stableMode}}; detection of NAs \code{\link[stats]{na.fail}}
@@ -20,50 +18,36 @@
 #' mat1 <- matrix(mat1, ncol=12, byrow=TRUE)
 #' gr4 <- gl(3, 4)
 #' isolNAneighb(mat1, gr4)
-#' 
 #' @export
-isolNAneighb <- function(mat, gr, maxHi=3, iniCheck=TRUE, silent=FALSE, callFrom=NULL) {
+isolNAneighb <- function(mat, gr, silent=FALSE, debug=FALSE, callFrom=NULL) {
   ## isolate NA-neighbours
-  ## 'maxHi' .. maximum count of NAs to consider separately (higher ones will be counted/pooled as maxHi)
-  if(!isTRUE(silent)) silent <- FALSE
   fxNa <- wrMisc::.composeCallName(callFrom, newNa="isolNAneighb")
-  datOK <- TRUE
-  msg <- NULL
   if(!isTRUE(silent)) silent <- FALSE
+  if(isTRUE(debug)) silent <- FALSE else debug <- FALSE
+  msg <- NULL
+  datOK <- TRUE
+  NAneig <- NULL
   if(any(length(mat) <1, length(dim(mat)) !=2, dim(mat) < c(2,1))) { datOK <- FALSE
     msg <- "'mat' should be matrix or data.frame with min 2 rows & 1 column, nothing to do, return NULL"}
-  if(length(gr) !=ncol(mat)) { datOK <- FALSE
-    msg <- "Length of 'gr' must match number of columns in 'mat', nothing to do, return NULL" } 
-  if(length(unique(gr))==length(gr)) { datOK <- FALSE
-    if(!silent) message(fxNa,"No replicates, can't isolate NA-neighbours") }
+  if(datOK && length(gr) !=ncol(mat)) { datOK <- FALSE
+    msg <- "Length of 'gr' must match number of columns in 'mat', nothing to do, return NULL" }
+  if(datOK && length(unique(gr)) ==length(gr)) { datOK <- FALSE
+    msg <- "No replicates, can't isolate NA-neighbours" }
+  if(!datOK && !silent) message(fxNa,msg)
+  if(debug) {message(fxNa," iNN1"); iNN1 <- list(mat=mat, gr=gr, datOK=datOK)}
+
   if(datOK) {
-    NAneig <- lapply(1:maxHi, function(x) NULL)         # initialize
+    ## basic (optimized) extraction of NA-neighbours
+    maxHi <- max(tapply(gr, gr, length)) -1             # max number of NA-neighbours (exclude group/line with all NA)
+    NAneig <- lapply(1:maxHi, function(x) NULL)         # initialize output
     names(NAneig) <- paste0("n", 1:maxHi)
-    chNa <- if(!isFALSE(iniCheck)) is.na(mat) else TRUE
-    if(!any(chNa)) { return(NAneig)
-    } else { 
-      ii <- table(wrMisc::naOmit(gr))              # run only on data with replicate columns
-      for(i in names(ii)[which(ii >0)]) {
-      tmp <- mat[,which(gr==i)]
-      nNA <- rowSums(is.na(tmp))
-      chHi <- nNA > maxHi & nNA < ncol(tmp)
-      if(any(chHi)) nNA[which(chHi)] <- maxHi
-      chExtr <- nNA %in% c(0,ncol(tmp))
-      if(any(chExtr)) nNA[which(chExtr)] <- NA
-      NAnei <- by(tmp,nNA,function(x) wrMisc::naOmit(as.numeric(as.matrix(x))))
-      for(j in names(NAnei)) { x <- as.numeric(j); NAneig[[x]] <- c(NAneig[[x]], NAnei[[j]])}
-    } }
-    NAneig 
-  } else { if(!silent) message(fxNa, msg)
-    NULL} }
+    ## need first to separate by groups of replicates
+    matR <- lapply(unique(gr), function(x) {mat[, which(gr ==x)]})
+    ## now separate NA-neighbours for each group/line
+    nNA <- as.integer(sapply(matR, function(x) rowSums(is.na(x))))
+    naNei <- wrMisc::partUnlist(lapply(matR, apply, 1, function(x) {chN <- is.na(x); if(sum(chN) ==0 || sum(chN)==length(x)) NULL else x[which(!chN)]}))
+    ## combine according to number of NA-values in group/line
+    for(i in 1:maxHi) {ch1 <- which(nNA==i); if(length(ch1) >0) NAneig[[i]] <- unlist(naNei[ch1])}}
+  NAneig }
   
-#' @export
-.nNAbyGroup <- function(mat, gr) {
-  ## get number of NAs per line & group of replicates
-  ## replaced by wrMisc::rowGrpNA
-  gr1 <- wrMisc::naOmit(unique(gr))
-  nNA <- matrix(nrow=nrow(mat), ncol=length(gr1), dimnames=list(NULL,gr1))
-  for(i in 1:length(gr1)) {
-    nNA[,i] <- rowSums(is.na(mat[,which(gr==gr1[i])])) }
-  nNA }  
-  
+

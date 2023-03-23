@@ -2,7 +2,7 @@
 % Please edit documentation in R/massDeFormula.R
 \name{massDeFormula}
 \alias{massDeFormula}
-\title{molecular mass from chemical formula}
+\title{Molecular mass from chemical formula}
 \usage{
 massDeFormula(
   comp,

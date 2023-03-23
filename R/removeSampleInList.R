@@ -8,7 +8,8 @@
 #' @param remSamp (integer) column number to exclude
 #' @param listElem (character) names of list-elements where columns indicated with 'remSamp' should be removed
 #' @param silent (logical) suppress messages
-#' @param callFrom (character) allows easier tracking of messages produced
+#' @param debug (logical) display additional messages for debugging
+#' @param callFrom (character) allow easier tracking of message(s) produced
 #' @return This function returns a matrix including imputed values or list of final and matrix with number of imputed by group (plus optional plot)
 #' @seealso \code{\link{testRobustToNAimputation}}  
 #' @examples
@@ -18,13 +19,14 @@
 #' datL <- list(abund=datT6, quant=datT6, annot=matrix(nrow=nrow(datT6), ncol=2)) 
 #' datDelta2 <- removeSampleInList(datL, remSam=2)
 #' @export
-removeSampleInList <- function(dat, remSamp, listElem=c("abund","quant"), silent=FALSE, callFrom=NULL) {
+removeSampleInList <- function(dat, remSamp, listElem=c("abund","quant"), silent=FALSE, debug=FALSE, callFrom=NULL) {
   ##  
   fxNa <- wrMisc::.composeCallName(callFrom, newNa="removeSampleInList")
   msg <- "'dat' should be list or S3-object with $abund, $quant, $annot; invalid entry - can't do anything"
   if(!isTRUE(silent)) silent <- FALSE
+  if(isTRUE(debug)) silent <- FALSE else debug <- FALSE
   datOK <- FALSE
-  if(length(dat) >0 & is.list(dat)) datOK <- TRUE
+  if(length(dat) >0 && is.list(dat)) datOK <- TRUE
   if(datOK) {  
     chLst <- listElem %in% names(dat)
     if(sum(chLst) <1) stop("Can't find any of the list-elements defined in 'listElem' - nothing to do")

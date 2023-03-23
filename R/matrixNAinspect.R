@@ -41,7 +41,7 @@ matrixNAinspect <- function(dat, gr=NULL, retnNA=TRUE, xLab=NULL, tit=NULL, xLim
   if(is.list(dat)) {
     if("sampleSetup" %in% names(dat) & length(gr) <1) {
       gr <- dat$sampleSetup$lev
-      if(length(gr) >1 & length(dat$sampleSetup$col) <2) names(gr) <- dat$sampleSetup$meta[,dat$sampleSetup$col]  # in case names are not provided
+      if(length(gr) >1 && length(dat$sampleSetup$col) <2) names(gr) <- dat$sampleSetup$meta[,dat$sampleSetup$col]  # in case names are not provided
     }
     if(!silent) message(fxNa,"Trying to extract quantitation data to use as 'dat' out of list ..")
     dat <- dat$quant }
@@ -67,7 +67,7 @@ matrixNAinspect <- function(dat, gr=NULL, retnNA=TRUE, xLab=NULL, tit=NULL, xLim
   chNA <- any(isNA)
   nNAmat <- matrix(0, nrow=nrow(dat), ncol=length(levels(gr)), dimnames=list(NULL,levels(gr)))
   colPanel <- c(grDevices::grey(0.6), grDevices::rgb(0,0.7,0,0.6), grDevices::rgb(0.15,0.15,0.7,0.7))
-  if(debug) {message(fxNa,"found ",sum(isNA,na.rm=TRUE)," NAs (out of ",prod(dim(dat))," values); chNA=",chNA,"   mMNi0"); 
+  if(debug) {message(fxNa,"Ffound ",sum(isNA,na.rm=TRUE)," NAs (out of ",prod(dim(dat))," values); chNA=",chNA,"   mMNi0"); 
     mMNi0 <- list(dat=dat,gr=gr,isNA=isNA,chNA=chNA,nNAmat=nNAmat,hasNaNeigh=hasNaNeigh)}
   if(chNA & hasNaNeigh) {
     ## extract NA-neighbours
@@ -104,4 +104,4 @@ matrixNAinspect <- function(dat, gr=NULL, retnNA=TRUE, xLab=NULL, tit=NULL, xLim
     graphics::abline(v=stats::quantile(dat,c(0.05,0.1,0.15),na.rm=TRUE), col=c(quaCol[-1],"tomato3"), lty=2) 
     graphics::mtext(paste(" - -",c(5,10,15),"%-quantile (all data)"), col=c(quaCol[-1],"tomato3"), cex=0.6, adj=0, line=c(-1.5,-2.1,-2.7), side=3)}
 }
-   
+    

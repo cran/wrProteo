@@ -19,8 +19,7 @@ readProlineFile(
   refLi = NULL,
   separateAnnot = TRUE,
   plotGraph = TRUE,
-  tit = NULL,
-  graphTit = NULL,
+  titGraph = NULL,
   wex = 2,
   specPref = c(conta = "_conta\\\\|", mainSpecies = "OS=Homo sapiens"),
   gr = NULL,
@@ -41,7 +40,7 @@ readProlineFile(
 
 \item{logConvert}{(logical) convert numeric data as log2, will be placed in $quant}
 
-\item{sampleNames}{(character) new column-names for quantification data (ProteomeDiscoverer does not automatically use file-names from spectra); Please use with care since order of samples might be different as you expect}
+\item{sampleNames}{(character) custom column-names for quantification data; this argument has priority over \code{suplAnnotFile}}
 
 \item{quantCol}{(character or integer) colums with main quantitation-data : precise colnames to extract, or if length=1 content of \code{quantCol} will be used as pattern to search among column-names for $quant using \code{grep}}
 
@@ -59,9 +58,7 @@ readProlineFile(
 
 \item{plotGraph}{(logical or matrix of integer) optional plot vioplot of initial data; if integer, it will be passed to \code{layout} when plotting}
 
-\item{tit}{(character) custom title to plot}
-
-\item{graphTit}{(character) (depreciated custom title to plot), please use 'tit'}
+\item{titGraph}{(character) custom title to plot of distribution of quantitation values}
 
 \item{wex}{(integer) relative expansion factor of the violin-plot (will be passed to \code{\link[wrGraph]{vioplotW}})}
 
@@ -71,7 +68,9 @@ if list and list-element has multiple values they will be used for exact matchin
 
 \item{gr}{(character or factor) custom defined pattern of replicate association, will override final grouping of replicates from \code{sdrf} and/or \code{suplAnnotFile} (if provided)   \code{}}
 
-\item{sdrf}{(character, list or data.frame) optional extraction and adding of experimenal meta-data: if character, this may be the ID at ProteomeExchange. Besides, the output from \code{readSdrf} or a list from \code{defineSamples} may be provided; if \code{gr} is provided, it gets priority for grouping of replicates}
+\item{sdrf}{(character, list or data.frame) optional extraction and adding of experimenal meta-data: if character, this may be the ID at ProteomeExchange, 
+the second element may give futher indicatations for automatic organization of groups of replicates. 
+Besides, the output from \code{readSdrf} or a list from \code{defineSamples} may be provided; if \code{gr} is provided, \code{gr} gets priority for grouping of replicates}
 
 \item{suplAnnotFile}{(logical or character) optional reading of supplemental files produced by quantification software; however, if \code{gr} is provided, \code{gr} gets priority for grouping of replicates;
 if \code{TRUE} defaults to file '*InputFiles.txt' (needed to match information of \code{sdrf}) which can be exported next to main quantitation results;
@@ -90,7 +89,7 @@ May contain \code{lowNumberOfGroups=FALSE} for automatically choosing a rather e
 This function returns a list with \code{$raw} (initial/raw abundance values), \code{$quant} with final normalized quantitations, \code{$annot} (columns ), \code{$counts} an array with 'PSM' and 'NoOfPeptides', \code{$quantNotes} and \code{$notes}; or a data.frame with quantitation and annotation if \code{separateAnnot=FALSE}
 }
 \description{
-Quantification results form MS-Angel and Proline \href{http://www.profiproteomics.fr/proline/}{Proline} exported as xlsx format can be read directly.
+Quantification results from Proline \href{http://www.profiproteomics.fr/proline/}{Proline} and MS-Angel exported as xlsx format can be read directly using this function.
 Besides, files in tsv, csv (European and US format) or tabulated txt can be read, too.
 Then relevant information gets extracted, the data can optionally normalized and displayed as boxplot or vioplot.
 The final output is a list containing 6 elements: \code{$raw}, \code{$quant},  \code{$annot}, \code{$counts}, \code{$quantNotes} and \code{$notes}.

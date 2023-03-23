@@ -9,6 +9,7 @@ extrSpeciesAnnot(
   spec = c("_CONT", "_HUMAN", "_YEAST", "_ECOLI"),
   shortNa = c("cont", "H", "S", "E"),
   silent = FALSE,
+  debug = FALSE,
   callFrom = NULL
 )
 }
@@ -21,7 +22,9 @@ extrSpeciesAnnot(
 
 \item{silent}{(logical) suppress messages}
 
-\item{callFrom}{(character) allows easier tracking of messages produced}
+\item{debug}{(logical) display additional messages for debugging}
+
+\item{callFrom}{(character) allow easier tracking of messages produced}
 }
 \value{
 This function returns a character vector with single (last of multiple) term if found in argument \code{annot}

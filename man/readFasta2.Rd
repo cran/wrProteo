@@ -51,7 +51,7 @@ Read fasta formatted file (from \href{https://www.uniprot.org}{UniProt}) to extr
 If \code{tableOut=TRUE} output may be organized as matrix for separating meta-annotation (eg uniqueIdentifier, entryName, proteinName, GN) in separate columns.
 }
 \examples{
-# tiny example with common contaminants 
+## Tiny example with common contaminants 
 path1 <- system.file('extdata',package='wrProteo')
 fiNa <-  "conta1.fasta.gz"
 fasta1 <- readFasta2(file.path(path1,fiNa))

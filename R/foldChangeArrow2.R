@@ -17,8 +17,9 @@
 #' @param addText (logical or named vector) indicate if text explaining arrow should be displayed, use \code{TRUE} for default (on top right of plot), 
 #'    or any combination of 'loc','line','cex','side','adj','col','text' (or 'txt') for customizing specific elements
 #' @param returnRatio (logical) return ratio
-#' @param callFrom (character) allow easier tracking of message(s) produced
 #' @param silent (logical) suppress messages
+#' @param debug (logical) display additional messages for debugging
+#' @param callFrom (character) allow easier tracking of message(s) produced
 #' @return plots arrow only (and explicative text), if \code{returnRatio=TRUE} also returns numeric value for extracted ratio
 #'
 #' @details The argument \code{addText} also allows specifying a fixed position when using \code{addText=c(loc="bottomleft")}, also bottomright, topleft, topright, toleft and toright may be used.
@@ -32,21 +33,21 @@
 #' #deprecated# foldChangeArrow2(FC=1.5) 
 #' 
 #' @export
-foldChangeArrow2 <- function(FC, useComp=1, isLin=TRUE, asX=TRUE, col=2, arr=c(0.005,0.15), lwd=NULL, 
-  addText=c(line=-0.9,cex=0.7,txt="expected",loc="toright"), returnRatio=FALSE, silent=FALSE, callFrom=NULL){
+foldChangeArrow2 <- function(FC, useComp=1, isLin=TRUE, asX=TRUE, col=1, arr=c(0.005,0.15), lwd=NULL, 
+  addText=c(line=-0.9,cex=0.7,txt="expected",loc="toright"), returnRatio=FALSE, silent=FALSE, debug=FALSE, callFrom=NULL){
   ##
   .Deprecated("Please use the foldChangeArrow() function form the package wrGrpah instead !")
   fxNa <- wrMisc::.composeCallName(callFrom, newNa="foldChangeArrow2")
   if(!isTRUE(silent)) silent <- FALSE
   figCo <- graphics::par("usr")                         #  c(x1, x2, y1, y2)
-  if(all(length(FC) >1, any(c("MArrayLM","list") %in% class(FC)) )) {
+  if(length(FC) >1 && any(c("MArrayLM","list") %in% class(FC))) {
     ## try working based on MArrayLM-object or list
     ##  look for names of pairwise comparisons to extract numeric parts for calculating expected ratio 
     chNa <- names(FC) %in% c("t","BH","FDR","p.value")
     if(any(chNa)) {
       if(all(length(useComp)==1, length(dim(FC[[which(chNa)[1]]])) ==2, dim(FC[[which(chNa)[1]]]) > 0:1)) {
         colNa <- colnames(FC[[which(chNa)[1]]])
-        ch2 <- colNa[1]=="(Intercept)" & length(colNa)==2        
+        ch2 <- colNa[1]=="(Intercept)" && length(colNa)==2        
       } else ch2 <- TRUE 
       if(!ch2) {
         regStr <-"[[:space:]]*[[:alpha:]]+[[:punct:]]*[[:alpha:]]*"
@@ -81,9 +82,9 @@ foldChangeArrow2 <- function(FC, useComp=1, isLin=TRUE, asX=TRUE, col=2, arr=c(0
         chLe <- grep("left$",as.character(addText["loc"]))
         chCe <- grep("center$",as.character(addText["loc"]))
         if(length(chLe) >0) { mAdj <- 0; mTxt <- paste0(" ",mTxt)                          # this is left.xxx
-          if(arr[1] < 0.15 & FC < figCo[1] +diff(figCo[1:2])/3) arr[1] <- 0.015            # raise min starting hight to avoid crossing text
+          if(arr[1] < 0.15 && FC < figCo[1] +diff(figCo[1:2])/3) arr[1] <- 0.015            # raise min starting hight to avoid crossing text
         } else { if(length(chRi) >0) {mAdj <- 1; mTxt <- paste0(mTxt," ")                  # this is right.xxx
-          if(arr[1] < 0.15 & FC > figCo[2] -diff(figCo[1:2])/3) arr[1] <- 0.015            # raise min starting hight to avoid crossing text
+          if(arr[1] < 0.15 && FC > figCo[2] -diff(figCo[1:2])/3) arr[1] <- 0.015            # raise min starting hight to avoid crossing text
           } else {
             if(length(chCe) >0) mAdj <- 0.5; if(arr[1] < 0.15) arr[1] <- 0.015 }} 
         ## check for top/bottom
@@ -102,6 +103,6 @@ foldChangeArrow2 <- function(FC, useComp=1, isLin=TRUE, asX=TRUE, col=2, arr=c(0
       col=col,lwd=lwd,length=0.1) else { graphics::arrows(figCo[3] + arr[1]*(figCo[4]-figCo[3]), FC, 
       figCo[3] + arr[2]*(figCo[4]-figCo[3]), FC, col=col, lwd=lwd,length=0.1) }
     if(isTRUE(returnRatio)) return(FC)
-  } else if(!silent) message("unable to extract usable values for drawing arrow")
+  } else if(!silent) message("Unable to extract usable values for drawing arrow")
 }
   

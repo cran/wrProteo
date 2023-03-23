@@ -9,12 +9,13 @@ foldChangeArrow2(
   useComp = 1,
   isLin = TRUE,
   asX = TRUE,
-  col = 2,
+  col = 1,
   arr = c(0.005, 0.15),
   lwd = NULL,
   addText = c(line = -0.9, cex = 0.7, txt = "expected", loc = "toright"),
   returnRatio = FALSE,
   silent = FALSE,
+  debug = FALSE,
   callFrom = NULL
 )
 }
@@ -39,6 +40,8 @@ or any combination of 'loc','line','cex','side','adj','col','text' (or 'txt') fo
 \item{returnRatio}{(logical) return ratio}
 
 \item{silent}{(logical) suppress messages}
+
+\item{debug}{(logical) display additional messages for debugging}
 
 \item{callFrom}{(character) allow easier tracking of message(s) produced}
 }

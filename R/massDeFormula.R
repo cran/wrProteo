@@ -1,4 +1,4 @@
-#'  molecular mass from chemical formula 
+#'  Molecular mass from chemical formula 
 #'
 #'  Calculate molecular mass based on atomic composition    
 #' 
@@ -67,6 +67,17 @@ massDeFormula <- function(comp, massTy="mono", rmEmpty=FALSE, silent=FALSE, call
   if(any(chNa)) {y <- which(chNa); mass[y] <- 0; names(mass)[y] <- ""}
   mass }
   
+
+#'  Molecular mass for Elements 
+#'
+#' This fuction returns the molecular mass based of main elements found in biology/proteomics as average and mono-isotopic mass. 
+#' The result includes H, C, N, O, P, S, Se  and the electrone.
+#' The values are bsed on http://www.ionsource.com/Card/Mass/mass.htm in ref to http://physics.nist.gov/Comp (as of 2019).
+#' 
+#' @return This function returns a numeric matrix with mass values
+#' @seealso \code{\link{massDeFormula}}
+#' @examples
+#' .atomicMasses()
  #' @export
 .atomicMasses <- function() {
   ## return matrix of atomic masses : 1st col for average mass and 2nd col for mono-isotopic

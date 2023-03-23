@@ -18,7 +18,7 @@ cleanListCoNames(
 \arguments{
 \item{dat}{(list) main input}
 
-\item{rem}{(character) character string to be removed, may be named 'left' and 'right' for more specific exact pattern matching 
+\item{rem}{(character) character string to be removed, may be named 'left' and 'right' for more specific exact pattern matching
 (this part will be perfomed before character substitutions by \code{subst})}
 
 \item{subst}{(character of length=2, or matrix with 2 columns) pair(s) of character-strings for replacement (1st as search-item and 2nd as replacement); this part is performed after character-removal via \code{rem}}
@@ -37,17 +37,17 @@ cleanListCoNames(
 This function returns a list (equivalent to input \code{dat})
 }
 \description{
-This function allows to manipulate sample-names (ie colnames) from data stored as multiple matrixes or data.frames in multiple sheets of a list in a batch-wise manner.
+This function allows to manipulate sample-names (ie colnames of abundance data) in a batch-wise manner from data stored as multiple matrixes or data.frames of a list.
 Import functions such as \code{readMaxQuantFile()} organize initial flat files into lists (of matrixes) of the different types of data.
-Many times all column names in such lists carry long names including redundant information, like the overall experiment name or date, etc. 
+Many times all column names in such lists carry long names including redundant information, like the overall experiment name or date, etc.
 The aim of this function is to facilitate 'cleaning' the sample- (ie column-) names to obtain short and concise names.
 Character terms to be removed (via argument \code{rem}) and/or replaced/subsitituted (via argument \code{subst}) should be given as they are, characters with special behaviour in \code{grep} (like '.') will be protected internally.
 Note, that the character substitution part will be done first, and the removal part (without character replacement) afterwards.
 }
 \examples{
 dat1 <- matrix(1:12, ncol=4, dimnames=list(1:3, paste0("sample_R.",1:4)))
-dat1 <- list(raw=dat1, quant=dat1, notes="other..") 
-cleanListCoNames(dat1, rem=c(left="sample_"), c(".","-")) 
+dat1 <- list(raw=dat1, quant=dat1, notes="other..")
+cleanListCoNames(dat1, rem=c(left="sample_"), c(".","-"))
 }
 \seealso{
 \code{\link[base]{grep}}

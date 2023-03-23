@@ -16,7 +16,7 @@
 #' @return This function returns (depending on parameter \code{tableOut}) a) a simple character vector (of sequence) with Uniprot ID as name or b) a matrix with columns: 'database','uniqueIdentifier','entryName','proteinName','sequence' and further columns depending on argument \code{UniprSep}
 #' @seealso  \code{\link{writeFasta2}} for writing as fasta, or for reading \code{\link[base]{scan}} or  \code{read.fasta} from the package \href{https://CRAN.R-project.org/package=seqinr}{seqinr} 
 #' @examples
-#' # tiny example with common contaminants 
+#' ## Tiny example with common contaminants 
 #' path1 <- system.file('extdata',package='wrProteo')
 #' fiNa <-  "conta1.fasta.gz"
 #' fasta1 <- readFasta2(file.path(path1,fiNa))
@@ -38,15 +38,15 @@ readFasta2 <- function(filename, delim="|", databaseSign=c("sp","tr","generic","
   if(!file.exists(filename)) stop(" file ",filename," not existing")
   sca <- try(readLines(filename))
   ## faster reading of file ? see https://www.r-bloggers.com/2011/08/faster-files-in-r/
-  if(inherits(sca, "try-error")) stop(fxNa," file ",filename," exits but could not read !")
-  if(debug) {message(fxNa," successfully read file '",filename,"'")}
+  if(inherits(sca, "try-error")) stop(fxNa,"File ",filename," exits but could not read !")
+  if(debug) {message(fxNa,"Successfully read file '",filename,"'")}
   ## abandon using scan due to cases of EOL during text read interfering with ...
   newLi <- grep("^>", sca)
   newLi <- if(is.list(newLi)) newLi <- sort(unlist(newLi))  else as.numeric(newLi)
-  if(length(newLi) <1) stop(fxNa," no instances of 'databaseSign', ie '",paste(databaseSign,collapse=""),"' found !  Maybe this is NOT a real fasta-file ?")
+  if(length(newLi) <1) stop(fxNa,"No instances of 'databaseSign', ie '",paste(databaseSign,collapse=""),"' found !  Maybe this is NOT a real fasta-file ?")
   byDBsig <- sapply(databaseSign, function(x) grep(paste0("^>",x), sca[newLi]))
   names(byDBsig) <- databaseSign
-  if(debug) {message(fxNa," checking for database signs ",wrMisc::pasteC(databaseSign, quoteC="'"))}
+  if(debug) {message(fxNa,"Checking for database signs ",wrMisc::pasteC(databaseSign, quoteC="'"))}
 
   ## count occurance of prefix types
   chLe <- sapply(byDBsig,length)
@@ -61,9 +61,8 @@ readFasta2 <- function(filename, delim="|", databaseSign=c("sp","tr","generic","
   if(debug) {message(fxNa," found ",wrMisc::pasteC(chLe)," occurances of database signs" )}
 
   ## check for empty sequences
-  useLi <- cbind(newLi+1, c(newLi[-1]-1, length(sca)))
+  useLi <- cbind(newLi +1, c(newLi[-1] -1, length(sca)))
   ## note : if single line of sequence both values on same line have same index
-  #won't work# if(useLi[nrow(useLi),2] - useLi[nrow(useLi),1] ==0) useLi <- useLi[-nrow(useLi),]    # omit last if empty
   chLe <- useLi[,2] - useLi[,1] <0
   if(any(c("empty","removeempty") %in% tolower(removeEntries), na.rm=TRUE) & any(chLe, na.rm=TRUE)) {
     if(!silent) message(fxNa," found ",sum(chLe)," case(s) of entries without any sequence underneith - omitting; bizzare !")
@@ -89,8 +88,8 @@ readFasta2 <- function(filename, delim="|", databaseSign=c("sp","tr","generic","
   chNa <- is.na(entryName)
   if(any(chNa, na.rm=TRUE)) entryName[which(chNa)] <- id[which(chNa)]      # no separator, use text available as ID and as name 
 
-  if(debug) {message(fxNa," isolated ",length(id)," ids ( ",sum(chNa)," with same text as ID and sequence name)" )}
-  entryName <- sub("^ ","",sub("\\.$","",entryName))          # remove heading space or tailing point
+  if(debug) {message(fxNa,"Isolated ",length(id)," ids ( ",sum(chNa)," with same text as ID and sequence name)" )}
+  entryName <- sub("^ ","", sub("\\.$","",entryName))          # remove heading space or tailing point
   seqs <- apply(useLi, 1, function(x) paste(sca[x[1]:x[2]], collapse=""))
 
   if(debug) {message(fxNa," rf5")}
@@ -111,7 +110,6 @@ readFasta2 <- function(filename, delim="|", databaseSign=c("sp","tr","generic","
     UniprSep <- sub("^ ","",sub(" $","",UniprSep))                              # remove heading or tailing space 
     out <- matrix(NA, nrow=length(id0), ncol=length(UniprSep) +5, 
       dimnames=list(NULL,c("database","uniqueIdentifier","entryName","proteinName","sequence",sub("=$","",sub("^ +","",UniprSep)) )))
-    #aftS <- paste(sapply(UniprSep, function(x) paste0("\ [[:print:]]+",x)), collapse="|")
     aftS <- "[[:alpha:]][[:upper:]]*[[:digit:]]*[[:upper:]]*_[[:upper:]]+[[:digit:]]* "                               # some CAPs + ev some digits
     if(debug) {message(fxNa," rf6")}
 
@@ -121,7 +119,7 @@ readFasta2 <- function(filename, delim="|", databaseSign=c("sp","tr","generic","
     ncha <- nchar(entryNameS)
     suplID <- if(any(ncha >0, na.rm=TRUE)) substr(entryName, 1, nch -1-ncha) else rep(NA, length(entryName))
     chS <- ncha == nchar(entryName)
-    out[,c("database","uniqueIdentifier","entryName","proteinName","sequence")] <- cbind(dbSig,id,entryNameS,suplID,seqs)
+    out[,c("database","uniqueIdentifier","entryName","proteinName","sequence")] <- cbind(dbSig, id, entryNameS, suplID, seqs)
     if(debug) {message(fxNa," rf7")}
 
     ## extract part after current uniprSep and the before something looking like next uniprSep
@@ -129,17 +127,17 @@ readFasta2 <- function(filename, delim="|", databaseSign=c("sp","tr","generic","
     chUni <- which(sapply(grUni, length) >0)              # which separators concerned
     UniprSep <- c(UniprSep, "ZYXWVUTSR=")                 # need to add dummy sequence for last
     if(any(chUni, na.rm=TRUE)) for(i in chUni) {
-      aftS <- paste(sapply(UniprSep[-1*(1:i)],function(x) paste0("\ ",x,"[[:alnum:]]+[[:print:]]*")),collapse="|")
+      aftS <- paste(sapply(UniprSep[-1*(1:i)], function(x) paste0("\ ",x,"[[:alnum:]]+[[:print:]]*")),collapse="|")
       curS <- paste(sapply(UniprSep[i], function(x) paste0("^[[:print:]]* ",x)),collapse="|")
-      out[grUni[[i]], sub("=$","",UniprSep[i]) ] <- sub(aftS,"", sub(curS,"",entryNameS[grUni[[i]]]))           # c(3,5+i)
+      out[grUni[[i]], sub("=$","",UniprSep[i]) ] <- sub(aftS,"", sub(curS,"", entryNameS[grUni[[i]]]))           # c(3,5+i)
     }
     ## propagate NONAME to empty proteinName
-    ch1 <- grepl("NONAME",out[,2]) & nchar(out[,"proteinName"]) <1
+    ch1 <- grepl("NONAME", out[,2]) & nchar(out[,"proteinName"]) <1
     if(any(ch1, na.rm=TRUE)) out[which(ch1),"proteinName"] <- out[which(ch1),2] 
     
     ## remove cols with all NA
     chNA <- colSums(!is.na(out)) <1
-    if(any(chNA) & isTRUE(cleanCols)) out <- if(sum(!chNA) >1) out[,which(!chNA)] else matrix(out[,which(!chNA)], ncol=1, dimnames=list(NULL,colnames(out)[which(!chNA)])) # remove columns with NA only
+    if(any(chNA) && isTRUE(cleanCols)) out <- if(sum(!chNA) >1) out[,which(!chNA)] else matrix(out[,which(!chNA)], ncol=1, dimnames=list(NULL,colnames(out)[which(!chNA)])) # remove columns with NA only
   } else {out <- seqs; names(out) <- entryName}  
   out }
        

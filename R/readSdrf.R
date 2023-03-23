@@ -40,7 +40,7 @@ readSdrf <- function(fi, chCol="auto", urlPrefix="github", silent=FALSE, callFro
   if(datOK) {
     flexFileNa <- TRUE
     chFi <- file.exists(fi)
-    if(!chFi & length(urlPrefix)==1 & !grepl("^https?://",fi)) {
+    if(!chFi && length(urlPrefix)==1 && !grepl("^https?://",fi)) {
       if(debug) {message(fxNa," rs1"); rs1 <- list(fi=fi,chCol=chCol,urlPrefix=urlPrefix,datOK=datOK,chFi=chFi)}
       if(identical(urlPrefix,"github")) urlPrefix <- "https://github.com/bigbio/proteomics-metadata-standard/blob/master/annotated-projects/"
       if(grepl("/",fi)) {        # if abs or relative path- do not adjust lower/upper case
@@ -57,14 +57,14 @@ readSdrf <- function(fi, chCol="auto", urlPrefix="github", silent=FALSE, callFro
 
   ## Main reading
   if(datOK) {
-    if(debug & !grepl("\\.sdrf",fi[1])) message(fxNa,"Trouble ahead ?  '",fi,"' does not contain '.sdrf' ...")
+    if(debug && !grepl("\\.sdrf",fi[1])) message(fxNa,"Trouble ahead ?  '",fi,"' does not contain '.sdrf' ...")
     out <- suppressWarnings(try(utils::read.delim(wrMisc::gitDataUrl(fi[1]), sep='\t', header=TRUE, fill=TRUE), silent=!isTRUE(debug)))
     if(inherits(out, "try-error")) {
       if(any(grepl("pxd",fi))) {
         if(debug) message(fxNa,"First try not successful; trying rather as '", gsub("pxd","PXD", fi[1])," (instead of '",fi[1],"')")
         fi[1] <- gsub("pxd","PXD", fi[1])
         out <- suppressWarnings(try(utils::read.delim(wrMisc::gitDataUrl(fi[1]), sep='\t', header=TRUE, fill=TRUE), silent=!isTRUE(debug)))}
-      if(inherits(out, "try-error") & length(fi) >1) {
+      if(inherits(out, "try-error") && length(fi) >1) {
         if(debug) message(fxNa,"So far not successful; trying rather as '",fi[2],"')")
         out <- suppressWarnings(try(utils::read.delim(wrMisc::gitDataUrl(fi[2]), sep='\t', header=TRUE, fill=TRUE), silent=!isTRUE(debug)))
         if(!inherits(out, "try-error")) fi <- fi[2] }
@@ -82,7 +82,7 @@ readSdrf <- function(fi, chCol="auto", urlPrefix="github", silent=FALSE, callFro
         if(any(sapply(c("auto","def","default"), identical, chCol), na.rm=TRUE)) chCol <- c("source.name", "assay.name",
           "characteristics.biological.replicate.","characteristics.organism.", "comment.data.file.","comment.file.uri." )
         if(length(chCol) >0) locCol <- match(chCol, colnames(out))
-        if(any(is.na(locCol)) & !silent) message(fxNa,"Data-Annotation ",fi2,"  Can't find column(s) ",wrMisc::pasteC(chCol[which(is.na(locCol))], quoteC="'"))
+        if(any(is.na(locCol)) && !silent) message(fxNa,"Data-Annotation ",fi2,"  Can't find column(s) ",wrMisc::pasteC(chCol[which(is.na(locCol))], quoteC="'"))
         if(!silent) message(fxNa,"Successfully read ",ncol(out)," annotation columns for ",nrow(out)," samples")
         return(out) } }
   }

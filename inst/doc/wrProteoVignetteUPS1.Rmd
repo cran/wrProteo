@@ -120,6 +120,7 @@ The import function used furtheron in this vignette can directly download this m
 
 ### Key Elements And Additional Functions
 
+\small
 ```{r functions1, echo=TRUE}
 ## A few elements and functions we'll need lateron
 methNa <- c("ProteomeDiscoverer","MaxQuant","Proline")
@@ -218,12 +219,17 @@ fiNaMQ <- "proteinGroups.txt.gz"
 
 ## We need to define the setup of species
 specPrefMQ <- list(conta="CON_|LYSC_CHICK", mainSpecies="OS=Saccharomyces cerevisiae", spike=UPS1$ac)
-dataMQ <- readMaxQuantFile(path1, file=fiNaMQ, specPref=specPrefMQ, refLi="mainSpe", sdrf="PXD001819", suplAnnotFile=TRUE, groupPref=list(lowNumberOfGroups=FALSE))
+dataMQ <- readMaxQuantFile(path1, file=fiNaMQ, specPref=specPrefMQ, refLi="mainSpe",
+  sdrf=c("PXD001819","max"), suplAnnotFile=TRUE, plotGraph=FALSE)
 ```
 
-The data were imported and median-normalized, the protein annotation was parsed to automatically extract IDs, protein-names and species information.
-Please note, that in the example above we directly added information about the experimental setup from the sdrf repository.
-Given the annotation the non-parsed anotation from the fasta is available, we wrote the _specPref_ argument slightly different than in the other examples.
+The data were imported, log2-transformed and median-normalized, the protein annotation was parsed to automatically extract IDs, protein-names and species information.
+The species anotation was extracted out of the fasta-headers, as given in the _specPref_ argument (MaxQuant specific setting).
+As explained in more detail in the general vignette [wrProteoVignette1](https://CRAN.R-project.org/package=wrProteo),
+In this example we use only proteins annotated as _Homo sapiens_ for determining the normalization-factors via the argument _refLi_.
+
+If you wish to inspect the graphs for the distribution of abundance values for each sample before and after median-normalization, please set the argument _plotGraph=TRUE_ (default).
+Please note, that in the example above we directly added information about the experimental setup from the _sdrf_ repository.
 
 
 ```{r readMaxQuant2, fig.height=8, fig.width=9.5, fig.align="center", echo=TRUE}
@@ -246,7 +252,7 @@ Later in this document data from ProteomeDiscoverer will by frequently abbreviat
 
 With the data used here, the identification was performed using the XCalibur module of ProteomeDiscoverer version 2.4 .
 Quantitation data at the level of consensus-proteins can be exported to tabulated text files, which can be treated by the function shown below.
-The resultant data were export in tablulated format and the file automatically named '\_Proteins.txt_' (the option R-headers was checked, however this option is not mandatory).
+The resultant data were export in tablulated format and the file automatically named '\_Proteins.txt_' by ProteomeDiscoverer (the option R-headers was checked, however this option is not mandatory).
 Files compressed as .gz can be read, too (like in the example below).
 
 
@@ -255,17 +261,21 @@ path1 <- system.file("extdata", package="wrProteo")
 fiNaPd <- "pxd001819_PD24_Proteins.txt.gz"
 ## Next, we define the setup of species
 specPrefPD <- list(conta="Bos tauris|Gallus", mainSpecies="Saccharomyces cerevisiae", spike=UPS1$ac)
-dataPD <- readProtDiscovFile(file=fiNaPd, path=path1, refLi="mainSpe", specPref=specPrefPD, sdrf="PXD001819", groupPref=list(lowNumberOfGroups=FALSE))
+dataPD <- readProtDiscovFile(file=fiNaPd, path=path1, refLi="mainSpe", specPref=specPrefPD,
+  sdrf=c("PXD001819","max"), plotGraph=FALSE)
 ```
 
-The data were imported and median-normalized, the protein annotation was parsed to automatically extract IDs, protein-names and species information.
-
+The data were imported, log2-transformed and median-normalized, the protein annotation was parsed to automatically extract IDs, protein-names and species information.
 Please note, that quantitation data exported from ProteomeDiscoverer frequently have very generic column-names (increasing numbers).
 When calling the import-function they can be replaced by more meaningful names either using the argument _sampNa_,
 or from reading the default annotation in the file _'InputFiles.txt'_ or, finally, from the sdrf-annotation.
-In the example below both the default annotation as file _'InputFiles.txt'_ and sdrf annotation are available and were integrated to object produced by the import-function.
+In the example below both the default annotation as file _'InputFiles.txt'_ and _sdrf_ annotation are available and were integrated to object produced by the import-function.
 
-If the user chooses to add other custom sample-names, much care should be taken on the order of the the vector _sampleNames_ .
+The species anotation was extracted out as given in the _specPref_ argument.
+In this example we use only proteins annotated as _Homo sapiens_ for determining the normalization-factors via the argument _refLi_.
+
+If you wish to inspect the graphs for the distribution of abundance values for each sample before and after median-normalization, please set the argument _plotGraph=TRUE_ (default).
+
 
 ```{r readProteomeDiscoverer2, fig.height=8, fig.width=9.5, fig.align="center", echo=TRUE}
 ## The number of lines and colums
@@ -285,7 +295,7 @@ In sum, `r sum(UPS1$ac %in% dataPD$annot[,1])` UPS1 proteins were found, `r sum(
 ### Proline
 
 [Proline](http://www.profiproteomics.fr/proline/) is open-source software provided by the [Profi-consortium](https://www.profiproteomics.fr)
-(see also [proline-core on github](https://github.com/profiproteomics/proline-core)), published by [BouyssiÃ© et al 2020](https://doi.org/10.1093/bioinformatics/btaa118).
+(see also [proline-core on github](https://github.com/profiproteomics/proline-core)), published by [Bouyssie et al 2020](https://doi.org/10.1093/bioinformatics/btaa118).
 Later in this document data from Proline will by frequently abbreviated as **PL**.
 
 Protein identification in Proline gets performed by [SearchGUI](http://compomics.github.io/projects/searchgui), see also [Vaudel et al 2015](https://doi.org/10.1002/pmic.201000595).
@@ -293,7 +303,7 @@ In this case [X!Tandem](https://www.thegpm.org/TANDEM/) (see also [Duncan et al 
 
 Quantitation data at the level of consensus-proteins can be exported from [Proline](http://www.profiproteomics.fr/proline/)
 as _.xlsx_ or tabulated text files, both formats can be treated by the import-functions shown below.
-Here, Proline version 1.6.1 was used.
+Here, Proline version 1.6.1 was used with addition of Percolator (via MS-Angel from the same authors).
 
 
 ```{r readProline, fig.height=8, fig.width=9.5, fig.align="center", echo=TRUE}
@@ -301,15 +311,25 @@ path1 <- system.file("extdata", package="wrProteo")
 fiNaPl <- "pxd001819_PL.xlsx"
 
 specPrefPL <- list(conta="_conta", mainSpecies="Saccharomyces cerevisiae", spike=UPS1$ac)
-dataPL <- readProlineFile(fiNaPl, path=path1, specPref=specPrefPL, normalizeMeth="median", refLi="mainSpe", sdrf="PXD001819", groupPref=list(lowNumberOfGroups=FALSE))
+dataPL <- readProlineFile(fiNaPl, path=path1, specPref=specPrefPL, normalizeMeth="median", refLi="mainSpe",
+  sdrf=c("PXD001819","max"), plotGraph=FALSE)
 ```
 
-In addition, we need to correct the quantification column-heads (like â€˜Levure2ug+ UPS1-100amol-1â€™) and bring them to a simpler version :
+
+The (log2-transformed) data were imported and median-normalized, the protein annotation was parsed to automatically extract IDs, protein-names and species information.
+The species anotation was extracted out of protein annotation columns, as specified with the _specPref_ argument.
+As explained in more detail in the general vignette [wrProteoVignette1](https://CRAN.R-project.org/package=wrProteo),
+In this example we use only proteins annotated as _Homo sapiens_ for determining the normalization-factors via the argument _refLi_.
+
+If you wish to inspect the graphs for the distribution of abundance values for each sample before and after median-normalization, please set the argument _plotGraph=TRUE_ (default).
+Please note, that in the example above we directly added information about the experimental setup from the _sdrf_ repository.
+
+In addition, we need to correct the quantification column-heads (like 'Levure2ug+ UPS1-100amol') and bring them to a simpler version :
 Here, both the default annotation from the _xlsx_ and sdrf annotation are available and were integrated to object produced by the import-function.
 
 ```{r postTreatmPL, echo=TRUE}
 head(colnames(dataPL$raw), 7)
-dataPL <- cleanListCoNames(dataPL, rem=c("Levure2ug+ UPS1-"), subst=cbind(c("fmol","mol-"),c("000amol","mol_R")), mathOper="/2")
+dataPL <- cleanListCoNames(dataPL, rem=c("Levure2ug+ UPS1-"), subst=cbind(c("fmol","mol-"), c("000amol","mol_R")), mathOper="/2")
 
 ## let's check the result
 head(colnames(dataPL$raw),8)
@@ -339,13 +359,14 @@ sampNa <- colnames(dataPD$quant)
 
 ## it is more convenient to re-order columns this way in each project
 dataPD <- corColumnOrder(dataPD, sampNames=sampNa)          # already in good order
-dataMQ <- corColumnOrder(dataMQ, replNames=sub("amol_", "amol_R", colnames(dataMQ$quant)), sampNames=sampNa)  # incl canged names
-dataPL <- corColumnOrder(dataPL, sampNames=sampNa)
+dataMQ <- corColumnOrder(dataMQ, replNames=paste0("UPS1_",sub("amol_", "amol_R", colnames(dataMQ$quant))), sampNames=sampNa)  # incl canged names
+dataPL <- corColumnOrder(dataPL, replNames=paste0("UPS1_",colnames(dataPL$quant)), sampNames=sampNa)               # incl canged names
 ```
 
-At import we made use of the argument _specPref_ (specifying _'mainSpecies', 'conta' and 'spike') which allows to build categories based on searching keywords based on the initial annotation. In turn, we obtain the labels :
-'main Spe' for yeast (ie matrix), 'species2' for the UPS1 (ie spike) 'conta' for contaminants.
-Let's replace the first two generic terms by more specific ones (ie 'Yeast' and 'UPS1') :
+At import we made use of the argument _specPref_ (specifying '_mainSpecies_', '_conta_' and '_spike_') which allows to build categories based on searching keywords based on the initial annotation.
+In turn, we obtain the labels :
+'_main Spe_' for yeast (ie matrix), '_species2_' for the UPS1 (ie spike) 'conta' for contaminants.
+Let's replace the first two generic terms by more specific ones (ie '_Yeast_' and '_UPS1_') :
 
 ```{r postTreatm1, echo=TRUE}
 ## Need to rename $annot[,"SpecType"]
@@ -360,7 +381,7 @@ dataPL <- replMissingProtNames(dataPL)
     table(dataPD$annot[,"SpecType"])
 
 ## synchronize order of groups
-(grp9 <- dataPD$sampleSetup$level)
+(grp9 <- dataMQ$sampleSetup$level)
 names(grp9) <- rep(paste0(UPSconc,"amol"), each=3)
 dataPL$sampleSetup$groups <- dataMQ$sampleSetup$groups <- dataPD$sampleSetup$groups <- grp9  # synchronize order of groups
 ```
@@ -375,6 +396,7 @@ NamesUpsPL <- dataPL$annot[which(dataPL$annot[,"SpecType"]=="spike"), "Accession
 ```{r postTreatmTables, echo=TRUE}
 tabS <- mergeVectors(PD=table(dataPD$annot[,"SpecType"]), MQ=table(dataMQ$annot[,"SpecType"]), PL=table(dataPL$annot[,"SpecType"]))
 tabT <- mergeVectors(PD=table(dataPD$annot[,"Species"]), MQ=table(dataMQ$annot[,"Species"]), PL=table(dataPL$annot[,"Species"]))
+tabS[which(is.na(tabS))] <- 0
 tabT[which(is.na(tabT))] <- 0
 kable(cbind(tabS[,2:1], tabT), caption="Number of proteins identified, by custom tags, species and software")
 ```
@@ -604,16 +626,13 @@ To provide a quick overview, the clustered AUC values are displayed as PCA :
 try(biplot(prcomp(AucAll[,names(methNa)]), cex=0.7, main="PCA of AUC from ROC Curves"))
 ```
 
-On this PCA one can see the three software types used in red.
+On this PCA one can see the three software types in red.
 We can see that AUC values from MaxQuant correlate somehow less to Proline and ProteomeDiscoverer (red arrows).
 The pair-wise ratios constructed from the different rations are shown in black.
 They form a compact area with mostly wide ratios (one rather high and one low concentration of UPS1 proteins).
 Besides, there is a number of disperse points, typically containig the point of 125 and/or 250 fmol.
 These disperse points do not replicate well and follow their own characteristics captured by PC2.
 
-disperse/distinct group of low concentration-pairs (separated by PC1, mostly containing at least one 50 or 500fmol), low/med conc pairs (containing 2500, ev 5000)
-and the rest (med+high to any, high degree of text-superposition).
-Furthermore,
 
 Now we are ready to inspect the 5 clusters in detail :
 
@@ -902,17 +921,17 @@ Via indexing we choose only the lines./proteins with the annoation 'spike' (ie U
 
 #### PCA of UPS1 for ProteomeDiscoverer
 ```{r PCA2PD, fig.height=12, fig.width=9.5, fig.align="center", echo=TRUE}
-try(plotPCAw(testPD$datImp[which(testPD$annot[,"SpecType"]=="spike"),], sampleGrp=grp9, tit="PCA on ProteomeDiscoverer, UPS1 only (NAs imputed)", rowTyName="proteins", useSymb2=0))
+try(plotPCAw(testPD$datImp[which(testPD$annot[,"SpecType"]=="spike"),], sampleGrp=grp9, tit="PCA on ProteomeDiscoverer, UPS1 only (NAs imputed)", rowTyName="proteins", useSymb2=0), silent=TRUE)
 ```
 
 #### PCA of UPS1 for MaxQuant
 ```{r PCA2MQ, fig.height=12, fig.width=9.5, fig.align="center", echo=TRUE}
-try(plotPCAw(testMQ$datImp[which(testMQ$annot[,"SpecType"]=="spike"),], sampleGrp=grp9, tit="PCA on MaxQuant, UPS1 only (NAs imputed)", rowTyName="proteins", useSymb2=0))
+try(plotPCAw(testMQ$datImp[which(testMQ$annot[,"SpecType"]=="spike"),], sampleGrp=grp9, tit="PCA on MaxQuant, UPS1 only (NAs imputed)", rowTyName="proteins", useSymb2=0), silent=TRUE)
 ```
 
 #### PCA of UPS1 for Proline
 ```{r PCA2PL, fig.height=12, fig.width=9.5, fig.align="center", echo=TRUE}
-try(plotPCAw(testPL$datImp[which(testPL$annot[,"SpecType"]=="spike"),], sampleGrp=grp9, tit="PCA on Proline, UPS1 only (NAs imputed)", rowTyName="proteins", useSymb2=0))
+try(plotPCAw(testPL$datImp[which(testPL$annot[,"SpecType"]=="spike"),], sampleGrp=grp9, tit="PCA on Proline, UPS1 only (NAs imputed)", rowTyName="proteins", useSymb2=0), silent=TRUE)
 ```
 
 Based on PCA plots one can see that the concentrations 125 - 500 aMol are very much alike and detecting differences may perform better when not combining them, as also confirmed by ROC part later.
@@ -987,6 +1006,7 @@ Now we'll calculate the linear models, extract slope & pval for each UPS1 protei
 The functions used also allow plotting the resulting regression results, but plotting each UPS1 protein would make very crowded figures.
 Instead, we'll plot representative examples only after clustering the regression-results.
 
+
 #### Linear Regression for each UPS1 : ProteomeDiscoverer
 
 ```{r linModelPD, fig.height=17, fig.width=9.5, fig.align="center", echo=TRUE}
@@ -999,10 +1019,8 @@ names(lmPD) <- NamesUpsPD
 
 ```{r linModelPD2, echo=TRUE}
 ## We make a little summary of regression-results (ProteomeDiscoverer)
-linIn <- match(names(lmPD), UPS1$ac)
-datUPS1[linIn,1,c("logp","slope","startFr")] <- cbind(log10(sapply(lmPD, function(x) x$coef[2,4])),
-  sapply(lmPD, function(x) x$coef[2,1]), sapply(lmPD, function(x) x$startLev) )
-## need correct rownames in  dataPD$datImp !!!
+tmp <- cbind(log10(sapply(lmPD, function(x) x$coef[2,4])), sapply(lmPD, function(x) x$coef[2,1]), sapply(lmPD, function(x) x$startLev))
+datUPS1[,1,c("logp","slope","startFr")] <- tmp[match(rownames(datUPS1), names(lmPD)), ]
 datUPS1[,1,"medAbund"] <- apply(wrMisc::.scale01(dataPD$datImp)[match(UPS1$ac,rownames(dataPD$datImp)),],1,median,na.rm=TRUE)
 ```
 
@@ -1018,9 +1036,8 @@ names(lmMQ) <- NamesUpsMQ
 
 ```{r linModelMQ2, fig.height=17, fig.width=9.5, fig.align="center", echo=TRUE}
 ## We make a little summary of regression-results (MaxQuant)
-linIn <- match(names(lmMQ), UPS1$ac)
-datUPS1[linIn,2,c("logp","slope","startFr")] <- cbind( log10(sapply(lmMQ, function(x) x$coef[2,4])),
-  sapply(lmMQ, function(x) x$coef[2,1]), sapply(lmMQ, function(x) x$startLev) )
+tmp <- cbind(log10(sapply(lmMQ, function(x) x$coef[2,4])), sapply(lmMQ, function(x) x$coef[2,1]), sapply(lmMQ, function(x) x$startLev))
+datUPS1[,2,c("logp","slope","startFr")] <- tmp[match(rownames(datUPS1), names(lmMQ)), ]
 datUPS1[,2,"medAbund"] <- apply(wrMisc::.scale01(dataMQ$datImp)[match(UPS1$ac,rownames(dataMQ$datImp)),],1,median,na.rm=TRUE)
 ```
 
@@ -1035,9 +1052,8 @@ names(lmPL) <- NamesUpsPL
 ```
 
 ```{r linModelPLsum, fig.height=17, fig.width=9.5, fig.align="center", echo=TRUE}
-linIn <- match(names(lmPL), UPS1$ac)
-datUPS1[linIn,3,c("logp","slope","startFr")] <- cbind(log10(sapply(lmPL, function(x) x$coef[2,4])),
-  sapply(lmPL, function(x) x$coef[2,1]), sapply(lmPL, function(x) x$startLev) )
+tmp <- cbind(log10(sapply(lmPL, function(x) x$coef[2,4])), sapply(lmPL, function(x) x$coef[2,1]), sapply(lmPL, function(x) x$startLev))
+datUPS1[,3,c("logp","slope","startFr")] <- tmp[match(rownames(datUPS1), names(lmPL)), ]
 datUPS1[,3,"medAbund"] <- apply(wrMisc::.scale01(dataPL$datImp)[match(UPS1$ac,rownames(dataPL$datImp)),],1,median,na.rm=TRUE)
 ```
 
@@ -1059,10 +1075,11 @@ Next, we'll inspect the relation between regression-slopes and p-values (for H0:
 ```{r linModelPlotAll, fig.height=12, fig.width=9.5, fig.align="center", echo=TRUE}
 layout(matrix(1:4,ncol=2))
 subTi <- "fill according to median abundance (blue=low - green - red=high)"
+xyRa <- apply(datUPS1[,,4:5], 3, range, na.rm=T)
 
-plotMultRegrPar(datUPS1, 1, xlim=c(-25,-4), ylim=c(0.1,1.9),tit="ProteomeDiscoverer UPS1, p-value vs slope",subTit=subTi)
-plotMultRegrPar(datUPS1, 2, xlim=c(-25,-4), ylim=c(0.1,1.9),tit="MaxQuant UPS1, p-value vs slope",subTit=subTi)
-plotMultRegrPar(datUPS1, 3, xlim=c(-25,-4), ylim=c(0.1,1.9),tit="Proline UPS1, p-value vs slope",subTit=subTi)
+plotMultRegrPar(datUPS1, 1, xlim=xyRa[,1], ylim=xyRa[,2],tit="ProteomeDiscoverer UPS1, p-value vs slope",subTit=subTi)    # adj wr 9jan23
+plotMultRegrPar(datUPS1, 2, xlim=xyRa[,1], ylim=xyRa[,2],tit="MaxQuant UPS1, p-value vs slope",subTit=subTi)
+plotMultRegrPar(datUPS1, 3, xlim=xyRa[,1], ylim=xyRa[,2],tit="Proline UPS1, p-value vs slope",subTit=subTi)
 ```
 
 We can observe, that sope and (log)p-value of the resultant regressions do not necessarily correlate well.
@@ -1129,7 +1146,7 @@ nGr <- 5
 
 ## clustering using kMeans
 kMx <- stats::kmeans(standardW(datUPS1[,,"sco"], byColumn=FALSE), nGr)$cluster
-datUPS1[,,"cluNo"] <- matrix(rep(kMx,dim(datUPS1)[2]), nrow=length(kMx))
+datUPS1[,,"cluNo"] <- matrix(rep(kMx, dim(datUPS1)[2]), nrow=length(kMx))
 
 geoM <- apply(datUPS1[,,"sco"], 1, function(x) prod(x)^(1/length(x)))        # geometric mean across analysis soft
 geoM2 <- lrbind(by(cbind(geoM,datUPS1[,,"sco"], clu=kMx), kMx, function(x) x[order(x[,1],decreasing=TRUE),]))  # organize by clusters
@@ -1152,7 +1169,7 @@ annUPS1[,2] <- substr(sub("_UPS","",sub("generic_ups\\|[[:alnum:]]+-{0,1}[[:digi
 
 ```{r combScore3, echo=TRUE}
 ## index of representative for each cluster  (median position inside cluster)
-UPSrep <- tapply(geoM2[,"geoM"], geoM2[,"clu"], function(x) floor(length(x)/2))+ c(0,cumsum(table(geoM2[,"clu"])[-5]))
+UPSrep <- tapply(geoM2[,"geoM"], geoM2[,"clu"], function(x) ceiling(length(x)/2)) + c(0, cumsum(table(geoM2[,"clu"]))[-nGr])
 ```
 
 Previously we organized all UPS1 proteins according to their regression characteristics into 5 clusters and each cluster was ordered for descending scores.
@@ -1166,7 +1183,7 @@ gr <- 1
 useLi <- which(datUPS1[,1,"cluNo"]==gr)
 colNa <- c("Protein",paste(colnames(datUPS1), rep(c("slope","logp"), each=ncol(datUPS1)), sep=" "))
 try(kable(cbind(annUPS1[useLi,2], signif(datUPS1[useLi,,"slope"],3), signif(datUPS1[useLi,,"logp"],3)),
-  caption="Regression details for cluster of the ",length(useLi)," best UPS1 proteins ", col.names=colNa, align="l"),silent=TRUE)
+  caption=paste("Regression details for cluster of the",length(useLi),"best UPS1 proteins "), col.names=colNa, align="l"),silent=TRUE)
 ```
 
 ```{r regrPlot5star, fig.height=9, fig.width=9.5, fig.align="center", echo=TRUE}
@@ -1185,7 +1202,7 @@ if(packageVersion("wrGraph")  >= "1.2.5"){
 gr <- 2
 useLi <- which(datUPS1[,1,"cluNo"]==gr)
 try(kable(cbind(annUPS1[useLi,2], signif(datUPS1[useLi,,"slope"],3), signif(datUPS1[useLi,,"logp"],3)),
-  caption="Regression details for cluster of the ",length(useLi)," 2nd best UPS1 proteins ", col.names=colNa, align="l"),silent=TRUE)
+  caption=paste("Regression details for cluster of the",length(useLi),"2nd best UPS1 proteins "), col.names=colNa, align="l"),silent=TRUE)
 ```
 
 ```{r regrPlot4star, fig.height=9, fig.width=9.5, fig.align="center", echo=TRUE}
@@ -1249,18 +1266,21 @@ if(packageVersion("wrGraph")  >= "1.2.5"){
 
 ## Additional Comments
 
+\normalsize
+
 The choice of the 'best suited' approach to quantify and compare proteomics data is not trivial at all.
 Particular attention has to be given to the choice of the numerous 'small' parameters which may have a very strong impact on the final outcome,
 as it has been experienced when preparing the data for this vignette or at other places (eg [Chawade et al 2015](https://doi.org/10.1021/pr500665j)).
 Thus, knowing and understanding well the software/tools one has chosen is of prime importance !
-Of course, this also concerns for the protein identifcation part/software chosen.
+Of course, this also concerns the protein-identifcation part/software.
 
 The total number of proteins identified varies considerably between methods, this information may be very important to the user in real-world settings
 but is only taken in consideration in part in the comparisons presented.
 
-ROC curves allow us to gain more insight in choosing cutoff values for statistical testing.
+ROC curves allow us to gain more insight on the impact of cutoff values (alpha) for statistical testing.
 Frequently the ideal threshold maximizing sensitivity and specificity lies quite distant to the common 5-percent threshold.
-This indicates that many times the common 5-percent threshold may not be the 'optimal' compromise as thershold for calling differential abundant proteins.
+This indicates that many times the common 5-percent threshold may not be the 'optimal' compromise for calling differential abundant proteins.
+However, the _optimal_ point varies very much between data-sets and in a real world setting with unknown samples this type of analysis is not possible.
 
 As mentioned before, the dataset used in this vignette is not very recent, much better performing mass-spectrometers have been introduced since then.
 The main aim of this vignette consists in showing _how to use wrProteo_ with a smaller example (allowing to limit file-size of this package).
@@ -1275,7 +1295,7 @@ and of course all collegues from the [IGBMC proteomics platform](https://proteom
 The author wishes to thank the [CRAN](https://CRAN.R-project.org) -staff for all their help with new entries and their efforts in maintaining this repository of R-packages.
 Furthermore, many very fruitful discussions with colleages on national and international level have helped to formulate ideas and improve the tools presented here.
 
-Thank you for you interest. This package is constantly evolving, new featues/functions may get added to the next version.
+Thank you for you interest. This package is constantly evolving, new featues/functions may get added to the next version of [this package](https://CRAN.R-project.org/package=wrProteo).
 
 
 ## Session-Info

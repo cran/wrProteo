@@ -8,6 +8,7 @@ replMissingProtNames(
   x,
   annCol = c("EntryName", "Accession", "SpecType"),
   silent = FALSE,
+  debug = FALSE,
   callFrom = NULL
 )
 }
@@ -19,6 +20,8 @@ This list must be a matrix and contain $annot with the columns designated in \co
 column where empty fields are searched and the 2nd and (optional) 3rd will be used to fill the empty spots in the st column}
 
 \item{silent}{(logical) suppress messages}
+
+\item{debug}{(logical) display additional messages for debugging}
 
 \item{callFrom}{(character) allow easier tracking of message(s) produced}
 }

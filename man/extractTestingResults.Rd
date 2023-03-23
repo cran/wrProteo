@@ -16,6 +16,7 @@ extractTestingResults(
   filename = NULL,
   fileTy = "csvUS",
   silent = FALSE,
+  debug = FALSE,
   callFrom = NULL
 )
 }
@@ -41,6 +42,8 @@ extractTestingResults(
 \item{fileTy}{(character) file-type to be used with argument \code{filename}, may be 'csvEur' or 'csvUS'}
 
 \item{silent}{(logical) suppress messages}
+
+\item{debug}{(logical) display additional messages for debugging}
 
 \item{callFrom}{(character) allow easier tracking of message(s) produced}
 }

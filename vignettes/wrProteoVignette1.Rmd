@@ -186,7 +186,7 @@ In general it is preferable to use XIC for comparing peptde of protein quantitie
 
 This package provides support for importing quantitation results from [Proteome Discoverer](https://www.thermofisher.com/order/catalog/product/OPTON-30812),
 [MaxQuant](https://www.maxquant.org), [Fragpipe](https://fragpipe.nesvilab.org), [Proline](https://www.profiproteomics.fr/proline/),
-[MassChroQ](http://pappso.inrae.fr/bioinfo/masschroq/) and [OpenMS](https://www.openms.de).
+[MassChroQ](http://pappso.inrae.fr/bioinfo/masschroq/) and [OpenMS](https://openms.de/).
 
 
 All quantitation import functions offer special features for further separating annotation related information, like species, for later use.
@@ -233,7 +233,7 @@ Similarly we can also add directly information about principal species, contamin
 Setting customized tags according to species or other search-terms can be done using the argument _specPref_.
 In the example below we define a main species (tags are made by comparing to the species information initially given by the fasta)
 and we define a custom group of proteins by their Uniprot-Accessions (here the UPS1 spike-in).
-In summary, the content of argument _specPref_ will get searched in multiple types of annotation (if available from the initial Fasta).
+Then, the content of argument _specPref_ will get searched in multiple types of annotation (if available from the initial Fasta).
 
 By setting _suplAnnotFile=TRUE_ the import function will also look for files (by default produced by MaxQuant as 'summary.txt' and 'parameters.txt')
 giving more information about experiment and samples and integrate this to the output.
@@ -348,7 +348,6 @@ Similarly it is possible to read the peptide-data files exported by ProteomeDisc
 The data get imported to a similar structure like the protein-level data, quantitations on peptide level by default median-normalized, sample-setup from sdrf-files may be added, too.
 
 
-
 ### Proline : Import Protein Quantification Data         {#ReadProline}
 
 [Proline](https://www.profiproteomics.fr/proline/) is free software provided by the Profi-consortium,
@@ -357,6 +356,7 @@ Data exported from [Proline](https://www.profiproteomics.fr/proline/) (xlsx, csv
 
 
 ```{r readProlineProt1,  echo=TRUE}
+path1 <- system.file("extdata", package="wrProteo")
 fiNa <- "exampleProlineABC.csv.gz"                  # gz compressed data can be read, too
 dataPL <- readProlineFile(file=fiNa, path=path1, plotGraph=FALSE)
 summary(dataPL$quant[,1:8])
@@ -364,6 +364,24 @@ summary(dataPL$quant[,1:8])
 
 As descibed with [MaxQuant](#ReadMaxQuant), additional meta-data as [sdrf](#ImportSdrf) can be imported in the same way.
 For a more complex example of using _readProlineFile()_ please see the vignette _'UPS1 spike-in Experiments'_ from [this package](https://CRAN.R-project.org/package=wrProteo).
+
+
+
+### Fragpipe : Import Protein Quantification Data       {#ReadFragpipe}
+
+[Fragpipe](https://fragpipe.nesvilab.org) is a database search tool for peptide identification, open-source developed by the [Nesvizhskii lab](https://www.nesvilab.org),
+see eg  [Kong et al 2017](https://doi.org/10.1038/nmeth.4256), [da Veiga Leprevost; et al 2020](https://doi.org/10.1038/s41592-020-0912-y) or other related publications.
+Data exported from [Fragpipe](https://fragpipe.nesvilab.org)  (in tsv format) can get imported using `readFragpipeFile()`.
+
+```{r readFragpipe1,  echo=TRUE}
+FPproFi1 <- "tinyFragpipe1.tsv.gz"
+## let's define the main species and allow tagging some contaminants
+specPref1 <- c(conta="conta|CON_|LYSC_CHICK", mainSpecies="MOUSE")
+dataFP <- readFragpipeFile(path1, file=FPproFi1, specPref=specPref1, tit="Tiny Fragpipe Example", plotGraph=FALSE)
+summary(dataFP$quant)
+```
+
+As descibed with [MaxQuant](#ReadMaxQuant), additional meta-data as [sdrf](#ImportSdrf) can be imported in the same way.
 
 
 
@@ -382,26 +400,9 @@ summary(dataMC$quant)
 ```
 
 
-### Fragpipe : Import Protein Quantification Data       {#ReadFragpipe}
-
-[Fragpipe](https://fragpipe.nesvilab.org) is a database search tool for peptide identification, free software devolped by the [Nesvizhskii lab](https://www.nesvilab.org),
-see eg [da Veiga Leprevost; et al 2020](https://doi.org/10.1038/s41592-020-0912-y) and other related publications.
-Data exported from [Fragpipe](https://fragpipe.nesvilab.org)  (in tsv format) can get imported using `readFragpipeFile()`.
-
-```{r readFragpipe1,  echo=TRUE}
-FPproFi1 <- "tinyFragpipe1.tsv.gz"
-## let's define the main species and allow tagging some contaminants
-specPref1 <- c(conta="conta|CON_|LYSC_CHICK", mainSpecies="MOUSE")
-dataFP <- readFragpipeFile(path1, file=FPproFi1, specPref=specPref1, tit="Tiny Fragpipe Example", plotGraph=FALSE)
-summary(dataFP$quant)
-```
-
-As descibed with [MaxQuant](#ReadMaxQuant), additional meta-data as [sdrf](#ImportSdrf) can be imported in the same way.
-
-
 ### OpenMS : Import Protein Quantification Data
 
-[OpenMS](https://www.openms.de) is free open software provided by the deNBI Center for integrative Bioinformatics,
+[OpenMS](https://openms.de/) is free open software provided by the deNBI Center for integrative Bioinformatics,
 see [Rost et al 2016](https://doi.org/10.1038/nmeth.3959).
 Peptide level data exported as csv get summarized from peptide to protein level and further normalized using `readOpenMSFile()`, for details please see the help-page to this function.
 
@@ -424,7 +425,7 @@ When adding the quantitation-data using argument _abund_, the functions also che
 tries to align the order of the meta-data to that of the quantitation data (based on the raw files), since they are not necessarily in the same order.
 
 ```{r readSampleMetaData2,  echo=TRUE}
-MQsdrf001819Setup <- readSampleMetaData("PXD001819", path=path1, suplAnnotFile="summary.txt.gz", abund=dataMQ$quant, quantMeth="MQ")
+MQsdrf001819Setup <- readSampleMetaData(quantMeth="MQ", sdrf="PXD001819", path=path1, suplAnnotFile="summary.txt.gz", abund=dataMQ$quant)
 str(MQsdrf001819Setup)
 ```
 

@@ -24,6 +24,7 @@ plotROC(
   las = 1,
   addSuplT = TRUE,
   silent = FALSE,
+  debug = FALSE,
   callFrom = NULL
 )
 }
@@ -66,7 +67,9 @@ plotROC(
 
 \item{silent}{(logical) suppress messages}
 
-\item{callFrom}{(character) allows easier tracking of messages produced}
+\item{debug}{(logical) display additional messages for debugging}
+
+\item{callFrom}{(character) allow easier tracking of message(s) produced}
 }
 \value{
 This function returns only a plot with ROC curves

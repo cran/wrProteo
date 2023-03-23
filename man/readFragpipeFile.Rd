@@ -2,7 +2,7 @@
 % Please edit documentation in R/readFragpipeFile.R
 \name{readFragpipeFile}
 \alias{readFragpipeFile}
-\title{Read Tabulated Files Exported by FragPipe At Protein Level}
+\title{Read Tabulated Files Exported by FragPipe At Protein Level2}
 \usage{
 readFragpipeFile(
   fileName,
@@ -17,8 +17,7 @@ readFragpipeFile(
   FDRCol = list("Protein.Probability", lim = 0.99),
   groupPref = list(lowNumberOfGroups = TRUE),
   plotGraph = TRUE,
-  tit = "FragPipe",
-  graphTit = NULL,
+  titGraph = "FragPipe",
   wex = 1.6,
   specPref = c(conta = "CON_|LYSC_CHICK", mainSpecies = "OS=Homo sapiens"),
   gr = NULL,
@@ -36,7 +35,7 @@ readFragpipeFile(
 
 \item{normalizeMeth}{(character) normalization method, defaults to \code{median}, for more details see \code{\link[wrMisc]{normalizeThis}})}
 
-\item{sampleNames}{(character) new column-names for quantification data (ProteomeDiscoverer does not automatically use file-names from spectra); this argument has priority over \code{suplAnnotFile}}
+\item{sampleNames}{(character) custom column-names for quantification data; this argument has priority over \code{suplAnnotFile}}
 
 \item{read0asNA}{(logical) decide if initial quntifications at 0 should be transformed to NA (thus avoid -Inf in log2 results)}
 
@@ -55,9 +54,7 @@ May contain \code{lowNumberOfGroups=FALSE} for automatically choosing a rather e
 
 \item{plotGraph}{(logical or integer) optional plot of type vioplot of initial and normalized data (using \code{normalizeMeth}); if integer, it will be passed to \code{layout} when plotting}
 
-\item{tit}{(character) custom title to plot}
-
-\item{graphTit}{(character) depreciated custom title to plot, please use 'tit'}
+\item{titGraph}{(character) custom title to plot of distribution of quantitation values}
 
 \item{wex}{(integer) relative expansion factor of the violin-plot (will be passed to \code{\link[wrGraph]{vioplotW}})}
 
@@ -67,7 +64,9 @@ if list and list-element has multiple values they will be used for exact matchin
 
 \item{gr}{(character or factor) custom defined pattern of replicate association, will override final grouping of replicates from \code{sdrf} and/or \code{suplAnnotFile} (if provided)   \code{}}
 
-\item{sdrf}{(character, list or data.frame) optional extraction and adding of experimenal meta-data: if character, this may be the ID at ProteomeExchange. Besides, the output from \code{readSdrf} or a list from \code{defineSamples} may be provided; if \code{gr} is provided, it gets priority for grouping of replicates}
+\item{sdrf}{(character, list or data.frame) optional extraction and adding of experimenal meta-data: if character, this may be the ID at ProteomeExchange, 
+the second element may give futher indicatations for automatic organization of groups of replicates. 
+Besides, the output from \code{readSdrf} or a list from \code{defineSamples} may be provided; if \code{gr} is provided, \code{gr} gets priority for grouping of replicates}
 
 \item{suplAnnotFile}{(logical or character) optional reading of supplemental files; however, if \code{gr} is provided, \code{gr} gets priority for grouping of replicates;
 if \code{character} the respective file-name (relative or absolute path)}
@@ -83,7 +82,7 @@ This function returns a list with \code{$raw} (initial/raw abundance values), \c
  and \code{$notes}; or if \code{separateAnnot=FALSE} the function returns a data.frame with annotation and quantitation only
 }
 \description{
-This function allos importing protein identification and quantification results form \href{https://fragpipe.nesvilab.org/}{Fragpipe}
+This function allows importing protein identification and quantification results from \href{https://fragpipe.nesvilab.org/}{Fragpipe}
 which were previously exported as tabulated text (tsv). Quantification data and other relevant information will be extracted similar like the other import-functions from this package.
 The final output is a list containing the elements: \code{$annot}, \code{$raw} and \code{$quant}, or a data.frame with the quantication data and a part of the annotation if argument \code{separateAnnot=FALSE}.
 }
@@ -102,5 +101,5 @@ summary(dataFP$quant)
 
 }
 \seealso{
-\code{\link[utils]{read.table}}, \code{\link[wrMisc]{normalizeThis}}) , \code{\link{readMaxQuantFile}}, \code{\link{readProlineFile}}
+\code{\link[utils]{read.table}}, \code{\link[wrMisc]{normalizeThis}}) , \code{\link{readMaxQuantFile}}, \code{\link{readProtDiscovFile}}, \code{\link{readProlineFile}}
 }

@@ -53,7 +53,6 @@ This function also allows comparing the main vector of sequences with a referenc
 Sequences without any names will be given generic headers like protein01 ... etc.
 }
 \examples{
-#  
 prots <- c(SEQU1="ABCDEFGHIJKL", SEQU2="CDEFGHIJKLMNOP")
 writeFasta2(prots, fileNa=file.path(tempdir(),"testWrite.fasta"), lineLength=6)
 }

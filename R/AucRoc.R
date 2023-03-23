@@ -23,15 +23,15 @@ AucROC <- function(dat, useCol=c("spec","sens"), silent=FALSE, callFrom=NULL) {
   dataOK <- FALSE
   if(!isTRUE(silent)) silent <- FALSE  
   if(length(dat) >0) { chD <- dim(dat)
-     if(length(chD) >1 & all(chD >1)) dataOK <- TRUE }
-  if(is.numeric(useCol) & length(useCol) >1) if(all(useCol >0 | useCol <= ncol(dat))) dataOK <- TRUE 
-  if(is.character(useCol) & length(useCol) >1) {
+     if(length(chD) >1 && all(chD >1)) dataOK <- TRUE }
+  if(is.numeric(useCol) && length(useCol) >1) if(all(useCol >0 | useCol <= ncol(dat))) dataOK <- TRUE 
+  if(is.character(useCol) && length(useCol) >1) {
     useCol <- which(colnames(dat) %in% useCol[1:2])
     dataOK <- !any(is.na(useCol)) }
   ## check for NA
   chNa <- is.na(dat[,useCol])
   if(any(chNa)) { ch1 <- is.na(dat[1, useCol])
-    if(!silent) message(fxNa," NOTE : the data conatain ",sum(chNa)," NAs, replacing by preceeding value")    
+    if(!silent) message(fxNa,"NOTE : the data conatain ",sum(chNa)," NAs, replacing by preceeding value")    
     if(any(ch1)) dat[1,useCol] <- c(if(ch1[1]) 1 else dat[1,useCol[1]], if(ch1[2]) 0 else dat[1,useCol[2]])
     for(i in 1:2) {ch1 <- is.na(dat[,useCol[i]])  
       if(any(ch1)) dat[which(ch1),useCol[i]] <- dat[which(ch1)-1, useCol[i]]} }
@@ -39,6 +39,6 @@ AucROC <- function(dat, useCol=c("spec","sens"), silent=FALSE, callFrom=NULL) {
   for(i in 1:2)  if(max(dat[,useCol[i]]) >1) dat[,useCol[i]] <- dat[,useCol[i]]/max(dat[,useCol[i]])
   ##
   if(dataOK) sum(abs(diff(dat[,useCol[1]])) *dat[-nrow(dat),useCol[2]]) else {
-    if(!silent) message(fxNa," Invalid input / nothing to do")
+    if(!silent) message(fxNa,"Invalid input / nothing to do")
     NULL } }
   

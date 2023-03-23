@@ -12,6 +12,7 @@ razorNoFilter(
   minSpeNo = 1,
   minTotNo = 2,
   silent = FALSE,
+  debug = FALSE,
   callFrom = NULL
 )
 }
@@ -30,7 +31,9 @@ razorNoFilter(
 
 \item{silent}{(logical) suppress messages}
 
-\item{callFrom}{(character) allows easier tracking of messages produced}
+\item{debug}{(logical) display additional messages for debugging}
+
+\item{callFrom}{(character) allow easier tracking of messages produced}
 }
 \value{
 This function returns a vector of logical values if corresponding line passes filter criteria

@@ -15,11 +15,10 @@
 #' @param fileName (character) name of file to be read (may be tsv, csv, rda or rdata); both US and European csv formats are supported
 #' @param path (character) path of file to be read
 #' @param normalizeMeth (character) normalization method (will be sent to  \code{\link[wrMisc]{normalizeThis}})
-#' @param sampleNames (character) new column-names for quantification data (ProteomeDiscoverer does not automatically use file-names from spectra)
+#' @param sampleNames (character) custom column-names for quantification data; this argument has priority over \code{suplAnnotFile}
 #' @param refLi (character or integer) custom specify which line of data is main species, if character (eg 'mainSpe'), the column 'SpecType' in $annot will be searched for exact match of the (single) term given
 #' @param separateAnnot (logical) if \code{TRUE} output will be organized as list with \code{$annot}, \code{$abund} for initial/raw abundance values and \code{$quant} with final normalized quantitations
-#' @param tit (character) custom title to plot
-#' @param graphTit (character) depreciated custom title to plot, please use 'tit'
+#' @param titGraph (character) custom title to plot of distribution of quantitation values
 #' @param wex (integer) relative expansion factor of the violin-plot (will be passed to \code{\link[wrGraph]{vioplotW}})
 #' @param specPref (character or list) define characteristic text for recognizing (main) groups of species (1st for comtaminants - will be marked as 'conta', 2nd for main species- marked as 'mainSpe',
 #'  and optional following ones for supplemental tags/species - maked as 'species2','species3',...);
@@ -27,7 +26,8 @@
 #' @param separateAnnot (logical) if \code{TRUE} output will be organized as list with \code{$annot}, \code{$abund} for initial/raw abundance values and \code{$quant} with final normalized quantitations
 #' @param gr (character or factor) custom defined pattern of replicate association, will override final grouping of replicates from \code{sdrf} and/or \code{suplAnnotFile} (if provided)   \code{}
 #' @param sdrf (character, list or data.frame) optional extraction and adding of experimenal meta-data: if character, this may be the ID at ProteomeExchange. Besides, the output from \code{readSdrf} or a list from \code{defineSamples} may be provided; if \code{gr} is provided, it gets priority for grouping of replicates
-#' @param suplAnnotFile (logical or character) optional reading of supplemental files; however, if \code{gr} is provided, \code{gr} gets priority for grouping of replicates;
+#' @param suplAnnotFile (logical or character) optional reading of supplemental files produced by ProteomeDiscoverer; however, if \code{gr} is provided, \code{gr} gets priority for grouping of replicates;
+#'  if \code{TRUE} defaults to file '*InputFiles.txt' (needed to match information of \code{sdrf}) which can be exported next to main quantitation results;
 #'  if \code{character} the respective file-name (relative or absolute path)
 #' @param groupPref (list) additional parameters for interpreting meta-data to identify structure of groups (replicates), will be passed to \code{readSampleMetaData}.
 #'   May contain \code{lowNumberOfGroups=FALSE} for automatically choosing a rather elevated number of groups if possible (defaults to low number of groups, ie higher number of samples per group)
@@ -41,16 +41,15 @@
 #' path1 <- system.file("extdata", package="wrProteo")
 #' fiNa <- "tinyMC.RData"
 #' dataMC <- readMassChroQFile(file=fiNa, path=path1)
-#'
 #' @export
-readMassChroQFile <- function(fileName, path=NULL, normalizeMeth="median", sampleNames=NULL, refLi=NULL, separateAnnot=TRUE, tit="MassChroQ", graphTit=NULL, wex=NULL,
+readMassChroQFile <- function(fileName, path=NULL, normalizeMeth="median", sampleNames=NULL, refLi=NULL, separateAnnot=TRUE, titGraph="MassChroQ", wex=NULL,
   specPref=c(conta="CON_|LYSC_CHICK", mainSpecies="OS=Homo sapiens"), gr=NULL, sdrf=NULL, suplAnnotFile=FALSE, groupPref=list(lowNumberOfGroups=TRUE), plotGraph=TRUE, silent=FALSE, debug=FALSE, callFrom=NULL) {
   ## read MassChroQ (pre-)treated data
   fxNa <- wrMisc::.composeCallName(callFrom, newNa="readMassChroQFile")
   oparMar <- if(plotGraph) graphics::par("mar") else NULL       # only if figure might be drawn
-
   if(!isTRUE(silent)) silent <- FALSE
-  if(!requireNamespace("utils", quietly=TRUE)) stop("package 'utils' not found ! Please install first")
+  if(isTRUE(debug)) silent <- FALSE else debug <- FALSE
+  if(!requireNamespace("utils", quietly=TRUE)) stop("package 'utils' not found ! Please install first from CRAN")
 
   ## check & read file
   infoDat <- infoFi <- setupSd <- parametersD <- NULL        # initialize for sdrf annotation
@@ -107,87 +106,51 @@ readMassChroQFile <- function(fileName, path=NULL, normalizeMeth="median", sampl
   ## checke for unique rownames
   ch1 <- duplicated(annot[,1])
   if(all(!ch1)) rownames(annot) <- annot[,1]
-  if(debug) {message(fxNa,"mc3")}
-  
+  if(debug) {message(fxNa,"mc3")}  
 
   ## colnames for quantitative data
   if(length(sampleNames) >0) if(length(sampleNames)==ncol(tmp)) colnames(tmp) <- sampleNames else message(fxNa,"invalid entry of 'sampleNames' (incorrect length)")
+  
+  ## check for reference for normalization
+  refLiIni <- refLi
+  if(is.character(refLi) && length(refLi)==1) { 
+    refLi <- which(annot[,"SpecType"]==refLi)
+    if(length(refLi) <1 ) { refLi <- 1:nrow(tmp)
+      if(!silent) message(fxNa,"Could not find any proteins matching argument 'refLi=",refLiIni,"', ignoring ...")
+    } else {
+      if(!silent) message(fxNa,"Normalize using (custom) subset of ",length(refLi)," lines specified as '",refLiIni,"'")}}    # may be "mainSpe"
 
   ## normalize
-  if(!is.matrix(tmp)) tmp <- as.matrix(tmp)
-  abund <- wrMisc::normalizeThis(tmp, method=normalizeMeth, mode="additive", refLines=refLi, callFrom=fxNa)       #
+  abund <- if(!is.matrix(tmp)) as.matrix(tmp) else tmp
+  quant <- wrMisc::normalizeThis(abund, method=normalizeMeth, mode="additive", refLines=refLi, callFrom=fxNa)       #
   if(debug) {message(fxNa,"mc4")}
 
   ### GROUPING OF REPLICATES AND SAMPLE META-DATA
-  if(any((!isFALSE(suplAnnotFile) & length(suplAnnotFile) >0), length(sdrf) >0)) {
-    setupSd <- readSampleMetaData(sdrf=sdrf, suplAnnotFile=suplAnnotFile, quantMeth="MC", path=path, abund=utils::head(tmp),  groupPref=groupPref, silent=silent, debug=debug, callFrom=fxNa)
+  if(length(suplAnnotFile) >0) {
+    setupSd <- readSampleMetaData(sdrf=sdrf, suplAnnotFile=suplAnnotFile, quantMeth="MC", path=path, abund=utils::head(abund), groupPref=groupPref, silent=silent, debug=debug, callFrom=fxNa)
   }
-  if(debug) {message(fxNa,"mc13b")}
+  if(debug) {message(fxNa,"rmc13b .."); rmc13b <- list(sdrf=sdrf,gr=gr,suplAnnotFile=suplAnnotFile,abund=abund, refLi=refLi,annot=annot,setupSd=setupSd,sampleNames=sampleNames)}
 
   ## finish groups of replicates & annotation setupSd
-  if(length(setupSd) >0 & length(setupSd$groups) <1) {                       # if nothing found/matching from sdrf & file, try getting sample-setup from colnames (use if at least 1 replicate found)
-    if(length(gr) ==ncol(abund)) setupSd$groups <- gr else {
-      if(debug) {message(fxNa,"mc13e  Note: setupSd$groups is still empty ! ")}
-      if(length(setupSd$lev) ==ncol(abund)) setupSd$groups <- setupSd$lev else {
-        ## try defining groups based on colnames
-        if(debug) {message(fxNa,"mc13f  Note: setupSd is still empty !  .. try getting sample-setup from colnames")}
-        delPat <- "_[[:digit:]]+$|\\ [[:digit:]]+$|\\-[[:digit:]]+$"       # remove enumerators, ie trailing numbers after separator
-        grou <- sub(delPat,"", colnames(abund))
-        if(length(unique(grou)) >1 & length(unique(grou)) < ncol(abund)) setupSd$groups <- grou else {
-          grou <- sub("[[:digit:]]+$","", colnames(abund))
-          if(length(unique(grou)) >1 & length(unique(grou)) < ncol(abund)) setupSd$groups <- grou }
-      } }
-  }
+  setupSd <- .checkSetupGroups(abund=abund, setupSd=setupSd, gr=gr, sampleNames=sampleNames, quantMeth="MC", silent=silent, debug=debug, callFrom=fxNa)
+  colnames(quant) <- colnames(abund) <- if(length(setupSd$sampleNames)==ncol(abund)) setupSd$sampleNames else setupSd$groups
+  if(length(dim(counts)) >1 && length(counts) >0) colnames(counts) <- setupSd$sampleNames
 
-  ## finish sample-names: use file-names from meta-data if no custom 'sampleNames' furnished
-  ## One more check for colnames & sampleNames
-  if(length(sampleNames) == ncol(abund)) {
-    colnames(abund) <- colnames(abund) <- sampleNames     # use custom provided sampleNames
-    if(length(dim(counts)) >1 & length(counts) >0) colnames(counts) <- sampleNames
-  } else {
-    if(debug) { message(fxNa,"mc13c") }
-    sampleNames <- if(length(setupSd$annotBySoft$File.Name)==ncol(abund)) {    # try taking sampleNames from sdrf
-      basename(sub("\\.raw$|\\.Raw$|\\.RAW$","", setupSd$annotBySoft$File.Name)) } else colnames(abund)     # otherwise remain with colnames from main file
-    sampleNames <- wrMisc::trimRedundText(sampleNames, minNchar=2, spaceElim=TRUE, silent=silent, callFrom=fxNa, debug=debug)
-    colnames(abund) <- colnames(abund) <- sampleNames
-    if(length(dim(counts)) >1 & length(counts) >0) colnames(counts) <- sampleNames
+  if(debug) {message(fxNa,"Read sample-meta data, rmc14"); rmc14 <- list()}
 
-  }
-  if(debug) {message(fxNa,"Read sample-meta data, mc14"); mc14 <- list(sdrf=sdrf,suplAnnotFile=suplAnnotFile,abund=abund, abund=abund,refLi=refLi,annot=annot,setupSd=setupSd,sampleNames=sampleNames)}
-
-  ## plot distribution of intensities
+  ## main plotting of distribution of intensities
   custLay <- NULL
-  if(length(plotGraph) >0) {if(is.numeric(plotGraph)) {custLay <- plotGraph; plotGraph <- TRUE
-    } else  {plotGraph <- isTRUE(plotGraph[1]) }}
-  if(plotGraph) {
-    if(length(custLay) >0) graphics::layout(custLay) else graphics::layout(1:2)
-    graphics::par(mar=c(3, 3, 3, 1))                           # mar: bot,le,top,ri
-    misPa <- c(requireNamespace("wrGraph", quietly=TRUE), requireNamespace("sm", quietly=TRUE))
-    if(is.null(tit)) tit <- "MassChroQ Quantification "
-    titSu <- if(length(refLi) >0) paste(" by",length(refLi),"selected lines")  else NULL
+  if(is.numeric(plotGraph) && length(plotGraph) >0) {custLay <- as.integer(plotGraph); plotGraph <- TRUE} else {
+      if(!isTRUE(plotGraph)) plotGraph <- FALSE}
+  if(plotGraph) .plotQuantDistr(abund=abund, quant=quant, custLay=custLay, normalizeMeth=normalizeMeth, softNa="MassChroQ",
+    refLi=refLi, refLiIni=refLiIni, tit=titGraph, silent=silent, callFrom=fxNa, debug=debug)
 
-    if(any(misPa)) {
-      if(!silent) message(fxNa," missing package ",wrMisc::pasteC(c("wrGraph","sm")[which(misPa)],quoteC="'")," for drawing vioplots")
-      ## wrGraph not available : simple boxplot
-      graphics::boxplot(tmp, main=paste(tit," (initial)"), las=1, outline=FALSE)
-      graphics::abline(h=round(stats::median(tmp,na.rm=TRUE)) +(-2:2), lty=2, col=grDevices::grey(0.6))
-      ## now normalized
-      graphics::boxplot(abund, main=paste(tit," (",normalizeMeth,"-normalized",titSu,")"), las=1, outline=FALSE)
-      graphics::abline(h=round(stats::median(abund,na.rm=TRUE)) +(-2:2), lty=2, col=grDevices::grey(0.6))
-    } else {                                                  # wrGraph and sm are available
-      wrGraph::vioplotW(tmp, tit=paste(tit," (initial)"), wex=wex)
-      graphics::abline(h=round(stats::median(tmp,na.rm=TRUE)) +(-2:2), lty=2, col=grDevices::grey(0.6))
-      ## now normalized
-      wrGraph::vioplotW((abund), tit=paste(tit," , ",normalizeMeth,"-normalized",titSu), wex=wex)
-      graphics::abline(h=round(stats::median(abund,na.rm=TRUE)) +(-2:2), lty=2, col=grDevices::grey(0.6))
-    }
-    on.exit(graphics::par(mar=oparMar)) }   # restaure old settings
 
   ## meta-data
   notes <- c(inpFile=paFi, qmethod="MassChroQ", qMethVersion=if(length(infoDat) >0) unique(infoDat$Software.Revision) else NA,
    	rawFilePath= if(length(infoDat) >0) infoDat$File.Name[1] else NA, normalizeMeth=normalizeMeth, call=match.call(),
     created=as.character(Sys.time()), wrProteo.version=utils::packageVersion("wrProteo"), machine=Sys.info()["nodename"])
   ## prepare for final output
-  if(isTRUE(separateAnnot)) list(raw=tmp, quant=abund, annot=annot, counts=NULL, quantNotes=NULL, notes=notes) else data.frame(abund, annot)
+  if(isTRUE(separateAnnot)) list(raw=abund, quant=quant, annot=annot, counts=NULL, quantNotes=NULL, notes=notes) else data.frame(abund, annot)
 }
   

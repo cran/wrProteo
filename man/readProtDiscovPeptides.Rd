@@ -10,6 +10,7 @@ readProtDiscovPeptides(
   normalizeMeth = "median",
   sampleNames = NULL,
   suplAnnotFile = TRUE,
+  gr = NULL,
   sdrf = NULL,
   read0asNA = TRUE,
   quantCol = "^Abundances*",
@@ -19,8 +20,7 @@ readProtDiscovPeptides(
   separateAnnot = TRUE,
   FDRCol = list(c("^Protein.FDR.Confidence", "High"), c("^Found.in.Sample.", "High")),
   plotGraph = TRUE,
-  tit = "Proteome Discoverer",
-  graphTit = NULL,
+  titGraph = "Proteome Discoverer",
   wex = 1.6,
   specPref = c(conta = "CON_|LYSC_CHICK", mainSpecies = "OS=Homo sapiens"),
   silent = FALSE,
@@ -37,11 +37,15 @@ readProtDiscovPeptides(
 
 \item{sampleNames}{(character) new column-names for quantification data (ProteomeDiscoverer does not automatically use file-names from spectra); this argument has priority over \code{suplAnnotFile}}
 
-\item{suplAnnotFile}{(logical or character) optional reading of supplemental files produced by MaxQuant; if \code{gr} is provided, it gets priority for grouping of replicates
-if \code{TRUE} default to files 'summary.txt' (needed to match information of \code{sdrf}) and 'parameters.txt' which can be found in the same folder as the main quantitation results;
-if \code{character} the respective file-names (relative ro absolute path), 1st is expected to correspond to 'summary.txt' (tabulated text, the samples as given to MaxQuant) and 2nd to 'parameters.txt' (tabulated text, all parameters given to MaxQuant)}
+\item{suplAnnotFile}{(logical or character) optional reading of supplemental files produced by ProteomeDiscoverer; however, if \code{gr} is provided, \code{gr} gets priority for grouping of replicates;
+if \code{TRUE} defaults to file '*InputFiles.txt' (needed to match information of \code{sdrf}) which can be exported next to main quantitation results;
+if \code{character} the respective file-name (relative or absolute path)}
 
-\item{sdrf}{(character, list or data.frame) optional extraction and adding of experimenal meta-data: if character, this may be the ID at ProteomeExchange. Besides, the output from \code{readSdrf} or a list from \code{defineSamples} may be provided; if \code{gr} is provided, it gets priority for grouping of replicates}
+\item{gr}{(character or factor) custom defined pattern of replicate association, will override final grouping of replicates from \code{sdrf} and/or \code{suplAnnotFile} (if provided)   \code{}}
+
+\item{sdrf}{(character, list or data.frame) optional extraction and adding of experimenal meta-data: if character, this may be the ID at ProteomeExchange,
+the second element may give futher indicatations for automatic organization of groups of replicates.
+Besides, the output from \code{readSdrf} or a list from \code{defineSamples} may be provided; if \code{gr} is provided, \code{gr} gets priority for grouping of replicates}
 
 \item{read0asNA}{(logical) decide if initial quntifications at 0 should be transformed to NA}
 
@@ -60,9 +64,7 @@ If a column named \code{contamCol} is found, the data will be lateron filtered t
 
 \item{plotGraph}{(logical or integer) optional plot of type vioplot of initial and normalized data (using \code{normalizeMeth}); if integer, it will be passed to \code{layout} when plotting}
 
-\item{tit}{(character) custom title to plot}
-
-\item{graphTit}{(character) depreciated custom title to plot, please use 'tit'}
+\item{titGraph}{(character) depreciated custom title to plot, please use 'tit'}
 
 \item{wex}{(integer) relative expansion factor of the violin-plot (will be passed to \code{\link[wrGraph]{vioplotW}})}
 

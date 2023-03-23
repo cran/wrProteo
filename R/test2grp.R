@@ -12,7 +12,8 @@
 #' @param annot (matrix or data.frame) 
 #' @param ROTSn (integer) number of iterations ROTS runs (stabilization of reseults may be seen with >300) 
 #' @param silent (logical) suppress messages
-#' @param callFrom (character) allow easier tracking of messages produced
+#' @param debug (logical) display additional messages for debugging
+#' @param callFrom (character) allow easier tracking of message(s) produced
 #' @return This function returns a limma-type S3 object of class 'MArrayLM' (which can be accessed like a list); multiple testing correction types or modified testing by ROTS may get included ('p.value','FDR','BY','lfdr' or 'ROTS.BH')
 #' @seealso  \code{\link[wrMisc]{moderTest2grp}}, \code{\link[wrMisc]{pVal2lfdr}}, \code{\link[stats]{t.test}}, \code{ROTS} from the Bioconductor package \href{https://www.bioconductor.org/packages/release/bioc/html/ROTS.html}{ROTS}  
 #' @examples
@@ -25,7 +26,7 @@
 #' testAvB0 <- wrMisc::moderTest2grp(datT8[,1:6], gl(2,3))
 #' testAvB <- test2grp(datL, questNo=1)
 #' @export
-test2grp <- function(dat, questNo, useCol=NULL, grp=NULL, annot=NULL, ROTSn=0, silent=FALSE, callFrom=NULL) {
+test2grp <- function(dat, questNo, useCol=NULL, grp=NULL, annot=NULL, ROTSn=0, silent=FALSE, debug=FALSE, callFrom=NULL) {
   ## custom extracting data from list with $data and $filt
   ## return MA-type list with test resuls
   fxNa <- wrMisc::.composeCallName(callFrom,newNa="test2grp")
@@ -33,6 +34,7 @@ test2grp <- function(dat, questNo, useCol=NULL, grp=NULL, annot=NULL, ROTSn=0, s
   if(!all(c("data","filt") %in% names(dat))) stop(msg)
   if(nrow(dat$filt) != nrow(dat$data)) stop(msg)
   if(!isTRUE(silent)) silent <- FALSE
+  if(isTRUE(debug)) silent <- FALSE else debug <- FALSE
   
   questNa <- colnames(dat$filt)[questNo]
   questNa <- unlist(strsplit(questNa, "-"))
@@ -44,10 +46,10 @@ test2grp <- function(dat, questNo, useCol=NULL, grp=NULL, annot=NULL, ROTSn=0, s
   out$nonMod.BH <- stats::p.adjust(out$nonMod.p, method="BH")
   chLfdr <- try(find.package("fdrtools"), silent=TRUE)
   if(inherits(chLfdr, "try-error")) { 
-      message(fxNa,"Package 'fdrtool' not found ! Please install for calculating lfdr-values ..") 
+      message(fxNa,"Package 'fdrtool' not found !  Please install for calculating lfdr-values ..") 
   } else out$nonMod.lfdr <- wrMisc::pVal2lfdr(out$nonMod.p)
   ## need to add : (non-moderated test and) ROTS
-  if(length(ROTSn==1)) if(ROTSn >0 & !is.na(ROTSn)) {
+  if(length(ROTSn==1)) if(ROTSn >0 && !is.na(ROTSn)) {
     chPa <- requireNamespace("ROTS", quietly=TRUE)
     if(!chPa) { ROTSn <- NULL
       message(fxNa,"Package 'ROTS' not found ! Please install first .. setting  ROTSn=NULL") }

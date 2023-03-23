@@ -120,14 +120,10 @@ dataPD <- readProtDiscovFile(file=fiNa, path=path1, suplAnnotFile=FALSE, plotGra
 summary(dataPD$quant)
 
 ## ----readProlineProt1,  echo=TRUE---------------------------------------------
+path1 <- system.file("extdata", package="wrProteo")
 fiNa <- "exampleProlineABC.csv.gz"                  # gz compressed data can be read, too
 dataPL <- readProlineFile(file=fiNa, path=path1, plotGraph=FALSE)
 summary(dataPL$quant[,1:8])
-
-## ----readMassChroq1,  echo=TRUE-----------------------------------------------
-MCproFi1 <- "tinyMC.RData"
-dataMC <- readMassChroQFile(path1, file=MCproFi1, tit="Tiny MassChroq Example", plotGraph=FALSE)
-summary(dataMC$quant)
 
 ## ----readFragpipe1,  echo=TRUE------------------------------------------------
 FPproFi1 <- "tinyFragpipe1.tsv.gz"
@@ -136,8 +132,13 @@ specPref1 <- c(conta="conta|CON_|LYSC_CHICK", mainSpecies="MOUSE")
 dataFP <- readFragpipeFile(path1, file=FPproFi1, specPref=specPref1, tit="Tiny Fragpipe Example", plotGraph=FALSE)
 summary(dataFP$quant)
 
+## ----readMassChroq1,  echo=TRUE-----------------------------------------------
+MCproFi1 <- "tinyMC.RData"
+dataMC <- readMassChroQFile(path1, file=MCproFi1, tit="Tiny MassChroq Example", plotGraph=FALSE)
+summary(dataMC$quant)
+
 ## ----readSampleMetaData2,  echo=TRUE------------------------------------------
-MQsdrf001819Setup <- readSampleMetaData("PXD001819", path=path1, suplAnnotFile="summary.txt.gz", abund=dataMQ$quant, quantMeth="MQ")
+MQsdrf001819Setup <- readSampleMetaData(quantMeth="MQ", sdrf="PXD001819", path=path1, suplAnnotFile="summary.txt.gz", abund=dataMQ$quant)
 str(MQsdrf001819Setup)
 
 ## ----NA_MaxQuant, echo=TRUE---------------------------------------------------

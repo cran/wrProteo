@@ -4,25 +4,16 @@
 \alias{isolNAneighb}
 \title{Isolate NA-neighbours}
 \usage{
-isolNAneighb(
-  mat,
-  gr,
-  maxHi = 3,
-  iniCheck = TRUE,
-  silent = FALSE,
-  callFrom = NULL
-)
+isolNAneighb(mat, gr, silent = FALSE, debug = FALSE, callFrom = NULL)
 }
 \arguments{
 \item{mat}{(matrix or data.frame) main data (may contain \code{NA})}
 
 \item{gr}{(character or factor) grouping of columns of 'mat', replicate association}
 
-\item{maxHi}{(integer) maximum count of NAs to consider separately (higher ones will be counted/pooled as maxHi)}
-
-\item{iniCheck}{(logical) check at beginning if executing this function is useful (presence any \code{NA})}
-
 \item{silent}{(logical) suppress messages}
+
+\item{debug}{(logical) display additional messages for debugging}
 
 \item{callFrom}{(character) allow easier tracking of messages produced}
 }
@@ -30,8 +21,7 @@ isolNAneighb(
 This function returns a list with NA-neighbours sorted by number of NAs in replicate group
 }
 \description{
-This functions extracts all replicate-values where at least one of the replicates is \code{NA}. 
-Then, the non-\code{NA} values are sorted by the number of \code{NA}s which occored in this group of replicates.
+This functions extracts all replicate-values where at least one of the replicates is \code{NA} and sorts by number of \code{NA}s per group.
 A list with all \code{NA}-neighbours organized by the number of \code{NA}s gets returned.
 }
 \examples{
@@ -42,7 +32,6 @@ mat1 <- c(22.2, 22.5, 22.2, 22.2, 21.5, 22.0, 22.1, 21.7, 21.5, 22, 22.2, 22.7,
 mat1 <- matrix(mat1, ncol=12, byrow=TRUE)
 gr4 <- gl(3, 4)
 isolNAneighb(mat1, gr4)
-
 }
 \seealso{
 This function gets used by \code{\link{matrixNAneighbourImpute}} and \code{\link{testRobustToNAimputation}}; estimation of mode \code{\link[wrMisc]{stableMode}}; detection of NAs \code{\link[stats]{na.fail}}

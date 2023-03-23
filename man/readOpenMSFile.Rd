@@ -65,7 +65,7 @@ if list and list-element has multiple values they will be used for exact matchin
 This function returns a list with \code{$raw} (initial/raw abundance values), \code{$quant} with final normalized quantitations, \code{$annot}, \code{$counts} an array with number of peptides, \code{$quantNotes},\code{$expSetup} and \code{$notes}; or if \code{separateAnnot=FALSE} the function returns a data.frame with annotation and quantitation only
 }
 \description{
-Protein quantification results form \href{https://www.openms.de/}{OpenMS} 
+Protein quantification results form \href{https://openms.de/}{OpenMS} 
 which were exported as \code{.csv} can be imported and relevant information extracted. 
 Peptide data get summarized by protein by top3 or sum methods.
 The final output is a list containing the elements: \code{$annot}, \code{$raw}, \code{$quant} ie normaized final quantifications, or returns data.frame with entire content of file if \code{separateAnnot=FALSE}.

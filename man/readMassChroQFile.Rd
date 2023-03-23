@@ -11,8 +11,7 @@ readMassChroQFile(
   sampleNames = NULL,
   refLi = NULL,
   separateAnnot = TRUE,
-  tit = "MassChroQ",
-  graphTit = NULL,
+  titGraph = "MassChroQ",
   wex = NULL,
   specPref = c(conta = "CON_|LYSC_CHICK", mainSpecies = "OS=Homo sapiens"),
   gr = NULL,
@@ -32,15 +31,13 @@ readMassChroQFile(
 
 \item{normalizeMeth}{(character) normalization method (will be sent to  \code{\link[wrMisc]{normalizeThis}})}
 
-\item{sampleNames}{(character) new column-names for quantification data (ProteomeDiscoverer does not automatically use file-names from spectra)}
+\item{sampleNames}{(character) custom column-names for quantification data; this argument has priority over \code{suplAnnotFile}}
 
 \item{refLi}{(character or integer) custom specify which line of data is main species, if character (eg 'mainSpe'), the column 'SpecType' in $annot will be searched for exact match of the (single) term given}
 
 \item{separateAnnot}{(logical) if \code{TRUE} output will be organized as list with \code{$annot}, \code{$abund} for initial/raw abundance values and \code{$quant} with final normalized quantitations}
 
-\item{tit}{(character) custom title to plot}
-
-\item{graphTit}{(character) depreciated custom title to plot, please use 'tit'}
+\item{titGraph}{(character) custom title to plot of distribution of quantitation values}
 
 \item{wex}{(integer) relative expansion factor of the violin-plot (will be passed to \code{\link[wrGraph]{vioplotW}})}
 
@@ -52,7 +49,8 @@ if list and list-element has multiple values they will be used for exact matchin
 
 \item{sdrf}{(character, list or data.frame) optional extraction and adding of experimenal meta-data: if character, this may be the ID at ProteomeExchange. Besides, the output from \code{readSdrf} or a list from \code{defineSamples} may be provided; if \code{gr} is provided, it gets priority for grouping of replicates}
 
-\item{suplAnnotFile}{(logical or character) optional reading of supplemental files; however, if \code{gr} is provided, \code{gr} gets priority for grouping of replicates;
+\item{suplAnnotFile}{(logical or character) optional reading of supplemental files produced by ProteomeDiscoverer; however, if \code{gr} is provided, \code{gr} gets priority for grouping of replicates;
+if \code{TRUE} defaults to file '*InputFiles.txt' (needed to match information of \code{sdrf}) which can be exported next to main quantitation results;
 if \code{character} the respective file-name (relative or absolute path)}
 
 \item{groupPref}{(list) additional parameters for interpreting meta-data to identify structure of groups (replicates), will be passed to \code{readSampleMetaData}.
@@ -86,7 +84,6 @@ After import data get (re-)normalized according to \code{normalizeMeth} and \cod
 path1 <- system.file("extdata", package="wrProteo")
 fiNa <- "tinyMC.RData"
 dataMC <- readMassChroQFile(file=fiNa, path=path1)
-
 }
 \seealso{
 \code{\link[utils]{read.table}}, \code{\link[wrMisc]{normalizeThis}}) , \code{\link{readProlineFile}}

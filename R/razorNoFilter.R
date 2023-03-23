@@ -12,7 +12,8 @@
 #' @param minSpeNo (integer) minimum number of pecific peptides
 #' @param minTotNo (integer) minimum total ie max razor number of peptides
 #' @param silent (logical) suppress messages
-#' @param callFrom (character) allows easier tracking of messages produced
+#' @param debug (logical) display additional messages for debugging
+#' @param callFrom (character) allow easier tracking of messages produced
 #' @return This function returns a vector of logical values if corresponding line passes filter criteria  
 #' @seealso \code{\link[wrMisc]{presenceFilt}} 
 #' @examples
@@ -22,13 +23,15 @@
 #' datT[which(datT <0)] <- 0
 #' razorNoFilter(datT, speNa="A", totNa="B")
 #' @export
-razorNoFilter <- function(annot, speNa=NULL, totNa=NULL, minRazNa=NULL, minSpeNo=1, minTotNo=2, silent=FALSE, callFrom=NULL) {
+razorNoFilter <- function(annot, speNa=NULL, totNa=NULL, minRazNa=NULL, minSpeNo=1, minTotNo=2, silent=FALSE, debug=FALSE, callFrom=NULL) {
   fxNa <- wrMisc::.composeCallName(callFrom, newNa="razorNoFilter")
   if(!isTRUE(silent)) silent <- FALSE
+  if(isTRUE(debug)) silent <- FALSE else debug <- FALSE
   msg <- NULL
   doFilter <- length(annot) >0
-  if(length(speNa) != length(totNa) & is.null(minRazNa)) { doFilter <- FALSE
+  if(length(speNa) != length(totNa) && is.null(minRazNa)) { doFilter <- FALSE
     msg <- "Length of 'speNa' differs from 'totNa', can't run fiktering" }
+  if(debug) message(fxNa,"rNF1")
   if(doFilter) {
     if(is.null(minRazNa)) {
       specPe <- as.integer(annot[,speNa]) >= minSpeNo
@@ -41,6 +44,16 @@ razorNoFilter <- function(annot, speNa=NULL, totNa=NULL, minRazNa=NULL, minSpeNo
     if(!silent) message(fxNa,if(length(msg) >0) msg else "Invalid argumenet 'annot'")}
   filt } 
 
+
+#' Checking presence of knitr and rmarkdown
+#' 
+#' This function allows checking presence of knitr and rmarkdown
+#'  
+#' @param tryF (logical) 
+#' @return This function returns a logical value
+#' @seealso \code{\link[wrMisc]{presenceFilt}} 
+#' @examples
+#'.checkKnitrProt()
 #' @export
 .checkKnitrProt <- function(tryF=FALSE) {
   ## function for checking presence of knitr and rmarkdown

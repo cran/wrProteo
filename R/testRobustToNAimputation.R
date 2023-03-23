@@ -67,11 +67,11 @@ testRobustToNAimputation <- function(dat, gr=NULL, annot=NULL, retnNA=TRUE, avSd
   msg <- grIni <- NULL
   ## start testing input
   if(is.list(dat)) { if(all(c("quant","annot") %in% names(dat))) {
-    if(length(dim(dat$annot)) ==2 & length(annot) <1) annot <- dat$annot else if(!silent) message(fxNa,"Invalid '$annot'") # recover$annot if not given separately
+    if(length(dim(dat$annot)) ==2 && length(annot) <1) annot <- dat$annot else if(!silent) message(fxNa,"Invalid '$annot'") # recover$annot if not given separately
     if("sampleSetup" %in% names(dat) & length(gr) <1) {
       gr <- if("groups" %in% names(dat$sampleSetup)) dat$sampleSetup$groups else dat$sampleSetup$lev
       if(all(match(gr, unique(gr)) ==match(names(gr), unique(names(gr))))) gr <- names(gr)              # rather use name instead of index
-      if(all(length(gr) >1, length(dat$sampleSetup$col) <2, length(names(gr)) <1)) names(gr) <- dat$sampleSetup$sdrf[,dat$sampleSetup$col]       # in case not names provided
+      if(length(gr) >1 && length(dat$sampleSetup$col) <2 && length(names(gr)) <1) names(gr) <- dat$sampleSetup$sdrf[,dat$sampleSetup$col]       # in case not names provided
     } else grIni <- gr
     dat <- dat$quant } else { datOK <- FALSE; msg <- "Invalid 'dat' : does NOT contain both '$quant' and '$annot !"} } 
   if(datOK) { if(length(unique(gr))==length(gr)) { datOK <- FALSE
@@ -144,7 +144,7 @@ testRobustToNAimputation <- function(dat, gr=NULL, annot=NULL, retnNA=TRUE, avSd
     if(any(chFDR, na.rm=TRUE)) names(out)[which(chFDR)] <- "BH"                 # rename $FDR to $BH
     rownames(pwComb) <- colnames(out$t) 
     ## need to add $ROTS.p
-    if(length(ROTSn)==1) if(ROTSn >0 & !is.na(ROTSn)) {  
+    if(length(ROTSn)==1) if(ROTSn >0 && !is.na(ROTSn)) {  
       chPa <- requireNamespace("ROTS", quietly=TRUE)
       if(!chPa) { message(fxNa,"Package 'RORS' not found/installed (please install from Bioconductor), omitting argument 'ROTSn'")
         ROTSn <- 0 }
@@ -166,7 +166,7 @@ testRobustToNAimputation <- function(dat, gr=NULL, annot=NULL, retnNA=TRUE, avSd
     if(debug) message(fxNa,"tRN4")
           
     ## subsequent rounds of NA-imputation  
-    if(chNA & nLoop >1) { 
+    if(chNA && nLoop >1) { 
       if(debug) message(fxNa,"Subsequent rounds of NA-imputation   nLoop=",nLoop)
       pValTab <- tValTab <- array(NA, dim=c(nrow(dat), nrow(pwComb), nLoop))
       datIm <- array(NA, dim=c(nrow(dat), ncol(dat), nLoop))
@@ -231,7 +231,7 @@ testRobustToNAimputation <- function(dat, gr=NULL, annot=NULL, retnNA=TRUE, avSd
       } 
     if("BY" %in% multCorMeth) {out$BY <- as.matrix(apply(out$p.value, 2, stats::p.adjust, method="BY"))
       dimnames(out$BY) <- list(rownames(out$lods), colnames(out$contrasts))}
-    if(length(ROTSn)==1) if(ROTSn >0 & chNA & nLoop >1) {
+    if(length(ROTSn)==1) if(ROTSn >0 && chNA && nLoop >1) {
       out$ROTS.p <- apply(pVaRotsTab, 1:2, stats::median, na.rm=TRUE)
       if(any(!datFi$filt, na.rm=TRUE)) out$ROTS.p[which(!datFi$filt)] <- NA    
       out$ROTS.BH <- as.matrix(as.matrix(apply(out$ROTS.p, 2, stats::p.adjust, method="BH")))
@@ -239,7 +239,7 @@ testRobustToNAimputation <- function(dat, gr=NULL, annot=NULL, retnNA=TRUE, avSd
       if(lfdrInclude) {out$ROTS.lfdr <- as.matrix(as.matrix(apply(out$ROTS.p, 2, wrMisc::pVal2lfdr)))
         dimnames(out$ROTS.lfdr) <- list(rownames(out$lods), colnames(out$contrasts))} }
       out 
-  } else { warning(fxNa,msg)
+  } else { warning(fxNa, msg)
     return(NULL) }
   }
    

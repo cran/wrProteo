@@ -12,6 +12,7 @@ test2grp(
   annot = NULL,
   ROTSn = 0,
   silent = FALSE,
+  debug = FALSE,
   callFrom = NULL
 )
 }
@@ -30,7 +31,9 @@ test2grp(
 
 \item{silent}{(logical) suppress messages}
 
-\item{callFrom}{(character) allow easier tracking of messages produced}
+\item{debug}{(logical) display additional messages for debugging}
+
+\item{callFrom}{(character) allow easier tracking of message(s) produced}
 }
 \value{
 This function returns a limma-type S3 object of class 'MArrayLM' (which can be accessed like a list); multiple testing correction types or modified testing by ROTS may get included ('p.value','FDR','BY','lfdr' or 'ROTS.BH')

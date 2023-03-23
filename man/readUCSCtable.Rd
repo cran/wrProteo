@@ -10,6 +10,7 @@ readUCSCtable(
   gtf = NA,
   simplifyCols = c("gene_id", "chr", "start", "end", "strand", "frame"),
   silent = FALSE,
+  debug = FALSE,
   callFrom = NULL
 )
 }
@@ -27,7 +28,9 @@ for the 4th (typically gene end site) will be taken the maximum, for the 5th and
 
 \item{silent}{(logical) suppress messages}
 
-\item{callFrom}{(character) allows easier tracking of message(s) produced}
+\item{debug}{(logical) display additional messages for debugging}
+
+\item{callFrom}{(character) allow easier tracking of message(s) produced}
 }
 \value{
 This function returns a matrix, optionally the file 'exportFileNa' may be written

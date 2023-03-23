@@ -1,6 +1,6 @@
 #' Read xlsx, csv or tsv files exported from Proline and MS-Angel
 #'
-#' Quantification results form MS-Angel and Proline \href{http://www.profiproteomics.fr/proline/}{Proline} exported as xlsx format can be read directly.
+#' Quantification results from Proline \href{http://www.profiproteomics.fr/proline/}{Proline} and MS-Angel exported as xlsx format can be read directly using this function.
 #' Besides, files in tsv, csv (European and US format) or tabulated txt can be read, too.
 #' Then relevant information gets extracted, the data can optionally normalized and displayed as boxplot or vioplot.
 #' The final output is a list containing 6 elements: \code{$raw}, \code{$quant},  \code{$annot}, \code{$counts}, \code{$quantNotes} and \code{$notes}.
@@ -19,7 +19,7 @@
 #' @param path (character) optional path (note: Windows backslash sould be protected or written as '/')
 #' @param normalizeMeth (character) normalization method (for details and options see \code{\link[wrMisc]{normalizeThis}})
 #' @param logConvert (logical) convert numeric data as log2, will be placed in $quant
-#' @param sampleNames (character) new column-names for quantification data (ProteomeDiscoverer does not automatically use file-names from spectra); Please use with care since order of samples might be different as you expect
+#' @param sampleNames (character) custom column-names for quantification data; this argument has priority over \code{suplAnnotFile}
 #' @param quantCol (character or integer) colums with main quantitation-data : precise colnames to extract, or if length=1 content of \code{quantCol} will be used as pattern to search among column-names for $quant using \code{grep}
 #' @param annotCol (character) precise colnames or if length=1 pattern to search among column-names for $annot
 #' @param remStrainNo (logical) if \code{TRUE}, the organism annotation will be trimmed to uppercaseWord+space+lowercaseWord (eg Homo sapiens)
@@ -28,14 +28,15 @@
 #' @param refLi (integer) custom decide which line of data is main species, if single character entry it will be used to choose a group of species (eg 'mainSpe')
 #' @param separateAnnot (logical) separate annotation form numeric data (quantCol and annotCol must be defined)
 #' @param plotGraph (logical or matrix of integer) optional plot vioplot of initial data; if integer, it will be passed to \code{layout} when plotting
-#' @param tit (character) custom title to plot
-#' @param graphTit (character) (depreciated custom title to plot), please use 'tit'
+#' @param titGraph (character) custom title to plot of distribution of quantitation values
 #' @param wex (integer) relative expansion factor of the violin-plot (will be passed to \code{\link[wrGraph]{vioplotW}})
 #' @param specPref (character or list) define characteristic text for recognizing (main) groups of species (1st for comtaminants - will be marked as 'conta', 2nd for main species- marked as 'mainSpe',
 #'  and optional following ones for supplemental tags/species - maked as 'species2','species3',...);
 #'  if list and list-element has multiple values they will be used for exact matching of accessions (ie 2nd of argument \code{annotCol})
 #' @param gr (character or factor) custom defined pattern of replicate association, will override final grouping of replicates from \code{sdrf} and/or \code{suplAnnotFile} (if provided)   \code{}
-#' @param sdrf (character, list or data.frame) optional extraction and adding of experimenal meta-data: if character, this may be the ID at ProteomeExchange. Besides, the output from \code{readSdrf} or a list from \code{defineSamples} may be provided; if \code{gr} is provided, it gets priority for grouping of replicates
+#' @param sdrf (character, list or data.frame) optional extraction and adding of experimenal meta-data: if character, this may be the ID at ProteomeExchange, 
+#'   the second element may give futher indicatations for automatic organization of groups of replicates. 
+#'   Besides, the output from \code{readSdrf} or a list from \code{defineSamples} may be provided; if \code{gr} is provided, \code{gr} gets priority for grouping of replicates
 #' @param suplAnnotFile (logical or character) optional reading of supplemental files produced by quantification software; however, if \code{gr} is provided, \code{gr} gets priority for grouping of replicates;
 #'  if \code{TRUE} defaults to file '*InputFiles.txt' (needed to match information of \code{sdrf}) which can be exported next to main quantitation results;
 #'  if \code{character} the respective file-name (relative or absolute path)
@@ -54,7 +55,7 @@
 #' @export
 readProlineFile <- function(fileName, path=NULL, normalizeMeth="median", logConvert=TRUE, sampleNames=NULL, quantCol="^abundance_",
   annotCol=c("accession","description","is_validated","protein_set_score","X.peptides","X.specific_peptides"), remStrainNo=TRUE,
-  pepCountCol=c("^psm_count_","^peptides_count_"), trimColnames=FALSE, refLi=NULL, separateAnnot=TRUE, plotGraph=TRUE, tit=NULL, graphTit=NULL,
+  pepCountCol=c("^psm_count_","^peptides_count_"), trimColnames=FALSE, refLi=NULL, separateAnnot=TRUE, plotGraph=TRUE, titGraph=NULL,
   wex=2, specPref=c(conta="_conta\\|", mainSpecies="OS=Homo sapiens"), gr=NULL, sdrf=NULL, suplAnnotFile=TRUE, groupPref=list(lowNumberOfGroups=TRUE), silent=FALSE, callFrom=NULL, debug=FALSE) {
   ## 'quantCol', 'annotCol' (character) exact col-names or if length=1 pattern to search among col-names for $quant or $annot
   fxNa <- wrMisc::.composeCallName(callFrom, newNa="readProlineFile")
@@ -135,7 +136,7 @@ readProlineFile <- function(fileName, path=NULL, normalizeMeth="median", logConv
         prSh <- length(sheets)
         if(!silent) message(fxNa,"No sheets containing 'Protein' in name found, try using : '",sheets[prSh],"'")
       }
-      if(debug) message(fxNa,"Ready to use sheet ",prSh," rpf4")
+      if(debug) message(fxNa,"Ready to use sheet ",prSh,"   rpf4")
       out <- as.data.frame(if(debug) readxl::read_xlsx(paFi, sheet=prSh) else suppressMessages(readxl::read_xlsx(paFi, sheet=prSh)))
       qCoSh <- which(sheets=="Quant config")
       quantConf <- if(length(qCoSh) >0) { if(debug) readxl::read_xlsx(paFi, sheet=qCoSh[1]) else suppressMessages(readxl::read_xlsx(paFi, sheet=qCoSh[1]))} else NULL
@@ -269,7 +270,7 @@ readProlineFile <- function(fileName, path=NULL, normalizeMeth="median", logConv
       annot <- .extrSpecPref(specPref, annot, useColumn=c("Species","EntryName","GeneName","Accession"), silent=silent, debug=debug, callFrom=fxNa) }
 
     ## locate & extract abundance/quantitation data
-    if(length(quantCol) >1) { rawD <- as.matrix(wrMisc::extrColsDeX(out, extrCol=quantCol, doExtractCols=TRUE, silent=silent, callFrom=fxNa))
+    if(length(quantCol) >1) { abund <- as.matrix(wrMisc::extrColsDeX(out, extrCol=quantCol, doExtractCols=TRUE, silent=silent, callFrom=fxNa))
     } else {
       quantCol2 <- grep(quantCol, colnames(out))
       chNa <- is.na(quantCol2)
@@ -277,149 +278,84 @@ readProlineFile <- function(fileName, path=NULL, normalizeMeth="median", logConv
       if(any(chNa)) {
         if(!silent) message(fxNa,"Could not find columns ",wrMisc::pasteC(quantCol2[which(chNa)],quote="'")," .. omit")
         quantCol2 <- wrMisc::naOmit(quantCol2)}
-      rawD <- as.matrix(out[,quantCol2]) }                    # abundance val
+      abund <- as.matrix(out[,quantCol2]) }                    # abundance val
     ## peptide counts
     if(length(pepCountCol) >1) { supCol <- lapply(pepCountCol, grep, colnames(out))
       chLe <- sapply(supCol,length)
-      chLe <- chLe==ncol(rawD)
-      if(any(chLe)) { pepCount <- array(dim=c(nrow(out), ncol(rawD), sum(chLe)),
-        dimnames=list(rowNa, colnames(rawD), sub("\\^peptides_count","NoOfPeptides",sub("\\^psm_count","PSM",sub("_$","",pepCountCol)))[which(chLe)]))
+      chLe <- chLe==ncol(abund)
+      if(any(chLe)) { pepCount <- array(dim=c(nrow(out), ncol(abund), sum(chLe)),
+        dimnames=list(rowNa, colnames(abund), sub("\\^peptides_count","NoOfPeptides",sub("\\^psm_count","PSM",sub("_$","",pepCountCol)))[which(chLe)]))
         for(i in 1:sum(chLe)) pepCount[,,i] <- as.matrix(out[,supCol[[which(chLe)[i]]]])
       } else pepCount <- NULL
     }
     if(debug) {message(fxNa," rpf15"); rpf15 <- list(out=out,annot=annot,specPref=specPref,quantCol=quantCol,rowNa=rowNa,tmp=tmp)}
 
     ## check abundance/quantitation data
-    chNum <- is.numeric(rawD)
-    if(!chNum) {rawD <- apply(out[,quantCol2], 2, wrMisc::convToNum, convert="allChar", silent=silent, callFrom=fxNa)}
-    rownames(rawD) <- rowNa
+    chNum <- is.numeric(abund)
+    if(!chNum) {abund <- apply(out[,quantCol2], 2, wrMisc::convToNum, convert="allChar", silent=silent, callFrom=fxNa)}
+    rownames(abund) <- rowNa
     ##
     ## Custom (alternative) colnames
-    if(length(sampleNames) ==ncol(rawD)) {
-      colnames(rawD) <- colnames(pepCount) <- sampleNames
+    if(length(sampleNames) ==ncol(abund)) {
+      colnames(abund) <- colnames(pepCount) <- sampleNames
     } else {
-      colnames(rawD) <- sub(if(length(quantCol) >1) "^abundance" else quantCol, "", colnames(rawD))
-      if(trimColnames) colnames(rawD) <- wrMisc::.trimFromStart(wrMisc::.trimFromEnd(colnames(rawD)))
+      colnames(abund) <- sub(if(length(quantCol) >1) "^abundance" else quantCol, "", colnames(abund))
+      if(trimColnames) colnames(abund) <- wrMisc::.trimFromStart(wrMisc::.trimFromEnd(colnames(abund)))
     }
 
     ## treat colnames, eg problem with pxd001819 : some colnames writen as amol, other as fmol
     adjDecUnits <- FALSE
     if(adjDecUnits) {
-      colnames(rawD) <- sub("^ +","", .adjustDecUnit(wrMisc::trimRedundText(colnames(rawD), silent=silent, debug=debug, callFrom=fxNa)))
+      colnames(abund) <- sub("^ +","", .adjustDecUnit(wrMisc::trimRedundText(colnames(abund), silent=silent, debug=debug, callFrom=fxNa)))
     }
-    if(debug) { message(fxNa," rpf16"); rpf16 <- list(rawD=rawD,annot=annot,sampleNames=sampleNames,normalizeMeth=normalizeMeth,refLi=refLi,sdrf=sdrf,suplAnnotFile=suplAnnotFile,path=path,fxNa=fxNa,silent=silent)}
+    if(debug) { message(fxNa," rpf16"); rpf16 <- list(abund=abund,annot=annot,sampleNames=sampleNames,normalizeMeth=normalizeMeth,refLi=refLi,sdrf=sdrf,suplAnnotFile=suplAnnotFile,path=path,fxNa=fxNa,silent=silent)}
 
     ## check for reference for normalization
     refLiIni <- refLi
-    if(is.character(refLi) & length(refLi)==1) { refLi <- which(annot[,"SpecType"]==refLi)
-      if(length(refLi) <1) { message(fxNa,"Could not find any protein matching argument 'refLi', ignoring ..."); refLi <- 1:nrow(rawD)
-      } else if(!silent) message(fxNa,"Normalize using (custom) subset of ",length(refLi)," lines") }    # may be "mainSpe"
-    if(debug) { message(fxNa," rpf16b"); rpf16b <- list(rawD=rawD,annot=annot,sampleNames=sampleNames,normalizeMeth=normalizeMeth,refLi=refLi,sdrf=sdrf,suplAnnotFile=suplAnnotFile,path=path,fxNa=fxNa,silent=silent)}
+    if(is.character(refLi) && length(refLi) ==1) {
+      refLi <- which(annot[,"SpecType"] ==refLi)
+      if(length(refLi) <1 && identical(refLiIni, "mainSpe")) refLi <- which(annot[,"SpecType"] =="mainSpecies")              # fix compatibility problem  'mainSpe' to 'mainSpecies'
+      if(length(refLi) <1 ) { refLi <- 1:nrow(abund)
+        if(!silent) message(fxNa,"Could not find any proteins matching argument 'refLi=",refLiIni,"', ignoring ...")
+      } else {
+        if(!silent) message(fxNa,"Normalize using (custom) subset of ",length(refLi)," lines specified as '",refLiIni,"'")}}    # may be "mainSpe"
+    if(debug) { message(fxNa," rpf16b"); rpf16b <- list()}
 
     ## take log2 & normalize
     if(length(normalizeMeth) <1) normalizeMeth <- "median"
-    quant <- if(utils::packageVersion("wrMisc") > "1.10") {
-        try(wrMisc::normalizeThis(log2(rawD), method=normalizeMeth, mode="additive", refLines=refLi, silent=silent, debug=debug, callFrom=fxNa), silent=!debug)
-      } else try(wrMisc::normalizeThis(log2(rawD), method=normalizeMeth, refLines=refLi, silent=silent, callFrom=fxNa), silent=TRUE)       #
-
+    quant <- try(wrMisc::normalizeThis(log2(abund), method=normalizeMeth, mode="additive", refLines=refLi, silent=silent, debug=debug, callFrom=fxNa), silent=!debug)      
     if(debug) { message(fxNa,"rpf16c .. dim quant: ", nrow(quant)," li and  ",ncol(quant)," cols; colnames : ",wrMisc::pasteC(colnames(quant))," ")}
 
-    ## need to transform fmol in amol for proper understanding & matching with metadata
-
-
-    ### IMPORT SAMPLE META-DATA, GROUPING OF REPLICATES
-    if(debug) {message(fxNa,"rpf17a"); rpf17a <- list(rawD=rawD,quant=quant,annot=annot,sampleNames=sampleNames,normalizeMeth=normalizeMeth,refLi=refLi,sdrf=sdrf,suplAnnotFile=suplAnnotFile,path=path,paFi=paFi,fxNa=fxNa,silent=silent)}
-    if((!isFALSE(suplAnnotFile) & length(suplAnnotFile) >0) | length(sdrf) >0) {
-      if(isTRUE(suplAnnotFile)) suplAnnotFile <- if(grepl("\\.xlsx$|\\.csv$|\\.tsv$", paFi[1])) paFi else FALSE  # expand further to  add tsv & csv ?
+    ### GROUPING OF REPLICATES AND SAMPLE META-DATA
+    if(length(suplAnnotFile) >0 || length(sdrf) >0) {
+      if(isTRUE(suplAnnotFile[1])) suplAnnotFile <- paFi
       setupSd <- readSampleMetaData(sdrf=sdrf, suplAnnotFile=suplAnnotFile, quantMeth="PL", path=path, abund=utils::head(quant), groupPref=groupPref, silent=silent, debug=debug, callFrom=fxNa)
-      setupSd$groups <- setupSd$lev
     }
-    if(debug) {message(fxNa,"rpf17b"); rpf17b <- list(tmp=tmp,quant=quant,setupSd=setupSd,annot=annot,sdrf=sdrf,fileName=fileName,path=path,paFi=paFi,tmp=tmp,
-       normalizeMeth=normalizeMeth,sampleNames=sampleNames,quantCol=quantCol,annotCol=annotCol,refLi=refLi,separateAnnot=separateAnnot,gr=gr )}
+    if(debug) {message(fxNa,"rpf16d .."); rpf16d <- list(sdrf=sdrf,gr=gr,suplAnnotFile=suplAnnotFile, quant=quant,refLi=refLi,annot=annot,setupSd=setupSd,sampleNames=sampleNames)}
 
+    ## finish groups of replicates & annotation setupSd
+    ## need to transform fmol in amol for proper understanding & matching with metadata
+    setupSd <- .checkSetupGroups(abund=quant, setupSd=setupSd, gr=gr, sampleNames=sampleNames, quantMeth="PL", silent=silent, debug=debug, callFrom=fxNa)
+    colnames(quant) <- colnames(abund) <- if(length(setupSd$sampleNames)==ncol(abund)) setupSd$sampleNames else setupSd$groups
+    if(length(dim(counts)) >1 && length(counts) >0) colnames(counts) <- setupSd$sampleNames
 
-#    ## finish groups of replicates & annotation setupSd
-    if(length(setupSd) >0 & length(setupSd$groups) <1) {                       # if nothing found/matching from sdrf & file, try getting sample-setup from colnames (use if at least 1 replicate found)
-      if(length(gr) ==ncol(rawD)) setupSd$groups <- gr else {
-        if(debug) {message(fxNa,"rpd13e  Note: setupSd$groups is still empty ! ")}
-        if(length(setupSd$lev) ==ncol(rawD)) setupSd$groups <- setupSd$lev else {
-          if(length(setupSd$lev) >0 & ncol(quant) >0) warning(fxNa," sdrf sample-metadata dot not fit (sdrf suggests ",length(setupSd$lev)," but real data consist of ",ncol(quant)," samples) !")
-          ## try defining groups based on colnames
-          if(debug) {message(fxNa,"rpd13f  Note: setupSd is still empty !  .. try getting sample-setup from colnames")}
-          delPat <- "_[[:digit:]]+$|\\ [[:digit:]]+$|\\-[[:digit:]]+$"       # remove enumerators, ie trailing numbers after separator
-          grou <- sub(delPat,"", colnames(rawD))
-          if(length(unique(grou)) >1 & length(unique(grou)) < ncol(rawD)) setupSd$groups <- grou else {
-            grou <- sub("[[:digit:]]+$","", colnames(rawD))
-            if(length(unique(grou)) >1 & length(unique(grou)) < ncol(rawD)) setupSd$groups <- grou }
-        } }
-    if(debug) {message(fxNa,"rpf17c"); rpf17c <- list(rawD=rawD,quant=quant,annot=annot,sampleNames=sampleNames,normalizeMeth=normalizeMeth,refLi=refLi,sdrf=sdrf,setupSd=setupSd,suplAnnotFile=suplAnnotFile,path=path,fxNa=fxNa,silent=silent)}
-    }
+    if(debug) {message(fxNa,"Read sample-meta data, rpf17"); rpf17 <- list(sdrf=sdrf,suplAnnotFile=suplAnnotFile,abund=abund, quant=quant,refLi=refLi,annot=annot,setupSd=setupSd,sampleNames=sampleNames)}
 
-    ## finish sample-names: use file-names from meta-data if no custom 'sampleNames' furnished
-    ## One more check for colnames & sampleNames
-    if(any(length(sampleNames) <1, length(sampleNames) != ncol(quant), na.rm=TRUE)) {
-      chNa <- all(grep("^\\.F[[:digit:]]+\\.Sample$", colnames(quant)) ==1:ncol(quant), na.rm=TRUE)   #  PL default names like   '.F1.Sample', '.F2.Sample' etc
-      if(chNa & length(setupSd) >0) {
-        if(debug) {message(fxNa,"rpf17d")}
-        if(length(setupSd$annotBySoft$File.Name)==ncol(quant)) {
-          sampleNames <- basename(sub("\\.raw$|\\.Raw$|\\.RAW$","", setupSd$annotBySoft$File.Name))
-          sampleNames <- wrMisc::trimRedundText(sampleNames, minNchar=2, spaceElim=TRUE, silent=silent, callFrom=fxNa, debug=debug)
-          colnames(quant) <- colnames(rawD) <- sampleNames
-          if(length(dim(counts)) >1 & length(counts) >0) colnames(counts) <- sampleNames
-        }
-      }
-    }
-    if(debug) {message(fxNa,"rpf17d"); rpf17d <- list(rawD=rawD,quant=quant,annot=annot,sampleNames=sampleNames,normalizeMeth=normalizeMeth,refLi=refLi,sdrf=sdrf,setupSd=setupSd,suplAnnotFile=suplAnnotFile,path=path,fxNa=fxNa,silent=silent)}
-
-
-    ##
     ## main plotting of distribution of intensities
     custLay <- NULL
-    if(is.numeric(plotGraph) & length(plotGraph) >0) {custLay <- as.integer(plotGraph); plotGraph <- TRUE} else {
-      if(!isTRUE(plotGraph)) plotGraph <- FALSE}
+    if(is.numeric(plotGraph) && length(plotGraph) >0) {custLay <- as.integer(plotGraph); plotGraph <- TRUE} else {
+        if(!isTRUE(plotGraph)) plotGraph <- FALSE}
+    if(plotGraph) .plotQuantDistr(abund=abund, quant=quant, custLay=custLay, normalizeMeth=normalizeMeth, softNa="Proline",
+      refLi=refLi, refLiIni=refLiIni, tit=titGraph, silent=silent, callFrom=fxNa, debug=debug)
 
-    if(length(plotGraph) >0) {if(is.numeric(plotGraph)) {custLay <- plotGraph; plotGraph <- TRUE
-      } else { plotGraph <- as.logical(plotGraph[1])}}
-    if(plotGraph) {
-      if(debug) message(fxNa,"Start plotting")
-      if(length(custLay) >0) graphics::layout(custLay) else if(length(normalizeMeth) >0) graphics::layout(1:2)
-      graphics::par(mar=c(3, 3, 3, 1))                          # mar: bot,le,top,ri
-      if(length(graphTit) >0) message(fxNa,"Argument 'graphTit' is depreciated, please rather use 'tit' ")
-      if(is.null(tit) & !is.null(graphTit)) tit <- graphTit
-      if(is.null(tit)) tit <- "Distribution of Proline quantification values"
-      reqPa <- c("wrGraph","sm")
-      misPa <- !sapply(reqPa, requireNamespace, quietly=TRUE)
-      if(any(misPa)) if(!silent) message(fxNa,"Missing package ",wrMisc::pasteC(c("wrGraph","sm")[which(misPa)],quoteC="'")," for drawing vioplots")
-      if(length(normalizeMeth) >0) {
-        if(any(misPa)) {
-          ## wrGraph not available : simple boxplot
-          if(debug) message(fxNa,"Plot without calling 'wrGraph'")
-          graphics::boxplot(log2(rawD), main=paste(tit," (initial)"), las=1, outline=FALSE)
-          graphics::abline(h=round(log2(stats::median(rawD, na.rm=TRUE))) +c(-2:2)*2, lty=2, col=grDevices::grey(0.6))
-        } else {                                          # wrGraph & sm are available
-          ch1 <- try(wrGraph::vioplotW(log2(rawD), tit=paste(tit," (initial)"), wex=wex, silent=silent, callFrom=fxNa), silent=TRUE)
-          if(inherits(ch1, "try-error")) { plotGraph <- FALSE; message(fxNa,"UNABLE to plot vioplotW !!")
-          } else graphics::abline(h=round(log2(stats::median(rawD, na.rm=TRUE))) +(-2:2)*2, lty=2, col=grDevices::grey(0.6))
-        }
-      }
-      if(length(normalizeMeth) >0) tit <- paste(tit," (normalized)")
-      if(any(misPa)) {
-        ## wrGraph not available : simple boxplot
-        graphics::boxplot(quant, main=tit, las=1, outline=FALSE)
-        graphics::abline(h=round(stats::median(quant, na.rm=TRUE)) +c(-2:2)*2, lty=2, col=grDevices::grey(0.6))
-      } else {                                          # wrGraph & sm are available
-        ch1 <- try(wrGraph::vioplotW(quant, tit=tit, wex=wex, silent=silent, callFrom=fxNa), silent=TRUE)
-        if(inherits(ch1, "try-error")) {plotGraph <- FALSE; message(fxNa,"UNABLE to plot vioplotW !!")
-        } else graphics::abline(h=round(stats::median(quant, na.rm=TRUE)) +(-2:2)*2, lty=2, col=grDevices::grey(0.6))
-      }
-      on.exit(graphics::par(mar=oparMar)) }
+
     ## meta-data to export
     notes <- c(inpFile=paFi, qmethod="Proline", normalizeMeth="none", call=match.call(),
       created=as.character(Sys.time()), wrProteo.version=utils::packageVersion("wrProteo"), machine=Sys.info()["nodename"])
     ##
     if(separateAnnot) {
-      if(!is.numeric(quant) & logConvert) { message(fxNa,"Problem: Abundance data seem not numeric, can't transform log2 !")}
-      out <- list(raw=rawD, quant=quant, annot=annot, counts=pepCount, sampleSetup=setupSd, quantNotes=quantConf, notes=notes)
+      if(!is.numeric(quant) && logConvert) { message(fxNa,"Problem: Abundance data seem not numeric, can't transform log2 !")}
+      out <- list(raw=abund, quant=quant, annot=annot, counts=pepCount, sampleSetup=setupSd, quantNotes=quantConf, notes=notes)
       if(!logConvert) out$quant <- 2^out$quant }
   }
   ## final Proline-import
