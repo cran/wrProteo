@@ -95,11 +95,11 @@ Thus, scientific questions about the comparison and choice of quantification sof
 
 ### Meta-Data Describing The Experiment (sdrf)
 
-The project [Proteomics Sample Metadata Format](https://github.com/bigbio/proteomics-metadata-standard) aims to provide a framework
+The project [Proteomics Sample Metadata Format](https://github.com/bigbio/proteomics-sample-metadata) aims to provide a framework
 of providing a uniform format for documenting experimental meta-data (sdrf-format).
 The meta-data for experiments already integrated can be directly read/accessed from [wrProteo](https://CRAN.R-project.org/package=wrProteo).
 
-Either you download the meta-data as file 'sdrf.tsv' from [Pride/PXD001819](https://www.ebi.ac.uk/pride/archive/projects/PXD001819), or you may read it directly from [github/bigbio](https://github.com/bigbio/proteomics-metadata-standard/blob/master/annotated-projects/PXD001819/PXD001819.sdrf.tsv).
+Either you download the meta-data as file 'sdrf.tsv' from [Pride/PXD001819](https://www.ebi.ac.uk/pride/archive/projects/PXD001819), or you may read file 'PXD001819.sdrf.tsv' directly from [github/bigbio](https://github.com/bigbio/proteomics-sample-metadata/blob/master/annotated-projects/PXD001819/PXD001819.sdrf.tsv).
 
 
 ```{r metaData1, echo=TRUE}
@@ -237,7 +237,7 @@ Please note, that in the example above we directly added information about the e
 dim(dataMQ$quant)
 ## A quick summary of some columns of quantitation data
 summary(dataMQ$quant[,1:7])                # the first 8 cols
-table(dataMQ$annot[,"SpecType"])
+table(dataMQ$annot[,"SpecType"], useNA="always")
 ```
 
 Now we can summarize the presence of UPS1 proteins after treatment by MaxQuant :
@@ -261,7 +261,7 @@ path1 <- system.file("extdata", package="wrProteo")
 fiNaPd <- "pxd001819_PD24_Proteins.txt.gz"
 ## Next, we define the setup of species
 specPrefPD <- list(conta="Bos tauris|Gallus", mainSpecies="Saccharomyces cerevisiae", spike=UPS1$ac)
-dataPD <- readProtDiscovFile(file=fiNaPd, path=path1, refLi="mainSpe", specPref=specPrefPD,
+dataPD <- readProteomeDiscovererFile(file=fiNaPd, path=path1, refLi="mainSpe", specPref=specPrefPD,
   sdrf=c("PXD001819","max"), plotGraph=FALSE)
 ```
 
@@ -282,7 +282,7 @@ If you wish to inspect the graphs for the distribution of abundance values for e
 dim(dataPD$quant)
 ## A quick summary of some columns of quantitation data
 summary(dataPD$quant[,1:7])        # the first 8 cols
-table(dataPD$annot[,"SpecType"])
+table(dataPD$annot[,"SpecType"], useNA="always")
 ```
 
 Confirming the presence of UPS1 proteins by ProteomeDiscoverer:
@@ -340,7 +340,7 @@ head(colnames(dataPL$raw),8)
 dim(dataPL$quant)
 ## A quick summary of some columns of quantitation data
 summary(dataPL$quant[,1:8])        # the first 8 cols
-table(dataPL$annot[,"SpecType"])
+table(dataPL$annot[,"SpecType"], useNA="always")
 ```
 
 Now we can summarize the presence of UPS1 proteins after treatment by Proline :
@@ -424,7 +424,7 @@ kable(cbind(dataMQ$sampleSetup$sdrf[,c(23,7,19,22)], groups=dataMQ$sampleSetup$g
 ### Normalization
 
 No additional normalization is needed, all data were already median normalized to the host proteins (ie _Saccharomyces cerevisiae_) after importing the
-initial quantification-output using '_readMaxQuantFile()_', '_readProlineFile()_' and '_readProtDiscovFile()_'.
+initial quantification-output using '_readMaxQuantFile()_', '_readProlineFile()_' and '_readProteomeDiscovererFile()_'.
 
 
 ### Presence of NA-values
@@ -1143,6 +1143,9 @@ Here, we (pre)define that we want to obtain 5 groups (like ratings from 1 -5 sta
 ```{r combScore1, echo=TRUE}
 ## number of groups for clustering
 nGr <- 5
+chFin <- is.finite(datUPS1[,,"sco"])
+if(any(!chFin)) datUPS1[,,"sco"][which(!chFin)] <- -1      # just in case..
+
 
 ## clustering using kMeans
 kMx <- stats::kmeans(standardW(datUPS1[,,"sco"], byColumn=FALSE), nGr)$cluster
@@ -1290,7 +1293,7 @@ Thus, for rather scientific conclusions the user is encouraged to run the same p
 ## Acknowledgements
 
 The author wants to acknowledge the support by the [IGBMC](https://www.igbmc.fr) (CNRS UMR 7104, Inserm U 1258, UdS),
-[CNRS](http://www.cnrs.fr), [Universit&eacute; de Strasbourg](https://www.unistra.fr) and [Inserm](https://www.inserm.fr)
+[CNRS](http://www.cnrs.fr/en), [Universit&eacute; de Strasbourg](https://www.unistra.fr) and [Inserm](https://www.inserm.fr)
 and of course all collegues from the [IGBMC proteomics platform](https://proteomics.igbmc.fr).
 The author wishes to thank the [CRAN](https://CRAN.R-project.org) -staff for all their help with new entries and their efforts in maintaining this repository of R-packages.
 Furthermore, many very fruitful discussions with colleages on national and international level have helped to formulate ideas and improve the tools presented here.

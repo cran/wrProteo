@@ -45,7 +45,7 @@
 #' @param callFrom (character) allow easier tracking of messages produced
 #' @return This function returns a list with \code{$raw} (initial/raw abundance values), \code{$quant} with final normalized quantitations, \code{$annot}, \code{$counts} an array with number of peptides, \code{$quantNotes}
 #'  and \code{$notes}; or if \code{separateAnnot=FALSE} the function returns a data.frame with annotation and quantitation only
-#' @seealso \code{\link[utils]{read.table}}, \code{\link[wrMisc]{normalizeThis}}) , \code{\link{readMaxQuantFile}}, \code{\link{readProlineFile}}
+#' @seealso \code{\link[utils]{read.table}}, \code{\link[wrMisc]{normalizeThis}}) , \code{\link{readMaxQuantFile}}, \code{\link{readProteomeDiscovererFile}}
 #' @examples
 #' path1 <- system.file("extdata", package="wrProteo")
 #'
@@ -62,35 +62,34 @@ readProtDiscovPeptides <- function(fileName, path=NULL, normalizeMeth="median", 
   if(any(!chPa)) stop("package(s) '",paste(reqPa[which(!chPa)], collapse="','"),"' not found ! Please install first from CRAN")
   if(!isTRUE(silent)) silent <- FALSE
   if(isTRUE(debug)) silent <- FALSE else debug <- FALSE
-  excluCol <- "^Abundances.Count"   # exclude this from quantifications columns  # needed ?
+  excluCol <- c("^Abundance\\.Count","^Abundances\\.Count","^Abundance\\.Ratio","^Abundances\\.Ratio","^Abundance\\.Grouped","^Abundances\\.Grouped")   # exclude this from quantifications columns
   cleanDescription <- TRUE          # clean 'Description' for artifacts of truncated text (tailing ';' etc)
-  infoDat <- infoFi <- setupSd <- parametersD <- quant <- NULL        # initialize
+  infoDat <- infoFi <- setupSd <- parametersD <- quant <- counts <- NULL        # initialize
   modifSensible <- TRUE             # separate modified from unmodified peptides (by attaching modif to seq)
  .corPathW <- function(x) gsub("\\\\", "/", x)
 
-  ## check if path & file exist
+
+  ## check if path & (tsv) file exist
   msg <- "Invalid entry for 'fileName'"
   if(length(fileName) >1) { fileName <- fileName[1]
     if(!silent) message(fxNa," 'fileName' shoud be of length=1, using 1st value")
-  } else { if(length(fileName) <1) stop(msg) else if(nchar(fileName) <0) stop(msg)}
+  } else { if(length(fileName) <1) stop(msg) else if(is.na(fileName) | nchar(fileName) <1) stop(msg)}
   paFi <- fileName                      # presume (& correct if path is given)
-  if(debug) {message(fxNa,"rPDP1"); rPDP1 <- list(fileName=fileName,path=path,normalizeMeth=normalizeMeth,sampleNames=sampleNames,suplAnnotFile=suplAnnotFile,read0asNA=read0asNA,quantCol=quantCol,cleanDescription=cleanDescription)  }
-
+  chFi <- file.exists(fileName)         # presume (& correct otherwise)
   if(length(path) >0) if(!dir.exists(path[1])) { path <- NULL
     if(!silent) message(fxNa,"Invalid path '",path[1],"'  (not existing), ignoring...") }
   if(length(path) >0) { chFi <- file.exists(file.path(path[1], fileName))
     if(chFi) paFi <- file.path(path[1], fileName) else {
       if(file.exists(fileName)) {paFi <- fileName
-        if(!silent) message(fxNa,"NOTE : Unable to find file '",fileName,"' in path '",path,"' but found in current path !")
+        if(!silent) message(fxNa,"Note : Unable to find file '",fileName,"' in path '",path,"' but found without specified path !")
       } else chFi <- FALSE                      # if path+fileName not found, check without path
-    }
-  } else chFi <- file.exists(fileName)         #
+  } }
   if(!chFi) stop(" File ",fileName," was NOT found ",if(length(path) >0) paste(" in path ",path)," !")
-  if(!grepl("\\.txt$|\\.txt\\.gz$", fileName)) message(fxNa,"Trouble ahead, expecting tabulated text file ('",fileName,"' might not be in right format) !!")
+  if(!grepl("\\.txt$|\\.txt\\.gz$", fileName)) message(fxNa,"Trouble ahead, expecting tabulated text file (the file'",fileName,"' might not be right format) !!")
   if(debug) message(fxNa,"rPDP2a ..")
+
   ## prepare for reading files
-  if(debug) { message(fxNa,"rPDP3 .. Ready to read", if(length(path) >0) c(" from path ",path[1])," the file  ",fileName[1])
-  }
+  if(debug) { message(fxNa,"rPDP3 .. Ready to read", if(length(path) >0) c(" from path ",path[1])," the file  ",fileName[1])}
 
   ## read (main) file
   ## future: look for fast reading of files
@@ -114,7 +113,7 @@ readProtDiscovPeptides <- function(fileName, path=NULL, normalizeMeth="median", 
   maSeCo2 <- match(gsub("",".",seqCol), colnames(tmp))
   maSeCo <- if(sum(is.na(maSeCo1)) > sum(is.na(maSeCo2))) maSeCo2 else maSeCo1   # switch betw R-friendly and std
      #quanCo <- "Abundance.F62.Sample.na"
-  AbundCol <- "^Abundance"              # use as pattern
+  quantCol <- "^Abundance"              # use as pattern
   IdentTyCol <- "Found.in.Sample"       # use as pattern
   ## need other example for extracting quantifications ?
     #"Confidence.by.Search.Engine.Sequest.HT","Percolator.q.Value.by.Search.Engine.Sequest.HT","Percolator.PEP.by.Search.Engine.Sequest.HT", "XCorr.by.Search.Engine.Sequest.HT","Channel.Occupancy.in.Percent")
@@ -124,20 +123,21 @@ readProtDiscovPeptides <- function(fileName, path=NULL, normalizeMeth="median", 
     ## check in 'matr' for column-name 'x', if required rename best hit (if no direct hit look using grep, then grep wo case); return corrected mat
     chX <- x %in% colnames(mat)
     if(all(chX)) {
-      if(is.character(renameTo) & length(renameTo) ==1) colnames(mat)[match(x, colnames(mat))] <- renameTo   # juste simple rename
+      if(is.character(renameTo) && length(renameTo) ==1) colnames(mat)[match(x, colnames(mat))] <- renameTo   # juste simple rename
     } else {     # try to localize column to use
       chX <- grep(x, colnames(mat))
       if(length(chX) >0) {
-        if(is.character(renameTo) & length(renameTo) ==1) colnames(mat)[chX[1]] <- renameTo else x
-        if(!silent & length(chX) >1) message(fxNa,"Found multiple columns containing '",x,"' : ",wrMisc::pasteC(colnames(mat)[chX], quoteC="'"),", using 1st")
+        if(is.character(renameTo) && length(renameTo) ==1) colnames(mat)[chX[1]] <- renameTo else x
+        if(!silent && length(chX) >1) message(fxNa,"Found multiple columns containing '",x,"' : ",wrMisc::pasteC(colnames(mat)[chX], quoteC="'"),", using 1st")
       } else {
         chX <- grep(tolower(x), tolower(colnames(mat)))
         if(length(chX) >0) {
-          if(is.character(renameTo) & length(renameTo) ==1) colnames(mat)[chX[1]] <- renameTo else x
-          if(!silent & length(chX) >1) message(fxNa,"Found multiple columns containing '",tolower(x),"' : ",wrMisc::pasteC(colnames(mat)[chX], quoteC="'"),", using 1st")
+          if(is.character(renameTo) && length(renameTo) ==1) colnames(mat)[chX[1]] <- renameTo else x
+          if(!silent && length(chX) >1) message(fxNa,"Found multiple columns containing '",tolower(x),"' : ",wrMisc::pasteC(colnames(mat)[chX], quoteC="'"),", using 1st")
         } else stop("Could NOT find column '",x,"' !!\n  (available columns ",wrMisc::pasteC(colnames(mat), quoteC="'"),")") }
     }
   mat }
+
   ## EXTRACT PEPTIDE SEQUENCES
   ## extract peptide sequences
   if(debug) {message(fxNa,"rPDP4a .. Ready to start extracting pep seq ")
@@ -181,18 +181,88 @@ readProtDiscovPeptides <- function(fileName, path=NULL, normalizeMeth="median", 
   }
   rm(annot1)
   if(debug) {message(fxNa,"rPDP4c .. Done extracting peptide annotation ")
-     rPDP4c <- list(fileName=fileName,path=path,chFi=chFi,paFi=paFi,normalizeMeth=normalizeMeth,sampleNames=sampleNames,suplAnnotFile=suplAnnotFile,read0asNA=read0asNA,quantCol=quantCol,cleanDescription=cleanDescription,tmp=tmp,seqCol=seqCol,maSeCo=maSeCo,modifSensible=modifSensible, pepSeq=pepSeq,hasMod=hasMod, annot=annot,AbundCol=AbundCol)}
+     rPDP4c <- list(fileName=fileName,path=path,chFi=chFi,paFi=paFi,normalizeMeth=normalizeMeth,sampleNames=sampleNames,suplAnnotFile=suplAnnotFile,read0asNA=read0asNA,quantCol=quantCol,cleanDescription=cleanDescription,tmp=tmp,seqCol=seqCol,maSeCo=maSeCo,modifSensible=modifSensible, pepSeq=pepSeq,hasMod=hasMod, annot=annot,quantCol=quantCol)}
 
   ## ABUNDANCE
-  abundCols <- grep(AbundCol, colnames(tmp))
-  if(length(abundCols) >0) { abund <- if(length(abundCols) >1)  tmp[,abundCols] else {
-      matrix(tmp[,abundCols], ncol=1, dimnames=list(rownames(tmp),NULL))}   # how to know column-name if single sample ?
+    ## locate & extract abundance/quantitation data
+    msg <- " CANNOT find ANY quantification columns"
+    if(length(quantCol) >1) {
+      ## explicit columns (for abundance/quantitation data)
+      ## problem : extract '^Abundances*' but NOT 'Abundances.Count.*'
+      quantColIni <- quantCol <- grep(quantCol[1], colnames(tmp))
+      if(length(quantCol) <1) stop(msg,"  ('",quantCol,"')")
+    } else {
+      ## pattern search (for abundance/quantitation data)
+      if(length(quantCol) <1) { quantCol <- "^Abundance"
+        if(!silent) message(fxNa,"Setting argument 'quantCol' to '^Abundance'")}
+      quantCol <- grep(quantCol, colnames(tmp))
+      if(length(quantCol) <1) quantCol <- grep("^abundance", tolower(colnames(tmp)))
+      if(length(quantCol) <1) quantCol <- grep("Intensity$", colnames(tmp))
+      if(length(quantCol) <1) quantCol <- grep("intensity$", tolower(colnames(tmp)))
+      quantColIni <- quantCol
+      if(length(quantCol) <1) stop(msg," specified in argument 'quantCol' !") }
+    ## check for columns to exclude (like 'Abundances.Count.')
+    if(length(excluCol) >1) {
+      excCo <- unique(unlist(lapply(excluCol, grep, colnames(tmp))))
+      if(length(excCo) >0) {
+        quantCol <- quantCol[-wrMisc::naOmit(match(excCo, quantCol))]
+        if(length(quantCol) <1) stop(msg," (all match to 'excluCol')") else {
+          if(!silent) message(fxNa,"Removed ",length(quantColIni) -length(quantCol)," columns")}
+      }
+    }
+
+  if(length(quantCol) >0) { abund <- if(length(quantCol) >1)  tmp[,quantCol] else {
+      matrix(tmp[,quantCol], ncol=1, dimnames=list(rownames(tmp),NULL))}   # how to know column-name if single sample ?
     rownames(abund) <- wrMisc::correctToUnique(pepSeq, silent=silent, callFrom=fxNa)
-    ## exculde using excluCol ??
-    exclCo <- grepl(excluCol, colnames(abund))
-    if(any(exclCo, na.rm=TRUE)) abund <- abund[,which(!exclCo)]
-    if(length(dim(abund)) !=2) abund <- matrix(abund, ncol=1, dimnames=list(names(abund),NULL))   # how to know column-name if single sample ?
+    ## check for columns to exclude (like 'Abundances.Count.')
+    if(length(excluCol)==1) {
+      excCo <- grep(excluCol, colnames(tmp))
+      if(any(duplicated(excCo, quantCol), na.rm=TRUE)) {
+        quantCol <- quantCol[-match(excCo, quantCol)]
+        if(length(quantCol) <1) stop(msg," (all match to 'excluCol')") else {
+          if(!silent) message(fxNa,"Removed ",length(quantColIni) -length(quantCol)," columns")}
+      }
+    }
+    abund <- as.matrix(tmp[,quantCol])                      # abundance val
+    if(debug) {message(fxNa,"rpd8 ..  "); rpd8 <- list(tmp=tmp,annot=annot,specPref=specPref,abund=abund,quantCol=quantCol)}
+
+    ## check & clean abudances
+    chNorm <- grep("\\.Normalized\\.", colnames(abund))
+    if(length(chNorm)*2 == ncol(abund)) {              # in case Normalized makes 1/2 of columns use non-normalized
+      abund <- abund[,-chNorm]
+    }
+    colnames(abund) <- sub("^Abundances\\.Normalized\\._{0,1}|^abundances\\.Normalized\\._{0,1}|^Abundances{0,1}_{0,1}|^abundances{0,1}_{0,1}","",colnames(abund))
+    chNum <- is.numeric(abund)
+    if(!chNum) {abund <- apply(tmp[,quantCol], 2, wrMisc::convToNum, convert="allChar", silent=silent, callFrom=fxNa)}
+
+
+    ## remove heading 'X..' from headers (only if header won't get duplicated
+    ### why here ??? 24mar23
+    chXCol <- grep("^X\\.\\.",colnames(annot))
+    if(length(chXCol) >0) {
+      newNa <- sub("^X\\.\\.","",colnames(annot)[chXCol])
+      chDu <- duplicated(c(newNa, colnames(annot)), fromLast=TRUE)
+      if(any(chDu, na.rm=TRUE)) newNa[which(chDu)] <- colnames(annot)[chXCol][which(chDu)]
+      colnames(annot)[chXCol] <- newNa }
+    ## remove heading/tailing spaces (first look which columns might be subject to this treatment)
+    ch1 <- list(A=grep("^ +",annot[1,]), B=grep("^ +",annot[2,]), C=grep("^ +",annot[floor(mean(nrow(annot))),]), D=grep("^ +",annot[nrow(annot),]) )
+    chCo <- unique(unlist(ch1))
+    annot[,chCo] <- sub("^ +","",sub(" +$","",annot[,chCo]))   # remove heading/tailing spaces
+    if(debug) { message(fxNa,"rpd9 .. dim annot ",nrow(annot)," and ",ncol(annot)); rpd9 <- list(annot=annot,tmp=tmp,abund=abund,sampleNames=sampleNames,specPref=specPref,annotCol=annotCol,contamCol=contamCol,infoDat=infoDat) }
+
+    ## add custom sample names (if provided)
+    if(length(sampleNames) ==ncol(abund) && ncol(abund) >0) {
+      if(debug) { message(fxNa,"rpd9b") }
+      if(length(unique(sampleNames)) < length(sampleNames)) {
+        if(!silent) message(fxNa,"Custom sample names not unique, correcting to unique")
+        sampleNames <- wrMisc::correctToUnique(sampleNames, callFrom=fxNa) }
+      colnames(abund) <- sampleNames
+      if(debug) { message(fxNa,"rpd9c") }
+    } else {
+      colnames(abund) <- sub("Abundance\\.F[[:digit:]]+\\.Sample\\.|Abundances\\.F[[:digit:]]+\\.Sample\\.","Sample.", colnames(abund))
+    }
   } else abund <- NULL
+
 
   ## take log2 & normalize
   if(length(abund) >0) {
@@ -233,4 +303,4 @@ readProtDiscovPeptides <- function(fileName, path=NULL, normalizeMeth="median", 
     ## final output
     if(isTRUE(separateAnnot)) list(raw=abund, quant=quant, annot=annot, counts=counts, sampleSetup=setupSd, quantNotes=parametersD, notes=notes) else data.frame(quant,annot)
 }
-  
+

@@ -61,7 +61,7 @@
 #' @param callFrom (character) allow easier tracking of messages produced
 #' @return This function returns a list with  \code{$raw} (initial/raw abundance values), \code{$quant} with final normalized quantitations, \code{$annot} (columns ), \code{$counts} an array with 'PSM' and 'NoOfRazorPeptides',
 #'   \code{$quantNotes}, \code{$notes} and optional \code{setup} for meta-data from \code{sdrf}; or a data.frame with quantitation and annotation if \code{separateAnnot=FALSE}
-#' @seealso \code{\link[utils]{read.table}}, \code{\link[wrMisc]{normalizeThis}}) , \code{\link{readProlineFile}}, \code{\link{matrixNAinspect}}
+#' @seealso \code{\link[utils]{read.table}}, \code{\link[wrMisc]{normalizeThis}}) , \code{\link{readProteomeDiscovererFile}}; \code{\link{readProlineFile}} (and other imprtfunctions), \code{\link{matrixNAinspect}}
 #' @examples
 #' path1 <- system.file("extdata", package="wrProteo")
 #' # Here we'll load a short/trimmed example file (thus not the MaxQuant default name)

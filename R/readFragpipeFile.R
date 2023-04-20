@@ -1,4 +1,4 @@
-#' Read Tabulated Files Exported by FragPipe At Protein Level2
+#' Read Tabulated Files Exported by FragPipe At Protein Level
 #'
 #' This function allows importing protein identification and quantification results from \href{https://fragpipe.nesvilab.org/}{Fragpipe}
 #' which were previously exported as tabulated text (tsv). Quantification data and other relevant information will be extracted similar like the other import-functions from this package.
@@ -24,8 +24,8 @@
 #'  and optional following ones for supplemental tags/species - maked as 'species2','species3',...);
 #'  if list and list-element has multiple values they will be used for exact matching of accessions (ie 2nd of argument \code{annotCol})
 #' @param gr (character or factor) custom defined pattern of replicate association, will override final grouping of replicates from \code{sdrf} and/or \code{suplAnnotFile} (if provided)   \code{}
-#' @param sdrf (character, list or data.frame) optional extraction and adding of experimenal meta-data: if character, this may be the ID at ProteomeExchange, 
-#'   the second element may give futher indicatations for automatic organization of groups of replicates. 
+#' @param sdrf (character, list or data.frame) optional extraction and adding of experimenal meta-data: if character, this may be the ID at ProteomeExchange,
+#'   the second element may give futher indicatations for automatic organization of groups of replicates.
 #'   Besides, the output from \code{readSdrf} or a list from \code{defineSamples} may be provided; if \code{gr} is provided, \code{gr} gets priority for grouping of replicates
 #' @param suplAnnotFile (logical or character) optional reading of supplemental files; however, if \code{gr} is provided, \code{gr} gets priority for grouping of replicates;
 #'  if \code{character} the respective file-name (relative or absolute path)
@@ -103,7 +103,8 @@ readFragpipeFile <- function(fileName, path=NULL, normalizeMeth="median", sample
 
     ## locate & extract annotation
     ## note : space (' ') in orig colnames are transformed to '.'
-    if(length(annotCol) <1) annotCol <- c("Protein","Protein.ID","Entry.Name","Description","Gene","Organism", "Protein.Length","Protein.Existence","Protein.Probability","Top.Peptide.Probability")
+    if(length(annotCol) <1) annotCol <- c("Protein","Protein.ID","Entry.Name","Description","Gene","Organism", "Protein.Length","Protein.Existence","Protein.Probability",
+      "Top.Peptide.Probability", "Combined.Total.Peptides","Combined.Spectral.Count","Combined.Unique.Spectral.Count")
     ## note cols 2-6 are part to common format wrProteo
     PSMCol <- "\\.Spectral\\.Count$"                   # pattern searching tag for PSM-data
     PepCol <- "Unique\\.Spectral\\.Count$"             # pattern searching tag for Number of peptides
@@ -230,7 +231,7 @@ readFragpipeFile <- function(fileName, path=NULL, normalizeMeth="median", sample
       rownames(tmp) <- rownames(annot) <- wrMisc::correctToUnique(annot[,"Accession"], sep="_", atEnd=TRUE, callFrom=fxNa)
     } else { rownames(annot) <- rownames(tmp) <- annot[,"Accession"] }
 
-    if(debug) { message(fxNa,"rfp7 .. dim annot ",nrow(annot)," and ",ncol(annot)); rfp7 <- list(annot=annot,tmp=tmp,annot=annot,specPref=specPref) }
+    if(debug) { message(fxNa,"rfp7 .. dim annot ",nrow(annot)," and ",ncol(annot)); rfp7 <- list() }
 
 
     ## locate & extract abundance/quantitation data
@@ -250,7 +251,7 @@ readFragpipeFile <- function(fileName, path=NULL, normalizeMeth="median", sample
     if(length(quantCol) <1) stop(msg,"  ('",quantCol,"')")
     abund <- as.matrix(tmp[, quantCol])
     rownames(abund) <- annot[,"Accession"]
-    if(debug) { message(fxNa,"rfp8 .. dim abund ",nrow(abund)," and ",ncol(abund)) }
+    if(debug) { message(fxNa,"rfp8 .. dim abund ",nrow(abund)," and ",ncol(abund)) ; rfp8 <- list(abund=abund,sampleNames=sampleNames,annot=annot,tmp=tmp,annot=annot,specPref=specPref)}
 
     ## check & clean abundances
 
@@ -262,25 +263,26 @@ readFragpipeFile <- function(fileName, path=NULL, normalizeMeth="median", sample
         sampleNames <- wrMisc::correctToUnique(sampleNames, callFrom=fxNa) }
       colnames(abund) <- sampleNames
     }
-    if(debug) { message(fxNa,"rfp8c")}
+    if(debug) { message(fxNa,"rfp9"); rfp9 <- list(abund=abund,sampleNames=sampleNames,annot=annot,tmp=tmp,annot=annot,specPref=specPref,FDRCol=FDRCol)}
 
     ## (optional) filter by FDR  (so far use 1st of list where matches are found from argument FDRCol)
     if(length(FDRCol) >0) {
       if(FDRCol[[1]] %in% colnames(tmp)) {
-        if(length(FDRCol[[2]]) >0 & is.numeric(FDRCol[[2]])) FdrLim <- FDRCol[[2]][1] else {
+        if(length(FDRCol[[2]]) >0 && is.numeric(FDRCol[[2]])) FdrLim <- FDRCol[[2]][1] else {
           if(!silent) message(fxNa,"No valid FDR limit found, using default 0.95 (ie 5% filter)")
           FdrLim <- 0.95 }
         rmLi <- which(as.numeric(tmp[,FDRCol[[1]]]) < FdrLim)    # default 5% 'FDR' filter
-        if(length(rmLi) == nrow(abund)) warning(fxNa,"Omit FDR-filter; otherwise NO MORE LINES/proteins remaining !!!")  else {
-          if(!silent) message(fxNa,"Removing ",length(rmLi)," lines/proteins removed as NOT passing protein identification filter at ",FdrLim, if(debug) "   rfp8d")
-          abund <- abund[-rmLi,]
-          if(length(dim(abund)) <2) abund <- matrix(abund, nrow=1, dimnames=list(rownames(annot)[-rmLi], names(abund)))
-          annot <- if(nrow(abund) ==1) matrix(annot[-rmLi,], nrow=1, dimnames=list(rownames(abund), colnames(annot))) else annot[-rmLi,]
-          tmp <- if(nrow(abund) ==1) matrix(tmp[-rmLi,], nrow=1, dimnames=list(rownames(abund), colnames(tmp))) else tmp[-rmLi,]
+        if(length(rmLi) == nrow(abund)) warning(fxNa,"Omitting FDR-filter; otherwise NO MORE LINES/proteins remaining !!!")  else {
+          if(length(rmLi) >0) {
+            if(!silent) message(fxNa,"Removing ",length(rmLi)," lines/proteins removed as NOT passing protein identification filter at ",FdrLim, if(debug) "   rfp9b")
+            abund <- abund[-rmLi,]
+            if(length(dim(abund)) <2) abund <- matrix(abund, nrow=1, dimnames=list(rownames(annot)[-rmLi], names(abund)))
+            annot <- if(nrow(abund) ==1) matrix(annot[-rmLi,], nrow=1, dimnames=list(rownames(abund), colnames(annot))) else annot[-rmLi,]
+            tmp <- if(nrow(abund) ==1) matrix(tmp[-rmLi,], nrow=1, dimnames=list(rownames(abund), colnames(tmp))) else tmp[-rmLi,]}
         }
       }
     }
-    if(debug) { message(fxNa,"rfp11 .. length(FDRCol) ",length(FDRCol),"   dim annot ",nrow(annot)," and ",ncol(annot)); rfp11 <- list(annot=annot,tmp=tmp,abund=abund)}
+    if(debug) { message(fxNa,"rfp11 .. length(FDRCol) ",length(FDRCol),"   dim annot ",nrow(annot)," and ",ncol(annot)); rfp11 <- list()}
 
     PSMCol <- "\\.Spectral\\.Count$"                   # pattern searching tag for PSM-data
     PepCol <- "Unique\\.Spectral\\.Count$"             # pattern searching tag for Number of peptides
@@ -322,14 +324,13 @@ readFragpipeFile <- function(fileName, path=NULL, normalizeMeth="median", sample
       if(any(ch0, na.rm=TRUE)) abund[which(ch0)] <- NA }
 
     ## take log2 & normalize
-    quant <- try(wrMisc::normalizeThis(log2(abund), method=normalizeMeth, mode="additive", refLines=refLi, silent=silent, callFrom=fxNa), silent=TRUE)  
+    quant <- try(wrMisc::normalizeThis(log2(abund), method=normalizeMeth, mode="additive", refLines=refLi, silent=silent, callFrom=fxNa), silent=TRUE)
     if(debug) { message(fxNa,"rfp13 .. dim quant: ", nrow(quant)," li and  ",ncol(quant)," cols; colnames : ",wrMisc::pasteC(colnames(quant))," ")
       rfp13 <- list(tmp=tmp,quant=quant,abund=abund,annot=annot,sdrf=sdrf, fileName=fileName,path=path,paFi=paFi,normalizeMeth=normalizeMeth,sampleNames=sampleNames,groupPref=groupPref,
             refLi=refLi,refLiIni=refLiIni,specPref=specPref,read0asNA=read0asNA,quantCol=quantCol,annotCol=annotCol,separateAnnot=separateAnnot,FDRCol=FDRCol,gr=gr,silent=silent,debug=debug) }
 
     ### GROUPING OF REPLICATES AND SAMPLE META-DATA
     if(length(suplAnnotFile) >0 || length(sdrf) >0) {
-      #setupSd <- readSampleMetaData(sdrf=rfp13$sdrf, suplAnnotFile=T, quantMeth="FP", path=rfp13$path, abund=utils::head(rfp13$quant), groupPref=rfp13$groupPref, silent=rfp13$silent, debug=rfp13$debug, callFrom="readFP")
       setupSd <- readSampleMetaData(sdrf=sdrf, suplAnnotFile=separateAnnot, quantMeth="FP", path=path, abund=utils::head(quant), groupPref=groupPref, silent=silent, debug=debug, callFrom=fxNa)
     }
     if(debug) {message(fxNa,"rfp13b .."); rfp13b <- list()}
@@ -346,7 +347,7 @@ readFragpipeFile <- function(fileName, path=NULL, normalizeMeth="median", sample
     if(is.numeric(plotGraph) && length(plotGraph) >0) {custLay <- as.integer(plotGraph); plotGraph <- TRUE} else {
         if(!isTRUE(plotGraph)) plotGraph <- FALSE}
     if(plotGraph) .plotQuantDistr(abund=abund, quant=quant, custLay=custLay, normalizeMeth=normalizeMeth, softNa="FragPipe",
-      refLi=refLi, refLiIni=refLiIni, tit=titGraph, silent=silent, callFrom=fxNa, debug=debug)
+      refLi=refLi, refLiIni=refLiIni, tit=titGraph, las=NULL, silent=silent, callFrom=fxNa, debug=debug)
     if(debug) {message(fxNa,"Read sample-meta data, rfp15"); rfp15 <- list()}
 
 
@@ -357,4 +358,4 @@ readFragpipeFile <- function(fileName, path=NULL, normalizeMeth="median", sample
     ## final output
     if(isTRUE(separateAnnot)) list(raw=abund, quant=quant, annot=annot, counts=counts, sampleSetup=setupSd, quantNotes=parametersD, notes=notes) else data.frame(quant,annot) }
 }
-    
+ 

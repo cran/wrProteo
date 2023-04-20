@@ -116,8 +116,17 @@ summary(dataMQpep$quant)
 
 ## ----readProteomeDiscovererProt1,  echo=TRUE----------------------------------
 fiNa <- "tinyPD_allProteins.txt.gz"
-dataPD <- readProtDiscovFile(file=fiNa, path=path1, suplAnnotFile=FALSE, plotGraph=FALSE)
+dataPD <- readProteomeDiscovererFile(file=fiNa, path=path1, suplAnnotFile=FALSE, plotGraph=FALSE)
 summary(dataPD$quant)
+
+## ----readDiaNN1, fig.height=8, fig.width=9.5, fig.align="center", echo=TRUE----
+diaNNFi1 <- "tinyDiaNN1.tsv.gz"
+## This file contains much less identifications than one may usually obtain
+path1 <- system.file("extdata", package="wrProteo")
+## let's define the main species and allow tagging some contaminants
+specPref1 <- c(conta="conta|CON_|LYSC_CHICK", mainSpecies="HUMAN")
+dataNN <- readDiaNNFile(path1, file=diaNNFi1, specPref=specPref1, tit="Tiny DIA-NN Data")
+summary(dataNN$quant)
 
 ## ----readProlineProt1,  echo=TRUE---------------------------------------------
 path1 <- system.file("extdata", package="wrProteo")

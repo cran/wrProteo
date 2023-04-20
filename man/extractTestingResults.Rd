@@ -2,7 +2,7 @@
 % Please edit documentation in R/extractTestingResults.R
 \name{extractTestingResults}
 \alias{extractTestingResults}
-\title{Extract results from moderated t-tests}
+\title{Extract Results From Moderated t-tests}
 \usage{
 extractTestingResults(
   stat,

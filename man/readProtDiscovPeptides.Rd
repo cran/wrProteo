@@ -102,5 +102,5 @@ path1 <- system.file("extdata", package="wrProteo")
 
 }
 \seealso{
-\code{\link[utils]{read.table}}, \code{\link[wrMisc]{normalizeThis}}) , \code{\link{readMaxQuantFile}}, \code{\link{readProlineFile}}
+\code{\link[utils]{read.table}}, \code{\link[wrMisc]{normalizeThis}}) , \code{\link{readMaxQuantFile}}, \code{\link{readProteomeDiscovererFile}}
 }

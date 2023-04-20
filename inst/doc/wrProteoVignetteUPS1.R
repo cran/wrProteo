@@ -111,14 +111,14 @@ dataMQ <- readMaxQuantFile(path1, file=fiNaMQ, specPref=specPrefMQ, refLi="mainS
 dim(dataMQ$quant)
 ## A quick summary of some columns of quantitation data
 summary(dataMQ$quant[,1:7])                # the first 8 cols
-table(dataMQ$annot[,"SpecType"])
+table(dataMQ$annot[,"SpecType"], useNA="always")
 
 ## ----readProteomeDiscoverer1, fig.height=8, fig.width=9.5, fig.align="center", echo=TRUE----
 path1 <- system.file("extdata", package="wrProteo")
 fiNaPd <- "pxd001819_PD24_Proteins.txt.gz"
 ## Next, we define the setup of species
 specPrefPD <- list(conta="Bos tauris|Gallus", mainSpecies="Saccharomyces cerevisiae", spike=UPS1$ac)
-dataPD <- readProtDiscovFile(file=fiNaPd, path=path1, refLi="mainSpe", specPref=specPrefPD,
+dataPD <- readProteomeDiscovererFile(file=fiNaPd, path=path1, refLi="mainSpe", specPref=specPrefPD,
   sdrf=c("PXD001819","max"), plotGraph=FALSE)
 
 ## ----readProteomeDiscoverer2, fig.height=8, fig.width=9.5, fig.align="center", echo=TRUE----
@@ -126,7 +126,7 @@ dataPD <- readProtDiscovFile(file=fiNaPd, path=path1, refLi="mainSpe", specPref=
 dim(dataPD$quant)
 ## A quick summary of some columns of quantitation data
 summary(dataPD$quant[,1:7])        # the first 8 cols
-table(dataPD$annot[,"SpecType"])
+table(dataPD$annot[,"SpecType"], useNA="always")
 
 ## ----readProline, fig.height=8, fig.width=9.5, fig.align="center", echo=TRUE----
 path1 <- system.file("extdata", package="wrProteo")
@@ -148,7 +148,7 @@ head(colnames(dataPL$raw),8)
 dim(dataPL$quant)
 ## A quick summary of some columns of quantitation data
 summary(dataPL$quant[,1:8])        # the first 8 cols
-table(dataPL$annot[,"SpecType"])
+table(dataPL$annot[,"SpecType"], useNA="always")
 
 ## ----rearrange1, echo=TRUE----------------------------------------------------
 ## bring all results (MaxQuant,ProteomeDiscoverer, ...) in same ascending order
@@ -581,6 +581,9 @@ mtext("dark red for high (good) lmScore/abundance ratio)", cex=0.75)
 ## ----combScore1, echo=TRUE----------------------------------------------------
 ## number of groups for clustering
 nGr <- 5
+chFin <- is.finite(datUPS1[,,"sco"])
+if(any(!chFin)) datUPS1[,,"sco"][which(!chFin)] <- -1      # just in case..
+
 
 ## clustering using kMeans
 kMx <- stats::kmeans(standardW(datUPS1[,,"sco"], byColumn=FALSE), nGr)$cluster

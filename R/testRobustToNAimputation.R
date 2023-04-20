@@ -25,8 +25,8 @@
 #' @param gr (character or factor) replicate association; if \code{dat} contains a list-element \code{$sampleSetup$groups} or \code{$sampleSetup$lev} this may be used in case \code{gr=NULL}
 #' @param annot (matrix or data.frame) annotation (lines must match lines of data !), if \code{annot} is \code{NULL} and argument \code{dat} is a list containing both $quant and $annot, the element $annot will be used 
 #' @param retnNA (logical) retain and report number of \code{NA}
-#' @param avSdH (numeric) population characteristics (mean and sd) for >1 \code{NA} neighbours 'high' (per line)
-#' @param avSdL  depreciated argument, no longer used 
+#' @param avSd (numerical,length=2) population characteristics (mean and sd) for >1 \code{NA}-neighbours (per line)
+#' @param avSdH depreciated, please use \code{avSd} inestad; (numerical,length=2) population characteristics 'high' (mean and sd) for >1 \code{NA}-neighbours (per line)
 #' @param plotHist (logical) additional histogram of original, imputed and resultant distribution (made using \code{\link{matrixNAneighbourImpute}} )
 #' @param xLab (character) custom x-axis label 
 #' @param tit (character) custom title
@@ -57,7 +57,7 @@
 #' PLtestR1 <- testRobustToNAimputation(dat=dat1, gr=grp1, retnNA=TRUE, nLoop=70)
 #' names(PLtestR1)
 #' @export
-testRobustToNAimputation <- function(dat, gr=NULL, annot=NULL, retnNA=TRUE, avSdH=c(0.15,0.5), avSdL=NULL, plotHist=FALSE, xLab=NULL, tit=NULL, imputMethod="mode2", 
+testRobustToNAimputation <- function(dat, gr=NULL, annot=NULL, retnNA=TRUE, avSd=c(0.15,0.5), avSdH=NULL, plotHist=FALSE, xLab=NULL, tit=NULL, imputMethod="mode2", 
   seedNo=NULL,  multCorMeth=NULL, nLoop=100, lfdrInclude=NULL, ROTSn=NULL, silent=FALSE, debug=FALSE, callFrom=NULL) {
   fxNa <- wrMisc::.composeCallName(callFrom, newNa="testRobustToNAimputation")
   if(!isTRUE(silent)) silent <- FALSE
@@ -110,11 +110,14 @@ testRobustToNAimputation <- function(dat, gr=NULL, annot=NULL, retnNA=TRUE, avSd
     gr <- try(as.factor(gr)) 
     if(inherits(gr, "try-error")) message("+++++\n",fxNa," MAJOR PROBLEM with argument 'gr' !!  (possibly not sufficient level-names ?) \n+++++")
     
+    if(length(avSdH) >1 && length(avSd) <1)  { avSd <- avSdH
+      if(!silent) message(fxNa,"Using depreciated 'avSdH' as substitute of 'avSd', please adopt your code to use 'avSd' !!")
+    } else if(length(avSdH) >1 && !silent) message(fxNa,"Argument 'avSdH' has been depreciated, 'avSd' is used instead")
     
     ## 1st pass
     if(debug) message(fxNa," imputMethod=",imputMethod,"  tRN1")
     if("none" %in% tolower(imputMethod)) {
-      if(debug) {message(fxNa,"Starting 1st pass,  no of NA: ",sum(isNA)); tt1 <- list(dat=dat,gr=gr,imputMethod=imputMethod,annot=annot,seedNo=seedNo, retnNA=retnNA, avSdH=avSdH,ROTSn=ROTSn,lfdrInclude=lfdrInclude,multCorMeth=multCorMeth)}
+      if(debug) {message(fxNa,"Starting 1st pass,  no of NA: ",sum(isNA)); tt1 <- list(dat=dat,gr=gr,imputMethod=imputMethod,annot=annot,seedNo=seedNo, retnNA=retnNA, avSd=avSd,ROTSn=ROTSn,lfdrInclude=lfdrInclude,multCorMeth=multCorMeth)}
       nLoop <- 1
       chFin <- is.finite(dat)
       if(any(!chFin, na.rm=TRUE)) dat[which(!chFin)] <- NA   # need to replace Inf & -Inf by NA to avoid problems at limma::lmFit() 
@@ -122,7 +125,7 @@ testRobustToNAimputation <- function(dat, gr=NULL, annot=NULL, retnNA=TRUE, avSd
       datFi <- combineMultFilterNAimput(dat=dat, imputed=datI, grp=gr, annDat=annot, abundThr=stats::quantile(if(is.list(dat)) dat$quant else dat, 0.02,na.rm=TRUE), silent=silent, callFrom=fxNa)  # number of unique peptides unknown !
        
     } else {
-      datI <- matrixNAneighbourImpute(dat, gr, imputMethod=imputMethod, retnNA=retnNA ,avSdH=avSdH, plotHist=plotHist, xLab=xLab, tit=tit, seedNo=seedNo, silent=silent, callFrom=fxNa,debug=debug)
+      datI <- matrixNAneighbourImpute(dat, gr, imputMethod=imputMethod, retnNA=retnNA ,avSd=avSd, plotHist=plotHist, xLab=xLab, tit=tit, seedNo=seedNo, silent=silent, callFrom=fxNa,debug=debug)
       if(debug) {message(fxNa,"Start combineMultFilterNAimput   tt2a")}
       datFi <- combineMultFilterNAimput(dat=dat, imputed=datI, grp=gr, annDat=annot, abundThr=stats::quantile(if(is.list(dat)) dat$quant else dat, 0.02,na.rm=TRUE), silent=silent, callFrom=fxNa)  # number of unique peptides unknown !
       if(debug) {message(fxNa,"Done combineMultFilterNAimput   tt2b")}     # done combineMultFilterNAimput
@@ -179,12 +182,12 @@ testRobustToNAimputation <- function(dat, gr=NULL, annot=NULL, retnNA=TRUE, avSd
       for(i in 2:nLoop) {
         ## the repeated NA-imputation & testing   
         if(length(seedNo)==1) seedNo <- seedNo +i 
-        if(debug) {message("tRN5"); tRN5 <- list(dat=dat,gr=gr,seedNo=seedNo, retnNA=retnNA, avSdH=avSdH,datI=datI, pValTab=pValTab,datIm=datIm,ROTSn=ROTSn)}
+        if(debug) {message("tRN5"); tRN5 <- list(dat=dat,gr=gr,seedNo=seedNo, retnNA=retnNA, avSd=avSd,datI=datI, pValTab=pValTab,datIm=datIm,ROTSn=ROTSn)}
       
-        datX <- matrixNAneighbourImpute(dat, gr, imputMethod=imputMethod, seedNo=seedNo, retnNA=retnNA, avSdH=avSdH, NAneigLst=datI$NAneigLst, plotHist=FALSE, silent=TRUE, callFrom=fxNa)$data
+        datX <- matrixNAneighbourImpute(dat, gr, imputMethod=imputMethod, seedNo=seedNo, retnNA=retnNA, avSd=avSd, NAneigLst=datI$NAneigLst, plotHist=FALSE, silent=TRUE, callFrom=fxNa)$data
        if(debug) message(fxNa,"Passed matrixNAneighbourImpute()   in loop no ",i,"  tRN5b")
   
-    #1st round# datI <- matrixNAneighbourImpute(dat, gr, seedNo=seedNo, retnNA=retnNA ,avSdH=avSdH, plotHist=plotHist, xLab=xLab, tit=tit, silent=silent, callFrom=fxNa)
+    #1st round# datI <- matrixNAneighbourImpute(dat, gr, seedNo=seedNo, retnNA=retnNA ,avSd=avSd, plotHist=plotHist, xLab=xLab, tit=tit, silent=silent, callFrom=fxNa)
     #1st round# datFi <- combineMultFilterNAimput(dat=dat, imputed=datI, grp=gr, annDat=annot, abundThr=stats::quantile(dat,0.02,na.rm=TRUE), silent=silent, callFrom=fxNa) 
     #1st round# out <- wrMisc::moderTestXgrp(datFi$data, grp=gr, limmaOutput=TRUE, addResults="", silent=silent, callFrom=fxNa)       
         fitX <- limma::eBayes(limma::contrasts.fit(limma::lmFit(datX[,], out$design), contrasts=out$contrasts))

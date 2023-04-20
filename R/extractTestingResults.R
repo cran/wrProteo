@@ -1,4 +1,4 @@
-#' Extract results from moderated t-tests
+#' Extract Results From Moderated t-tests
 #'
 #' This function allows convenient access to results produced using the functions \code{\link{moderTest2grp}} or \code{moderTestXgrp}.
 #' The user can define the threshold which type of multiple testing correction should be used

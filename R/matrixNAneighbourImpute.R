@@ -26,9 +26,9 @@
 #' contains at least 2 non-\code{NA}-values (instead of just one) it will be considered as a (min) 2-\code{NA}-neighbour as well as regular \code{NA}-neighbour.
 #' If >300 of these (min) 2-\code{NA}-neighbours get found, they will be used instead of the regular \code{NA}-neighbours.
 #' For creating a collection of normal random values one may use directly the mode of the \code{NA}-neighbours (or 2-\code{NA}-neighbours, if >300 such values available).
-#' To do so, the first value of argument \code{avSdH} must be set to \code{NA}. Otherwise, the first value \code{avSdH} will be used as quantile of all data to define the mean
-#' for the imputed data (ie as \code{quantile(dat, avSdH[1], na.rm=TRUE)}). The sd for generating normal random values will be taken from the sd of all  \code{NA}-neighbours (or 2-\code{NA}-neighbours)
-#' multiplied by the second value in argument \code{avSdH} (or \code{avSdH}, if >300 2-\code{NA}-neighbours), since the sd of the \code{NA}-neighbours is usually quite high.
+#' To do so, the first value of argument \code{avSd} must be set to \code{NA}. Otherwise, the first value \code{avSd} will be used as quantile of all data to define the mean
+#' for the imputed data (ie as \code{quantile(dat, avSd[1], na.rm=TRUE)}). The sd for generating normal random values will be taken from the sd of all  \code{NA}-neighbours (or 2-\code{NA}-neighbours)
+#' multiplied by the second value in argument \code{avSd} (or \code{avSd}, if >300 2-\code{NA}-neighbours), since the sd of the \code{NA}-neighbours is usually quite high.
 #' In extremely rare cases it may happen that no \code{NA}-neighbours are found (ie if \code{NA}s occur, all replicates are \code{NA}).
 #' Then, this function replaces \code{NA}-values based on the normal random values obtained as dscribed above.
 #'
@@ -36,7 +36,8 @@
 #' @param gr (character or factor) grouping of columns of 'dat', replicate association
 #' @param imputMethod (character) choose the imputation method (may be 'mode2'(default), 'mode1', 'datQuant', 'modeAdopt' or 'informed')
 #' @param retnNA (logical) decide (if =\code{TRUE}) only NA-substuted data should be returned, or if list with $data, $nNA, $NAneighbour and $randParam should be returned
-#' @param avSdH (numerical,length=2) population characteristics 'high' (mean and sd) for >1 \code{NA}-neighbours (per line)
+#' @param avSd (numerical,length=2) population characteristics 'high' (mean and sd) for >1 \code{NA}-neighbours (per line)
+#' @param avSdH depreciated, please use \code{avSd} inestad; (numerical,length=2) population characteristics 'high' (mean and sd) for >1 \code{NA}-neighbours (per line)
 #' @param NAneigLst (list) option for repeated rounds of imputations: list of \code{NA}-neighbour values can be furnished for slightly faster processing
 #' @param plotHist (character or logical) decide if supplemental figure with histogram shoud be drawn, the details 'Hist','quant' (display quantile of originak data), 'mode' (display mode of original data) can be chosen explicitely
 #' @param xLab (character) label on x-axis on plot
@@ -63,12 +64,12 @@
 #' datT6b <- matrixNAneighbourImpute(datT6, gr=gl(2,3))
 #' head(datT6b$data)
 #' @export
-matrixNAneighbourImpute <- function(dat, gr, imputMethod="mode2", retnNA=TRUE, avSdH=c(0.1,0.5), NAneigLst=NULL,
+matrixNAneighbourImpute <- function(dat, gr, imputMethod="mode2", retnNA=TRUE, avSd=c(0.15,0.5),  avSdH=NULL, NAneigLst=NULL,
   plotHist=c("hist","mode"), xLab=NULL, xLim=NULL, yLab=NULL, yLim=NULL, tit=NULL, figImputDetail=TRUE,
   seedNo=NULL, silent=FALSE, callFrom=NULL, debug=FALSE){
   ## replace NA values based on group neigbours (based on grouping of columns in gr), overall assumption of close to Gaussian distrib
   ## return matrix including imputed values or list of final & matrix with number of imputed by group
-  ## 'batch-mode' (iterated runs) furnish NAneigLst (with $nNaNei, $charAll, $all.lm or $linMod, $NAneighbour), avSdH (postition 3+ for medMode)
+  ## 'batch-mode' (iterated runs) furnish NAneigLst (with $nNaNei, $charAll, $all.lm or $linMod, $NAneighbour), avSd (postition 3+ for medMode)
   fxNa <- wrMisc::.composeCallName(callFrom, newNa="matrixNAneighbourImpute")
   if(!isTRUE(silent)) silent <- FALSE
   if(isTRUE(debug)) silent <- FALSE
@@ -117,6 +118,9 @@ matrixNAneighbourImpute <- function(dat, gr, imputMethod="mode2", retnNA=TRUE, a
     isNA <- is.na(dat)
     chNA <- any(isNA)
     if(debug) { message(fxNa,"Starting main,  mn1");  mn1 <- list(dat=dat,gr=gr,isNA=isNA,chNA=chNA,imputMethod=imputMethod,NAneigLst=NAneigLst,NAneighbour=NAneighbour)}
+    if(length(avSdH) >1 && identical(c(0.15,0.5), avSd))  { avSd <- avSdH
+      if(!silent) message(fxNa,"Using depreciated 'avSdH' as substitute of (default) 'avSd', please change your code to rather use 'avSd' instead of 'avSdH' !!")
+    } else if(length(avSdH) >0 && !silent) message(fxNa,"Argument 'avSdH' has been depreciated, 'avSd' is used instead")
 
     if(!chNA) {
       ## no NAs, nothing to impute ...
@@ -148,7 +152,7 @@ matrixNAneighbourImpute <- function(dat, gr, imputMethod="mode2", retnNA=TRUE, a
         ##number of NA neighb not yet known#
         if(!silent) message(fxNa,"Only ",sum(nNaNei)," NA-neighbour values available, ie insufficient to calculate representative mode, using instead 10%ile of global distribution")
         imputMethod <- "datQuant"
-        avSdH[1] <- 0.1
+        avSd[1] <- 0.1
       }
       if(debug) {message(fxNa," mn4") }
 
@@ -161,14 +165,14 @@ matrixNAneighbourImpute <- function(dat, gr, imputMethod="mode2", retnNA=TRUE, a
          #save(dat,gr,imputMethod, randVa,medMod,NAneighbour,seedNo,isNA,chNA,NAneigLst, file="mn4a.RData")
       if("datQuant" %in% imputMethod) {   # quantile of data
         if(debug) message(fxNa,"Starting method 'datQuant'")
-        if(length(avSdH) >2 && !is.na(avSdH[3])) {useQu <- avSdH[3]} else {   # 3rd value (if specified) may be used as custom mean for normal distrib (instead of determining as xth quantile)
-          if(is.na(avSdH[1])) { avSdH[1] <- 0.1           # check quantile value (ie where to check full data)
-            if(!silent) message(fxNa," avSdH not valid, using 10%quantile instead")}
-          useQu <- stats::quantile(dat, avSdH[1], na.rm=TRUE) }
+        if(length(avSd) >2 && !is.na(avSd[3])) {useQu <- avSd[3]} else {   # 3rd value (if specified) may be used as custom mean for normal distrib (instead of determining as xth quantile)
+          if(is.na(avSd[1])) { avSd[1] <- 0.1           # check quantile value (ie where to check full data)
+            if(!silent) message(fxNa," avSd not valid, using 10%quantile instead")}
+          useQu <- stats::quantile(dat, avSd[1], na.rm=TRUE) }
         if(length(seedNo) ==1) set.seed(seedNo)
-        randVa <- signif(stats::rnorm(sum(isNA), useQu, avSdH[2]),5)
+        randVa <- signif(stats::rnorm(sum(isNA), useQu, avSd[2]),5)
         plotHist <- unique(c(plotHist,"quantile"))     # for ploting quantile-guides
-        msg <- paste(signif(avSdH[1],3),"quantile, ie mean=",signif(useQu,4),"and sd=", signif(avSdH[2],4))
+        msg <- paste(signif(avSd[1],3),"quantile, ie mean=",signif(useQu,4),"and sd=", signif(avSd[2],4))
       }
       if("medmode" %in% tolower(imputMethod)) {        # whatever is lowest: global median or global mode of all NA neighbours
         if(debug) message(fxNa,"Starting method 'medmode'")
@@ -176,8 +180,8 @@ matrixNAneighbourImpute <- function(dat, gr, imputMethod="mode2", retnNA=TRUE, a
         if(length(medMod) <1) medMod <- c(med=stats::median(unlist(NAneighbour)), mod=wrMisc::stableMode(unlist(NAneighbour), method="density", callFrom=fxNa, silent=silent))
         if(debug) {message(fxNa," mn5a") }
         if(length(seedNo) ==1) set.seed(seedNo)
-        randVa <- signif(stats::rnorm(sum(isNA), min(medMod), avSdH[2]), 5)
-        msg <- paste("mean=",signif(min(medMod),4),"and sd=", signif(avSdH[2],4))
+        randVa <- signif(stats::rnorm(sum(isNA), min(medMod), avSd[2]), 5)
+        msg <- paste("mean=",signif(min(medMod),4),"and sd=", signif(avSd[2],4))
       }
       if(any(c("mode1","mode3","informed") %in% imputMethod, na.rm=TRUE)) {      # global mode of all NA neighbours
         if(debug) message(fxNa,"Prepare for methods 'mode1','mode2' and 'informed'")
@@ -186,8 +190,8 @@ matrixNAneighbourImpute <- function(dat, gr, imputMethod="mode2", retnNA=TRUE, a
         } else {
         }
         if(length(seedNo) ==1) set.seed(seedNo)
-        randVa <- signif(stats::rnorm(sum(isNA), medMod, avSdH[2]),5)
-        msg <- paste("mode=",signif(medMod,4),"and sd=", signif(avSdH[2],4))  # correct ??
+        randVa <- signif(stats::rnorm(sum(isNA), medMod, avSd[2]),5)
+        msg <- paste("mode=",signif(medMod,4),"and sd=", signif(avSd[2],4))  # correct ??
       }
         if(debug) {message(fxNa," mn5b") }
 
@@ -195,8 +199,8 @@ matrixNAneighbourImpute <- function(dat, gr, imputMethod="mode2", retnNA=TRUE, a
         if(debug) message(fxNa,"Starting methods 'mode2'")
         if(length(medMod) <1) medMod <- wrMisc::stableMode(if(sum(sapply(NAneighbour[-1], length)) >300) unlist(NAneighbour[-1]) else unlist(NAneighbour), method="density", callFrom=fxNa,silent=silent)
         if(length(seedNo) ==1) set.seed(seedNo)
-        randVa <- signif(stats::rnorm(sum(isNA), medMod, avSdH[2]),5)
-        msg <- paste("mean=",signif(medMod,4),"and sd=", signif(avSdH[2],4))
+        randVa <- signif(stats::rnorm(sum(isNA), medMod, avSd[2]),5)
+        msg <- paste("mean=",signif(medMod,4),"and sd=", signif(avSd[2],4))
       }
       if("informed" %in% imputMethod) {      # informed about min abundance in line with any NA, use mean of line-min and non-biased NA-neigh random value
         ## determine "biased" view : min per line with any NA
@@ -246,16 +250,16 @@ matrixNAneighbourImpute <- function(dat, gr, imputMethod="mode2", retnNA=TRUE, a
           ranOff <- prLev -charAll[1,1]                  # chose to subtract mode of all NA-neighbours (as reference)
           nNaGrp <- wrMisc::rowGrpNA(dat, gr)            # check : sum(nNaGrp) == sum(isNA)    # here 2845
           ranOff <- charAll[1,1] - rep(ranOff[nNaGrp], nNaGrp[which(nNaGrp >0)])        # final offset in order for is.na(dat)
-          msg <- paste("mean=",wrMisc::pasteC(signif(prLev,4)),"(for",wrMisc::pasteC(1:(1+max(nRa))),"NAs) and sd=", signif(avSdH[2],4))
+          msg <- paste("mean=",wrMisc::pasteC(signif(prLev,4)),"(for",wrMisc::pasteC(1:(1+max(nRa))),"NAs) and sd=", signif(avSd[2],4))
           if(!silent) message(fxNa,"Substituting dynamically based on mean per number of NAs")
         } else {
           ## constant NA-substit, use min of mean, median and mode
           ranOff <- charAll[1,1] - rep(min(charAll[1,]), sum(isNA))
-          msg <- paste("mean=",signif(min(charAll[1,]),4),"and sd=", signif(avSdH[2],4))
+          msg <- paste("mean=",signif(min(charAll[1,]),4),"and sd=", signif(avSd[2],4))
           if(!silent) message(fxNa,"Substituting based on ",c("mean","median","mode")[which.min(charAll[1,])]," of all ",sum(nNaNei)," NA-neighbours")
         }
         if(length(seedNo) ==1) set.seed(seedNo)
-        randVa <- signif(stats::rnorm(sum(isNA), charAll[1,1], avSdH[2]) -ranOff, 5)    # initial global value (median for all NA-neighb) + offset/correction
+        randVa <- signif(stats::rnorm(sum(isNA), charAll[1,1], avSd[2]) -ranOff, 5)    # initial global value (median for all NA-neighb) + offset/correction
       }
 
       ## replace NAs

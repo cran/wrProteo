@@ -31,7 +31,7 @@ it will be searched based at the location of \code{urlPrefix}}
 This function returns the content of sdrf-file as data.frame (or \code{NULL} if the corresponding file was not found)
 }
 \description{
-This function allows reading proteomics meta-data from sdrf file, as they are provided on https://github.com/bigbio/proteomics-metadata-standard.
+This function allows reading proteomics meta-data from sdrf file, as they are provided on https://github.com/bigbio/proteomics-sample-metadata.
 A data.frame containing all annotation data will be returned. To stay conform with the (non-obligatory) recommendations, columnnames are shown as lower caps.
 }
 \details{

@@ -47,7 +47,7 @@ This function returns a list with \code{$lev} and \code{$level} (grouping of sam
 }
 \description{
 Sample/experimental annotation meta-data form \href{https://www.maxquant.org/}{MaxQuant}, ProteomeDiscoverer, FragPipe, Proline or similar, can be read using this function and relevant information extracted.
-Furthermore, annotation in \href{https://github.com/bigbio/proteomics-metadata-standard}{sdrf-format} can be added (the order of sdrf will be adjated automatically, if possible).
+Furthermore, annotation in \href{https://github.com/bigbio/proteomics-sample-metadata}{sdrf-format} can be added (the order of sdrf will be adjated automatically, if possible).
 This functions returns a list with grouping of samples into replicates and additional information gathered.
 Input files compressed as .gz can be read as well.
 }
@@ -61,7 +61,7 @@ Sample annotation meta-data can be obtained from two sources :
  a) form additional files produced (and exported) by the initial quantitation software (so far MaxQuant and ProteomeDiscoverer have een implemeneted) or
  b) from the universal sdrf-format (from Pride or user-supplied).
 Both types can be imported and checked in the same run, if valid sdrf-information is found this will be given priority.
-For more information about the sdrf format please see \href{https://github.com/bigbio/proteomics-metadata-standard}{sdrf on github}.
+For more information about the sdrf format please see \href{https://github.com/bigbio/proteomics-sample-metadata}{sdrf on github}.
 }
 \examples{
 sdrf001819Setup <- readSampleMetaData(quantMeth=NA, sdrf="PXD001819")

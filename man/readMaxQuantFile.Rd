@@ -129,5 +129,5 @@ summary(dataMQ$quant)
 matrixNAinspect(dataMQ$quant, gr=gl(3,3))
 }
 \seealso{
-\code{\link[utils]{read.table}}, \code{\link[wrMisc]{normalizeThis}}) , \code{\link{readProlineFile}}, \code{\link{matrixNAinspect}}
+\code{\link[utils]{read.table}}, \code{\link[wrMisc]{normalizeThis}}) , \code{\link{readProteomeDiscovererFile}}; \code{\link{readProlineFile}} (and other imprtfunctions), \code{\link{matrixNAinspect}}
 }

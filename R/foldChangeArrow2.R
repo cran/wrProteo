@@ -36,7 +36,7 @@
 foldChangeArrow2 <- function(FC, useComp=1, isLin=TRUE, asX=TRUE, col=1, arr=c(0.005,0.15), lwd=NULL, 
   addText=c(line=-0.9,cex=0.7,txt="expected",loc="toright"), returnRatio=FALSE, silent=FALSE, debug=FALSE, callFrom=NULL){
   ##
-  .Deprecated("Please use the foldChangeArrow() function form the package wrGrpah instead !")
+  .Deprecated("Please use the foldChangeArrow() function form the package wrGraph instead !")
   fxNa <- wrMisc::.composeCallName(callFrom, newNa="foldChangeArrow2")
   if(!isTRUE(silent)) silent <- FALSE
   figCo <- graphics::par("usr")                         #  c(x1, x2, y1, y2)

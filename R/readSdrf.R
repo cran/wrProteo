@@ -1,6 +1,6 @@
 #' Read proteomics meta-data as sdrf file
 #'
-#' @description This function allows reading proteomics meta-data from sdrf file, as they are provided on https://github.com/bigbio/proteomics-metadata-standard.
+#' @description This function allows reading proteomics meta-data from sdrf file, as they are provided on https://github.com/bigbio/proteomics-sample-metadata.
 #' A data.frame containing all annotation data will be returned. To stay conform with the (non-obligatory) recommendations, columnnames are shown as lower caps.
 #'
 #' @details The packages utils and wrMisc must be installed.
@@ -24,7 +24,7 @@
 #' @export
 readSdrf <- function(fi, chCol="auto", urlPrefix="github", silent=FALSE, callFrom=NULL, debug=FALSE) {
   ## read proteomics meta-data as sdrf file
-  ## see https://github.com/bigbio/proteomics-metadata-standard
+  ## see https://github.com/bigbio/proteomics-sample-metadata
   ##  return data.frame, testing for
   fxNa <- wrMisc::.composeCallName(callFrom, newNa="readSdrf")
   if(!isTRUE(silent)) silent <- FALSE
@@ -42,7 +42,7 @@ readSdrf <- function(fi, chCol="auto", urlPrefix="github", silent=FALSE, callFro
     chFi <- file.exists(fi)
     if(!chFi && length(urlPrefix)==1 && !grepl("^https?://",fi)) {
       if(debug) {message(fxNa," rs1"); rs1 <- list(fi=fi,chCol=chCol,urlPrefix=urlPrefix,datOK=datOK,chFi=chFi)}
-      if(identical(urlPrefix,"github")) urlPrefix <- "https://github.com/bigbio/proteomics-metadata-standard/blob/master/annotated-projects/"
+      if(identical(urlPrefix,"github")) urlPrefix <- "https://github.com/bigbio/proteomics-sample-metadata/blob/master/annotated-projects/"
       if(grepl("/",fi)) {        # if abs or relative path- do not adjust lower/upper case
         if(flexFileNa) fi <- c(fi, file.path(dirname(fi),"sdrf.tsv"))
       } else {            # simple name, need to add folder of pxd project

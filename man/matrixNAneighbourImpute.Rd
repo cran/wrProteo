@@ -9,7 +9,8 @@ matrixNAneighbourImpute(
   gr,
   imputMethod = "mode2",
   retnNA = TRUE,
-  avSdH = c(0.1, 0.5),
+  avSd = c(0.15, 0.5),
+  avSdH = NULL,
   NAneigLst = NULL,
   plotHist = c("hist", "mode"),
   xLab = NULL,
@@ -33,7 +34,9 @@ matrixNAneighbourImpute(
 
 \item{retnNA}{(logical) decide (if =\code{TRUE}) only NA-substuted data should be returned, or if list with $data, $nNA, $NAneighbour and $randParam should be returned}
 
-\item{avSdH}{(numerical,length=2) population characteristics 'high' (mean and sd) for >1 \code{NA}-neighbours (per line)}
+\item{avSd}{(numerical,length=2) population characteristics 'high' (mean and sd) for >1 \code{NA}-neighbours (per line)}
+
+\item{avSdH}{depreciated, please use \code{avSd} inestad; (numerical,length=2) population characteristics 'high' (mean and sd) for >1 \code{NA}-neighbours (per line)}
 
 \item{NAneigLst}{(list) option for repeated rounds of imputations: list of \code{NA}-neighbour values can be furnished for slightly faster processing}
 
@@ -90,9 +93,9 @@ When extracting \code{NA}-neighbours, a slightly more focussed approach gets che
 contains at least 2 non-\code{NA}-values (instead of just one) it will be considered as a (min) 2-\code{NA}-neighbour as well as regular \code{NA}-neighbour.
 If >300 of these (min) 2-\code{NA}-neighbours get found, they will be used instead of the regular \code{NA}-neighbours.
 For creating a collection of normal random values one may use directly the mode of the \code{NA}-neighbours (or 2-\code{NA}-neighbours, if >300 such values available).
-To do so, the first value of argument \code{avSdH} must be set to \code{NA}. Otherwise, the first value \code{avSdH} will be used as quantile of all data to define the mean
-for the imputed data (ie as \code{quantile(dat, avSdH[1], na.rm=TRUE)}). The sd for generating normal random values will be taken from the sd of all  \code{NA}-neighbours (or 2-\code{NA}-neighbours)
-multiplied by the second value in argument \code{avSdH} (or \code{avSdH}, if >300 2-\code{NA}-neighbours), since the sd of the \code{NA}-neighbours is usually quite high.
+To do so, the first value of argument \code{avSd} must be set to \code{NA}. Otherwise, the first value \code{avSd} will be used as quantile of all data to define the mean
+for the imputed data (ie as \code{quantile(dat, avSd[1], na.rm=TRUE)}). The sd for generating normal random values will be taken from the sd of all  \code{NA}-neighbours (or 2-\code{NA}-neighbours)
+multiplied by the second value in argument \code{avSd} (or \code{avSd}, if >300 2-\code{NA}-neighbours), since the sd of the \code{NA}-neighbours is usually quite high.
 In extremely rare cases it may happen that no \code{NA}-neighbours are found (ie if \code{NA}s occur, all replicates are \code{NA}).
 Then, this function replaces \code{NA}-values based on the normal random values obtained as dscribed above.
 }

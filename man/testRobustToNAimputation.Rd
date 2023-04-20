@@ -9,8 +9,8 @@ testRobustToNAimputation(
   gr = NULL,
   annot = NULL,
   retnNA = TRUE,
-  avSdH = c(0.15, 0.5),
-  avSdL = NULL,
+  avSd = c(0.15, 0.5),
+  avSdH = NULL,
   plotHist = FALSE,
   xLab = NULL,
   tit = NULL,
@@ -34,9 +34,9 @@ testRobustToNAimputation(
 
 \item{retnNA}{(logical) retain and report number of \code{NA}}
 
-\item{avSdH}{(numeric) population characteristics (mean and sd) for >1 \code{NA} neighbours 'high' (per line)}
+\item{avSd}{(numerical,length=2) population characteristics (mean and sd) for >1 \code{NA}-neighbours (per line)}
 
-\item{avSdL}{depreciated argument, no longer used}
+\item{avSdH}{depreciated, please use \code{avSd} inestad; (numerical,length=2) population characteristics 'high' (mean and sd) for >1 \code{NA}-neighbours (per line)}
 
 \item{plotHist}{(logical) additional histogram of original, imputed and resultant distribution (made using \code{\link{matrixNAneighbourImpute}} )}
 
