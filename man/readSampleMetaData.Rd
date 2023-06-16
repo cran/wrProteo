@@ -42,7 +42,9 @@ May contain \code{lowNumberOfGroups=FALSE} for automatically choosing a rather e
 }
 \value{
 This function returns a list with \code{$lev} and \code{$level} (grouping of samples given as integer), and \code{$meth} (method by which grouping as determined).
- If valid \code{sdrf} was given, the resultant list contains in addition \code{$sdrfDat} (data.frame of annotation). If software annotation has been found it will be shown in \code{$annotBySoft}.
+ If valid \code{sdrf} was given, the resultant list contains in addition \code{$sdrfDat} (data.frame of annotation).
+ Alternatively it may contain a \code{$sdrfExport} if sufficient information has been gathered (so far only for MaxQuant) for a draft sdrf for export (that should be revised and completed by the user).
+ If software annotation has been found it will be shown in \code{$annotBySoft}.
  If all entries are invalid or entries do not pass the tests, this functions returns an empty \code{list}.
 }
 \description{

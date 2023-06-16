@@ -109,6 +109,8 @@ readProtDiscovPeptides <- function(fileName, path=NULL, normalizeMeth="median", 
     "Master.Protein.Accessions","Positions.in.Master.Proteins","Modifications.in.Master.Proteins","Master.Protein.Descriptions",  #no 9-12;  last (ie 12th) missing in data from LN
     "Number.of.Missed.Cleavages","Theo.MHplus.in.Da","Contaminant",                                # no 13-14
     "Charge.by.Search.Engine.A5.Sequest.HT","XCorr.by.Search.Engine.A10.Sequest.HT","XCorr.by.Search.Engine.A5.Sequest.HT", "Top.Apex.RT.in.min" ) # no 15-18; 15 & 16 are currently not used, but use grep for 'Charge'
+  if(debug) {message(fxNa,"rPDP3z  length(seqCol) ",length(seqCol))
+     rPDP3z <- list(tmp=tmp,fileName=fileName,path=path,chFi=chFi,paFi=paFi,normalizeMeth=normalizeMeth,sampleNames=sampleNames,suplAnnotFile=suplAnnotFile,read0asNA=read0asNA,quantCol=quantCol,seqCol=seqCol,cleanDescription=cleanDescription,tmp=tmp,seqCol=seqCol,modifSensible=modifSensible)}
   maSeCo1 <- match(seqCol, colnames(tmp))
   maSeCo2 <- match(gsub("",".",seqCol), colnames(tmp))
   maSeCo <- if(sum(is.na(maSeCo1)) > sum(is.na(maSeCo2))) maSeCo2 else maSeCo1   # switch betw R-friendly and std
@@ -117,8 +119,8 @@ readProtDiscovPeptides <- function(fileName, path=NULL, normalizeMeth="median", 
   IdentTyCol <- "Found.in.Sample"       # use as pattern
   ## need other example for extracting quantifications ?
     #"Confidence.by.Search.Engine.Sequest.HT","Percolator.q.Value.by.Search.Engine.Sequest.HT","Percolator.PEP.by.Search.Engine.Sequest.HT", "XCorr.by.Search.Engine.Sequest.HT","Channel.Occupancy.in.Percent")
-  if(debug) {message(fxNa,"rPDP4 .. Ready to read", if(length(path) >0) c(" from path ",path[1])," the file  ",fileName[1])
-     rPDP4 <- list(fileName=fileName,path=path,chFi=chFi,paFi=paFi,normalizeMeth=normalizeMeth,sampleNames=sampleNames,suplAnnotFile=suplAnnotFile,read0asNA=read0asNA,quantCol=quantCol,cleanDescription=cleanDescription,tmp=tmp,seqCol=seqCol,maSeCo=maSeCo,modifSensible=modifSensible)}
+  if(debug) {message(fxNa,"rPDP4 ")
+     rPDP4 <- list(fileName=fileName,path=path,chFi=chFi,paFi=paFi,normalizeMeth=normalizeMeth,sampleNames=sampleNames,suplAnnotFile=suplAnnotFile,read0asNA=read0asNA,quantCol=quantCol,seqCol=seqCol,cleanDescription=cleanDescription,tmp=tmp,seqCol=seqCol,maSeCo=maSeCo,modifSensible=modifSensible)}
   .chColNa <- function(x, mat, renameTo=NULL, silent=FALSE, fxNa=NULL){
     ## check in 'matr' for column-name 'x', if required rename best hit (if no direct hit look using grep, then grep wo case); return corrected mat
     chX <- x %in% colnames(mat)
@@ -141,25 +143,27 @@ readProtDiscovPeptides <- function(fileName, path=NULL, normalizeMeth="median", 
   ## EXTRACT PEPTIDE SEQUENCES
   ## extract peptide sequences
   if(debug) {message(fxNa,"rPDP4a .. Ready to start extracting pep seq ")
-     rPDP4a <- list(fileName=fileName,path=path,chFi=chFi,paFi=paFi,normalizeMeth=normalizeMeth,sampleNames=sampleNames,suplAnnotFile=suplAnnotFile,read0asNA=read0asNA,quantCol=quantCol,cleanDescription=cleanDescription,tmp=tmp,seqCol=seqCol,maSeCo=maSeCo,modifSensible=modifSensible)}
-  if(is.na(maSeCo[1])) { if(is.na(maSeCo[2])) {if(!silent) message(fxNa,"Invalid type of data"); pepSeq <- NULL
-    } else {
-      pepSeq <- tmp[,maSeCo[2]] } #sub("\\.\\[A-Z\\]$", "", sub("^\\[A-Z\\]\\.", "", tmp[,maSeCo[2]])) }
+     rPDP4a <- list(fileName=fileName,path=path,chFi=chFi,paFi=paFi,normalizeMeth=normalizeMeth,sampleNames=sampleNames,suplAnnotFile=suplAnnotFile,read0asNA=read0asNA,quantCol=quantCol,seqCol=seqCol,cleanDescription=cleanDescription,tmp=tmp,seqCol=seqCol,maSeCo=maSeCo,modifSensible=modifSensible)}
+  if(is.na(maSeCo[1])) { if(is.na(maSeCo[2])) {if(!silent) message(fxNa,"Invalid type of data")#; pepSeq <- NULL
+    } else pepSeq <- tmp[,maSeCo[2]]
+    #else { pepSeq <- tmp[,maSeCo[2]] } #sub("\\.\\[A-Z\\]$", "", sub("^\\[A-Z\\]\\.", "", tmp[,maSeCo[2]])) }
   } else pepSeq <- tmp[,maSeCo[1]]
   fxPrecAA <- function(x) {   ## separate/extract note of preceeding & following AA; take char vector, returns 3-column matrix
     chPre <- grep("^\\[([[:upper:]]|\\-)\\]\\.", x)         # has note of preceeding AA
     chFoll <- grep("\\.\\[([[:upper:]]|\\-)\\]($|_)", x)    # has note of following AA
-    out <- cbind(pep=sub("\\.\\[([[:upper:]]|\\-)\\]","", sub("^\\[([[:upper:]]|\\-)\\]\\.","", x)), prec=NA, foll=NA)
+    out <- cbind(pep=sub("\\.\\[([[:upper:]]|\\-)\\]","", sub("^\\[([[:upper:]]|\\-)\\]\\.","", x)), prec=NA, foll=NA, modifSeq=NA)
     if(length(chPre) >0) out[chPre,2] <- sub(".*\\[","", sub("\\]\\..+","", x[chPre]))   # the preceeding AA
     if(length(chFoll) >0) out[chFoll,3] <- sub("\\].*","", sub(".+\\.\\[","", x[chFoll]))
     out }
-  annot1 <- fxPrecAA(pepSeq)
-  pepSeq <- annot1[,1]
+  annot1 <- fxPrecAA(pepSeq)      # split
+  pepSeq <- annot1[,4] <- annot1[,1]            # also used lateron for rownames of quant
 
   if(modifSensible) { hasMod <- nchar(tmp[,maSeCo[3]]) >0
-    if(any(hasMod, na.rm=TRUE)) pepSeq[which(hasMod)] <- paste(pepSeq[which(hasMod)],tmp[which(hasMod),maSeCo[3]],sep="_") }     # modificaton-separator
-  if(debug) {message(fxNa,"rPDP4b .. Done extracting pep seq ") }
-  ## ANNOATION (protein oriented)
+    if(any(hasMod, na.rm=TRUE)) annot1[which(hasMod),4] <- gsub(" ","", paste(annot1[which(hasMod),1], tmp[which(hasMod),maSeCo[3]], sep="_"))         # add separator & modification
+  }
+    #old#if(any(hasMod, na.rm=TRUE)) pepSeq[which(hasMod)] <- paste(pepSeq[which(hasMod)],tmp[which(hasMod),maSeCo[3]],sep="_") }     # modification-separator
+  if(debug) {message(fxNa,"Done extracting pep seq    rPDP4b"); rPDP4b <- list(fileName=fileName,path=path,chFi=chFi,paFi=paFi,normalizeMeth=normalizeMeth,sampleNames=sampleNames,suplAnnotFile=suplAnnotFile,read0asNA=read0asNA,quantCol=quantCol,seqCol=seqCol,pepSeq=pepSeq,annot1=annot1,cleanDescription=cleanDescription,tmp=tmp,seqCol=seqCol,maSeCo=maSeCo,modifSensible=modifSensible) }
+  ## ANNOATION (peptide/protein oriented)
    usColAnn <- maSeCo[c(3,6:7,9:14)]
 
   if(any(is.na(usColAnn), na.rm=TRUE)) {
@@ -170,18 +174,23 @@ readProtDiscovPeptides <- function(fileName, path=NULL, normalizeMeth="median", 
   chPrecAA <- !is.na(annot1[,2])
   chFollAA <- !is.na(annot1[,3])
   if(any(chPrecAA)) if("precAA" %in% colnames(annot)) annot[,"precAA"] <- annot1[,2] else annot <- cbind(annot, prec.AA=annot1[,2])
-  if(any(chFollAA)) if("follAA" %in% colnames(annot)) annot[,"follAA"] <- annot1[,3] else annot <- cbind(annot, prec.AA=annot1[,3])
+  if(any(chFollAA)) if("follAA" %in% colnames(annot)) annot[,"follAA"] <- annot1[,3] else annot <- cbind(annot, foll.AA=annot1[,3])
+  annot <- if(ncol(annot1) >3) cbind(annot, seq=annot1[,1], modifSeq=annot1[,4]) else cbind(annot, seq=annot1[,1])
+  chDuNa <- duplicated(annot1[,4])
+  if(any(chDuNa)) { if(!silent) message(fxNa,"Note : Some 'modifSeq' appear duplicated !!")
+      rownames(annot) <-  wrMisc::correctToUnique(annot1[,4], silent=silent, callFrom=fxNa)    # "modifSeq"
+  } else rownames(annot) <- annot1[,4]   # "modifSeq"
 
-  usColCha <- grep("^charge",tolower(colnames(tmp)))           # include charge
+  usColCha <- grep("^charge", tolower(colnames(tmp)))           # include charge
   if(length(usColCha) >0) { char <- tmp[,usColCha]
     if(length(usColCha) >1) {     ## more than 1 cols, need to find best col : choose with fewest NAs
       usColCha <- usColCha[which.min(colSums(is.na(char)))] }
-    if(debug) message(fxNa," Column for Charge found & added")
+    if(debug) message(fxNa,"Column for Charge found & added", if(debug) "    rPDP4c")
     annot <- cbind(annot, Charge=tmp[,usColCha])
   }
   rm(annot1)
   if(debug) {message(fxNa,"rPDP4c .. Done extracting peptide annotation ")
-     rPDP4c <- list(fileName=fileName,path=path,chFi=chFi,paFi=paFi,normalizeMeth=normalizeMeth,sampleNames=sampleNames,suplAnnotFile=suplAnnotFile,read0asNA=read0asNA,quantCol=quantCol,cleanDescription=cleanDescription,tmp=tmp,seqCol=seqCol,maSeCo=maSeCo,modifSensible=modifSensible, pepSeq=pepSeq,hasMod=hasMod, annot=annot,quantCol=quantCol)}
+     rPDP4c <- list(fileName=fileName,path=path,chFi=chFi,paFi=paFi,normalizeMeth=normalizeMeth,sampleNames=sampleNames,suplAnnotFile=suplAnnotFile,read0asNA=read0asNA,quantCol=quantCol,cleanDescription=cleanDescription,tmp=tmp,seqCol=seqCol,pepSeq=pepSeq,annot=annot,maSeCo=maSeCo,modifSensible=modifSensible, pepSeq=pepSeq,hasMod=hasMod, annot=annot,quantCol=quantCol)}
 
   ## ABUNDANCE
     ## locate & extract abundance/quantitation data
@@ -213,7 +222,7 @@ readProtDiscovPeptides <- function(fileName, path=NULL, normalizeMeth="median", 
 
   if(length(quantCol) >0) { abund <- if(length(quantCol) >1)  tmp[,quantCol] else {
       matrix(tmp[,quantCol], ncol=1, dimnames=list(rownames(tmp),NULL))}   # how to know column-name if single sample ?
-    rownames(abund) <- wrMisc::correctToUnique(pepSeq, silent=silent, callFrom=fxNa)
+    rownames(abund) <-  rownames(annot) #wrMisc::correctToUnique(pepSeq, silent=silent, callFrom=fxNa)
     ## check for columns to exclude (like 'Abundances.Count.')
     if(length(excluCol)==1) {
       excCo <- grep(excluCol, colnames(tmp))
@@ -224,7 +233,8 @@ readProtDiscovPeptides <- function(fileName, path=NULL, normalizeMeth="median", 
       }
     }
     abund <- as.matrix(tmp[,quantCol])                      # abundance val
-    if(debug) {message(fxNa,"rpd8 ..  "); rpd8 <- list(tmp=tmp,annot=annot,specPref=specPref,abund=abund,quantCol=quantCol)}
+    rownames(abund) <- rownames(annot)
+    if(debug) {message(fxNa,"rPDP8 ..  "); rPDP8 <- list(tmp=tmp,annot=annot,specPref=specPref,abund=abund,quantCol=quantCol)}
 
     ## check & clean abudances
     chNorm <- grep("\\.Normalized\\.", colnames(abund))
@@ -248,16 +258,16 @@ readProtDiscovPeptides <- function(fileName, path=NULL, normalizeMeth="median", 
     ch1 <- list(A=grep("^ +",annot[1,]), B=grep("^ +",annot[2,]), C=grep("^ +",annot[floor(mean(nrow(annot))),]), D=grep("^ +",annot[nrow(annot),]) )
     chCo <- unique(unlist(ch1))
     annot[,chCo] <- sub("^ +","",sub(" +$","",annot[,chCo]))   # remove heading/tailing spaces
-    if(debug) { message(fxNa,"rpd9 .. dim annot ",nrow(annot)," and ",ncol(annot)); rpd9 <- list(annot=annot,tmp=tmp,abund=abund,sampleNames=sampleNames,specPref=specPref,annotCol=annotCol,contamCol=contamCol,infoDat=infoDat) }
+    if(debug) { message(fxNa,"rPDP9 .. dim annot ",nrow(annot)," and ",ncol(annot)); rPDP9 <- list(annot=annot,tmp=tmp,abund=abund,sampleNames=sampleNames,specPref=specPref,annotCol=annotCol,contamCol=contamCol,infoDat=infoDat) }
 
     ## add custom sample names (if provided)
     if(length(sampleNames) ==ncol(abund) && ncol(abund) >0) {
-      if(debug) { message(fxNa,"rpd9b") }
+      if(debug) { message(fxNa,"rPDP9b") }
       if(length(unique(sampleNames)) < length(sampleNames)) {
         if(!silent) message(fxNa,"Custom sample names not unique, correcting to unique")
         sampleNames <- wrMisc::correctToUnique(sampleNames, callFrom=fxNa) }
       colnames(abund) <- sampleNames
-      if(debug) { message(fxNa,"rpd9c") }
+      if(debug) { message(fxNa,"rPDP9c") }
     } else {
       colnames(abund) <- sub("Abundance\\.F[[:digit:]]+\\.Sample\\.|Abundances\\.F[[:digit:]]+\\.Sample\\.","Sample.", colnames(abund))
     }
@@ -269,7 +279,7 @@ readProtDiscovPeptides <- function(fileName, path=NULL, normalizeMeth="median", 
     quant <- if(utils::packageVersion("wrMisc") > "1.10") {
       try(wrMisc::normalizeThis(log2(abund), method=normalizeMeth, mode="additive", refLines=refLi, silent=silent, callFrom=fxNa), silent=TRUE)
     } else try(wrMisc::normalizeThis(log2(abund), method=normalizeMeth, refLines=refLi, silent=silent, callFrom=fxNa), silent=TRUE)       #
-    if(debug) { message(fxNa,"rPDP4d .. dim quant: ", nrow(quant)," li and  ",ncol(quant)," cols; colnames : ",wrMisc::pasteC(colnames(quant))," ")} }
+    if(debug) { message(fxNa,"rPDP9d .. dim quant: ", nrow(quant)," li and  ",ncol(quant)," cols; colnames : ",wrMisc::pasteC(colnames(quant))," ")} }
 
   ## PD colnames are typically very cryptic, replace ..
   if(length(sampleNames)==ncol(abund) && all(!is.na(sampleNames)) ) {   # custom sample names given

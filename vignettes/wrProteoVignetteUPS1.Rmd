@@ -405,7 +405,6 @@ The initial fasta file also contained the yeast strain number, this has been str
 
 
 
-
 ------
 
 ## Basic Data Treatment
@@ -484,6 +483,8 @@ In addition, various formats of multiple testing correction can be added to the 
 
 We are ready to launch the NA-imputation and testing for data from ProteomeDiscoverer.
 Please note, that the procedure including repetive NA-imputations may take a few seconds.
+
+
 
 ```{r testProteomeDiscoverer, echo=TRUE}
 testPD <- testRobustToNAimputation(dataPD, imputMethod="informed")     # ProteomeDiscoverer

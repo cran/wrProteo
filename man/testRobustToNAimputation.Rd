@@ -66,7 +66,7 @@ testRobustToNAimputation(
 This function returns a limma-type S3 object of class 'MArrayLM' (which can be accessed lika a list); multiple results of testing or multiple testing correction types may get included ('p.value','FDR','BY','lfdr' or 'ROTS.BH')
 }
 \description{
-\code{testRobustToNAimputation} replaces \code{NA} values based on group neighbours (based on grouping of columns in argument \code{gr}), following overall assumption of close to Gaussian distribution.
+This function replaces \code{NA} values based on group neighbours (based on grouping of columns in argument \code{gr}), following overall assumption of close to Gaussian distribution.
 Furthermore, it is assumed that \code{NA}-values originate from experimental settings where measurements at or below detection limit are recoreded as \code{NA}.
 In  such cases (eg in proteomics) it is current practice to replace \code{NA}-values by very low (random) values in order to be able to perform t-tests.
 However, random normal values used for replacing may in rare cases deviate from the average (the 'assumed' value) and in particular, if multiple \code{NA} replacements are above the average, 
@@ -84,7 +84,9 @@ Possible options are 'lfdr','BH','BY','tValTab', ROTSn='100' (name to element ne
 The option 'BY' referrs to Benjamini-Yakuteli FDR, 'tValTab' allows exporting all individual t-values from the repeated NA-substitution and subsequent testing.
 
 This function is compatible with automatic extraction of experimental setup based on sdrf or other quantitation-specific sample annotation.
-In this case, the results of automated importing and mining of sample annotation should be stored as \code{$sampleSetup$groups} or \code{$sampleSetup$lev}
+In this case, the results of automated importing and mining of sample annotation should be stored as \code{$sampleSetup$groups} or \code{$sampleSetup$lev}  
+
+For details 'on choice of NA-impuation procedures with arguments 'imputMethod' and 'avSd' please see  \code{\link{matrixNAneighbourImpute}}.
 }
 \examples{
 set.seed(2015); rand1 <- round(runif(600) +rnorm(600,1,2),3)
@@ -103,5 +105,5 @@ PLtestR1 <- testRobustToNAimputation(dat=dat1, gr=grp1, retnNA=TRUE, nLoop=70)
 names(PLtestR1)
 }
 \seealso{
-\code{\link[wrMisc]{moderTest2grp}}, \code{\link[wrMisc]{pVal2lfdr}}, \code{eBayes} in Bioconductor package \href{https://bioconductor.org/packages/release/bioc/html/limma.html}{limma}, \code{\link[stats]{t.test}},\code{ROTS} of Bioconductor package \href{https://bioconductor.org/packages/release/bioc/html/ROTS.html}{ROTS}
+NA-imputation via \code{\link{matrixNAneighbourImpute}}, modereated t-test without NA-imputation \code{\link[wrMisc]{moderTest2grp}}, calculating lfdr \code{\link[wrMisc]{pVal2lfdr}}, \code{eBayes} in Bioconductor package \href{https://bioconductor.org/packages/release/bioc/html/limma.html}{limma}, \code{\link[stats]{t.test}},\code{ROTS} of Bioconductor package \href{https://bioconductor.org/packages/release/bioc/html/ROTS.html}{ROTS}
 }

@@ -58,7 +58,6 @@ readProteomeDiscovererFile <- function(fileName, path=NULL, normalizeMeth="media
   groupPref=list(lowNumberOfGroups=TRUE), specPref=c(conta="CON_|LYSC_CHICK", mainSpecies="OS=Homo sapiens"), plotGraph=TRUE, wex=1.6, titGraph="Proteome Discoverer",
   silent=FALSE, debug=FALSE, callFrom=NULL) {
   ## read ProteomeDiscoverer exported txt
-
   fxNa <- wrMisc::.composeCallName(callFrom, newNa="readProteomeDiscovererFile")
   reqPa <- c("utils","wrMisc")
   chPa <- sapply(reqPa, requireNamespace, quietly=TRUE)
@@ -448,7 +447,7 @@ readProteomeDiscovererFile <- function(fileName, path=NULL, normalizeMeth="media
 
     ## take log2 & normalize
     quant <- try(wrMisc::normalizeThis(log2(abund), method=normalizeMeth, mode="additive", refLines=refLi, silent=silent, debug=debug, callFrom=fxNa), silent=TRUE)
-    if(debug) { message(fxNa,"rpd13 .. dim quant: ", nrow(quant)," li and  ",ncol(quant)," cols; colnames : ",wrMisc::pasteC(colnames(quant))," "); 
+    if(debug) { message(fxNa,"rpd13 .. dim quant: ", nrow(quant)," li and  ",ncol(quant)," cols; colnames : ",wrMisc::pasteC(colnames(quant))," ");
       rpd13 <- list(annot=annot,tmp=tmp,abund=abund,quant=quant,sampleNames=sampleNames,specPref=specPref,annotCol=annotCol,Rfriendly=Rfriendly,contamCol=contamCol,PSMCol=PSMCol,PepCol=PepCol,infoDat=infoDat, refLi=refLi)}
 
     ### GROUPING OF REPLICATES AND SAMPLE META-DATA

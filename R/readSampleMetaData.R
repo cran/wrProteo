@@ -34,7 +34,9 @@
 #' @param debug (logical) additional messages for debugging
 #' @param callFrom (character) allow easier tracking of messages produced
 #' @return This function returns a list with \code{$lev} and \code{$level} (grouping of samples given as integer), and \code{$meth} (method by which grouping as determined).
-#'  If valid \code{sdrf} was given, the resultant list contains in addition \code{$sdrfDat} (data.frame of annotation). If software annotation has been found it will be shown in \code{$annotBySoft}.
+#'  If valid \code{sdrf} was given, the resultant list contains in addition \code{$sdrfDat} (data.frame of annotation).
+#'  Alternatively it may contain a \code{$sdrfExport} if sufficient information has been gathered (so far only for MaxQuant) for a draft sdrf for export (that should be revised and completed by the user).
+#'  If software annotation has been found it will be shown in \code{$annotBySoft}.
 #'  If all entries are invalid or entries do not pass the tests, this functions returns an empty \code{list}.
 #' @seealso this function is used internally by \code{\link{readMaxQuantFile}}, \code{\link{readProtDiscovFile}} etc; use \code{\link{readSdrf}} for reading sdrf-files, \code{\link[wrMisc]{replicateStructure}} for mining annotation columns
 #' @examples
@@ -48,10 +50,22 @@ readSampleMetaData <- function(quantMeth, sdrf=NULL, suplAnnotFile=NULL, path=".
   ##  quantMeth..(character)
   ##  abund..(matrix or data.frame) column-names will be used to comapre & align sample meta-data)
 
+  #### CONTENT
+  ## 1.1 SOFTWARE specific META-DATA .. read additional annotation & documentation files
+  ##   Aim : extract/build 'summaryD' (& parametersD) allowing to match colnames of 'abund' to suplAnnotFile and/or sdrf
+  ## 1.2 basic check of summaryD to quant data, extract supl info for sdrf
+  ##   evaluate summaryD to consistent format
+  ## 1.3 TRY CHECKING/ADJUSTING ORDER of summaryD
+  ## 1.4   replicateStructure
+  ### 2  READ SDRF annotation & pick groups of replicates; has priority over grouping based on summary.txt
+  ## 2.1 basic check (distinguish full $sampleSetup) form custom data.frame
+  ## 2.2 need to match lines (samples) of sdrf (setupDat) to summaryD and/or colnames of abund
+  ## 2.3 ready to make setupSd
+
   fxNa <- wrMisc::.composeCallName(callFrom, newNa="readSampleMetaData")
   if(isTRUE(debug)) silent <- FALSE
   if(!isTRUE(silent)) silent <- FALSE
-  summaryD <- parametersD <- setupSdSoft <- setupSd <- sdrfInf <- annSh <- NULL         # initialize    (setupSd needed ?)
+  summaryD <- parametersD <- setupSdSoft <- setupSd <- sdrfInf <- annSh <- parametersSd <- NULL         # initialize    (setupSd needed ?)
   ## checks
   if(length(suplAnnotFile) >1) if(is.na(suplAnnotFile[1])) suplAnnotFile <- NULL
   datOK <- length(sdrf) >0 || length(suplAnnotFile) >0
@@ -77,7 +91,7 @@ readSampleMetaData <- function(quantMeth, sdrf=NULL, suplAnnotFile=NULL, path=".
 
   path <- if(length(path) <1) "." else path[1]
   nSamp0 <- if(length(dim(abund)) >1) ncol(abund) else 0
-  chSoft <- c("MQ", "PD", "PL", "FP", "MC")
+  chSoft <- c("MQ", "PD", "PL", "FP", "MC","NN")
   syncColumns <- c(sdrfDat=NA, annotBySoft=NA)
   if(datOK) {
     if("maxquant" %in% tolower(quantMeth)) quantMeth <- "MQ"
@@ -85,6 +99,7 @@ readSampleMetaData <- function(quantMeth, sdrf=NULL, suplAnnotFile=NULL, path=".
     if("proline" %in% tolower(quantMeth)) quantMeth <- "PL"
     if("fragpipe" %in% tolower(quantMeth)) quantMeth <- "FP"
     if("masschroq" %in% tolower(quantMeth)) quantMeth <- "MC"
+    if("dia-nn" %in% tolower(quantMeth) || "diann" %in% tolower(quantMeth)) quantMeth <- "NN"
     }
 
   if(datOK) {
@@ -109,7 +124,7 @@ readSampleMetaData <- function(quantMeth, sdrf=NULL, suplAnnotFile=NULL, path=".
            ## option 1 : suplAnnotFile has path (do not use default 'path'), use same path for default suplAnnotFile (if applicable)
            ## option 2 : suplAnnotFile has no path, use 'path' for sdrf & suplAnnotFile
 
-      ## Aim : extract/build 'summaryD' allowing to match colnames of 'abund' to suplAnnotFile and/or sdrf
+      ## Aim : extract/build 'summaryD' (& parametersD) allowing to match colnames of 'abund' to suplAnnotFile and/or sdrf
 
       ## MaxQuant :    (summary.txt & parameters.txt)
       if("MQ" %in% quantMeth && length(suplAnnotFile) >0) {
@@ -132,15 +147,15 @@ readSampleMetaData <- function(quantMeth, sdrf=NULL, suplAnnotFile=NULL, path=".
         if(debug) {message(fxNa,"rSM1mq"); rSM1mq <- list(path=path,sdrf=sdrf,summaryD=summaryD,suplAnnotFile=suplAnnotFile,quantMeth=quantMeth,abund=abund,path=path,nSamp0=nSamp0,chFiNa=chFiNa,chFi=chFi )}
 
         ## main reading of MQ sample meta-data
-        if(chFi[1]) summaryD <- try(utils::read.delim(file.path(path, suplAnnotFile[1]), stringsAsFactors=FALSE), silent=TRUE)
-        if(chFi[2]) parametersD <- try(utils::read.delim(file.path(path, suplAnnotFile[2]), stringsAsFactors=FALSE), silent=TRUE)
+        if(chFi[1]) summaryD <- try(utils::read.delim(file.path(path, suplAnnotFile[1]), stringsAsFactors=FALSE), silent=TRUE)              # 'summary.txt'
+        if(chFi[2]) parametersD <- try(utils::read.delim(file.path(path, suplAnnotFile[2]), stringsAsFactors=FALSE), silent=TRUE)           # 'parameters.txt'
         if(inherits(summaryD, "try-error")) {summaryD <- NULL; if(!silent) message(fxNa,"Meta-data: Failed to read '",suplAnnotFile[1],"'  for getting additional information about experiment !")} else {
           summaryD <- if(nrow(summaryD) >2) summaryD[-nrow(summaryD),] else matrix(summaryD[-nrow(summaryD),], nrow=1,dimnames=list(NULL,colnames(summaryD)))  # need to remove last summary-line
           if(debug) message(fxNa,"Successfully read sample annotation from '",suplAnnotFile[1],"'") }
         if(inherits(parametersD, "try-error")) {if(!silent) message(fxNa,"Meta-data: Failed to read '",suplAnnotFile[2],"' !")} else {
           if(debug && chFi[2]) message(fxNa,"Successfully read ",quantMeth," parameters from '",suplAnnotFile[2],"'") }
         syncColumns["annotBySoft"] <- FALSE
-        if(debug) { message(fxNa,"rSM1mq2")}
+        if(debug) { message(fxNa,"rSM1mq2"); rSM1mq2 <- list(summaryD=summaryD,parametersD=parametersD,suplAnnotFile=suplAnnotFile,quantMeth=quantMeth, sdrf=sdrf,path=path,nSamp0=nSamp0,chSoft=chSoft,syncColumns=syncColumns)}
       }
 
       ## ProteomeDiscoverer
@@ -165,7 +180,7 @@ readSampleMetaData <- function(quantMeth, sdrf=NULL, suplAnnotFile=NULL, path=".
         } else {
           syncColumns["annotBySoft"] <- FALSE
           if(debug)  message(fxNa,"ProteomeDiscoverer Meta-data successfully read '",suplAnnotFile[1])}
-        if(debug) {message(fxNa,"rSM1pd3")}
+        if(debug) {message(fxNa,"rSM1pd3"); rSM1pd3 <- list(summaryD=summaryD,parametersD=parametersD,suplAnnotFile=suplAnnotFile,quantMeth=quantMeth, sdrf=sdrf,path=path,nSamp0=nSamp0,chSoft=chSoft,syncColumns=syncColumns)}
       }
 
       ## Proline
@@ -174,8 +189,6 @@ readSampleMetaData <- function(quantMeth, sdrf=NULL, suplAnnotFile=NULL, path=".
         if(debug) {message(fxNa,"rSM0pl"); rSM0pl <- list(sdrf=sdrf,suplAnnotFile=suplAnnotFile,quantMeth=quantMeth)}
         summaryD <- NULL
         ## need init filename given via suplAnnotFile
-        #if(isTRUE(suplAnnotFile)) { tmp <- grep("\\.xlsx$", dir(path))
-        #  suplAnnotFile <- if(length(tmp) >0) dir(path, full.names=TRUE)[grep("\\.xlsx$", dir(path))[1]] else NULL }
         if(length(grep("\\.xlsx$", suplAnnotFile[1])) >0) {           # won't enter here if suplAnnotFile==NULL
           ## Extract out of Excel
           reqPa <- c("readxl")
@@ -210,10 +223,8 @@ readSampleMetaData <- function(quantMeth, sdrf=NULL, suplAnnotFile=NULL, path=".
         if(debug) { message(fxNa,"rSM1fp1"); rSM1fp1 <- list()}
         ## option 1 : suplAnnotFile has path (do not use default 'path'), use same path for default suplAnnotFile (if applicable)
         ## option 2 : sdrf has no path, use 'path' for sdrf & suplAnnotFile
-
         ## Aim : extract/build 'summaryD' allowing to match colnames of 'abund' to suplAnnotFile and/or sdrf
-
-        ## FragPipe :    (filelist_ionquant.txt & fragpipe-files.fp-manifest)
+        ##  filelist_ionquant.txt & fragpipe-files.fp-manifest
         isDir <- if(is.character(suplAnnotFile)) utils::file_test("-d", suplAnnotFile[1]) else FALSE
         if(isDir) { path <- suplAnnotFile[1]; suplAnnotFile <- TRUE}
         if(isTRUE(suplAnnotFile)) {      # automatic search for standard file-names ('summary.txt','parameters.txt') in same dir as main MaxQuant data
@@ -254,16 +265,25 @@ readSampleMetaData <- function(quantMeth, sdrf=NULL, suplAnnotFile=NULL, path=".
         if(debug) { message(fxNa,"rSM1fp4")}
       }
 
+      ## MassChroq
       if("MC" %in% quantMeth && length(suplAnnotFile) >0) {
         warning(fxNa,"Reading supplemental meta-data from MassChroq is currently not implemented") }
+
+      ## FragPipe
+      if("FP" %in% quantMeth && length(suplAnnotFile) >0) {
+        warning(fxNa,"Reading supplemental meta-data from FragPipe is currently not implemented") }
+
+      ## Dia-NN
+      if("NN" %in% quantMeth && length(suplAnnotFile) >0) {
+        warning(fxNa,"Reading supplemental meta-data from Dia-NN is currently not implemented") }
 
       ## OTHER software ? ..
       if(!any(quantMeth %in% chSoft, !silent, na.rm=TRUE)) message(fxNa,"Note: No specific procedure has been implemented so far for gathering meta-data by the analysis-software/method '",quantMeth,"'")
     }            ## finished main reading of suplAnnotFile into summaryD
-    if(debug) { message(fxNa,"rSM2"); rSM2 <- list(sdrf=sdrf,abund=abund,suplAnnotFile=suplAnnotFile,quantMeth=quantMeth,summaryD=summaryD,suplAnnotFile=suplAnnotFile,syncColumns=syncColumns) }
+    if(debug) { message(fxNa,"rSM2"); rSM2 <- list(sdrf=sdrf,abund=abund,suplAnnotFile=suplAnnotFile,quantMeth=quantMeth,summaryD=summaryD,parametersD=parametersD,suplAnnotFile=suplAnnotFile,syncColumns=syncColumns) }
 
 
-    ## 1.2 basic check of summaryD to quant data
+    ## 1.2 basic check of summaryD to quant data, extract supl info for sdrf
     if(length(summaryD) >0) {      ##  more checks
       if(length(abund) <1) message(fxNa,"Can't verify/correct names of annotation since content of 'abund' has was not given (ie NULL) or has no colnames") else {
         if(!identical(ncol(abund), nrow(summaryD))) { summaryD <- NULL
@@ -271,23 +291,38 @@ readSampleMetaData <- function(quantMeth, sdrf=NULL, suplAnnotFile=NULL, path=".
 	    }
       if(length(dim(summaryD)) !=2) summaryD <- matrix(summaryD, ncol=1, dimnames=list(names(summaryD),NULL))
 	  }
-    if(debug) { message(fxNa,"rSM3"); rSM3 <- list(sdrf=sdrf,abund=abund,suplAnnotFile=suplAnnotFile,quantMeth=quantMeth,summaryD=summaryD,suplAnnotFile=suplAnnotFile,syncColumns=syncColumns) }
+    if(debug) { message(fxNa,"rSM3"); rSM3 <- list(sdrf=sdrf,abund=abund,suplAnnotFile=suplAnnotFile,quantMeth=quantMeth,summaryD=summaryD,parametersD=parametersD,suplAnnotFile=suplAnnotFile,syncColumns=syncColumns) }
 
     ## continue evaluating summaryD to consistent format
     if(length(summaryD) >0) {      ## define  setupSdSoft
       ## need to match colnames(abund) to (MQ:) $Raw.file or $Experiment  .. need to find best partial match
-      if("MQ" %in% quantMeth) {         ## NOT IN SAME ORDER !!
-        summaryD <- summaryD[,wrMisc::naOmit(match(c("Raw.file","Experiment"), colnames(summaryD)))]           # cor 21oct22
-        chSd <- length(abund) >0 && nrow(summaryD) == ncol(abund)
-        if(length(chSd) <1) chSd <- FALSE
-        ## normally  colnames(abund) and summaryD should alread be in correct order
-        if(!chSd) {
-          if(!silent && length(abund) >0) if(nrow(summaryD) == ncol(abund)) { message(fxNa,"PROBLEM : meta-data and abundance data do not match !  ",
-             "Number of samples from ",suplAnnotFile[1]," (",nrow(summaryD),") and from main data (",ncol(abund),") do NOT match !! .. ignoring") }
-            if(debug) save(sdrf,abund,suplAnnotFile,quantMeth,summaryD,quantMeth,syncColumns, file="C:\\E\\projects\\TCAmethods\\wrProteoRamus\\rSM4mq.RData") }
-        #syncColumns["annotBySoft"] <- TRUE
+      MStype <- "FTMS"                  # used for extracting (more) sdrf info out of parametersSd
 
-        if(debug) { message(fxNa," .. rSM4mq"); rSM4mq <- list()}
+      if("MQ" %in% quantMeth) {         ## NOT IN SAME ORDER !!
+        useMQSuCol <- c("Raw.file","Experiment","Enzyme","Variable.modifications", "Fixed.modifications","Multi.modifications")
+        summaryD <- summaryD[,wrMisc::naOmit(match(useMQSuCol, colnames(summaryD)))]           # cor 21oct22, more cols 7jun23
+        chSd <- length(abund) >0 && nrow(summaryD) == ncol(abund)
+        ## normally  colnames(abund) and summaryD should alread be in correct order
+        if(isTRUE(chSd)) {
+          if(!silent && length(abund) >0) if(nrow(summaryD) == ncol(abund)) { message(fxNa,"PROBLEM : Meta-data and abundance data do not match !  ",
+            "Number of samples from ",suplAnnotFile[1]," (",nrow(summaryD),") and from main data (",ncol(abund),") do NOT match !! .. ignoring") }
+          #if(debug) save(sdrf,abund,suplAnnotFile,quantMeth,summaryD,quantMeth,syncColumns, file="C:\\E\\projects\\TCAmethods\\wrProteoRamus\\rSM4mq.RData") 
+        }
+        if(length(parametersD) >0) {   ## create 'parametersSd' for sdrf
+          parametersCol <- paste0(c("MS/MS tol.","MS/MS deisotoping tolerance","MS/MS deisotoping tolerance unit")," (",MStype,")")    # also "Top MS/MS peaks per Da interval." ?
+          parametersCol <- c("Modifications included in protein quantification","Match between runs","Fasta file", parametersCol)
+          parametersSd <- if(parametersCol[4] %in% parametersD[,1]) parametersD[match(parametersCol[4],parametersD[,1]) ,2] else NA     # eg '20 ppm'
+          if(!is.na(parametersSd)) if(grepl("ppm$", parametersSd)) parametersSd <- paste0(1/as.numeric(sub(" ppm$","",parametersSd))," Da")
+          fragMassT <- if(all(parametersCol[5:6] %in% parametersD[,1])) paste0( parametersD[match(parametersCol[5:6],parametersD[,1]) ,2], collapse=" ") else NA
+          supPar <- parametersD[match(c("Modifications included in protein quantification","Match between runs"), parametersD[,1]), 2]
+          parametersSd <- c(precMassTol=parametersSd, fragMassTol=fragMassT, modifs=supPar[1], matchBetwRun=toupper(supPar[2]) )
+        } else parametersSd <- c(precMassTol=NA, fragMassTol=NA)
+        parametersSd <- c(assayName="run1", label="NT=label free sample (check if correct)", instrum=NA, parametersSd, cleavAgent=paste0("NT=",summaryD[2,"Enzyme"]) )
+        ## add PTM modifs ...
+
+
+
+        if(debug) { message(fxNa," .. rSM4mq"); rSM4mq <- list(sdrf=sdrf,abund=abund,suplAnnotFile=suplAnnotFile,quantMeth=quantMeth,summaryD=summaryD,parametersD=parametersD,syncColumns=syncColumns,parametersSd=parametersSd,MStype=MStype)}
       }
 
       if("PD" %in% quantMeth) { useCo <- c("Input.Files.","File.ID","File.Name","Instrument.Name")    # no suitable 2nd column ...
@@ -314,7 +349,7 @@ readSampleMetaData <- function(quantMeth, sdrf=NULL, suplAnnotFile=NULL, path=".
         if(chSd) {
           # still need to develope extra verification ?
           chCol <- match(c("result_file_name" ,"quant_channel_name","import_params"), colnames(summaryD))
-          if(debug) { message(fxNa,"rSM4pl"); rSM4pl <- list(sdrf=sdrf,abund=abund,uplAnnotFile=suplAnnotFile,quantMeth=quantMeth,abund=abund,summaryD=summaryD)
+          if(debug) { message(fxNa,"rSM4pl"); rSM4pl <- list(sdrf=sdrf,abund=abund,uplAnnotFile=suplAnnotFile,quantMeth=quantMeth,abund=abund,summaryD=summaryD,parametersD=parametersD)
           if(all(is.na(chCol))) summaryD <- NULL else {
             parametersD <- summaryD[1, 3:ncol(summaryD)]                                        # how to integrate this later ??
             summaryD <- summaryD[, chCol]
@@ -341,8 +376,9 @@ readSampleMetaData <- function(quantMeth, sdrf=NULL, suplAnnotFile=NULL, path=".
           ## normally  colnames(abund) and summaryD should alread be in same/correct order
           if(!chSd) {
             if(!silent && length(abund) >0) if(nrow(summaryD) == ncol(abund)) { message(fxNa,"PROBLEM : meta-data and abundance data do not match !  ",
-               "Number of samples from ",suplAnnotFile[1]," (",nrow(summaryD),") and from main data (",ncol(abund),") do NOT match !! .. ignoring") }
-              if(debug) save(sdrf,abund,suplAnnotFile,quantMeth,summaryD,quantMeth, file="C:\\E\\projects\\TCAmethods\\wrProteoRamus\\rSM4mq.RData") }
+              "Number of samples from ",suplAnnotFile[1]," (",nrow(summaryD),") and from main data (",ncol(abund),") do NOT match !! .. ignoring") }
+            #if(debug) save(sdrf,abund,suplAnnotFile,quantMeth,summaryD,quantMeth, file="C:\\E\\projects\\TCAmethods\\wrProteoRamus\\rSM4mq.RData") 
+          }
         }
         syncColumns["annotBySoft"] <- TRUE
         if(debug) { message(fxNa," .. rSM4mq"); rSM4fp <- list()}
@@ -350,7 +386,7 @@ readSampleMetaData <- function(quantMeth, sdrf=NULL, suplAnnotFile=NULL, path=".
 
       ## other software ? ...
 
-      if(debug) { message(fxNa,"rSM4d"); rSM4d <- list(sdrf=sdrf,abund=abund,suplAnnotFile=suplAnnotFile,quantMeth=quantMeth,abund=abund,summaryD=summaryD,syncColumns=syncColumns) }
+      if(debug) { message(fxNa,"rSM4d"); rSM4d <- list(sdrf=sdrf,abund=abund,suplAnnotFile=suplAnnotFile,quantMeth=quantMeth,abund=abund,summaryD=summaryD,parametersD=parametersD,syncColumns=syncColumns) }
 
 
       ## 1.3 TRY CHECKING/ADJUSTING ORDER of summaryD
@@ -372,7 +408,7 @@ readSampleMetaData <- function(quantMeth, sdrf=NULL, suplAnnotFile=NULL, path=".
 
       ## 1.4   replicateStructure
       setupSdSoft <- wrMisc::replicateStructure(summaryD, silent=silent, debug=debug, callFrom=fxNa)
-      if(debug) { message(fxNa,"rSM4e"); rSM4e <- list() }
+      if(debug) { message(fxNa,"rSM4e"); rSM4e <- list(sdrf=sdrf,abund=abund,suplAnnotFile=suplAnnotFile,quantMeth=quantMeth,abund=abund,summaryD=summaryD,parametersD=parametersD,syncColumns=syncColumns) }
 
       ## so far no direct information about groups (all filenames are different), need to try to find out (remove enumerators)
       if(length(abund) >0) {
@@ -407,7 +443,7 @@ readSampleMetaData <- function(quantMeth, sdrf=NULL, suplAnnotFile=NULL, path=".
         summaryD <- as.data.frame(cbind(summaryD, grp=names(setupSdSoft$lev), grpInd=setupSdSoft$lev))                 # add presumed grouping to summaryD
       } else { if(!silent) message(fxNa,"Note : Abundance data are absent, adjust order of annotation to abundance data")}
     }
-    if(debug) { message(fxNa,"rSM5"); rSM5 <- list(sdrf=sdrf,abund=abund,suplAnnotFile=suplAnnotFile,quantMeth=quantMeth,abund=abund,summaryD=summaryD,setupSdSoft=setupSdSoft) }
+    if(debug) { message(fxNa,"rSM5"); rSM5 <- list(sdrf=sdrf,abund=abund,suplAnnotFile=suplAnnotFile,quantMeth=quantMeth,abund=abund,summaryD=summaryD,parametersD=parametersD,setupSdSoft=setupSdSoft) }
 
 
     ### 2  READ SDRF annotation & pick groups of replicates; has priority over grouping based on summary.txt
@@ -422,7 +458,6 @@ readSampleMetaData <- function(quantMeth, sdrf=NULL, suplAnnotFile=NULL, path=".
         if(is.character(sdrf) && length(sdrf) <3 && length(dim(sdrf)) <2) {
           ## read sdrf from file or github
           sdrfDat <- readSdrf(sdrf, silent=silent, debug=debug, callFrom=fxNa)
-
           ## check for priority columns
           if(length(groupPref$sdrfColumn) ==1 && length(sdrf) <2) { ch1 <- groupPref$sdrfColumn %in% colnames(sdrfDat)
             if(any(ch1)) sdrf[2] <- which(ch1)[1]
@@ -433,7 +468,7 @@ readSampleMetaData <- function(quantMeth, sdrf=NULL, suplAnnotFile=NULL, path=".
           sdrfDat <- sdrf
           sdrf <- "user provided custom object"}
       }
-      if(debug) { message(fxNa,"rSM6  dim sdrfDat ",nrow(sdrfDat)," ",ncol(sdrfDat)); rSM6 <- list(sdrf=sdrf,sdrfDat=sdrfDat,abund=abund,uplAnnotFile=suplAnnotFile,quantMeth=quantMeth,abund=abund,summaryD=summaryD,syncColumns=syncColumns) }
+      if(debug) { message(fxNa,"rSM6  dim sdrfDat ",nrow(sdrfDat)," ",ncol(sdrfDat)); rSM6 <- list(sdrf=sdrf,sdrfDat=sdrfDat,abund=abund,uplAnnotFile=suplAnnotFile,quantMeth=quantMeth,abund=abund,summaryD=summaryD,parametersD=parametersD,syncColumns=syncColumns) }
 
 
       ## 2.1 basic check (distinguish full $sampleSetup) form custom data.frame
@@ -526,7 +561,7 @@ readSampleMetaData <- function(quantMeth, sdrf=NULL, suplAnnotFile=NULL, path=".
             if(debug) {message(fxNa,if(debug)"rSM6e  ","length setupSd ", length(setupSd)); rSM6e <- list() }
           }
           if("setupSd" %in% names(setupSd)) {setupSd <- wrMisc::partUnlist(setupSd, callFrom=fxNa,debug=debug);
-            if(debug) message(fxNa,"rSM6e  - not expecting list of list for setupSd ! .. correcting"); rSM6e <- list(setupSd=setupSd,sdrf=sdrf,sdrfDat=sdrfDat,abund=abund,uplAnnotFile=suplAnnotFile,summaryD=summaryD,setupSdSoft=setupSdSoft,quantMeth=quantMeth)}
+            if(debug) message(fxNa,"rSM6e  - not expecting list of list for setupSd ! .. correcting"); rSM6e <- list(setupSd=setupSd,sdrf=sdrf,sdrfDat=sdrfDat,abund=abund,uplAnnotFile=suplAnnotFile,summaryD=summaryD,parametersD=parametersD,setupSdSoft=setupSdSoft,quantMeth=quantMeth)}
           ## try to find usable names for setupSd$lev
           ## still need usable names for factor-levels
           newLe <- as.character(match(setupSd$lev, unique(setupSd$lev)))
@@ -578,9 +613,15 @@ readSampleMetaData <- function(quantMeth, sdrf=NULL, suplAnnotFile=NULL, path=".
       }
 
     } else { setupSd <- setupSdSoft; setupSd$annotBySoft <- summaryD; setupSd$lev <- setupSd$lev }
-    if(debug) { message(fxNa,"rSM8  head of setupSd$lev : ",wrMisc::pasteC(utils::head(setupSd$lev))); rSM_ <- list()}
+    ## allow export of sdrf-draft
+    if(length(parametersSd) >0 && length(setupSd$sdrfDat) <1) {
+      setupSd$sdrfExport <- parametersSd
+      setupSd$summaryD <- summaryD
+      }
+
+    if(debug) { message(fxNa,"rSM8  head of setupSd$lev : ",wrMisc::pasteC(utils::head(setupSd$lev))); rSM8 <- list(setupSd=setupSd)}
 
   }
   ## finished readSampleMetaData
   setupSd }
-  
+

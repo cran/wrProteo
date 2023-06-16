@@ -88,7 +88,7 @@ readMaxQuantFile <- function(path, fileName="proteinGroups.txt", normalizeMeth="
   ## init check
   reqPa <- c("utils","wrMisc")
   chPa <- sapply(reqPa, requireNamespace, quietly=TRUE)
-  if(any(!chPa)) stop("package(s) '",paste(reqPa[which(!chPa)], collapse="','"),"' not found ! Please install first from CRAN")
+  if(any(!chPa)) stop("Package(s) '",paste(reqPa[which(!chPa)], collapse="','"),"' not found ! Please install first from CRAN")
   if(!isTRUE(silent)) silent <- FALSE
   if(isTRUE(debug)) silent <- FALSE else debug <- FALSE
          excluCol <- "^Abundances.Count"   # exclude this from quantifications columns
@@ -125,7 +125,7 @@ readMaxQuantFile <- function(path, fileName="proteinGroups.txt", normalizeMeth="
   ## future: look for fast reading of files
   tmp <- try(utils::read.delim(file.path(paFi), stringsAsFactors=FALSE), silent=TRUE)
 
-  if(length(tmp) <1 || inherits(tmp, "try-error") | length(dim(tmp)) <2) {
+  if(length(tmp) <1 || inherits(tmp, "try-error") || length(dim(tmp)) <2) {
     if(inherits(tmp, "try-error")) warning("Unable to read input file ('",paFi,"')!  (check format or if rights to read)") else {
       if(!silent) message(fxNa,"Content of  file '",paFi,"' seeps empty or non-conform !  Returning NULL; check if this is really a MaxQuant-file") }
     tmp <- NULL
@@ -135,11 +135,11 @@ readMaxQuantFile <- function(path, fileName="proteinGroups.txt", normalizeMeth="
     if(debug) { message(fxNa,"rMQ1 .. dims of initial data : ", nrow(tmp)," li and ",ncol(tmp)," col "); rMQ1 <- list(fileName=fileName,path=path,paFi=paFi,tmp=tmp,normalizeMeth=normalizeMeth,read0asNA=read0asNA,quantCol=quantCol,
       refLi=refLi,separateAnnot=separateAnnot   )}  # annotCol=annotCol,FDRCol=FDRCol
     ## check which columns can be extracted (for annotation)
-    if(is.integer(contamCol)) contamCol <- colnames(tmp)[contamCol]
+    if(is.integer(contamCol) && length(contamCol) >0) contamCol <- colnames(tmp)[contamCol]
     extrColNames <- union(extrColNames, contamCol)                     # add contamCol if not included in extrColNames
     chCol <- extrColNames %in% colnames(tmp)
     if(!any(chCol, na.rm=TRUE)) { extrColNames <- gsub("\\."," ",extrColNames)
-    chCol <- extrColNames %in% colnames(tmp) }
+      chCol <- extrColNames %in% colnames(tmp) }
     if(all(!chCol, na.rm=TRUE)) stop("Problem locating annotation columns (",wrMisc::pasteC(extrColNames, quoteC="''"),")")
     if(any(!chCol, na.rm=TRUE) ) {
       if(!silent) message(fxNa,"Note: Can't find columns ",wrMisc::pasteC(extrColNames[!chCol], quoteC="'")," !")

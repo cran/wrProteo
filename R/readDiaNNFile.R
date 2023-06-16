@@ -1,12 +1,14 @@
 #' Read Tabulated Files Exported by DIA-NN At Protein Level
 #'
 #' This function allows importing protein identification and quantification results from \href{https://github.com/vdemichev/DiaNN}{DIA-NN}, see also \doi{10.1038/s41592-019-0638-x}{Demichev et al, 2020}.
-#' Data should be exported as tabulated text (tsv) to allow import by thus function. 
+#' Data should be exported as tabulated text (tsv) as protein-groups (pg) to allow import by thus function. 
 #' Quantification data and other relevant information will be extracted similar like the other import-functions from this package.
 #' The final output is a list containing the elements: \code{$annot}, \code{$raw} and \code{$quant}, or a data.frame with the quantication data and a part of the annotation if argument \code{separateAnnot=FALSE}.
 #'
 #' @details
 #' This function has been developed using DIA-NN version 1.8.x.
+#' Note, reading gene-group (gg) files is in priciple possible, but resulting files typically lack protein-identifiers which may lack in later steps of analysis.
+#' It is suggetsed to rather read protein-group (pg) files.
 #'
 #' Using the argument \code{suplAnnotFile} it is possible to specify a specific file (or search for default file) to read for extracting file-names as sample-names and other experiment related information.
 #'
@@ -67,11 +69,11 @@ readDiaNNFile <- function(fileName, path=NULL, normalizeMeth="median", sampleNam
   cleanDescription <- TRUE          # clean 'Description' for artifacts of truncated text (tailing ';' etc)
   infoDat <- infoFi <- setupSd <- parametersD <- NULL        # initialize
 
-  ## check if path & (tsv) file exist
+  ## check if path & (tsv) file exist  (set paFi, if bad -> error)
   msg <- "Invalid entry for 'fileName'"
   if(length(fileName) >1) { fileName <- fileName[1]
     if(!silent) message(fxNa," 'fileName' shoud be of length=1, using 1st value")
-  } else { if(length(fileName) <1) stop(msg) else if(is.na(fileName) | nchar(fileName) <1) stop(msg)}
+  } else { if(length(fileName) != 1) stop(msg) else if(is.na(fileName) || nchar(fileName) <1) stop(msg)}
   paFi <- fileName                      # presume (& correct if path is given)
   chFi <- file.exists(fileName)         # presume (& correct otherwise)
   if(length(path) >0) if(!dir.exists(path[1])) { path <- NULL
@@ -106,20 +108,29 @@ readDiaNNFile <- function(fileName, path=NULL, normalizeMeth="median", sampleNam
     ## note : space (' ') in orig colnames are transformed to '.'
     if(length(annotCol) <1) annotCol <- c("Protein.Group","Protein.Ids","Protein.Names","Genes","First.Protein.Description")
 
-    ## check for essential colnames !
+    ## check for essential colnames !   distinguish export as protein-groups (pg) or gene-groups (gg)
       ## 'Accesion' (eg "P00498")  .. missing
       ## 'Description' (eg "Cyclin-dependent kinase 1")   .. missing
       ## no PSM o spectral counts data in file
       ##
     if(is.character(annotCol)) annotColNo <- match(annotCol, colnames(tmp))
     chNa <- is.na(annotColNo)
-    if(any(chNa) & silent) message(fxNa,"Missing ",sum(chNa)," annotation columns:  ",wrMisc::pasteC(annotCol[chNa], quoteC="'"))
-    ## rename columns to wrProteo format
-    annot <- cbind(Accession=NA, EntryName=tmp[,annotCol[3]], GeneName=tmp[,annotCol[4]], Species=NA, Contam=NA, SpecType=NA,
-      Description=NA,  UniProtID=tmp[,annotCol[2]], EntryNamesAll=tmp[,annotCol[3]],  GeneNameAll=tmp[,annotCol[4]], tmp[,wrMisc::naOmit(annotColNo[c(5)])])   # may be better to name column 'species'
+    if(any(chNa) && silent) message(fxNa,"Missing ",sum(chNa)," annotation columns:  ",wrMisc::pasteC(annotCol[chNa], quoteC="'"))
+    if(all(chNa) && "Genes" %in% colnames(tmp)) {
+      annotColG <- which(colnames(tmp) %in% "Genes")
+      annot <- cbind(Accession=NA, EntryName=if(is.na(annotColNo[3])) NA else tmp[,annotCol[3]], GeneName=tmp[,annotColG], Species=NA, Contam=NA, SpecType=NA,
+        Description=NA,  UniProtID=NA, EntryNamesAll=NA,  GeneNameAll=tmp[,annotColG] )    # may be better to name column 'species'
+      if(!silent) message(fxNa,"NOTE : Data seems to be 'gene-groups' (gg) format, MISSING protein identifiers in annoation !!")
+
+    } else {
+      ## rename columns to wrProteo format
+      annot <- cbind(Accession=NA, EntryName=tmp[,annotCol[3]], GeneName=tmp[,annotCol[4]], Species=NA, Contam=NA, SpecType=NA,
+        Description=NA,  UniProtID=tmp[,annotCol[2]], EntryNamesAll=tmp[,annotCol[3]],  GeneNameAll=tmp[,annotCol[4]], tmp[,wrMisc::naOmit(annotColNo[c(5)])])   # may be better to name column 'species'
+    }
+    
     if(debug) { message(fxNa,"rdn2 .. annotColNo : ", wrMisc::pasteC(annotColNo)); rdn2 <- list(annot=annot,annotCol=annotCol,tmp=tmp,specPref=specPref )}
 
-    ## 'EntryName' & 'GeneName'  contain multiple proteins, pick 1st
+    ## 'EntryName' & 'GeneName'  may contain multiple proteins, pick 1st
     chMult <- grep(";",annot[,2])
     if(length(chMult) >0) annot[,2] <- sub(";.+","", annot[,2])
     chMult <- grep(";",annot[,3])
@@ -154,7 +165,6 @@ readDiaNNFile <- function(fileName, path=NULL, normalizeMeth="median", sampleNam
 
     ## check for unique annot[,"Accession"] - not applicable
     if(debug) { message(fxNa,"rdn7 .. dim annot ",nrow(annot)," and ",ncol(annot)); rdn7 <- list(annot=annot,tmp=tmp,annot=annot,specPref=specPref) }
-
 
     ## locate & extract abundance/quantitation data
     msg <- " CANNOT find ANY quantification columns"

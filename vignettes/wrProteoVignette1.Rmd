@@ -601,7 +601,9 @@ head(testMQ$datImp[,1:6])
 Brielfy, principal components analysis ([PCA](https://en.wikipedia.org/wiki/Principal_component_analysis)) searches to decompose the data along all the axises defined by all samples. Then, the axis-combinations with the highest degree of correlation are searched.
 In principle one could also run PCA along the rows, ie the proteins, but their number is typically so high that the resultant plots get too crowded.
 
-In the context of high throughput experiments, like proteomics, PCA allows to distinguish important information how the different samples are related (ie similar). This covers of course the real differences between different biological conditions, but also additional bias introduced as (technical) artifacts. Thus, such plots serve as well for quality control (in particular to identify outlyer-samples, eg due to degraded material) as well as for the biological interpretation.
+In the context of high throughput experiments, like proteomics, PCA allows to distinguish important information how the different samples are related (ie similar).
+This covers of course the real differences between different biological conditions, but also additional bias introduced as (technical) artifacts.
+Thus, such plots serve as well for quality control (in particular to identify outlyer-samples, eg due to degraded material) as well as for the biological interpretation.
 
 Normally one could immediately check the normalized data by PCA before running statistical tests.
 As stated in other places, PCA can't handle missing values (ie _NA_ ).

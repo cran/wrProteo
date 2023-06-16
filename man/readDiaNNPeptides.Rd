@@ -83,7 +83,7 @@ This function returns a list with \code{$raw} (initial/raw abundance values), \c
 }
 \description{
 This function allows importing peptide identification and quantification results from \href{https://github.com/vdemichev/DiaNN}{DiaNN}, see also \doi{10.1038/s41592-019-0638-x}{Demichev et al, 2020}.
-Data should be exported as tabulated text (tsv) to allow import by thus function. 
+Data should be exported as tabulated text (tsv) to allow import by thus function.
 Quantification data and other relevant information will be extracted similar like the other import-functions from this package.
 The final output is a list containing the elements: \code{$annot}, \code{$raw} and \code{$quant}, or a data.frame with the quantication data and a part of the annotation if argument \code{separateAnnot=FALSE}.
 }
@@ -93,7 +93,7 @@ This function has been developed using DiaNN version 1.8.x.
 Using the argument \code{suplAnnotFile} it is possible to specify a specific file (or search for default file) to read for extracting file-names as sample-names and other experiment related information.
 }
 \examples{
-diaNNFi1 <- "tinyDiaNN1.tsv.gz"   
+diaNNFi1 <- "tinyDiaNN1.tsv.gz"
 ## This file contains much less identifications than one may usually obtain
 path1 <- system.file("extdata", package="wrProteo")
 ## let's define the main species and allow tagging some contaminants

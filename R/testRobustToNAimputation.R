@@ -1,6 +1,6 @@
 #' Pair-wise testing robust to NA-imputation
 #'
-#' \code{testRobustToNAimputation} replaces \code{NA} values based on group neighbours (based on grouping of columns in argument \code{gr}), following overall assumption of close to Gaussian distribution.
+#' This function replaces \code{NA} values based on group neighbours (based on grouping of columns in argument \code{gr}), following overall assumption of close to Gaussian distribution.
 #' Furthermore, it is assumed that \code{NA}-values originate from experimental settings where measurements at or below detection limit are recoreded as \code{NA}.
 #' In  such cases (eg in proteomics) it is current practice to replace \code{NA}-values by very low (random) values in order to be able to perform t-tests.
 #' However, random normal values used for replacing may in rare cases deviate from the average (the 'assumed' value) and in particular, if multiple \code{NA} replacements are above the average, 
@@ -11,7 +11,7 @@
 #' It is necessary to define all groups of replicates in \code{gr} to obtain all possible pair-wise testing (multiple columns in $BH, $lfdr etc). 
 #' The modified testing-procedure of Bioconductor package \href{https://bioconductor.org/packages/release/bioc/html/ROTS.html}{ROTS} may optionaly be included, if desired.
 #' This function returns a \href{https://bioconductor.org/packages/release/bioc/html/limma.html}{limma}-like S3 list-object further enriched by additional fields/elements.
-
+#' 
 #' @details
 #' The argument \code{multCorMeth} allows to choose which multiple correction algorimths will be used and included to the final results.
 #' Possible options are 'lfdr','BH','BY','tValTab', ROTSn='100' (name to element necessary) or 'noLimma' (to add initial p.values and BH to limma-results). By default 'lfdr' (local false discovery rate from package 'fdrtools') and 'BH' (Benjamini-Hochberg FDR) are chosen.
@@ -20,6 +20,7 @@
 #' This function is compatible with automatic extraction of experimental setup based on sdrf or other quantitation-specific sample annotation.
 #' In this case, the results of automated importing and mining of sample annotation should be stored as \code{$sampleSetup$groups} or \code{$sampleSetup$lev}  
 #' 
+#' For details 'on choice of NA-impuation procedures with arguments 'imputMethod' and 'avSd' please see  \code{\link{matrixNAneighbourImpute}}.
 #' 
 #' @param dat (matrix or data.frame) main data (may contain \code{NA}); if \code{dat} is list containing $quant and $annot as matrix, the element $quant will be used
 #' @param gr (character or factor) replicate association; if \code{dat} contains a list-element \code{$sampleSetup$groups} or \code{$sampleSetup$lev} this may be used in case \code{gr=NULL}
@@ -40,7 +41,7 @@
 #' @param debug (logical) additional messages for debugging
 #' @param callFrom (character) This function allows easier tracking of messages produced
 #' @return This function returns a limma-type S3 object of class 'MArrayLM' (which can be accessed lika a list); multiple results of testing or multiple testing correction types may get included ('p.value','FDR','BY','lfdr' or 'ROTS.BH')
-#' @seealso \code{\link[wrMisc]{moderTest2grp}}, \code{\link[wrMisc]{pVal2lfdr}}, \code{eBayes} in Bioconductor package \href{https://bioconductor.org/packages/release/bioc/html/limma.html}{limma}, \code{\link[stats]{t.test}},\code{ROTS} of Bioconductor package \href{https://bioconductor.org/packages/release/bioc/html/ROTS.html}{ROTS}   
+#' @seealso NA-imputation via \code{\link{matrixNAneighbourImpute}}, modereated t-test without NA-imputation \code{\link[wrMisc]{moderTest2grp}}, calculating lfdr \code{\link[wrMisc]{pVal2lfdr}}, \code{eBayes} in Bioconductor package \href{https://bioconductor.org/packages/release/bioc/html/limma.html}{limma}, \code{\link[stats]{t.test}},\code{ROTS} of Bioconductor package \href{https://bioconductor.org/packages/release/bioc/html/ROTS.html}{ROTS}   
 #' @examples
 #' set.seed(2015); rand1 <- round(runif(600) +rnorm(600,1,2),3)
 #' dat1 <- matrix(rand1,ncol=6) + matrix(rep((1:100)/20,6),ncol=6)
@@ -68,7 +69,7 @@ testRobustToNAimputation <- function(dat, gr=NULL, annot=NULL, retnNA=TRUE, avSd
   ## start testing input
   if(is.list(dat)) { if(all(c("quant","annot") %in% names(dat))) {
     if(length(dim(dat$annot)) ==2 && length(annot) <1) annot <- dat$annot else if(!silent) message(fxNa,"Invalid '$annot'") # recover$annot if not given separately
-    if("sampleSetup" %in% names(dat) & length(gr) <1) {
+    if("sampleSetup" %in% names(dat) && length(gr) <1) {
       gr <- if("groups" %in% names(dat$sampleSetup)) dat$sampleSetup$groups else dat$sampleSetup$lev
       if(all(match(gr, unique(gr)) ==match(names(gr), unique(names(gr))))) gr <- names(gr)              # rather use name instead of index
       if(length(gr) >1 && length(dat$sampleSetup$col) <2 && length(names(gr)) <1) names(gr) <- dat$sampleSetup$sdrf[,dat$sampleSetup$col]       # in case not names provided

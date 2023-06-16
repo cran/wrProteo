@@ -1,22 +1,22 @@
 #' Read file of protein sequences in fasta format
-#'   
+#'
 #' Read fasta formatted file (from \href{https://www.uniprot.org}{UniProt}) to extract (protein) sequences and name.
 #' If \code{tableOut=TRUE} output may be organized as matrix for separating meta-annotation (eg uniqueIdentifier, entryName, proteinName, GN) in separate columns.
-#'  
+#'
 #' @param filename (character) names fasta-file to be read
 #' @param delim (character) delimeter at header-line
 #' @param databaseSign (character) characters at beginning right after the '>' (typically specifying the data-base-origin), they will be excluded from the sequance-header
 #' @param removeEntries (character) if \code{'empty'} allows removing entries without any sequence entries; set to \code{'duplicated'} to remove duplicate entries (same sequence and same header)
-#' @param tableOut (logical) toggle to return named character-vector or matrix with enhaced parsing of fasta-header. The resulting matrix will contain the comumns 'database','uniqueIdentifier','entryName','proteinName','sequence' and further columns depending on argument \code{UniprSep} 
-#' @param UniprSep (character) separators for further separating entry-fields if \code{tableOut=TRUE}, see also \href{https://www.uniprot.org/help/fasta-headers}{UniProt-FASTA-headers}  
+#' @param tableOut (logical) toggle to return named character-vector or matrix with enhaced parsing of fasta-header. The resulting matrix will contain the comumns 'database','uniqueIdentifier','entryName','proteinName','sequence' and further columns depending on argument \code{UniprSep}
+#' @param UniprSep (character) separators for further separating entry-fields if \code{tableOut=TRUE}, see also \href{https://www.uniprot.org/help/fasta-headers}{UniProt-FASTA-headers}
 #' @param cleanCols (logical) remove columns with all entries NA, if \code{tableOut=TRUE}
 #' @param debug (logical) supplemental messages for debugging
 #' @param silent (logical) suppress messages
 #' @param callFrom (character) allows easier tracking of messages produced
 #' @return This function returns (depending on parameter \code{tableOut}) a) a simple character vector (of sequence) with Uniprot ID as name or b) a matrix with columns: 'database','uniqueIdentifier','entryName','proteinName','sequence' and further columns depending on argument \code{UniprSep}
-#' @seealso  \code{\link{writeFasta2}} for writing as fasta, or for reading \code{\link[base]{scan}} or  \code{read.fasta} from the package \href{https://CRAN.R-project.org/package=seqinr}{seqinr} 
+#' @seealso  \code{\link{writeFasta2}} for writing as fasta, or for reading \code{\link[base]{scan}} or  \code{read.fasta} from the package \href{https://CRAN.R-project.org/package=seqinr}{seqinr}
 #' @examples
-#' ## Tiny example with common contaminants 
+#' ## Tiny example with common contaminants
 #' path1 <- system.file('extdata',package='wrProteo')
 #' fiNa <-  "conta1.fasta.gz"
 #' fasta1 <- readFasta2(file.path(path1,fiNa))
@@ -46,19 +46,42 @@ readFasta2 <- function(filename, delim="|", databaseSign=c("sp","tr","generic","
   if(length(newLi) <1) stop(fxNa,"No instances of 'databaseSign', ie '",paste(databaseSign,collapse=""),"' found !  Maybe this is NOT a real fasta-file ?")
   byDBsig <- sapply(databaseSign, function(x) grep(paste0("^>",x), sca[newLi]))
   names(byDBsig) <- databaseSign
-  if(debug) {message(fxNa,"Checking for database signs ",wrMisc::pasteC(databaseSign, quoteC="'"))}
+  if(debug) {message(fxNa,"Checking for database signs ",wrMisc::pasteC(databaseSign, quoteC="'"),"   rf2"); rf2 <- list(sca=sca,byDBsig=byDBsig,newLi=newLi,filename=filename,delim=delim,databaseSign=databaseSign,removeEntries=removeEntries,tableOut=tableOut,UniprSep=UniprSep) }
 
   ## count occurance of prefix types
-  chLe <- sapply(byDBsig,length)
+  chLe <- sapply(byDBsig, length)
   out <- NULL
+  if(sum(chLe) < length(newLi)) {       # non-standard format or unknown databaseSign
+    id0 <- sca[newLi]
+    ch1 <- nchar(gsub("\\|","", id0)) - nchar(id0)
+    badFo <- ch1 > min(ch1, na.rm=TRUE)
+    if(any(badFo)) {    ## inconsistent format, suppose databaseSign is missing
+      if(!silent) message(fxNa,"Found ",sum(badFo)," inconsistent entries with missing databaseSign, adding 'xx|'" )
+      databaseSign <- union(databaseSign,"xx")
+      sca[newLi[which(badFo)]] <- paste0(">xx|", sub("^>","", sca[newLi[which(badFo)]]))   # add unknwn  db sign
+      spePat <- " - [[:upper:]][[:lower:]]+ [[:lower:]]+ \\([[:upper:]][[:lower:]]+\\)$"
+      chSpe <- which(grepl(spePat, sca[newLi[which(badFo)]]) & !grepl(" OS=[[:upper:]][[:lower:]]", sca[newLi[which(badFo)]]))
+      if(length(chSpe) >0) {         ## found potential species designation (eg ' - Homo sapiens (Human)' while 'OS=' is missing)
+        if(!silent) message(fxNa,"Found ",length(chSpe)," potential species designations, adding as OS=" )
+        woSpe <- nchar(sub(spePat,"", sca[newLi[which(badFo)]]))
+        newSpe <- sub(" \\([[:upper:]][[:lower:]]+\\)$","", substr(sca[newLi[which(badFo)]], woSpe +4, nchar(sca[newLi[which(badFo)]])))
+        for(i in unique(newSpe)) sca[newLi[which(badFo)]] <- sub(paste0(" - ",i),"", sca[newLi[which(badFo)]])
+        ## future : try converting OS to OX - need to extend  .commonSpecies()
+        sca[newLi[which(badFo)]] <- paste0(sca[newLi[which(badFo)]], " OS=",newSpe)
+      }
+    }
+  }       # finish adding missing databaseSign and trying to recover species from non-standard format
+
   if(any(chLe >0, na.rm=TRUE)) {  # has prefix
     if(any(chLe <1, na.rm=TRUE)) byDBsig <- byDBsig[which(chLe >0)]   # eliminate prefix types not found
-    dbSig <- rep(names(byDBsig)[1],length(newLi))
+    dbSig <- sub("\\|.+","", sub("^>","", sca[newLi]))     # correct database column
     if(length(byDBsig) >1) for(i in 2:length(byDBsig)) dbSig[byDBsig[[i]]] <- names(byDBsig)[i]
     id0 <- substr(sca[newLi], nchar(dbSig) +2 +nchar(delim), nchar(sca[newLi]))     # head wo prefix
-  } else {                                          # in case no separator found, use text available as ID and as name  
-    id0 <- sca[newLi] ; dbSig <- NULL} 
-  if(debug) {message(fxNa," found ",wrMisc::pasteC(chLe)," occurances of database signs" )}
+  } else {                                          # in case no separator found, use text available as ID and as name
+    id0 <- sca[newLi] ; dbSig <- NULL}
+
+
+  if(debug) {message(fxNa," found ",wrMisc::pasteC(chLe)," occurances of database signs   rf3"); rf3 <- list(sca=sca,out=out,newLi=newLi,chLe=chLe,byDBsig=byDBsig,newLi=newLi,filename=filename,delim=delim,databaseSign=databaseSign,removeEntries=removeEntries,tableOut=tableOut,UniprSep=UniprSep) }
 
   ## check for empty sequences
   useLi <- cbind(newLi +1, c(newLi[-1] -1, length(sca)))
@@ -66,27 +89,28 @@ readFasta2 <- function(filename, delim="|", databaseSign=c("sp","tr","generic","
   chLe <- useLi[,2] - useLi[,1] <0
   if(any(c("empty","removeempty") %in% tolower(removeEntries), na.rm=TRUE) & any(chLe, na.rm=TRUE)) {
     if(!silent) message(fxNa," found ",sum(chLe)," case(s) of entries without any sequence underneith - omitting; bizzare !")
-    useLi <- useLi[which(!chLe),] 
+    useLi <- useLi[which(!chLe),]
     id0 <- id0[which(!chLe)]
     #sca <- sca[which(!chLe)]
   }
-  if(debug) {message(fxNa," rf4")}
+  if(debug) {message(fxNa,"rf4"); rf4 <- list(sca=sca,out=out,chLe=chLe,newLi=newLi,id0=id0,filename=filename,delim=delim,databaseSign=databaseSign,removeEntries=removeEntries,tableOut=tableOut,UniprSep=UniprSep) }
 
   ## isolate ID : strsplit by delim
-  sep1 <- strsplit(id0, delim, fixed=TRUE) 
+  sep1 <- strsplit(id0, delim, fixed=TRUE)
   chLe <- sapply(sep1, length)
-  id <- sub("^ ","",sub(" $","",sapply(sep1, function(x) x[1])))    # remove heading or tailing space 
+  id <- sub("^ ","",sub(" $","",sapply(sep1, function(x) x[1])))    # remove heading or tailing space
   chNa <- is.na(id)
   if(any(chNa, na.rm=TRUE)) {
    if(!silent) message(fxNa,"Note:  ",sum(chNa)," entries have no names, will be given names 'NONAME01'", if(sum(chNa)>1)" etc...")
    id[which(chNa)] <- paste0("NONAME",sprintf(paste0("%0",max(2,nchar(sum(chNa))),"d"), 1:sum(chNa)))
   }
   entryName <- id
+  if(debug) {message(fxNa,"rf5"); rf5 <- list(out=out,chLe=chLe,newLi=newLi,entryName=entryName,id=id,filename=filename,delim=delim,databaseSign=databaseSign,removeEntries=removeEntries,tableOut=tableOut,UniprSep=UniprSep) }
   ## Try extracting 2nd part after ID
   if(any(chLe >1, na.rm=TRUE)) {           # use 1st as ID and last as names+further
     entryName <- unlist(sapply(sep1, function(x) if(length(x) <1) NA else x[min(2,length(x))])) }   # use 2nd after separator (or 1st if)
   chNa <- is.na(entryName)
-  if(any(chNa, na.rm=TRUE)) entryName[which(chNa)] <- id[which(chNa)]      # no separator, use text available as ID and as name 
+  if(any(chNa, na.rm=TRUE)) entryName[which(chNa)] <- id[which(chNa)]      # no separator, use text available as ID and as name
 
   if(debug) {message(fxNa,"Isolated ",length(id)," ids ( ",sum(chNa)," with same text as ID and sequence name)" )}
   entryName <- sub("^ ","", sub("\\.$","",entryName))          # remove heading space or tailing point
@@ -102,16 +126,18 @@ readFasta2 <- function(filename, delim="|", databaseSign=c("sp","tr","generic","
       entryName <- entryName[which(!chDup)]
   } }
 
-  if(debug) message(fxNa," len seqs ",length(seqs))
+  if(debug) {message(fxNa," len seqs ",length(seqs),"  rf6");
+     rf6 <- list(out=out,chLe=chLe,newLi=newLi,entryName=entryName,id=id,filename=filename,delim=delim,databaseSign=databaseSign,removeEntries=removeEntries,tableOut=tableOut,UniprSep=UniprSep) }
 
-  if(isTRUE(tableOut)) {           # further separating name/description field 
+
+  if(isTRUE(tableOut)) {           # further separating name/description field
     ## Uniprot headers : https://www.uniprot.org/help/fasta-headers
     ## >db|uniqueIdentifier|entryName proteinName OS=OrganismName OX=OrganismIdentifier [GN=GeneName] PE=ProteinExistence SV=SequenceVersion
-    UniprSep <- sub("^ ","",sub(" $","",UniprSep))                              # remove heading or tailing space 
-    out <- matrix(NA, nrow=length(id0), ncol=length(UniprSep) +5, 
+    UniprSep <- sub("^ ","",sub(" $","",UniprSep))                              # remove heading or tailing space
+    out <- matrix(NA, nrow=length(id0), ncol=length(UniprSep) +5,
       dimnames=list(NULL,c("database","uniqueIdentifier","entryName","proteinName","sequence",sub("=$","",sub("^ +","",UniprSep)) )))
     aftS <- "[[:alpha:]][[:upper:]]*[[:digit:]]*[[:upper:]]*_[[:upper:]]+[[:digit:]]* "                               # some CAPs + ev some digits
-    if(debug) {message(fxNa," rf6")}
+    if(debug) {message(fxNa," rf7"); rf7 <- list(out=out,chLe=chLe,newLi=newLi,entryName=entryName,id=id,filename=filename,delim=delim,databaseSign=databaseSign,removeEntries=removeEntries,tableOut=tableOut,UniprSep=UniprSep)}
 
     ## suplID (if available)
     entryNameS <- sub(aftS, "", entryName)                                    # get everything before Uniprot like sparator  (space+2upper+"="+anyText)
@@ -120,7 +146,7 @@ readFasta2 <- function(filename, delim="|", databaseSign=c("sp","tr","generic","
     suplID <- if(any(ncha >0, na.rm=TRUE)) substr(entryName, 1, nch -1-ncha) else rep(NA, length(entryName))
     chS <- ncha == nchar(entryName)
     out[,c("database","uniqueIdentifier","entryName","proteinName","sequence")] <- cbind(dbSig, id, entryNameS, suplID, seqs)
-    if(debug) {message(fxNa," rf7")}
+    if(debug) {message(fxNa," rf8"); rf8 <- list(out=out,chLe=chLe,newLi=newLi,entryName=entryName,id=id,filename=filename,delim=delim,databaseSign=databaseSign,removeEntries=removeEntries,tableOut=tableOut,UniprSep=UniprSep)}
 
     ## extract part after current uniprSep and the before something looking like next uniprSep
     grUni <- lapply(UniprSep, grep, entryNameS)                   # which entires/lines concerned
@@ -133,11 +159,11 @@ readFasta2 <- function(filename, delim="|", databaseSign=c("sp","tr","generic","
     }
     ## propagate NONAME to empty proteinName
     ch1 <- grepl("NONAME", out[,2]) & nchar(out[,"proteinName"]) <1
-    if(any(ch1, na.rm=TRUE)) out[which(ch1),"proteinName"] <- out[which(ch1),2] 
-    
+    if(any(ch1, na.rm=TRUE)) out[which(ch1),"proteinName"] <- out[which(ch1),2]
+
     ## remove cols with all NA
     chNA <- colSums(!is.na(out)) <1
     if(any(chNA) && isTRUE(cleanCols)) out <- if(sum(!chNA) >1) out[,which(!chNA)] else matrix(out[,which(!chNA)], ncol=1, dimnames=list(NULL,colnames(out)[which(!chNA)])) # remove columns with NA only
-  } else {out <- seqs; names(out) <- entryName}  
+  } else {out <- seqs; names(out) <- entryName}
   out }
-       
+  

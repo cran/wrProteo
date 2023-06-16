@@ -34,7 +34,7 @@ isolNAneighb <- function(mat, gr, silent=FALSE, debug=FALSE, callFrom=NULL) {
   if(datOK && length(unique(gr)) ==length(gr)) { datOK <- FALSE
     msg <- "No replicates, can't isolate NA-neighbours" }
   if(!datOK && !silent) message(fxNa,msg)
-  if(debug) {message(fxNa," iNN1"); iNN1 <- list(mat=mat, gr=gr, datOK=datOK)}
+  if(debug) {message(fxNa," datOK: ",datOK,"   iNN1"); iNN1 <- list(mat=mat, gr=gr, datOK=datOK)}
 
   if(datOK) {
     ## basic (optimized) extraction of NA-neighbours
@@ -42,12 +42,15 @@ isolNAneighb <- function(mat, gr, silent=FALSE, debug=FALSE, callFrom=NULL) {
     NAneig <- lapply(1:maxHi, function(x) NULL)         # initialize output
     names(NAneig) <- paste0("n", 1:maxHi)
     ## need first to separate by groups of replicates
-    matR <- lapply(unique(gr), function(x) {mat[, which(gr ==x)]})
+    matR <- lapply(unique(gr), function(x) {mat[, which(gr ==x)]})     # split by groups of replicates
     ## now separate NA-neighbours for each group/line
     nNA <- as.integer(sapply(matR, function(x) rowSums(is.na(x))))
-    naNei <- wrMisc::partUnlist(lapply(matR, apply, 1, function(x) {chN <- is.na(x); if(sum(chN) ==0 || sum(chN)==length(x)) NULL else x[which(!chN)]}))
+    naNei <- wrMisc::partUnlist(lapply(matR, apply, 1, function(x) {chN <- is.na(x); if(sum(chN) ==0 || sum(chN)==length(x)) NULL else x[which(!chN)]}), silent=silent, debug=debug, callFrom=fxNa)
+    chLe <- sapply(naNei, length)
+    
     ## combine according to number of NA-values in group/line
-    for(i in 1:maxHi) {ch1 <- which(nNA==i); if(length(ch1) >0) NAneig[[i]] <- unlist(naNei[ch1])}}
+    if(any(chLe >0)) {for(i in 1:maxHi) {ch1 <- which(nNA==i); if(length(ch1) >0) NAneig[[i]] <- unlist(naNei[ch1])}}
+    } else NAneig <- NULL
   NAneig }
   
 

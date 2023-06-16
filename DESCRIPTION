@@ -1,5 +1,5 @@
 Package: wrProteo
-Version: 1.9.0
+Version: 1.10.0
 Title: Proteomics Data Analysis Functions
 Authors@R: person("Wolfgang", "Raffelsberger", email = "w.raffelsberger@gmail.com", role = c("aut", "cre"))
 Author: Wolfgang Raffelsberger [aut, cre]
@@ -9,7 +9,7 @@ Description: Data analysis of proteomics experiments by mass spectrometry is sup
 	Initial results from multiple software for protein (and peptide) quantitation can be imported (to a common format): 
 	MaxQuant (Tyanova et al 2016 <doi:10.1038/nprot.2016.136>), Dia-NN (Demichev et al 2020 <doi:10.1038/s41592-019-0638-x>), 
 	Fragpipe(da Veiga et al 2020, <doi:10.1038/s41592-020-0912-y>), MassChroq (Valot et al 2011] <doi:10.1002/pmic.201100120>), 
-    OpenMS (<doi:10.1038/nmeth.3959>), ProteomeDiscoverer and Proline (Bouyssie et al 2020 <doi:10.1093/bioinformatics/btaa118>). 
+    OpenMS (<doi:10.1038/nmeth.3959>), ProteomeDiscoverer, Proline (Bouyssie et al 2020 <doi:10.1093/bioinformatics/btaa118>) and Wombat-P. 
 	Meta-data provided by initial analysis software and/or in sdrf format can be integrated to the analysis. 
     Quantitative proteomics measurements frequently contain multiple NA values, due to physical absence of given peptides in some samples, limitations in sensitivity or other reasons. 
     Help is provided to inspect the data graphically to investigate the nature of NA-values via their respective replicate measurements 
@@ -31,6 +31,6 @@ Encoding: UTF-8
 VignetteBuilder: knitr
 RoxygenNote: 7.2.3
 NeedsCompilation: no
-Packaged: 2023-04-20 13:53:06 UTC; wraff
+Packaged: 2023-06-15 13:45:51 UTC; wraff
 Repository: CRAN
-Date/Publication: 2023-04-20 16:50:02 UTC
+Date/Publication: 2023-06-16 08:10:03 UTC

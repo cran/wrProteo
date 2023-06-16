@@ -1,7 +1,7 @@
 #' Read Tabulated Files Exported by DiaNN At Peptide Level
 #'
 #' This function allows importing peptide identification and quantification results from \href{https://github.com/vdemichev/DiaNN}{DiaNN}, see also \doi{10.1038/s41592-019-0638-x}{Demichev et al, 2020}.
-#' Data should be exported as tabulated text (tsv) to allow import by thus function. 
+#' Data should be exported as tabulated text (tsv) to allow import by thus function.
 #' Quantification data and other relevant information will be extracted similar like the other import-functions from this package.
 #' The final output is a list containing the elements: \code{$annot}, \code{$raw} and \code{$quant}, or a data.frame with the quantication data and a part of the annotation if argument \code{separateAnnot=FALSE}.
 #'
@@ -41,7 +41,7 @@
 #'  and \code{$notes}; or if \code{separateAnnot=FALSE} the function returns a data.frame with annotation and quantitation only
 #' @seealso \code{\link[utils]{read.table}}, \code{\link[wrMisc]{normalizeThis}}) , \code{\link{readMaxQuantFile}}, \code{\link{readProtDiscovFile}}, \code{\link{readProlineFile}}
 #' @examples
-#' diaNNFi1 <- "tinyDiaNN1.tsv.gz"   
+#' diaNNFi1 <- "tinyDiaNN1.tsv.gz"
 #' ## This file contains much less identifications than one may usually obtain
 #' path1 <- system.file("extdata", package="wrProteo")
 #' ## let's define the main species and allow tagging some contaminants
@@ -85,14 +85,14 @@ readDiaNNPeptides <- function(fileName, path=NULL, normalizeMeth="median", sampl
   } }
   if(!chFi) stop(" File ",fileName," was NOT found ",if(length(path) >0) paste(" in path ",path)," !")
   if(!grepl("\\.tsv$|\\.tsv\\.gz$", fileName)) message(fxNa,"Trouble ahead, expecting tabulated text file (the file'",fileName,"' might not be right format) !!")
-  if(debug) message(fxNa,"rdn0a ..")
+  if(debug) message(fxNa,"rdnp0a ..")
 
   ## note : reading sample-setup from 'suplAnnotFile' at this place won't allow comparing if number of  samples/columns corresponds to data; do after reading main data
-  if(debug) message(fxNa,"rdn0 .. Ready to read", if(length(path) >0) c(" from path ",path[1])," the file  ",fileName[1])
+  if(debug) message(fxNa,"rdnp0 .. Ready to read", if(length(path) >0) c(" from path ",path[1])," the file  ",fileName[1])
 
 
   ## read (main) file
-  ## future: look for fast reading of files    
+  ## future: look for fast reading of files
   tmp <- try(utils::read.delim(file.path(paFi), stringsAsFactors=FALSE), silent=TRUE)
 
   if(length(tmp) <1 || inherits(tmp, "try-error") || length(dim(tmp)) <2) {
@@ -100,12 +100,13 @@ readDiaNNPeptides <- function(fileName, path=NULL, normalizeMeth="median", sampl
       if(!silent) message(fxNa,"Content of  file '",paFi,"' seeps empty or non-conform !  Returning NULL; check if this is really a Fragpipe-file") }
     NULL
   } else {
-    if(debug) { message(fxNa,"rdn1 .. dims of initial data : ", nrow(tmp)," li and ",ncol(tmp)," col "); rdn1 <- list(fileName=fileName,path=path,paFi=paFi,tmp=tmp,normalizeMeth=normalizeMeth,sampleNames=sampleNames,read0asNA=read0asNA,quantCol=quantCol,
+    if(debug) { message(fxNa,"rdnp1 .. dims of initial data : ", nrow(tmp)," li and ",ncol(tmp)," col "); rdnp1 <- list(fileName=fileName,path=path,paFi=paFi,tmp=tmp,normalizeMeth=normalizeMeth,sampleNames=sampleNames,read0asNA=read0asNA,quantCol=quantCol,
       annotCol=annotCol,refLi=refLi,separateAnnot=separateAnnot,FDRCol=FDRCol   )}
 
     ## locate & extract annotation
     ## note : space (' ') in orig colnames are transformed to '.'
-    if(length(annotCol) <1) annotCol <- c("Protein.Group","Protein.Ids","Protein.Names","Genes","First.Protein.Description","Proteotypic","Stripped.Sequence","Stripped.Sequence","Precursor.Charge")
+    if(length(annotCol) <1) annotCol <- c("Protein.Group","Protein.Ids","Protein.Names","Genes","First.Protein.Description","Proteotypic","Stripped.Sequence","Precursor.Id","Precursor.Charge")
+    ## note : 'Precursor.Id' contains modifications (Unimod number) and terminal charge number
 
     ## check for essential colnames !
       ## 'Accesion' (eg "P00498")  .. missing
@@ -114,11 +115,11 @@ readDiaNNPeptides <- function(fileName, path=NULL, normalizeMeth="median", sampl
       ##
     if(is.character(annotCol)) annotColNo <- match(annotCol, colnames(tmp))
     chNa <- is.na(annotColNo)
-    if(any(chNa) & silent) message(fxNa,"Missing ",sum(chNa)," annotation columns:  ",wrMisc::pasteC(annotCol[chNa], quoteC="'"))
+    if(any(chNa) && silent) message(fxNa,"Missing ",sum(chNa)," annotation columns:  ",wrMisc::pasteC(annotCol[chNa], quoteC="'"))
     ## rename columns to wrProteo format
     annot <- cbind(Accession=NA, EntryName=tmp[,annotCol[3]], GeneName=tmp[,annotCol[4]], Species=NA, Contam=NA, SpecType=NA,
       Description=NA,  UniProtID=tmp[,annotCol[2]], EntryNamesAll=tmp[,annotCol[3]],  GeneNameAll=tmp[,annotCol[4]], tmp[,wrMisc::naOmit(annotColNo[c(5:length(annotCol))])])   # may be better to name column 'species'
-    if(debug) { message(fxNa,"rdn2 .. annotColNo : ", wrMisc::pasteC(annotColNo)); rdn2 <- list(annot=annot,annotCol=annotCol,tmp=tmp,specPref=specPref )}
+    if(debug) { message(fxNa,"rdnp2 .. annotColNo : ", wrMisc::pasteC(annotColNo)); rdnp2 <- list(annot=annot,annotCol=annotCol,tmp=tmp,specPref=specPref )}
 
     ## 'EntryName' & 'GeneName' may contain multiple proteins, pick 1st
     chMult <- grep(";",annot[,2])
@@ -136,7 +137,7 @@ readDiaNNPeptides <- function(fileName, path=NULL, normalizeMeth="median", sampl
       if(length(chSp3) >0) for(i in chSp3) annot[chSp,"Species"] <- commonSpec[i,2]}
     }
     ## clean 'Description' entries: remove tailing punctuation or open brackets (ie not closed) at end of (truncated) fasta header - applicable ?
-    if(debug) {message(fxNa,"rdn6d ..  "); rdn6d <- list(annot=annot,tmp=tmp,chSp=chSp,specPref=specPref,annotCol=annotCol)}
+    if(debug) {message(fxNa,"rdnp6d ..  "); rdnp6d <- list(annot=annot,tmp=tmp,chSp=chSp,specPref=specPref,annotCol=annotCol)}
 
 
     ## look for tags from  specPref
@@ -144,17 +145,17 @@ readDiaNNPeptides <- function(fileName, path=NULL, normalizeMeth="median", sampl
       ## set annot[,"specPref"] according to specPref
       annot <- .extrSpecPref(specPref, annot, silent=silent, debug=debug, callFrom=fxNa)
     } else if(debug) message(fxNa,"Note: Argument 'specPref' not specifed (empty)")
-    if(debug) {message(fxNa,"rdn6b ..  ")}
+    if(debug) {message(fxNa,"rdnp6b ..  ")}
 
     if(!silent) {
       if(any(chSp, na.rm=TRUE) && !all(chSp)) message(fxNa,"Note: ",sum(chSp)," (out of ",nrow(tmp),") lines with unrecognized species")
       if(!all(chSp)) { tab <- table(annot[,"Species"])
         tab <- rbind(names(tab), paste0(": ",tab," ;  "))
         if(!silent) message(fxNa,"Count by 'specPref' : ",apply(tab, 2, paste)) }}             # all lines assigned
-    if(debug) {message(fxNa,"rdn6e ..  ")}
+    if(debug) {message(fxNa,"rdnp6e ..  ")}
 
     ## check for unique annot[,"Accession"] - not applicable
-    if(debug) { message(fxNa,"rdn7 .. dim annot ",nrow(annot)," and ",ncol(annot)); rdn7 <- list(annot=annot,tmp=tmp,annot=annot,specPref=specPref) }
+    if(debug) { message(fxNa,"rdnp7 .. dim annot ",nrow(annot)," and ",ncol(annot)); rdnp7 <- list(annot=annot,tmp=tmp,annot=annot,specPref=specPref) }
 
 
     ## locate & extract abundance/quantitation data
@@ -168,24 +169,25 @@ readDiaNNPeptides <- function(fileName, path=NULL, normalizeMeth="median", sampl
     if(length(quantCol) <1) stop(msg,"  ('",quantCol,"')")
     abund <- as.matrix(tmp[, quantCol])
     rownames(abund) <- annot[,"EntryName"]
-    if(debug) { message(fxNa,"rdn8 .. dim abund ",nrow(abund)," and ",ncol(abund)) }
+    if(debug) { message(fxNa,"rdnp8 .. dim abund ",nrow(abund)," and ",ncol(abund)) }
 
     ## check & clean abundances
     ## add custom sample names (if provided)
     if(length(sampleNames) ==ncol(abund) && ncol(abund) >0) {
-      if(debug) { message(fxNa,"Valid 'sampleNames' were provided   rdn8b") }
+      if(debug) { message(fxNa,"Valid 'sampleNames' were provided   rdnp8b") }
       if(length(unique(sampleNames)) < length(sampleNames)) {
         if(!silent) message(fxNa,"Custom sample names not unique, correcting to unique")
         sampleNames <- wrMisc::correctToUnique(sampleNames, callFrom=fxNa) }
       colnames(abund) <- sampleNames
+      rownames(abund) <- annot[,"Precursor.Id"]
     }
-    counts <- NULL
-    if(debug) { message(fxNa,"rdn8c")}
+    counts <- NULL                                 # not available
+    if(debug) { message(fxNa,"rdnp8c")}
 
     ## (optional) filter by FDR  (so far use 1st of list where matches are found from argument FDRCol) - not applicable ?
-    if(debug) { message(fxNa,"rdn11"); rdn11 <- list(annot=annot,tmp=tmp,abund=abund)}
-    if(debug) {message(fxNa,"rdn12 .. ");
-      rdn12 <- list(tmp=tmp,abund=abund,annot=annot,sdrf=sdrf, fileName=fileName,path=path,paFi=paFi,normalizeMeth=normalizeMeth,sampleNames=sampleNames,
+    if(debug) { message(fxNa,"rdnp11"); rdnp11 <- list(annot=annot,tmp=tmp,abund=abund)}
+    if(debug) {message(fxNa,"rdnp12 .. ");
+      rdnp12 <- list(tmp=tmp,abund=abund,annot=annot,sdrf=sdrf, fileName=fileName,path=path,paFi=paFi,normalizeMeth=normalizeMeth,sampleNames=sampleNames,
             refLi=refLi,specPref=specPref,read0asNA=read0asNA,quantCol=quantCol,annotCol=annotCol,refLi=refLi,separateAnnot=separateAnnot,FDRCol=FDRCol,gr=gr) }
 
     ## correct colnames from 'Pathabc.raw' to 'abc'
@@ -206,23 +208,23 @@ readDiaNNPeptides <- function(fileName, path=NULL, normalizeMeth="median", sampl
 
     ## take log2 & normalize
     quant <- try(wrMisc::normalizeThis(log2(abund), method=normalizeMeth, mode="additive", refLines=refLi, silent=silent, callFrom=fxNa), silent=TRUE)
-    if(debug) { message(fxNa,"rdn13 .. dim quant: ", nrow(quant)," li and  ",ncol(quant)," cols; colnames : ",wrMisc::pasteC(colnames(quant))," ")
-      rdn13 <- list(tmp=tmp,quant=quant,abund=abund,annot=annot,sdrf=sdrf, fileName=fileName,path=path,paFi=paFi,normalizeMeth=normalizeMeth,sampleNames=sampleNames,groupPref=groupPref,
+    if(debug) { message(fxNa,"rdnp13 .. dim quant: ", nrow(quant)," li and  ",ncol(quant)," cols; colnames : ",wrMisc::pasteC(colnames(quant))," ")
+      rdnp13 <- list(tmp=tmp,quant=quant,abund=abund,annot=annot,sdrf=sdrf, fileName=fileName,path=path,paFi=paFi,normalizeMeth=normalizeMeth,sampleNames=sampleNames,groupPref=groupPref,
             refLi=refLi,refLiIni=refLiIni,specPref=specPref,read0asNA=read0asNA,quantCol=quantCol,annotCol=annotCol,separateAnnot=separateAnnot,FDRCol=FDRCol,gr=gr,silent=silent,debug=debug) }
 
     ### GROUPING OF REPLICATES AND SAMPLE META-DATA
     if(length(suplAnnotFile) >0 || length(sdrf) >0) {
-      #setupSd <- readSampleMetaData(sdrf=rdn13$sdrf, suplAnnotFile=T, quantMeth="DN", path=rdn13$path, abund=utils::head(rdn13$quant), groupPref=rdn13$groupPref, silent=rdn13$silent, debug=rdn13$debug, callFrom="readDN")
+      #setupSd <- readSampleMetaData(sdrf=rdnp13$sdrf, suplAnnotFile=T, quantMeth="DN", path=rdnp13$path, abund=utils::head(rdnp13$quant), groupPref=rdnp13$groupPref, silent=rdnp13$silent, debug=rdnp13$debug, callFrom="readDN")
       setupSd <- readSampleMetaData(sdrf=sdrf, suplAnnotFile=separateAnnot, quantMeth="DN", path=path, abund=utils::head(quant), groupPref=groupPref, silent=silent, debug=debug, callFrom=fxNa)
     }
-    if(debug) {message(fxNa,"rdn13b .."); rdn13b <- list()}
+    if(debug) {message(fxNa,"rdnp13b .."); rdnp13b <- list()}
 
     ## finish groups of replicates & annotation setupSd
     setupSd <- .checkSetupGroups(abund=abund, setupSd=setupSd, gr=gr, sampleNames=sampleNames, quantMeth="DN", silent=silent, debug=debug, callFrom=fxNa)
     colnames(quant) <- colnames(abund) <- if(length(setupSd$sampleNames)==ncol(abund)) setupSd$sampleNames else setupSd$groups
     if(length(dim(counts)) >1 && length(counts) >0) colnames(counts) <- setupSd$sampleNames
 
-    if(debug) {message(fxNa,"Read sample-meta data, rdn14"); rdn14 <- list(setupSd=setupSd, sdrf=sdrf, suplAnnotFile=suplAnnotFile,quant=quant,abund=abund,plotGraph=plotGraph)}
+    if(debug) {message(fxNa,"Read sample-meta data, rdnp14"); rdnp14 <- list(setupSd=setupSd, sdrf=sdrf, suplAnnotFile=suplAnnotFile,quant=quant,abund=abund,plotGraph=plotGraph)}
 
     ## main plotting of distribution of intensities
     custLay <- NULL
@@ -230,7 +232,7 @@ readDiaNNPeptides <- function(fileName, path=NULL, normalizeMeth="median", sampl
         if(!isTRUE(plotGraph)) plotGraph <- FALSE}
     if(plotGraph) .plotQuantDistr(abund=abund, quant=quant, custLay=custLay, normalizeMeth=normalizeMeth, softNa="DiaNN",
       refLi=refLi, refLiIni=refLiIni, tit=titGraph, silent=silent, callFrom=fxNa, debug=debug)
-    if(debug) {message(fxNa,"Read sample-meta data, rdn15"); rdn15 <- list()}
+    if(debug) {message(fxNa,"Read sample-meta data, rdnp15"); rdnp15 <- list()}
 
 
     ## meta-data

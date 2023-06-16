@@ -2,10 +2,7 @@
 % Please edit documentation in R/readFasta2.R
 \name{readFasta2}
 \alias{readFasta2}
-\title{Read file of protein sequences in fasta format
-  
-Read fasta formatted file (from \href{https://www.uniprot.org}{UniProt}) to extract (protein) sequences and name.
-If \code{tableOut=TRUE} output may be organized as matrix for separating meta-annotation (eg uniqueIdentifier, entryName, proteinName, GN) in separate columns.}
+\title{Read file of protein sequences in fasta format}
 \usage{
 readFasta2(
   filename,
@@ -45,13 +42,11 @@ readFasta2(
 This function returns (depending on parameter \code{tableOut}) a) a simple character vector (of sequence) with Uniprot ID as name or b) a matrix with columns: 'database','uniqueIdentifier','entryName','proteinName','sequence' and further columns depending on argument \code{UniprSep}
 }
 \description{
-Read file of protein sequences in fasta format
-  
 Read fasta formatted file (from \href{https://www.uniprot.org}{UniProt}) to extract (protein) sequences and name.
 If \code{tableOut=TRUE} output may be organized as matrix for separating meta-annotation (eg uniqueIdentifier, entryName, proteinName, GN) in separate columns.
 }
 \examples{
-## Tiny example with common contaminants 
+## Tiny example with common contaminants
 path1 <- system.file('extdata',package='wrProteo')
 fiNa <-  "conta1.fasta.gz"
 fasta1 <- readFasta2(file.path(path1,fiNa))
