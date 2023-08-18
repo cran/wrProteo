@@ -31,20 +31,24 @@ This function writes an Sdrf draft to file
 }
 \description{
 Sample/experimental annotation meta-data form \href{https://www.maxquant.org/}{MaxQuant} that was previously import can now be formatted in sdrf-style and exported
-using this function to write a draft-sdrf-file.
+using this function to write a draft-sdrf-file. Please note that this information will not _complete_ in respect to all information used in data-bases like  Pride.
 Sdrf-files provide additional meta-information about samles and MS-runs in a standardized format, they may also be part of submissions to \href{https://www.ebi.ac.uk/pride/}{Pride}.
 }
 \details{
-Gathering information about samples and MS-runs requires that at data-import the additioal files created from software, like MaxQuant, was present and imported.
+Gathering as much as possible information about samples and MS-runs requires that the additional files created from software, like MaxQuant using \code{\link{readMaxQuantFile}}, 
+is present and was imported when calling the import-function (eg using the argument _suplAnnotFile=TRUE_).
+Please note that this functionality was designed for the case where no (external) sdrf-file is available. 
+Thus, when data was imported including exteranl sdrf (uinsg the _sdrf=_ argument), exporting incomplete annotation-data from MaxQuant-produced files does not make any sense and therefore won't be possible.
+
 After exporting the draft sdrf the user is advised to check and complete the information in the resulting file.
 Unfortunately, not all information present in a standard sdrf-file (like on \href{https://www.ebi.ac.uk/pride/}{Pride}) cannot be gathered automatically,
 but key columns are already present and thus may facilitate completing.
-Please note, that the file-format has been defined as \code{.tsv}, thus columns/fields shoud be separated by tabs.
+Please note, that the file-format has been defined as \code{.tsv}, thus columns/fields should be separated by tabs.
 At manual editing and completion, some editing- or tabulator-software may change the file-extesion to \code{.tsv.txt},
 in this case the final files should be renamed as \code{.tsv} to remain compatible with Pride.
 
 At this point only the import of data from MaxQuant via \code{\link{readMaxQuantFile}} has been developed to extract information for creating a draft-sdrf.
-Other data/file-import functions will be further developed to gather equivalent information in the future.
+Other data/file-import functions may be further developed to gather as much as possible equivalent information in the future.
 }
 \examples{
 path1 <- system.file("extdata", package="wrProteo")

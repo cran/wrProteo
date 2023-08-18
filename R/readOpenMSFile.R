@@ -57,22 +57,12 @@ readOpenMSFile <- function(fileName=NULL, path=NULL, normalizeMeth="median", ref
   if(!isTRUE(silent)) silent <- FALSE
   if(debug) message("rmso1")
   ## check & read file
-  chPa <- length(grep("/",fileName)) >0 | length(grep("\\\\",fileName)) >0       # check for path already in fileName "
-  if(length(path) <1) path <- "."
-  paFi <- if(!chPa) file.path(path[1],fileName[1]) else fileName[1]              # use path only when no path joined to fileName
-  if(length(paFi) >1) {paFi <- wrMisc::naOmit(paFi)[1]
-    if(!silent) message(fxNa,"Argument 'fileName' should be length=1 but was found longer, using only '",paFi,"'")}
-  chFi <- file.exists(paFi)
-  if(!chFi) stop(" file ",fileName," was NOT found ",if(chPa) paste(" in path ",path)," !")
-  tmp <- list()                                               # initiate
-
+  paFi <- wrMisc::checkFilePath(fileName, path, expectExt="csv", compressedOption=TRUE, stopIfNothing=TRUE, callFrom=fxNa, silent=silent,debug=debug)
+  
   ##
-  if(length(c(grep("\\.csv$",fileName), grep("\\.csv\\.gz$",fileName))) >0) {
-    if(FALSE) {  # use fast csv reading function
-    } else {
-      tmp[[1]] <- try(utils::read.csv(paFi, stringsAsFactors=FALSE), silent=TRUE)                # read US csv-file
-      tmp[[2]] <- try(utils::read.csv2(paFi, stringsAsFactors=FALSE), silent=TRUE)}              # read Euro csv-file
-  } else stop("unknown input file format (expecting .csv or .csv.gz)")
+  tmp <- list()
+  tmp[[1]] <- try(utils::read.csv(paFi, stringsAsFactors=FALSE), silent=TRUE)                # read US csv-file
+  tmp[[2]] <- try(utils::read.csv2(paFi, stringsAsFactors=FALSE), silent=TRUE)              # read Euro csv-file
   chCl <- sapply(tmp, inherits, "try-error")
   if(all(chCl)) stop(" Failed to extract data from '",fileName,"'  check format (should be .csv or .csv.gz) & rights to read")
   nCol <- sapply(tmp, function(x) if(length(x) >0) {if(! inherits(x, "try-error")) ncol(x) else NA} else NA)

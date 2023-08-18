@@ -170,7 +170,7 @@ writeFasta2(fasta3, fileNa="testWrite.fasta")
 
 
 
-# Example : Analyzing Label-free Quantitative Proteomics Data
+# Example : Analyzing Label-Free Quantitative Proteomics Data
 
 ### Label-free Quantitative Proteomics Introduction
 
@@ -208,7 +208,7 @@ Biological replicates, however, make additional information accessible, allowing
 
 
 
-## Import From Dedicated Quantification Algorithms/Software
+## Import From Dedicated Quantification Algorithms/Software    {#ImportQuantitation}
 
 ### MaxQuant: Import Protein Quantification Data    {#ReadMaxQuant}
 
@@ -227,7 +227,7 @@ dataMQ <- readMaxQuantFile(path1, specPref=NULL, normalizeMeth="median")
 dim(dataMQ$quant)
 ```
 
-##### Adding Meta-Data at Import (Example MaxQuant)
+##### Adding Meta-Data at Import (Example MaxQuant)    {#ReadMaxQuantWithMetaData}
 
 Similarly we can also add directly information about principal species, contaminants, special groups of proteins and add sdrf annotation (if existing) directly when reading the data.
 Setting customized tags according to species or other search-terms can be done using the argument _specPref_.
@@ -244,7 +244,7 @@ giving more information about experiment and samples and integrate this to the o
 grp9 <- rep(1:9,each=3)
 head(grp9)
 
-## special group of proteins (we want to highlight lateron)
+## special group of proteins (we want to differentiate/ highlight lateron)
 UPS1ac <- c("P00915", "P00918", "P01031", "P69905", "P68871", "P41159", "P02768", "P62988",
   "P04040", "P00167", "P01133", "P02144", "P15559", "P62937", "Q06830", "P63165", "P00709", "P06732",
   "P12081", "P61626", "Q15843", "P02753", "P16083", "P63279", "P01008", "P61769", "P55957", "O76070",
@@ -299,6 +299,22 @@ dataMQ <- readMaxQuantFile(path1, specPref=specPrefMQ, sdrf="PXD001819", suplAnn
 ```
 
 
+##### Exporting Experimental Setup from MaxQuant to Draft-Sdrf   {#ExportDraftSdrf}
+
+As mentioned, the [Proteomics Sample Metadata Format - sdrf](https://github.com/bigbio/proteomics-sample-metadata) is an effort for standardizing experimental meta-data.
+Many of the typically documented ones may already have been entered when lauching [MaxQuant](https://www.maxquant.org) and can be exported as a draft Sdrf-file.
+All main columns for standard experiments are present in the file, though some columns will have to be completed by the user (by any text-editor) for submitting to Pride.
+
+```{r exportSdrfDraftMaxQuant5,  echo=TRUE}
+path1 <- system.file("extdata", package="wrProteo")
+fiNaMQ <- "proteinGroups.txt.gz"
+dataMQ2 <- readMaxQuantFile(path1, file=fiNaMQ, refLi="mainSpe", sdrf=FALSE, suplAnnotFile=TRUE)
+## Here we'll write simply in the current temporary directory of this R-session
+exportSdrfDraft(dataMQ2, file.path(tempdir(),"testSdrf.tsv"))
+```
+
+
+
 #### MaxQuant : Import Peptide Data   {#ReadMaxQuantPetides}
 
 Similarly it is possible to read the file by default called _'peptides.txt'_ for the peptide-data.
@@ -346,9 +362,8 @@ For a more complex example of using _readProteomeDiscovererFile()_ please see th
 
 #### ProteomeDiscoverer : Import Peptide Data       {#ReadProteomeDiscovererPetides}
 
-Similarly it is possible to read the peptide-data files exported by ProteomeDiscoverer using the function `readProtDiscovPeptides()`.
+Similarly it is possible to read the peptide-data files exported by ProteomeDiscoverer using the function `readProtDiscovererPeptides()`.
 The data get imported to a similar structure like the protein-level data, quantitations on peptide level by default median-normalized, sample-setup from sdrf-files may be added, too.
-
 
 
 

@@ -90,41 +90,20 @@ readProlineFile <- function(fileName, path=NULL, normalizeMeth="median", logConv
 
 
   ## check if path & file exist
-  msg <- "Invalid entry for 'path'  "
-  ## check path
-  if(length(path) >0) { path <- path[1]
-     if(is.na(path)) { stop(msg,"(must be character-string for valid path or NULL)")}
-     if(!dir.exists(path)) { path <- "."
-       if(!silent) message(fxNa,msg, path[1],"'  (not existing), ignoring...")
-     } } else path <- "."
-  ## check for 'fileName'
-  msg <- "Invalid entry for 'fileName'"
-  if(length(fileName) >1) { fileName <- fileName[1]
-    if(!silent) message(fxNa," 'fileName' shoud be of length=1, using 1st value")
-  } else { if(length(fileName) <1) stop(msg) else if(is.na(fileName) | nchar(fileName) <1) stop(msg)}
   if(!grepl("\\.csv$|\\.xlsx$|\\.tsv$|\\.csv\\.gz$|\\.tsv\\.gz$", fileName)) message(fxNa,"Trouble ahead ? Expecting .xlsx, .csv or .tsv file (the file'",fileName,"' might not be right format) !!")
-
-  ## check for compressed version of 'fileName'
-  chFi <- file.exists( file.path(path, fileName) )
-  if(!chFi & grepl("\\.csv$|\\.xlsx$|\\.tsv$",fileName)) { fiNa2 <- paste0(fileName,".gz")
-    chFi <- file.exists(file.path(path, fiNa2))
-    if(chFi) {if(!silent) message(fxNa,"Note : file '",fileName,"'  was NOT FOUND, but a .gz compressed version exists, using compressed file.."); fileName <- fiNa2}
-  }
-  if(chFi) { paFi <- file.path(path, fileName)
-  } else stop(" File '",fileName,"'  was NOT found ",if(length(path) >0) paste(" in path ",path)," !")
-
+  paFi <- wrMisc::checkFilePath(fileName, path, expectExt=NULL, compressedOption=TRUE, stopIfNothing=TRUE, callFrom=fxNa, silent=silent,debug=debug)
   if(debug) {message(fxNa," rpf2")}
 
   ## read file
   out <- counts <- fileTy <- NULL                    # initialize default
-  if(length(grep("\\.xlsx$", fileName)) >0) {
+  if(length(grep("\\.xlsx$", paFi)) >0) {
     ## Extract out of Excel
     reqPa <- c("readxl")
     chPa <- sapply(reqPa, requireNamespace, quietly=TRUE)
     if(any(!chPa)) stop("package( '",paste(reqPa[which(!chPa)], collapse="','"),"' not found ! Please install first from CRAN")
-    sheets <- if(debug) try(readxl::excel_sheets(paFi), silent=TRUE) else suppressMessages(try(readxl::excel_sheets(paFi), silent=TRUE))
+    sheets <- if(debug) try(readxl::excel_sheets(paFi[1]), silent=TRUE) else suppressMessages(try(readxl::excel_sheets(paFi[1]), silent=TRUE))
     if(debug) {message(fxNa," rpf3")}
-    if(inherits(sheets, "try-error")) { message(fxNa,"Unable to read file '",paFi,"' ! Returning NULL; check format & rights to read")
+    if(inherits(sheets, "try-error")) { message(fxNa,"Unable to read file '",paFi[1],"' ! Returning NULL; check format & rights to read")
     } else {
       if(!silent) message(fxNa,"Found sheets ",wrMisc::pasteC(sheets,quoteC="'"))
       prSh <- which(sheets == "Protein sets")
@@ -137,9 +116,9 @@ readProlineFile <- function(fileName, path=NULL, normalizeMeth="median", logConv
         if(!silent) message(fxNa,"No sheets containing 'Protein' in name found, try using : '",sheets[prSh],"'")
       }
       if(debug) message(fxNa,"Ready to use sheet ",prSh,"   rpf4")
-      out <- as.data.frame(if(debug) readxl::read_xlsx(paFi, sheet=prSh) else suppressMessages(readxl::read_xlsx(paFi, sheet=prSh)))
+      out <- as.data.frame(if(debug) readxl::read_xlsx(paFi[1], sheet=prSh) else suppressMessages(readxl::read_xlsx(paFi[1], sheet=prSh)))
       qCoSh <- which(sheets=="Quant config")
-      quantConf <- if(length(qCoSh) >0) { if(debug) readxl::read_xlsx(paFi, sheet=qCoSh[1]) else suppressMessages(readxl::read_xlsx(paFi, sheet=qCoSh[1]))} else NULL
+      quantConf <- if(length(qCoSh) >0) { if(debug) readxl::read_xlsx(paFi[1], sheet=qCoSh[1]) else suppressMessages(readxl::read_xlsx(paFi[1], sheet=qCoSh[1]))} else NULL
       if(length(quantConf) >0) {
         tmp <- quantConf[[1]]
         quantConf <- quantConf[[2]]
@@ -155,15 +134,15 @@ readProlineFile <- function(fileName, path=NULL, normalizeMeth="median", logConv
     ## anythng else but Excel xlsx ...
     ## try to find out which input format; read according to extension multiple times and choose the one with most columns
     tmp <- list()
-    if(grepl("\\.txt$|\\.txt\\.gz$",fileName)) tmp[[1]] <- try(utils::read.delim(paFi, stringsAsFactors=FALSE), silent=TRUE)             # read tabulated text-file (from Proline/parse_Proline.R)
-    if(grepl("\\.csv$|\\.csv\\.gz$",fileName)) {
-      tmp[[2]] <- try(utils::read.csv(file=paFi, stringsAsFactors=FALSE), silent=TRUE)               # read US csv-file
-      tmp[[3]] <- try(utils::read.csv2(file=paFi, stringsAsFactors=FALSE), silent=TRUE)}             # read Euro csv-file
-    if(grepl("\\.tsv$|\\.tsv\\.gz$",fileName)) {
-      tmp[[4]] <- try(utils::read.csv(file=paFi, stringsAsFactors=FALSE, sep='\t', header=TRUE))    # read US comma tsv-file
-      tmp[[5]] <- try(utils::read.csv2(file=paFi, stringsAsFactors=FALSE, sep='\t', header=TRUE))}  # read Euro tsv-file
+    if(grepl("\\.txt$|\\.txt\\.gz$",paFi[1])) tmp[[1]] <- try(utils::read.delim(paFi[1], stringsAsFactors=FALSE), silent=TRUE)             # read tabulated text-file (from Proline/parse_Proline.R)
+    if(grepl("\\.csv$|\\.csv\\.gz$",paFi[1])) {
+      tmp[[2]] <- try(utils::read.csv(file=paFi[1], stringsAsFactors=FALSE), silent=TRUE)               # read US csv-file
+      tmp[[3]] <- try(utils::read.csv2(file=paFi[1], stringsAsFactors=FALSE), silent=TRUE)}             # read Euro csv-file
+    if(grepl("\\.tsv$|\\.tsv\\.gz$",paFi[1])) {
+      tmp[[4]] <- try(utils::read.csv(file=paFi[1], stringsAsFactors=FALSE, sep='\t', header=TRUE))    # read US comma tsv-file
+      tmp[[5]] <- try(utils::read.csv2(file=paFi[1], stringsAsFactors=FALSE, sep='\t', header=TRUE))}  # read Euro tsv-file
 
-    if(debug) {message(fxNa," rpf6"); rpf6 <- list(fileName=fileName,chPa=chPa,path=path,tmp=tmp)}
+    if(debug) {message(fxNa," rpf6"); rpf6 <- list(fileName=fileName,paFi=paFi,chPa=chPa,path=path,tmp=tmp)}
     chCl <- sapply(tmp, inherits, "try-error") | sapply(tmp, length) <2
     if(all(chCl)) stop(" Failed to extract data from '",fileName,"'  (check format & rights to read)")
     nCol <- sapply(tmp, function(x) if(length(x) >0) {if(! inherits(x, "try-error")) ncol(x) else NA} else NA)
@@ -335,9 +314,13 @@ readProlineFile <- function(fileName, path=NULL, normalizeMeth="median", logConv
 
     ## finish groups of replicates & annotation setupSd
     ## need to transform fmol in amol for proper understanding & matching with metadata
-    setupSd <- .checkSetupGroups(abund=quant, setupSd=setupSd, gr=gr, sampleNames=sampleNames, quantMeth="PL", silent=silent, debug=debug, callFrom=fxNa)
-    colnames(quant) <- colnames(abund) <- if(length(setupSd$sampleNames)==ncol(abund)) setupSd$sampleNames else setupSd$groups
-    if(length(dim(counts)) >1 && length(counts) >0) colnames(counts) <- setupSd$sampleNames
+    setupSd <- .checkSetupGroups(abund=abund, setupSd=setupSd, gr=gr, sampleNames=sampleNames, quantMeth="PL", silent=silent, debug=debug, callFrom=fxNa)
+    colNa <- if(length(setupSd$sampleNames)==ncol(abund)) setupSd$sampleNames else setupSd$groups
+    chGr <- grepl("^X[[:digit:]]", colNa)                                                # check & remove heading 'X' from initial column-names starting with digits
+    if(any(chGr)) colNa[which(chGr)] <- sub("^X","", colNa[which(chGr)])                 # 
+    colnames(quant) <- colnames(abund) <- colNa
+    if(length(setupSd$sampleNames)==ncol(abund)) setupSd$sampleNames <- colNa else setupSd$groups <- colNa
+    if(length(dim(counts)) >1 && length(counts) >0) colnames(counts) <- colNa
 
     if(debug) {message(fxNa,"Read sample-meta data, rpf17"); rpf17 <- list(sdrf=sdrf,suplAnnotFile=suplAnnotFile,abund=abund, quant=quant,refLi=refLi,annot=annot,setupSd=setupSd,sampleNames=sampleNames)}
 

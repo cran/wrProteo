@@ -9,6 +9,7 @@ readWombatNormFile(
   path = NULL,
   quantSoft = "(quant software not specified)",
   fasta = NULL,
+  isLog2 = TRUE,
   normalizeMeth = "none",
   quantCol = "abundance_",
   contamCol = NULL,
@@ -42,6 +43,8 @@ readWombatNormFile(
 
 \item{fasta}{(logical or character) if \code{TRUE} the (first) fasta from one direcory higher than \code{fileName} will be read as fasta-file to extract further protein annotation;
 if \code{character} a fasta-file at this location will be read/used/}
+
+\item{isLog2}{(logical) typically data read from Wombat are expected to be \code{isLog2=TRUE}}
 
 \item{normalizeMeth}{(character) normalization method, defaults to \code{median}, for more details see \code{\link[wrMisc]{normalizeThis}})}
 
@@ -110,7 +113,7 @@ The protein annotation data gets parsed to extract specific fields (ID, name, de
 Besides, a graphical display of the distribution of protein abundance values may be generated before and after normalization.
 }
 \details{
-By standard wrokflow of Wombat-P writes the results of each analysis-method/quantification-algorithm as .csv files
+By standard workflow of Wombat-P writes the results of each analysis-method/quantification-algorithm as .csv files
 Meta-data describing the proteins may be available from two sources :
 a) The 1st column of the Wombat/normalizer output.
 b) Form the .fasta file in the directory above the analysis/quantiication results of the Wombar-workflow

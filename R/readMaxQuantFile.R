@@ -96,29 +96,8 @@ readMaxQuantFile <- function(path, fileName="proteinGroups.txt", normalizeMeth="
   infoDat <- infoFi <- setupSd <- parametersD <- NULL        # initialize
 
   ## check if path & file exist
-  msg <- "Invalid entry for 'path'  "
-  ## check path
-  if(length(path) >0) { path <- path[1]
-     if(is.na(path)) { stop(msg,"(must be character-string for valid path or NULL)")}
-     if(!dir.exists(path)) { path <- "."
-       if(!silent) message(fxNa,msg, path[1],"'  (not existing), ignoring...")
-     } } else path <- "."
-  ## check for 'fileName'
-  msg <- "Invalid entry for 'fileName'"
-  if(length(fileName) >1) { fileName <- fileName[1]
-    if(!silent) message(fxNa," 'fileName' shoud be of length=1, using 1st value")
-  } else { if(length(fileName) <1) stop(msg) else if(is.na(fileName) || nchar(fileName) <1) stop(msg)}
-  if(!grepl("\\.txt$|\\.txt\\.gz$", fileName)) message(fxNa,"Trouble ? Expecting .txt file (the file'",fileName,"' might not be right format) !!")
-
-  ## check for compressed version of 'fileName'
-  chFi <- file.exists( file.path(path, fileName) )
-  if(!chFi && grepl("\\.txt$",fileName)) { fiNa2 <- paste0(fileName,".gz")
-    chFi <- file.exists(file.path(path, fiNa2))
-    if(chFi) {if(!silent) message(fxNa,"Note : file '",fileName,"'  was NOT FOUND, but a .gz compressed version exists, using compressed file.."); fileName <- fiNa2}
-  }
-  if(chFi) { paFi <- file.path(path, fileName)
-  } else stop(" File '",fileName,"'  was NOT found ",if(length(path) >0) paste(" in path ",path)," !")
-  ## note : reading sample-setup from 'suplAnnotFile' at this place won't allow comparing if number of  samples/columns corresponds to data; do after reading main data
+  if(!grepl("\\.txt$|\\.txt\\.gz$", fileName)) message(fxNa,"Trouble ahead, expecting tabulated text file (the file'",fileName,"' might not be right format) !!")
+  paFi <- wrMisc::checkFilePath(fileName, path, expectExt="txt", compressedOption=TRUE, stopIfNothing=TRUE, callFrom=fxNa, silent=silent,debug=debug)
   if(debug) message(fxNa,"rMQ0b .. Ready to read", if(length(path) >0) c(" from path ",path[1])," the file  ",fileName[1])
 
   ## read (main) file
@@ -417,9 +396,14 @@ readMaxQuantFile <- function(path, fileName="proteinGroups.txt", normalizeMeth="
     if(debug) {message(fxNa,"rMQ13 .."); rMQ13 <- list(sdrf=sdrf,gr=gr,suplAnnotFile=suplAnnotFile,abund=abund, quant=quant,refLi=refLi,annot=annot,setupSd=setupSd,sampleNames=sampleNames)}
 
     ## finish groups of replicates & annotation setupSd
+    ## finish groups of replicates & annotation setupSd
     setupSd <- .checkSetupGroups(abund=abund, setupSd=setupSd, gr=gr, sampleNames=sampleNames, quantMeth="MQ", silent=silent, debug=debug, callFrom=fxNa)
-    colnames(quant) <- colnames(abund) <- if(length(setupSd$sampleNames)==ncol(abund)) setupSd$sampleNames else setupSd$groups
-    if(length(dim(counts)) >1 && length(counts) >0) colnames(counts) <- setupSd$sampleNames
+    colNa <- if(length(setupSd$sampleNames)==ncol(abund)) setupSd$sampleNames else setupSd$groups
+    chGr <- grepl("^X[[:digit:]]", colNa)                                                # check & remove heading 'X' from initial column-names starting with digits
+    if(any(chGr)) colNa[which(chGr)] <- sub("^X","", colNa[which(chGr)])                 # add to all other import-functions ?
+    colnames(quant) <- colnames(abund) <- colNa
+    if(length(setupSd$sampleNames)==ncol(abund)) setupSd$sampleNames <- colNa else setupSd$groups <- colNa
+    if(length(dim(counts)) >1 && length(counts) >0) colnames(counts) <- colNa
 
     if(debug) {message(fxNa,"Read sample-meta data, rMQ14"); rMQ14 <- list(sdrf=sdrf,suplAnnotFile=suplAnnotFile,abund=abund, quant=quant,refLi=refLi,annot=annot,setupSd=setupSd)}
 

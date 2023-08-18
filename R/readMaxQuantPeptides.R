@@ -102,29 +102,8 @@ readMaxQuantPeptides <- function(path, fileName="peptides.txt", normalizeMeth="m
   if(debug) {message("rMQP1"); rMQP1 <- list(path=path,chPa=chPa,setupSd=setupSd,excluCol=excluCol,remStrainNo=remStrainNo,cleanDescription=cleanDescription)}
 
   ## check if path & file exist
-  msg <- "invalid entry for 'fileName'"
-  if(length(fileName) >1) { fileName <- fileName[1]
-    if(!silent) message(fxNa," 'fileName' shoud be of length=1, using 1st value")
-  } else { if(length(fileName) <1) stop(msg) else if(nchar(fileName) <0) stop(msg)}
-  paFi <- fileName                      # presume (& correct if path is given)
-  ## see if checking for gz makes sense
-  chFi <- file.exists(fileName)         # presume (& correct otherwise)
-  if(!grepl("\\.gz$",fileName)) { if(file.exists(paste0(fileName,".gz"))) { chFi <- TRUE
-    if(!silent) message(fxNa,"File '",fileName,"' not found, using .gz version")
-    fileName <- paste0(fileName,".gz") }}
-  if(debug) {message("rMQP1b")}
-
-  if(length(path) >0) if(!file.exists(path[1])) { path <- NULL
-    if(!silent) message(fxNa,"Invalid path '",path[1],"'  (not existing), ignoring...") }
-  if(length(path) >0) { chFi <- file.exists(file.path(path[1], fileName))
-    if(!chFi) { if(file.exists(file.path(path[1], paste0(fileName,".gz")))) {    # try if .gz rather available
-      fileName <- paste0(fileName,".gz"); chFi <- TRUE } }
-    if(chFi) paFi <- file.path(path[1], fileName) else {
-      if(grepl(paste0("^",path[1]), fileName)) {chFi <- file.exists(fileName); path <- NULL} else chFi <- FALSE       # if path+fileName not found, check if 'path' should be omitted if already contained in fileName
-  } }
-  if(debug) {message("rMQP1c")}
-  if(!chFi) stop(" file ",fileName," was NOT found ",if(length(path) >0) paste(" in path ",path)," !")
   if(!grepl("\\.txt$|\\.txt\\.gz$",fileName)) message(fxNa,"Suspicious filename, this function was designed for reading tabulated text files produced by MaxQuant")
+  paFi <- wrMisc::checkFilePath(fileName, path, expectExt="txt", compressedOption=TRUE, stopIfNothing=TRUE, callFrom=fxNa, silent=silent,debug=debug)  
   if(debug) {message("rMQP1d")}
 
   chPa <- try(find.package("utils"), silent=TRUE)
@@ -345,8 +324,12 @@ readMaxQuantPeptides <- function(path, fileName="peptides.txt", normalizeMeth="m
 
     ## finish groups of replicates & annotation setupSd
     setupSd <- .checkSetupGroups(abund=abund, setupSd=setupSd, gr=gr, sampleNames=sampleNames, quantMeth="MQ", silent=silent, debug=debug, callFrom=fxNa)
-    colnames(quant) <- colnames(abund) <- if(length(setupSd$sampleNames)==ncol(abund)) setupSd$sampleNames else setupSd$groups
-    if(length(dim(counts)) >1 && length(counts) >0) colnames(counts) <- setupSd$sampleNames
+    colNa <- if(length(setupSd$sampleNames)==ncol(abund)) setupSd$sampleNames else setupSd$groups
+    chGr <- grepl("^X[[:digit:]]", colNa)                                                # check & remove heading 'X' from initial column-names starting with digits
+    if(any(chGr)) colNa[which(chGr)] <- sub("^X","", colNa[which(chGr)])                 # 
+    colnames(quant) <- colnames(abund) <- colNa
+    if(length(setupSd$sampleNames)==ncol(abund)) setupSd$sampleNames <- colNa else setupSd$groups <- colNa
+    if(length(dim(counts)) >1 && length(counts) >0) colnames(counts) <- colNa
 
     if(debug) {message(fxNa,"Read sample-meta data, rMQP14"); rMQP14 <- list(sdrf=sdrf,suplAnnotFile=suplAnnotFile,abund=abund, quant=quant,refLi=refLi,MQann=MQann,setupSd=setupSd)}
 

@@ -2,7 +2,7 @@
 % Please edit documentation in R/readProteomeDiscovererFile.R
 \name{.commonSpecies}
 \alias{.commonSpecies}
-\title{Get matrix with UniProt abbreviations for common species}
+\title{Get matrix with UniProt abbreviations for selected species as well as simple names}
 \usage{
 .commonSpecies()
 }
@@ -10,8 +10,8 @@
 This function returns a 2-column matrix with species names
 }
 \description{
-This (low-level) function allows accessing matrix with UniProt abbreviations for common species
-This information maybe used to harmonize species descriptions.
+This (low-level) function allows accessing matrix with UniProt abbreviations for species frequently used in research.
+This information may be used to harmonize species descriptions or extract species information out of protein-names.
 }
 \examples{
 .commonSpecies()

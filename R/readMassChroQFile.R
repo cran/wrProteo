@@ -50,28 +50,24 @@ readMassChroQFile <- function(fileName, path=NULL, normalizeMeth="median", sampl
   if(!isTRUE(silent)) silent <- FALSE
   if(isTRUE(debug)) silent <- FALSE else debug <- FALSE
   if(!requireNamespace("utils", quietly=TRUE)) stop("package 'utils' not found ! Please install first from CRAN")
-
-  ## check & read file
+  tmp <- list()                                                        # initialize
   infoDat <- infoFi <- setupSd <- parametersD <- NULL        # initialize for sdrf annotation
   counts <- NULL                                             # so far PSM data are not accessible
 
-  chPa <- length(grep("/",fileName)) >0 | length(grep("\\\\",fileName)) >0       # check for path already in fileName "
-  if(length(path) <1) path <- "."
-  paFi <- if(!chPa) file.path(path[1],fileName[1]) else fileName[1]              # use path only when no path joined to fileName
-  chFi <- file.exists(paFi)
-  if(!chFi) stop(" file ",fileName," was NOT found ",if(chPa) paste(" in path ",path)," !")
-  tmp <- list()                                                        # initialize
-  if(length(c(grep("\\.txt$",fileName), grep("\\.txt\\.z$",fileName))) >0) tmp[[1]] <- try(utils::read.delim(paFi, stringsAsFactors=FALSE), silent=TRUE)             # read tabulated text-file
-  if(length(c(grep("\\.csv$",fileName), grep("\\.csv\\.gz$",fileName))) >0) tmp[[2]] <- try(utils::read.csv(paFi, stringsAsFactors=FALSE), silent=TRUE)               # read US csv-file
-  if(length(c(grep("\\.csv$",fileName), grep("\\.csv\\.gz$",fileName))) >0) tmp[[3]] <- try(utils::read.csv2(paFi, stringsAsFactors=FALSE), silent=TRUE)              # read Euro csv-file
-  if(length(c(grep("\\.tsv$",fileName), grep("\\.tsv\\.gz$",fileName))) >0) tmp[[4]] <- try(utils::read.csv(file=paFi, stringsAsFactors=FALSE, sep='\t', header=TRUE)) # read US comma tsv-file
-  if(length(c(grep("\\.rda$",fileName), grep("\\.rdata$",tolower(fileName)))) >0) {
+  ## check & read file
+  paFi <- wrMisc::checkFilePath(fileName, path, expectExt=NULL, compressedOption=TRUE, stopIfNothing=TRUE, callFrom=fxNa, silent=silent,debug=debug)
+
+  if(length(c(grep("\\.txt$",paFi), grep("\\.txt\\.gz$",paFi))) >0) tmp[[1]] <- try(utils::read.delim(paFi, stringsAsFactors=FALSE), silent=TRUE)             # read tabulated text-file
+  if(length(c(grep("\\.csv$",paFi), grep("\\.csv\\.gz$",paFi))) >0) tmp[[2]] <- try(utils::read.csv(paFi, stringsAsFactors=FALSE), silent=TRUE)               # read US csv-file
+  if(length(c(grep("\\.csv$",paFi), grep("\\.csv\\.gz$",paFi))) >0) tmp[[3]] <- try(utils::read.csv2(paFi, stringsAsFactors=FALSE), silent=TRUE)              # read Euro csv-file
+  if(length(c(grep("\\.tsv$",paFi), grep("\\.tsv\\.gz$",paFi))) >0) tmp[[4]] <- try(utils::read.csv(file=paFi, stringsAsFactors=FALSE, sep='\t', header=TRUE)) # read US comma tsv-file
+  if(length(c(grep("\\.rda$",paFi), grep("\\.rdata$",tolower(paFi)))) >0) {
     ls1 <- ls()
     tmp[[5]] <- try(load(paFi))
     if(!inherits(tmp[[5]], "try-error")) {          # dont know under which name the object was saved in RData..
       if(length(ls1) +2 ==length(ls())) {
         tmp[[5]] <- get(ls()[which(!ls() %in% ls1 & ls() != "ls1")])            # found no way of removing initial object
-        if(!silent) message(fxNa,"Loading object '",ls()[which(!ls() %in% ls1 & ls() != "ls1")],"' as quantification data out of ",fileName)
+        if(!silent) message(fxNa,"Loading object '",ls()[which(!ls() %in% ls1 & ls() != "ls1")],"' as quantification data out of ",paFi)
       } else stop(" Either .RData is empty or element loaded has name of one of the arguments of this function and can't be recognized as such")
     } else stop("Failed to load .RData") }
   if(debug) {message(fxNa,"mc1")}
@@ -132,9 +128,13 @@ readMassChroQFile <- function(fileName, path=NULL, normalizeMeth="median", sampl
   if(debug) {message(fxNa,"rmc13b .."); rmc13b <- list(sdrf=sdrf,gr=gr,suplAnnotFile=suplAnnotFile,abund=abund, refLi=refLi,annot=annot,setupSd=setupSd,sampleNames=sampleNames)}
 
   ## finish groups of replicates & annotation setupSd
-  setupSd <- .checkSetupGroups(abund=abund, setupSd=setupSd, gr=gr, sampleNames=sampleNames, quantMeth="MC", silent=silent, debug=debug, callFrom=fxNa)
-  colnames(quant) <- colnames(abund) <- if(length(setupSd$sampleNames)==ncol(abund)) setupSd$sampleNames else setupSd$groups
-  if(length(dim(counts)) >1 && length(counts) >0) colnames(counts) <- setupSd$sampleNames
+    setupSd <- .checkSetupGroups(abund=abund, setupSd=setupSd, gr=gr, sampleNames=sampleNames, quantMeth="MC", silent=silent, debug=debug, callFrom=fxNa)
+    colNa <- if(length(setupSd$sampleNames)==ncol(abund)) setupSd$sampleNames else setupSd$groups
+    chGr <- grepl("^X[[:digit:]]", colNa)                                                # check & remove heading 'X' from initial column-names starting with digits
+    if(any(chGr)) colNa[which(chGr)] <- sub("^X","", colNa[which(chGr)])                 # add to all other import-functions ?
+    colnames(quant) <- colnames(abund) <- colNa
+    if(length(setupSd$sampleNames)==ncol(abund)) setupSd$sampleNames <- colNa else setupSd$groups <- colNa
+    if(length(dim(counts)) >1 && length(counts) >0) colnames(counts) <- setupSd$sampleNames
 
   if(debug) {message(fxNa,"Read sample-meta data, rmc14"); rmc14 <- list()}
 

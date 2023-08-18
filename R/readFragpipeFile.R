@@ -67,22 +67,8 @@ readFragpipeFile <- function(fileName, path=NULL, normalizeMeth="median", sample
   infoDat <- infoFi <- setupSd <- parametersD <- NULL        # initialize
 
   ## check if path & file exist
-  msg <- "Invalid entry for 'fileName'"
-  if(length(fileName) >1) { fileName <- fileName[1]
-    if(!silent) message(fxNa," 'fileName' shoud be of length=1, using 1st value")
-  } else { if(length(fileName) <1) stop(msg) else if(is.na(fileName) | nchar(fileName) <1) stop(msg)}
-  paFi <- fileName                      # presume (& correct if path is given)
-  chFi <- file.exists(fileName)         # presume (& correct otherwise)
-  if(length(path) >0) if(!dir.exists(path[1])) { path <- NULL
-    if(!silent) message(fxNa,"Invalid path '",path[1],"'  (not existing), ignoring...") }
-  if(length(path) >0) { chFi <- file.exists(file.path(path[1], fileName))
-    if(chFi) paFi <- file.path(path[1], fileName) else {
-      if(file.exists(fileName)) {paFi <- fileName
-        if(!silent) message(fxNa,"Note : Unable to find file '",fileName,"' in path '",path,"' but found without specified path !")
-      } else chFi <- FALSE                      # if path+fileName not found, check without path
-  } }
-  if(!chFi) stop(" File ",fileName," was NOT found ",if(length(path) >0) paste(" in path ",path)," !")
   if(!grepl("\\.tsv$|\\.tsv\\.gz$", fileName)) message(fxNa,"Trouble ahead, expecting tabulated text file (the file'",fileName,"' might not be right format) !!")
+  paFi <- wrMisc::checkFilePath(fileName, path, expectExt="tsv", compressedOption=TRUE, stopIfNothing=TRUE, callFrom=fxNa, silent=silent,debug=debug)
   if(debug) message(fxNa,"rfp0a ..")
 
   ## note : reading sample-setup from 'suplAnnotFile' at this place won't allow comparing if number of  samples/columns corresponds to data; do after reading main data
@@ -337,7 +323,11 @@ readFragpipeFile <- function(fileName, path=NULL, normalizeMeth="median", sample
 
     ## finish groups of replicates & annotation setupSd
     setupSd <- .checkSetupGroups(abund=abund, setupSd=setupSd, gr=gr, sampleNames=sampleNames, quantMeth="FP", silent=silent, debug=debug, callFrom=fxNa)
-    colnames(quant) <- colnames(abund) <- if(length(setupSd$sampleNames)==ncol(abund)) setupSd$sampleNames else setupSd$groups
+    colNa <- if(length(setupSd$sampleNames)==ncol(abund)) setupSd$sampleNames else setupSd$groups
+    chGr <- grepl("^X[[:digit:]]", colNa)                                                # check & remove heading 'X' from initial column-names starting with digits
+    if(any(chGr)) colNa[which(chGr)] <- sub("^X","", colNa[which(chGr)])                 # 
+    colnames(quant) <- colnames(abund) <- colNa
+    if(length(setupSd$sampleNames)==ncol(abund)) setupSd$sampleNames <- colNa else setupSd$groups <- colNa
     if(length(dim(counts)) >1 && length(counts) >0) colnames(counts) <- setupSd$sampleNames
 
     if(debug) {message(fxNa,"Read sample-meta data, rfp14"); rfp14 <- list(setupSd=setupSd, sdrf=sdrf, suplAnnotFile=suplAnnotFile,quant=quant,abund=abund,plotGraph=plotGraph)}

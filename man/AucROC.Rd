@@ -4,14 +4,25 @@
 \alias{AucROC}
 \title{AUC from ROC-curves}
 \usage{
-AucROC(dat, useCol = c("spec", "sens"), silent = FALSE, callFrom = NULL)
+AucROC(
+  dat,
+  useCol = c("spec", "sens"),
+  returnIfInvalid = NA,
+  silent = FALSE,
+  debug = FALSE,
+  callFrom = NULL
+)
 }
 \arguments{
 \item{dat}{(matrix or data.frame) main inut containig sensitivity and specificity data (from \code{summarizeForROC})}
 
 \item{useCol}{(character or integer) column names to be used: 1st for specificity and 2nd for sensitivity count columns}
 
+\item{returnIfInvalid}{(\code{NA} or \code{NULL}) what to return if data for calculating ROC is invalid or incomplete}
+
 \item{silent}{(logical) suppress messages}
+
+\item{debug}{(logical) additional messages for debugging}
 
 \item{callFrom}{(character) allows easier tracking of messages produced}
 }
@@ -29,7 +40,7 @@ roc1 <- summarizeForROC(test1, spec=c("a","b","c"), annotCol="Species")
 AucROC(roc1)
 }
 \seealso{
-preparing ROC data \code{\link{summarizeForROC}}, (re)plot the ROC figure \code{\link{plotROC}};   
-  note that numerous other packages also provide support for working with ROC-curves : Eg \href{https://CRAN.R-project.org/package=dlstats}{rocPkgShort}, 
-   \href{https://CRAN.R-project.org/package=ROCR}{ROCR}, \href{https://CRAN.R-project.org/package=pROC}{pROC} or \href{https://CRAN.R-project.org/package=ROCit}{ROCit}
+preparing ROC data \code{\link{summarizeForROC}}, (re)plot the ROC figure \code{\link{plotROC}};
+  note that numerous other packages also provide support for working with ROC-curves : Eg \href{https://CRAN.R-project.org/package=dlstats}{rocPkgShort},
+   \href{https://CRAN.R-project.org/package=ROCR}{ROCR}, \href{https://CRAN.R-project.org/package=pROC}{pROC} or \href{https://CRAN.R-project.org/package=ROCit}{ROCit}, etc.
 }

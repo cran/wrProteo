@@ -12,8 +12,12 @@
   softNa = NULL,
   refLi = NULL,
   refLiIni = NULL,
+  figMarg = c(3, 3, 3, 1),
   tit = NULL,
   las = NULL,
+  cexAxis = 1,
+  nameSer = NULL,
+  cexNameSer = NULL,
   silent = FALSE,
   callFrom = NULL,
   debug = FALSE
@@ -26,17 +30,25 @@
 
 \item{custLay}{(matrix) describing sammple-setup, typically produced by}
 
-\item{normalizeMeth}{(charactert, length=1) name of normalization method (will be displayed in title of figure)}
+\item{normalizeMeth}{(character, length=1) name of normalization method (will be displayed in title of figure)}
 
-\item{softNa}{(charactert, length=1) 2-letter abbreviation of name of quantitation-software (eg 'MQ')}
+\item{softNa}{(character, length=1) name of quantitation-software (typically 2-letter abbreviation, eg 'MQ')}
 
 \item{refLi}{(integer) to display number reference lines}
 
 \item{refLiIni}{(integer) to display initial number reference lines}
 
+\item{figMarg}{(numeric) custom figure margins (will be passed to \code{\link[graphics]{par}})}
+
 \item{tit}{(character) custom title}
 
 \item{las}{(integer) indicate orientation of text in axes}
+
+\item{cexAxis}{(numeric) size of numeric axis labels as cex-expansion factor (see also \code{\link[graphics]{par}})}
+
+\item{nameSer}{(character) custom label for data-sets or columns (length must match number of data-sets)}
+
+\item{cexNameSer}{(numeric) size of individual data-series labels as cex-expansion factor (see also \code{\link[graphics]{par}})}
 
 \item{silent}{(logical) suppress messages}
 

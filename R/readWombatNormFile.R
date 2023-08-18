@@ -11,7 +11,7 @@
 #' Besides, a graphical display of the distribution of protein abundance values may be generated before and after normalization.
 #'
 #' @details
-#' By standard wrokflow of Wombat-P writes the results of each analysis-method/quantification-algorithm as .csv files
+#' By standard workflow of Wombat-P writes the results of each analysis-method/quantification-algorithm as .csv files
 #' Meta-data describing the proteins may be available from two sources :
 #' a) The 1st column of the Wombat/normalizer output.
 #' b) Form the .fasta file in the directory above the analysis/quantiication results of the Wombar-workflow
@@ -33,6 +33,7 @@
 #' @param quantSoft (character) qunatification-software used inside Wombat-P
 #' @param fasta (logical or character) if \code{TRUE} the (first) fasta from one direcory higher than \code{fileName} will be read as fasta-file to extract further protein annotation;
 #'    if \code{character} a fasta-file at this location will be read/used/
+#' @param isLog2 (logical) typically data read from Wombat are expected to be \code{isLog2=TRUE}
 #' @param normalizeMeth (character) normalization method, defaults to \code{median}, for more details see \code{\link[wrMisc]{normalizeThis}})
 #' @param quantCol (character or integer) exact col-names, or if length=1 content of \code{quantCol} will be used as pattern to search among column-names for $quant using \code{grep}
 #' @param contamCol (character or integer, length=1) which columns should be used for contaminants
@@ -73,7 +74,7 @@
 #' summary(dataWB$quant)
 #' matrixNAinspect(dataWB$quant, gr=gl(2,4))
 #' @export
-readWombatNormFile <- function(fileName, path=NULL, quantSoft="(quant software not specified)", fasta=NULL, normalizeMeth="none", quantCol="abundance_", contamCol=NULL,
+readWombatNormFile <- function(fileName, path=NULL, quantSoft="(quant software not specified)", fasta=NULL, isLog2=TRUE, normalizeMeth="none", quantCol="abundance_", contamCol=NULL,
   pepCountCol=c("number_of_peptides"), read0asNA=TRUE, refLi=NULL, sampleNames=NULL,
   extrColNames=c("protein_group"), specPref=NULL,
   remRev=TRUE, remConta=FALSE, separateAnnot=TRUE, gr=NULL, sdrf=NULL, suplAnnotFile=NULL, groupPref=list(lowNumberOfGroups=TRUE),
@@ -83,47 +84,17 @@ readWombatNormFile <- function(fileName, path=NULL, quantSoft="(quant software n
   oparMar <- if(plotGraph) graphics::par("mar") else NULL       # only if figure might be drawn
   remStrainNo <- TRUE                   # if TRUE extract Species in very stringent pattern
   cleanDescription <- TRUE              # clean 'Description' for artifacts of truncated text (tailing ';' etc)
+  fixSpeciesNames <- TRUE  
   oparMar <- graphics::par("mar")
 
   ## functions
-  .checkFilePath <- function(fileName, path, expectExt="csv", silent=FALSE, debug=FALSE, callFrom=NULL) {
-    ## check file-input if available to read  (moove to wrMisc ?)
-    fxNa <-  wrMisc::.composeCallName(callFrom, newNa=".checkFilePath")
-    msg <- "Invalid entry for 'path'  "
-    ## check path
-    if(length(path) >0) { path <- path[1]
-       if(is.na(path)) { stop(msg,"(must be character-string for valid path or NULL)")}
-       if(!dir.exists(path)) { path <- "."
-         if(!silent) message(fxNa, msg, path[1],"'  (not existing), ignoring...")
-       } }
-    ## check for 'fileName'
-    msg <- "Invalid entry for 'fileName'"
-    if(length(fileName) >1) { fileName <- fileName[1]
-      if(!silent) message(fxNa," 'fileName' shoud be of length=1, using 1st value")
-    } else { if(length(fileName) <1) stop(msg) else if(is.na(fileName) || nchar(fileName) <1) stop(msg)}
-    if(grepl("^\\.",expectExt)) expectExt <- sub("^\\.", "", expectExt)   # remove heading '.' if accidently given
-
-    if(!grepl(paste0("\\.",expectExt,"$|\\.",expectExt,"\\.gz$"), fileName)) message(fxNa,"Trouble ?  Expecting .",expectExt," file (the file'",fileName,"' might not be right format) !!")
-    #if(!grepl("\\.csv$|\\.csv\\.gz$", fileName)) message(fxNa,"Trouble ? Expecting .csv file (the file'",fileName,"' might not be right format) !!")
-    if(debug) {message(fxNa,"cFP1 "); cFP1 <- list(fileName=fileName,path=path)}
-
-    ## check for compressed version of 'fileName'
-    chFi <- if(length(path) >0) file.exists(file.path(path, fileName)) else file.exists(fileName)
-    if(!chFi && grepl("\\.",expectExt,"$",fileName)) { fiNa2 <- paste0(fileName,".gz")
-      chFi <- if(length(path) >0) file.exists(file.path(path, fiNa2)) else file.exists(fiNa2)
-      if(chFi) {if(!silent) message(fxNa,"Note : File '",fileName,"'  was NOT FOUND, but a .gz compressed version exists, using compressed file.."); fileName <- fiNa2}
-    }
-    if(chFi) { paFi <- if(length(path) >0) file.path(path, fileName) else fileName
-    } else stop(" File '",fileName,"'  was NOT found ",if(length(path) >0) paste(" in path ",path)," !")
-    if(debug) message(fxNa,"cFP2 .. Ready to read", if(length(path) >0) c(" from path ",path[1])," the file  ",fileName[1])
-    paFi }
-
   .cleanMQann <- function(x, sep="\\|", silent=FALSE, debug=FALSE, callFrom=NULL) {
     ## split multiple protein entries as with 1st column of MaxQuant data
     ## return matrix with
     ## example ann1 <- read.delim(file.path(system.file("extdata", package="wrProteo"), "tinyWombCompo1.csv.gz"), sep=",", stringsAsFactors=FALSE)[,1]
     ##   .cleanMQann(ann1)
     #  x=rWB4a$tmp[c(5,31:32,81:82,111:114),1]
+    xIni <- x       # keep backup for recuperating bizzare nonparsed
     isCont <- grepl("CON__", x)
     mult <- nchar(x) - nchar(gsub(";", "", x))
     chMult <- mult >0
@@ -132,7 +103,6 @@ readWombatNormFile <- function(fileName, path=NULL, quantSoft="(quant software n
       ## use entry with most separators (when multiple entries, eg 'sp|P00761|CON__TRYP_PIG;CON__P00761')
       spl1 <- sapply(spl1, function(y) { nSep <- nchar(y) - nchar(gsub("|","",y)); y[which.max(nSep)] })
       x[which(chMult)] <- spl1 }
-    xIni <- x       # keep backup for recuperating bizzare nonparsed
     ## split separators
     chSpl <- function(y) {chID <- grepl("^[[:upper:]]{1,3}[[:digit:]]{2,}|^[[:upper:]]{1,3}[[:digit:]]+[[:upper:]]+[[:digit:]]*", y); chName <- grepl("[A-Z0-9]_[[:upper:]]",y);   # extract db, ID & prot-name
       c(dbIni= if((length(y) >1 && grepl("^[[:lower:]]{1,8}$", y[1])) || length(y) >2 && grepl("^[[:lower:]]{2}|[[:lower:]]{2}$",
@@ -156,7 +126,60 @@ readWombatNormFile <- function(fileName, path=NULL, quantSoft="(quant software n
     ## recuperate all (bizarre) non-parsed into ID
     isNa <- rowSums(is.na(x)) > nColIni -2
     if(any(isNa)) x[which(isNa),c(2+nColIni)] <- xIni[which(isNa)]
-    x[,c((nColIni+1):ncol(x), 1:nColIni)] }
+    cbind(x[,c((nColIni+1):ncol(x), 1:nColIni)], iniSoftAnn=xIni) }
+
+  .cleanPLann <- function(anno, inclLowerCaseExt=TRUE) {
+    ## parse annotation from Proline quantification sheet (2nd col 'protein_group')
+    ## entries like c("sp|P06169|PDC1_YEAST","sp|P02994|EF1A_YEAST","P00549|KPYK1_YEAST","sp|P00925|ENO2_YEAST")
+    ann2 <- matrix(ncol=3, nrow=length(anno), dimnames=list(NULL,c("database","uniqueIdentifier","proteinName")))
+    ## use longest of multiple ID-entries (eg "Q14CN4-2|CON__K2C72_HUMAN; sp|Q14CN4-3|CON__K2C72_HUMAN; sp|Q14CN4|CON__K2C72_HUMAN")
+    ## split concatenated multiple IDs, use longest
+    chMult <- nchar(sub(":","", anno)) < nchar(anno)
+    if(any(chMult)) { spl1 <- strsplit(as.character(anno[chMult]),";")
+      anno[which(chMult)] <- sapply(spl1, function(x) x[which.max(nchar(x))]) }
+
+    ## database identifier
+    chDB <- grep("^[[:lower:]]+\\|.", anno)
+    if(length(chDB) >0) { ann2[chDB,1] <- sub("\\|.+", "", anno[chDB])
+      anno[chDB] <- sub("^[[:lower:]]+\\|", "", anno[chDB])}
+    ## protein/uniProtID
+    chPat0 <- "^[[:upper:]]+[[:digit:]]+[0-9A-Z]*\\|."
+    chPat <-  "^[[:upper:]]+[[:digit:]]+[0-9A-Z]*(\\-[[:digit:]]{1,3}){0,1}\\|."                    # like 'P10636|', 'P10636-8|'
+    chPat2 <- "^[[:upper:]]+[[:digit:]]+[0-9A-Z]*(\\-[[:digit:]]{1,3}){0,1}[[:lower:]]{0,12}\\|."    # like 'P10636|', 'P10636-8|', 'P10636-8ups|'
+    chID <- grep(if(isTRUE(inclLowerCaseExt)) chPat2 else chPat, anno)
+    if(length(chID) >0) { ann2[chID,2] <- sub("\\|.+", "", anno[chID])   # retreive entry (until next separator)
+      anno[chID] <- sub(".+\\|", "", anno[chID])}
+    ## last entry
+    nch <- which(nchar(anno) >0)
+    if(length(nch) >0)  ann2[nch,3] <- anno[nch]
+    ann2 <- cbind(database=ann2[1], protein_group=sub("[[:lower:]]+$","", ann2[,2]), ann2[,-1], iniSoftAnn=anno)
+    ann2 }
+
+  .cleanSingleAnn <- function(anno, inclLowerCaseExt=TRUE) {
+     ## parse annotation from single column (ie character vector) , eg Compomics quatification sheet (2nd col 'protein_group')
+     ## return 3 columns ; ID, IDext and iniSoftAnn
+     if(length(dim(anno)) >1) {warning(".cleanSingleann : expecting text vector and NOT matrix"); anno <- try(as.character(as.matrix(anno)))}
+     iniSoftAnn <- WOext <- anno
+     chPat3 <- "[[:upper:]][0-9A-Z]+(\\-[[:digit:]]{1,3}){0,1}[[:lower:]]*$"    # recognize IDs eg 'P00915ups', 'P00915-3ups',
+     ## still need to split multiple and use longest  (eg from 'P02768,P02768ups')
+     chMult <- grep(",", anno)
+     if(length(chMult) >0) {
+       spl <- strsplit(as.character(anno[chMult]), ",")
+       anno[chMult] <- sapply(spl, function(x) x[which.max(nchar(x))])
+     }
+     ## split lower-case extenstions from IDs
+     if(isTRUE(inclLowerCaseExt)) { chExt <- grep(chPat3, anno)
+       if(length(chExt) >0) {
+         WOext <- anno
+         WOext[chExt] <- sub("[[:lower:]]+$", "", anno[chExt])
+         ext <- rep(NA, length(anno))
+         ext[chExt] <- substring(anno[chExt], nchar(WOext[chExt]) +1)
+         anno <- cbind(iniSoftAnn=iniSoftAnn, ID=WOext, IDext=ext)
+     } }
+     anno }
+  ## end functions
+
+
 
 
   ## init check
@@ -167,10 +190,10 @@ readWombatNormFile <- function(fileName, path=NULL, quantSoft="(quant software n
   if(isTRUE(debug)) silent <- FALSE else debug <- FALSE
          excluCol <- "^Abundances.Count"   # exclude this from quantifications columns
   cleanDescription <- TRUE                 # clean 'Description' for artifacts of truncated text (tailing ';' etc)
-  infoDat <- infoFi <- setupSd <- parametersD <- annot <- annotMQ <- NULL        # initialize
+  infoDat <- infoFi <- setupSd <- parametersD <- annot <- annotMQ <- annotPL <- NULL        # initialize
 
   ## check if path & file exist
-  paFi <- .checkFilePath(fileName=fileName, path=path, expectExt="csv", silent=silent, debug=debug, callFrom=fxNa)
+  paFi <- wrMisc::checkFilePath(fileName, path, expectExt="csv", compressedOption=TRUE, stopIfNothing=TRUE, callFrom=fxNa, silent=silent,debug=debug)
   ## read (main) file
   ## future: look for fast reading of files
     #  read.delim("C:\\E\\projects\\MassSpec\\smallProj\\ElixirBenchmark\\deWombat\\deGit24may23\\PXD009815dev\\dev\\stand_prot_quant_mergedcompomics.csv", sep=",")
@@ -182,30 +205,44 @@ readWombatNormFile <- function(fileName, path=NULL, quantSoft="(quant software n
     tmp <- NULL
     return(NULL)
   } else {
-    ## start checking format
+    ## start checking format of initial read of Normalizer-output
     if(debug) { message(fxNa,"rWB1 .. dims of initial data : ", nrow(tmp)," li and ",ncol(tmp)," col "); rWB1 <- list(fileName=fileName,path=path,paFi=paFi,tmp=tmp,normalizeMeth=normalizeMeth,read0asNA=read0asNA,quantCol=quantCol,
       refLi=refLi,separateAnnot=separateAnnot   )}  # annotCol=annotCol,FDRCol=FDRCol
     ## check which columns can be extracted (for annotation)
-    if(is.integer(contamCol) && length(contamCol) >0 ) contamCol <- colnames(tmp)[contamCol]
-    extrColNames <- union(extrColNames, contamCol)                     # add contamCol if not included in extrColNames
-    chCol <- extrColNames %in% colnames(tmp)
-    if(!any(chCol, na.rm=TRUE)) { extrColNames <- gsub("\\."," ",extrColNames)
-      chCol <- extrColNames %in% colnames(tmp) }
-    if(all(!chCol, na.rm=TRUE)) stop("Problem locating annotation columns (",wrMisc::pasteC(extrColNames, quoteC="''"),")")
-    if(any(!chCol, na.rm=TRUE)) {
-      if(!silent) message(fxNa,"Note: Can't find columns ",wrMisc::pasteC(extrColNames[!chCol], quoteC="'")," !")
+
+    if(length(extrColNames) <1) { extrColNames <- colnames(tmp)[1]        # default : use only 1st col for annotation
+    } else {
+      if(is.integer(contamCol) && length(contamCol) >0) contamCol <- colnames(tmp)[contamCol]
+      extrColNames <- union(extrColNames, contamCol)                     # add contamCol if not included in extrColNames
+      chCol <- extrColNames %in% colnames(tmp)
+      if(!any(chCol, na.rm=TRUE)) { extrColNames <- gsub("\\."," ",extrColNames)
+        chCol <- extrColNames %in% colnames(tmp) }
+      if(all(!chCol, na.rm=TRUE)) stop("Problem locating annotation columns (",wrMisc::pasteC(extrColNames, quoteC="''"),")")
+      if(any(!chCol, na.rm=TRUE)) {
+        if(!silent) message(fxNa,"Note: Can't find columns ",wrMisc::pasteC(extrColNames[!chCol], quoteC="'")," !")}
     }
-    message(fxNa,"rWB1c")
+    if(debug) {message(fxNa,"rWB1c"); rWB1c <- list(tmp=tmp,paFi=paFi,fasta=fasta,quantCol=quantCol,extrColNames==extrColNames)}
   }
 
   if(length(tmp) >0) {
+    ## check for lines with absent IDs  => eliminate
+    chNa <- which(if("protein_group" %in% colnames(tmp)) is.na(tmp[,"protein_group"]) else rowSums(is.na(tmp))==ncol(tmp))
+    if(length(chNa) >0) {
+      if(!silent) message(fxNa,"Removing ",length(chNa)," lines since absent ID or all NA  (won't be able to do anything lateron withour ID ..)")
+      tmp <- tmp[-chNa,]
+    }
+    if(debug) {message(fxNa,"rWB1d"); rWB1d <- list(tmp=tmp,paFi=paFi,fasta=fasta,quantCol=quantCol,extrColNames==extrColNames)}
+
     ## further extracting : quantitation
     useDCol <- grep(paste0("^",quantCol), colnames(tmp))
     if(length(useDCol) <1) stop("NO columns matching term ",wrMisc::pasteC(quantCol, quoteC="'")," from argument 'quantCol' found !")
     abund <- as.matrix(tmp[,useDCol])               # normalized log2 abundances
+    if(debug) {message(fxNa,"rWB1e"); rWB1e <- list(tmp=tmp,paFi=paFi,fasta=fasta,abund=abund)}
+       #iniAbundColNa <- colnames(abund)
 
-    chNum <- is.numeric(abund)
-    if(!chNum) {abund <- apply(tmp[,quantCol], 2, wrMisc::convToNum, convert="allChar", silent=silent, callFrom=fxNa)}
+    chNum <- try(is.numeric(abund), silent=TRUE)
+    if(!chNum) {abund <- try(apply(tmp[,quantCol], 2, wrMisc::convToNum, convert="allChar", silent=silent, callFrom=fxNa), silent=TRUE)
+      if(inherits(abund, "try-error")) {datOK <- FALSE; warning(fxNa,"CANNOT transform 'abund' to numeric data !'")} }
     if(length(dim(abund)) <2 && !is.numeric(abund)) abund <- matrix(as.numeric(abund), ncol=ncol(abund), dimnames=dimnames(abund))
     ch1 <- grepl("^abundance_CT\\.mixture\\.QY\\.", colnames(abund))
     if(all(ch1)) colnames(abund) <- sub("abundance_CT\\.mixture\\.QY\\.", "", colnames(abund))
@@ -214,15 +251,22 @@ readWombatNormFile <- function(fileName, path=NULL, quantSoft="(quant software n
     ch1 <- grepl("\\.CV\\.Standards\\.Research\\.Group", colnames(abund))
     if(all(ch1)) colnames(abund) <- sub("\\.CV\\.Standards\\.Research\\.Group", "", colnames(abund))
 
-    trimColNames <- FALSE
+    trimColNames <- FALSE      ## further trim quantitation colnames
     if(trimColNames) {  ## further trim
       colnames(abund) <- wrMisc::.trimFromStart(wrMisc::.trimFromEnd( sub(paste0("^",quantCol),"", colnames(abund))))
       ## no trim needed for Wombat ?
     }
-    if(debug) {message(fxNa,"rWB3"); rWB3 <- list(abund=abund,paFi=paFi,path=path,chPa=chPa,tmp=tmp,extrColNames=extrColNames,chCol=chCol,remConta=remConta,pepCountCol=pepCountCol)}
+    if(debug) {message(fxNa,"rWB3"); rWB3 <- list(abund=abund,paFi=paFi,path=path,chPa=chPa,tmp=tmp,extrColNames=extrColNames,chCol=chCol,remConta=remConta,pepCountCol=pepCountCol,fasta=fasta)}
 
     ## convert 0 to NA
-    if(!isFALSE(read0asNA)) { ch1 <- abund <= 0
+    ## note tpp abundance values are all neg !!
+    chNa <- !all(is.na(abund))
+    if(chNa) {
+      chRa <- range(abund, na.rm=TRUE)
+      if(all(chRa <0) & isTRUE(read0asNA)) {read0asNA <- FALSE
+      if(debug) message(fxNa,"All abundance values are <0 ! (omit transforming neg values to NA)") } }
+    if(!isFALSE(read0asNA)) {
+      ch1 <- abund <= 0
       if(any(ch1, na.rm=TRUE)) { abund[which(ch1)] <- NA
         if(!silent) message(fxNa,"Transform ",sum(ch1),"(",100*round(sum(ch1)/length(ch1),3),"%) initial '0' values to 'NA'")}}
 
@@ -234,51 +278,94 @@ readWombatNormFile <- function(fileName, path=NULL, quantSoft="(quant software n
     } else {
       counts <- NULL
       if(!silent) message(fxNa,"Could not find column(s) with peptide per protein counts (argument 'pepCountCol') matching to '",pepCountCol,"'") }
-    if(debug) {message(fxNa,"rWB4"); rWB4 <- list(abund=abund,counts=counts,annot=annot,paFi=paFi,path=path,chPa=chPa,tmp=tmp,pepCountCol=pepCountCol,extrColNames=extrColNames,chCol=chCol,remConta=remConta,quantSoft=quantSoft)}
+    if(debug) {message(fxNa,"rWB4"); rWB4 <- list(abund=abund,counts=counts,annot=annot,paFi=paFi,path=path,chPa=chPa,tmp=tmp,pepCountCol=pepCountCol,extrColNames=extrColNames,chCol=chCol,remConta=remConta,quantSoft=quantSoft,fasta=fasta,annotMQ=annotMQ)}
 
-    ## make array of PSM counts etc
-    ch2 <- if(length(pepCountCol) >0) lapply(pepCountCol, grepl, colnames(tmp))  #grepl(pepCountCol[2], colnames(tmp)) else grepl(pepCountCol, colnames(tmp))
-    ch2a <- sapply(ch2, sum, na.rm=TRUE) >0
-    if(any(ch2a, na.rm=TRUE)) {
-      counts <- array(dim=c(nrow(tmp), ncol(abund), sum(ch2a)), dimnames=list(NULL, colnames(abund), pepCountCol[which(ch2a)]))
-      for(i in 1:sum(ch2a)) counts[,,i] <- suppressWarnings(as.numeric(as.matrix(tmp[, which(ch2[[which(ch2a)[i]]])])))
-    } else counts <- NULL
-    if(debug) {message(fxNa,"rWB4a"); rWB4a <- list(abund=abund,counts=counts,annot=annot,paFi=paFi,path=path,chPa=chPa,tmp=tmp,pepCountCol=pepCountCol,extrColNames=extrColNames,chCol=chCol,remConta=remConta,quantSoft=quantSoft)}
+    ## add more measure-types if avail
+    if(length(pepCountCol) >1) {
+      for(i in 2:length(pepCountCol)) {
+        ch1 <- grep(pepCountCol[i], colnames(tmp))
+        if(length(ch1) ==ncol(abund)) {
+          counts[,,i] <- suppressWarnings(as.numeric(as.matrix(tmp[,ch1]))) }
+      }
+    }
+    if(debug) {message(fxNa,"rWB4a"); rWB4a <- list(abund=abund,counts=counts,annot=annot,paFi=paFi,path=path,chPa=chPa,tmp=tmp,pepCountCol=pepCountCol,extrColNames=extrColNames,chCol=chCol,remConta=remConta,quantSoft=quantSoft,fasta=fasta,annotMQ=annotMQ)}
 
     ## Annotation
-    if(any(c("MQ","MaxQuant") %in% quantSoft) && "protein_group" %in% colnames(tmp)) {    # special case MQ: parse annot from column 'protein_group'
-      annotMQ <- .cleanMQann(tmp[,"protein_group"])
+    if(any(c("CP","Compomics","compomics") %in% quantSoft) && extrColNames[1] %in% colnames(tmp)) {    # special case PL: parse annot from column 'protein_group'
+      annotPL <- .cleanSingleAnn(tmp[,extrColNames[1]])    #"protein_group"
+      colnames(annotPL)[2] <- "protein_group"
     }
+    if(any(c("MQ","MaxQuant","maxquant") %in% quantSoft) && extrColNames[1] %in% colnames(tmp)) {    # special case MQ: parse annot from column 'protein_group'
+      annotMQ <- .cleanMQann(tmp[,extrColNames[1]])    #"protein_group"
+    }
+
+    if(any(c("PL","Proline","proline") %in% quantSoft) && extrColNames[1] %in% colnames(tmp)) {    # special case PL: parse annot from column 'protein_group'
+      annotPL <- .cleanPLann(tmp[,extrColNames[1]])    #"protein_group"
+
+    }
+    if(any(c("TPP","tpp") %in% quantSoft) && extrColNames[1] %in% colnames(tmp)) {    # special case CP: remove lower-case extensions from 'uniqueIdentifier'
+      annotPL <- .cleanPLann(tmp[,extrColNames[1]])    #"protein_group"
+    }
+
+    if(debug) {message(fxNa,"rWB4aa"); rWB4aa <- list(annotMQ=annotMQ,annotPL=annotPL,abund=abund,counts=counts,annot=annot,paFi=paFi,path=path,chPa=chPa,tmp=tmp,pepCountCol=pepCountCol,extrColNames=extrColNames,chCol=chCol,remConta=remConta,quantSoft=quantSoft,fasta=fasta,annotMQ=annotMQ)}
 
     ## read fasta from higher dir (specific to Wombat)
     if(length(fasta) >0) {fasta <- fasta[1]; if(isFALSE(fasta) || is.na(fasta)) fasta <- NULL}
     if(isTRUE(fasta)) {
       hiDir <- dir(file.path(dirname(paFi),".."))
       chFa <- grep("\\.fasta$", hiDir)
-      faFi <- file.path(dirname(paFi),"..",hiDir[chFa[1]])
+      faFi <- if(length(chFa) >0) file.path(dirname(paFi),"..",hiDir[chFa[1]]) else NULL
     } else faFi <- fasta
     if(length(faFi) >0) {     # has fasta for recuperating annotation
-      ##fasta <- try(readFasta2("C:\\E\\projects\\MassSpec\\smallProj\\ElixirBenchmark\\deWombat\\deGit24may23\\PXD009815dev\\uniprot_contaminant_yeast_ups_prot_03022023.fasta", tableOut=TRUE), silent=TRUE)
-      fasta <- try(readFasta2(faFi, tableOut=TRUE, silent=silent,debug=debug,callFrom=fxNa), silent=TRUE)
+      fasta <- try(readFasta2(filename=faFi, tableOut=TRUE, silent=silent,debug=debug,callFrom=fxNa), silent=TRUE)
       ## Potential problem with inconsistent format of fasta
       if(inherits(fasta, "try-error")) { fasta <- NULL
         if(!silent) message(fxNa,"Unable to read/open fasta file '",faFi,"'  (check rights to read ?)")
       } else {
-        useLi <- match(tmp[,1], fasta[,2])
-        chNa <- is.na(useLi)
-        if(any(chNa)) { chForm <- grep("[[:digit:]][[:lower:]]+$", tmp[,1])            # locate eg 'P04040ups' for trimming to 'P04040'
-          if(length(chForm) >0) {
-            tmp[chForm, 1] <- sub("[[:lower:]]+$","", tmp[chForm,1])
-            useLi <- match(tmp[,1], fasta[,2])              # update
-          } else if(debug) message(fxNa,"None of the ",sum(chNa)," non-recognized IDs follow pattern for recuperating")
-          if(debug) {message(fxNa,"rWB4aa"); rWB4aa <- list(abund=abund,counts=counts,annot=annot,fasta=fasta,tmp=tmp,useLi=useLi,chNa=chNa,chForm=chForm) }
+        tmpAnn <- if(length(annotMQ) >0) annotMQ[,2] else {if(length(annotPL) >0) annotPL[,2] else tmp[,extrColNames[1]]}      # 'P02768' still missing
+        tm2 <- wrMisc::concatMatch(tmpAnn, fasta[,2], sepPattern=NULL, globalPat="digitExtension", silent=silent, debug=debug, callFrom=fxNa)   # clean protein-names (eg digit extensions, concateneated IDs) & match to data
+        iniAnn <- if(length(annotMQ) >0) annotMQ else {if(length(annotPL) >0) annotPL else cbind(iniSoftAnn=tmp[,extrColNames[1]])}
+        colnames(iniAnn) <- c("iniSoftAnn", if(ncol(iniAnn) >1) paste0(colnames(iniAnn)[-1],".",quantSoft))
+
+        useFaCol <- match(c("uniqueIdentifier","entryName","proteinName","OS","OX","GN","database"), colnames(fasta))             # do not export full 'sequence'
+        annot <- cbind(trimIdentifier=names(tm2), fasta[tm2, useFaCol], iniAnn=tmpAnn)
+        if(debug) {message(fxNa,"rWB4ab"); rWB4ab <- list(abund=abund,counts=counts,annot=annot,fasta=fasta,tmp=tmp,chNa=chNa,annotPL=annotPL,annotMQ=annotMQ,extrColNames=extrColNames,extrColNames=extrColNames) }
+
+        foundFastaCol <- !is.na(useFaCol)
+        if(any(foundFastaCol)) colnames(annot)[1:sum(foundFastaCol)] <- c("Accession","AccessionFull","Description","EntryName","Species","OX","GeneName","Database")[which(foundFastaCol)]
+        ##  strip species details
+        if("Species" %in% annot) annot[,"Species"] <- sub(" \\(.+", "", annot[,"Species"])
+      }
+    } else {
+      if(debug) message(fxNa,"NO fasta available !")
+      annot <- if(length(annotMQ) >0) annotMQ else {if(length(annotPL) >0) annotPL else tmp[,extrColNames[1]]}
+        if(length(annotMQ) <1 && length(annotPL) <1) {
+          sep <- ","
+          if(debug) message(fxNa,"rWB4ab")
+          ## if no other annot : pick 1st of multiple, clean from lowerCase extension, clean from -digit extension
+          ## need to test further ?
+          chMult <- nchar(tmp[,extrColNames[1]]) - nchar(sub(sep, "", annot))
+          if(any(chMult) >0) annot <- sapply(strsplit(annot, sep), function(x) {nCha <- nchar(x); if(length(x) >1) x[which.max(nCha)] else x  })
+          annot <- cbind(Accession=sub("\\-[[:digit:]]+$","", sub("[[:lower:]]+$","", annot)), IniAccession=tmp[,extrColNames[1]])
+        } else {
+          ## need to arrange columns to proper order & names
+          warning(fxNa,"NOTE : Supplemental arranging of columns to proper order & names not yet implemented")
+
+
         }
-        annot <- fasta[useLi, c("uniqueIdentifier","entryName","proteinName","OS","OX","GN")]     # do not export full 'sequence'
-        colnames(annot) <- c("Accession","Description","EntryName","Species","OX","GeneName") }
-    } else { annot <- matrix(tmp[,1], ncol=1, dimnames=list(NULL,"Accession"))
-      if(debug) message(fxNa,"No fasta-file found in directory above data...")
+      if(debug) message(fxNa,"NOTE : No fasta-file found in main directory ...")
     }
-    if(debug) {message(fxNa,"dim annot",nrow(annot)," ",ncol(annot),"  rWB4b"); rWB4b <- list(annot=annot,faFi=faFi,abund=abund,tmp=tmp)}
+    if(debug) {message(fxNa,"dim annot  ",nrow(annot)," ",ncol(annot),"  rWB4b"); rWB4b <- list(annot=annot,faFi=faFi,abund=abund,tmp=tmp,fasta=fasta,annotMQ=annotMQ)}
+
+    ## check ID col of annot
+    chID <- match(c("Accession","protein_group","uniqueIdentifier"), colnames(annot))
+    if(all(is.na(chID))) { chID <- wrMisc::naOmit(match(c("protein_group","ID"), colnames(annot)))
+      if(length(chID) < 1) warning("PROBLEM : UNEXPECTED colnames in annot") #else colnames(annot)[chID][1] <- "Accession"
+    }
+    if(!identical(wrMisc::naOmit(chID), 1) || length(wrMisc::naOmit(chID)) >0) {
+      annot <- annot[,c(wrMisc::naOmit(chID)[1], (1:ncol(annot))[-wrMisc::naOmit(chID)[1]] )]     # adjust order to have ID in 1st column
+      colnames(annot)[1] <- "Accession"
+      if(!silent) message(fxNa,"Adjusting order of  annot to have ID in 1st column") }
 
     ## remove lines wo IDs
     chNa <- is.na(annot[,1])
@@ -291,42 +378,19 @@ readWombatNormFile <- function(fileName, path=NULL, quantSoft="(quant software n
       abund <- abund[-rmLi,]
       if(length(counts) >0) counts <- if(length(dim(counts))==3) counts[-rmLi,,] else counts[-rmLi,]
     }
-    if(debug) {message(fxNa,"dim annot",nrow(annot)," ",ncol(annot),"  rWB4c"); rWB4c <- list(annot=annot,faFi=faFi,abund=abund,tmp=tmp)}
+    if(debug) {message(fxNa,"dim annot",nrow(annot)," ",ncol(annot),"  rWB4d"); rWB4d <- list(annot=annot,faFi=faFi,abund=abund,tmp=tmp)}
 
     ## unique ID
     chD <- duplicated(annot[,1])
-    uniqueID <- if(any(chD, na.rm=TRUE)) wrMisc::correctToUnique(annot[,1], silent=silent, callFrom=fxNa) else annot[,1]
+    uniqueID <- if(any(chD, na.rm=TRUE)) wrMisc::correctToUnique(annot[,1], silent=silent, callFrom=fxNa) else annot[,1]  # extrColNames[1]
     rownames(annot) <- rownames(abund) <- uniqueID
     if(length(counts) >0) rownames(counts) <- uniqueID
-    if(debug) {message(fxNa,"rWB4ad"); rWB4ad <- list(annot=annot,faFi=faFi,abund=abund,annotMQ=annotMQ,tmp=tmp,uniqueID=uniqueID)}
-
-    if(length(annotMQ) >0) {
-      ## MQ only : fuse with annot
-      chDim <- isTRUE(nrow(annotMQ) == nrow(annot))
-      if(!chDim) { message(fxNa,"BIZZARE, annotation from 'protein_group' and annoation based on fasta don't match in number of lines !!'")
-      } else {
-        if(all(is.na(annot))) {
-          if(debug) message(fxNa,"All annotation from fasta is NA; using annot from (MQ) 'protein_group' only")
-          colnames(annotMQ)[c(2:3)] <- c("Accession","EntryName")
-          annot <- cbind(Accession=annotMQ[,"ID"], Description=NA, EntryName=annotMQ[,"name"], Species=NA, GeneName=NA, annotMQ[,c("db","conta","nameIni")])
-        } else {
-          ## need to match order of annot & annotMQ
-          annotM <- cbind(Accession=annotMQ[,"ID"], Description=NA, EntryName=annotMQ[,"name"], Species=NA, GeneName=NA, annotMQ[,c("db","conta","nameIni")])
-          matchAcc <- wrMisc::naOmit(match(wrMisc::naOmit(annot[,"Accession"]), annotM[,"Accession"]))
-          if(debug) message(fxNa,"Matching annotation from fasta to annot from (MQ) 'protein_group' : Adding ",length(matchAcc)," items")
-          if(length(matchAcc) >0) {
-            annotM[which(annotM[,"Accession"] %in% wrMisc::naOmit(annot[,"Accession"])), c("Description","Species","GeneName")] <- annot[matchAcc]
-          }
-          annot <- annotM
-          rm(annotM)
-        }
-      }
-    }
     if(debug) {message(fxNa,"rWB4e"); rWB4e <- list(paFi=paFi,path=path,chPa=chPa,tmp=tmp,extrColNames=extrColNames,chCol=chCol,counts=counts,
-      quantCol=quantCol,abund=abund,chNum=chNum,ch2=ch2,annot=annot,remConta=remConta,specPref=specPref)}
+      quantCol=quantCol,abund=abund,chNum=chNum,annot=annot,remConta=remConta,specPref=specPref)}
 
     ## remove Wombat contaminants
-    conLi <- grep("CON__[[:alnum:]]", annot[, if(ncol(annot) >1) "Accession" else 1])
+   #useColumn <- wrMisc::naOmit(match(c("Accession","protein_group"), colnames(annot)))
+    conLi <- grep("CON__[[:alnum:]]", annot[, if(ncol(annot) >1) wrMisc::naOmit(match(c("Accession","protein_group"), colnames(annot)))[1] else 1])
     if(remConta) {
       if(length(conLi) >0) {
         iniLi <- nrow(annot)
@@ -338,7 +402,7 @@ readWombatNormFile <- function(fileName, path=NULL, quantSoft="(quant software n
 
     ## split Annotation
     if(debug) {message(fxNa,"rWB4f"); rWB4f <- list(path=path,chPa=chPa,tmp=tmp,extrColNames=extrColNames,chCol=chCol,counts=counts,
-      quantCol=quantCol,abund=abund,chNum=chNum,ch2=ch2,annot=annot,remConta=remConta,specPref=specPref)}
+      quantCol=quantCol,abund=abund,chNum=chNum,annot=annot,remConta=remConta,specPref=specPref)}
 
     ## finalize annotation
     chCols <- c("EntryName","GeneName","Species","Contam","Description")
@@ -347,33 +411,35 @@ readWombatNormFile <- function(fileName, path=NULL, quantSoft="(quant software n
     if(!remConta && length(conLi) >0) annot[conLi, "Contam"] <- "TRUE"
 
     if(debug) {message(fxNa,"rWB5"); rWB5 <- list(path=path,chPa=chPa,tmp=tmp,extrColNames=extrColNames,chCol=chCol,counts=counts,
-      quantCol=quantCol,abund=abund,chNum=chNum,ch2=ch2,annot=annot,remConta=remConta,remStrainNo=remStrainNo, specPref=specPref)}
+      quantCol=quantCol,abund=abund,chNum=chNum,annot=annot,remConta=remConta,remStrainNo=remStrainNo, specPref=specPref)}
 
     ## extract species according to custom search parameters 'specPref'
     if(remStrainNo && any(!is.na(annot[,"Species"]))) {
       annot[,"Species"] <- sub(" \\(strain [[:alnum:]].+","", annot[,"Species"])
     }
     ## complete species annot   by info extracted from fasta : ' OS='
-    .completeSpeciesAnnot <- function(spe=c("Homo sapiens", "_HUMAN"), anno=annot, exCoNa=c("Species", "EntryName")) {    # re-written 12jun23
+    .completeSpeciesAnnot <- function(spe=c("Homo sapiens", "_HUMAN"), anno=annot, exCoNa=c("Species", "EntryName","name","proteinName")) {    # re-written 12jun23
       ## complete species if missing in anno[,exCoNa[2]] but found in anno[,exCoNa[1]]; return corrected anno
       chNa <- is.na(anno[,exCoNa[1]]) | nchar(anno[,exCoNa[1]]) <1             # missing (species) annotation
       if(any(chNa, na.rm=TRUE)) {        # suppose that all 'exCoNa' are present as colnames in 'annot'
-        chS <- grep(spe[2], annot[,exCoNa[2]])
-        if(length(chS) >0) anno[which(chS), exCoNa[1]] <- spe[1]
+        useColumn <- if(all(is.na(anno[,exCoNa[2]]))) wrMisc::naOmit(match(exCoNa[3:length(exCoNa)], colnames(anno))) else exCoNa[2]
+        if(length(useColumn) >1) useColumn <- useColumn[1]
+        chS <- grep(spe[1], anno[,useColumn])
+        if(length(chS) >0) anno[chS, exCoNa[1]] <- spe[2]
       }
       anno }
-    if(TRUE) {          # try to recuperate/fix non-given/bad formatted species
+    if(isTRUE(fixSpeciesNames)) {          # try to recuperate/fix non-given/bad formatted species
       chNa <- is.na(annot[,"Species"])
       if(any(chNa)) {
         commonSpec <- .commonSpecies()
-        for(i in 1:nrow(commonSpec)) annot[which(chNa),] <- .completeSpeciesAnnot(commonSpec[i,], annot[which(chNa),], exCoNa=c("Species","EntryName")) }
+        for(i in 1:nrow(commonSpec)) annot[which(chNa),] <- .completeSpeciesAnnot(commonSpec[i,], annot[which(chNa),], exCoNa=c("Species","EntryName","name","proteinName")) }
       if(debug) {message(fxNa,"rWB6"); rWB6 <- list(path=path,chPa=chPa,tmp=tmp,extrColNames=extrColNames,chCol=chCol,counts=counts,
-        quantCol=quantCol,abund=abund,chNum=chNum,ch2=ch2,annot=annot,remConta=remConta,remStrainNo=remStrainNo, specPref=specPref)}
+        quantCol=quantCol,abund=abund,chNum=chNum,annot=annot,remConta=remConta,remStrainNo=remStrainNo, specPref=specPref)}
 
       ## check/complete for truncated species names (ie names found inside other ones)
       chSpe <- which(!is.na(annot[,"Species"]) & nchar(annot[,"Species"]) >0)
       if(length(chSpe) >0) {
-        OS <- gsub(";{1,5}$", "", annot[chSpe,"Species"])  # remove tailing separators
+        OS <- gsub(";{1,5}$", "", annot[chSpe,"Species"])              # remove tailing separators
         OSna <- unique(OS)
         ch1 <- nchar(OSna) <1
         if(debug) {message(fxNa,"rWB6b")}
@@ -383,10 +449,12 @@ readWombatNormFile <- function(fileName, path=NULL, quantSoft="(quant software n
         if(any(chTr, na.rm=TRUE)) { if(!silent) message(fxNa,"Found ",sum(chTr)," species name(s) appearing inside other ones, assume as truncated (eg  ",OSna[which(chTr)[1]],")")
           for(i in which(chTr)) OS[which(OS==OSna[i])] <- OSna[ch2[[i]][1]]
         }
-        annot[chSpe,"Species"] <- OS}
+        annot[chSpe,"Species"] <- OS }
     }
+    ## in case "Accession" is avail not "EntryName" is not
+
     if(debug) {message(fxNa,"rWB7"); rWB7 <- list(path=path,chPa=chPa,tmp=tmp,extrColNames=extrColNames,chCol=chCol,quantCol=quantCol,remStrainNo=remStrainNo,
-      abund=abund,chNum=chNum,ch2=ch2, annot=annot,remConta=remConta,counts=counts)}
+      abund=abund,chNum=chNum,specPref=specPref, annot=annot,remConta=remConta,counts=counts)}
 
     ## look for tags from  specPref
     if(length(specPref) >0) {
@@ -403,14 +471,18 @@ readWombatNormFile <- function(fileName, path=NULL, quantSoft="(quant software n
       tab <- rbind(names(tab), paste0(": ",tab,",  "))
       if(!silent) message("     data by species : ", apply(tab, 2, paste)) } }              # all lines assigned
 
-    if(debug) {message(fxNa,"rWB8")}
+    if(debug) {message(fxNa,"rWB8"); rWB8 <- list(path=path,chPa=chPa,tmp=tmp,extrColNames=extrColNames,chCol=chCol,quantCol=quantCol,remStrainNo=remStrainNo,
+      abund=abund,chNum=chNum, annot=annot,remConta=remConta,counts=counts) }
 
     ## look for unique col from $annot to use as rownames
+    if(nrow(annot) <1) warning("annot is empty (NO lines)")
+     ## maybe annot is empty ?
+
     chAn <- colSums(apply(annot[,c(1:min(ncol(annot),7))], 2, duplicated), na.rm=TRUE)          # look at first 6 cols : how many elements per column duplicated
     if(!silent) message(fxNa,"Use column '",colnames(annot)[which.min(chAn)],"' as identifyer (has fewest, ie ",chAn[which.min(chAn)]," duplicated entries) as rownames")
     rownames(abund) <- rownames(annot) <- if(any(chAn==0)) annot[,which(chAn==0)[1]] else wrMisc::correctToUnique(annot[,which.min(chAn)], callFrom=fxNa)
     if(length(counts) >0) rownames(counts) <- rownames(annot)
-    if(debug) {message(fxNa,"rWB9"); rWB9 <- list(path=path,chPa=chPa,tmp=tmp,extrColNames=extrColNames,chCol=chCol,quantCol=quantCol,abund=abund,chNum=chNum,ch2=ch2,
+    if(debug) {message(fxNa,"rWB9"); rWB9 <- list(path=path,chPa=chPa,tmp=tmp,extrColNames=extrColNames,chCol=chCol,quantCol=quantCol,abund=abund,chNum=chNum,
       annot=annot,refLi=refLi,remConta=remConta)}
 
     ## check for reference for normalization
@@ -423,11 +495,11 @@ readWombatNormFile <- function(fileName, path=NULL, quantSoft="(quant software n
         if(!silent) message(fxNa,"Normalize using (custom) subset of ",length(refLi)," lines specified as '",refLiIni,"'")}}    # may be "mainSpe"
 
     ## take log2 & normalize
-    quant <- try(wrMisc::normalizeThis(log2(abund), method=normalizeMeth, mode="additive", refLines=refLi, silent=silent, debug=debug, callFrom=fxNa), silent=TRUE)
+    quant <- try(wrMisc::normalizeThis(if(isLog2) abund else log2(abund), method=normalizeMeth, mode="additive", refLines=refLi, silent=silent, debug=debug, callFrom=fxNa), silent=TRUE)
     if(inherits(quant, "try-error")) { warning(fxNa,"PROBLEMS ahead : Unable to normalize as log2-data !!") }
 
-    if(debug) {message(fxNa,"rWB10"); rWB10 <- list(path=path,chPa=chPa,tmp=tmp,extrColNames=extrColNames,chCol=chCol,quantCol=quantCol,abund=abund,chNum=chNum,ch2=ch2,
-      quant=quant,annot=annot,remConta=remConta)}
+    if(debug) {message(fxNa,"rWB10"); rWB10 <- list(path=path,chPa=chPa,tmp=tmp,extrColNames=extrColNames,chCol=chCol,quantCol=quantCol,abund=abund,chNum=chNum,
+      quant=quant,annot=annot,remConta=remConta,groupPref=groupPref,quantSoft=quantSoft,suplAnnotFile=suplAnnotFile, sdrf=sdrf,paFi=paFi )}
 
     ### GROUPING OF REPLICATES AND SAMPLE META-DATA
     ## prepare for sdrf (search in directory above)
@@ -439,28 +511,37 @@ readWombatNormFile <- function(fileName, path=NULL, quantSoft="(quant software n
     }
 
     if(length(suplAnnotFile) >0 || length(sdrf) >0) {
-      setupSd <- readSampleMetaData(sdrf=sdrf, suplAnnotFile=suplAnnotFile, quantMeth=paste0("WB",quantSoft), path=path, abund=utils::head(quant), groupPref=groupPref, silent=silent, debug=debug, callFrom=fxNa)
+      headAbund <- utils::head(quant)
+      chX <- grepl("^X[[:digit:]]",colnames(quant))                     #check for heading X in all colnames
+      if(any(chX)) colnames(headAbund)[which(chX)] <- sub("^X", "", colnames(headAbund)[which(chX)])
+      ## check for matching : (as done within readSampleMetaData) - can't , sdrf not read yet ...
+      setupSd <- readSampleMetaData(sdrf=sdrf, suplAnnotFile=suplAnnotFile, quantMeth=paste0("WB",quantSoft), path=NULL, abund=headAbund, groupPref=groupPref, silent=silent, debug=debug, callFrom=fxNa)
     }
     if(debug) {message(fxNa,"rWB13 .."); rWB13 <- list(sdrf=sdrf,gr=gr,suplAnnotFile=suplAnnotFile,abund=abund, quant=quant,refLi=refLi,annot=annot,setupSd=setupSd,sampleNames=sampleNames)}
 
     ## finish groups of replicates & annotation setupSd
     setupSd <- .checkSetupGroups(abund=abund, setupSd=setupSd, gr=gr, sampleNames=sampleNames, quantMeth="WB", silent=silent, debug=debug, callFrom=fxNa)
-    colnames(quant) <- colnames(abund) <- if(length(setupSd$sampleNames)==ncol(abund)) setupSd$sampleNames else setupSd$groups
-    if(length(dim(counts)) >1 && length(counts) >0) colnames(counts) <- setupSd$sampleNames
+    colNa <- if(length(setupSd$sampleNames)==ncol(abund)) setupSd$sampleNames else setupSd$groups
+    chGr <- grepl("^X[[:digit:]]", colNa)                                                # check & remove heading 'X' from initial column-names starting with digits
+    if(any(chGr)) colNa[which(chGr)] <- sub("^X","", colNa[which(chGr)])                 #
+    colnames(quant) <- colnames(abund) <- colNa
+    if(length(setupSd$sampleNames)==ncol(abund)) setupSd$sampleNames <- colNa else setupSd$groups <- colNa
+    if(length(dim(counts)) >1 && length(counts) >0) colnames(counts) <- colNa
 
-    if(debug) {message(fxNa,"Read sample-meta data, rWB14"); rWB14 <- list(sdrf=sdrf,suplAnnotFile=suplAnnotFile,abund=abund, quant=quant,refLi=refLi,annot=annot,setupSd=setupSd,plotGraph=plotGraph)}
+    if(debug) {message(fxNa,"Read sample-meta data, rWB14"); rWB14 <- list(sdrf=sdrf,suplAnnotFile=suplAnnotFile,abund=abund, quant=quant,refLi=refLi,annot=annot,setupSd=setupSd,plotGraph=plotGraph,normalizeMeth=normalizeMeth,isLog2=isLog2)}
 
     ## main plotting of distribution of intensities
     custLay <- NULL
     if(is.numeric(plotGraph) && length(plotGraph) >0) {custLay <- as.integer(plotGraph); plotGraph <- TRUE} else {
         if(!isTRUE(plotGraph)) plotGraph <- FALSE}
-    if(plotGraph) .plotQuantDistr(abund=abund, quant=quant, custLay=custLay, normalizeMeth=normalizeMeth, softNa=paste("Wombat-P",quantSoft),
+    if(plotGraph) .plotQuantDistr(abund=if(isFALSE(isLog2) || "none" %in% normalizeMeth) NULL else abund, quant=quant, custLay=custLay, normalizeMeth=normalizeMeth, softNa=paste("Wombat-P",quantSoft),
       refLi=refLi, refLiIni=refLiIni, tit=titGraph, silent=silent, callFrom=fxNa, debug=debug)
-## meta-data
+    
+    ## meta-data
     notes <- c(inpFile=paFi, qmethod=paste("Wombat-P",quantSoft), qMethVersion=if(length(infoDat) >0) unique(infoDat$Software.Revision) else NA,
     	rawFilePath= if(length(infoDat) >0) infoDat$File.Name[1] else NA, normalizeMeth=normalizeMeth, call=match.call(),
       created=as.character(Sys.time()), wrProteo.version=utils::packageVersion("wrProteo"), machine=Sys.info()["nodename"])
     ## final output
     if(isTRUE(separateAnnot)) list(raw=abund, quant=quant, annot=annot, counts=counts, sampleSetup=setupSd, quantNotes=parametersD, notes=notes) else data.frame(quant,annot) }
 }
-
+  

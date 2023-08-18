@@ -38,7 +38,7 @@ This information may, for example, be used to normalize only to all proteins of 
 If $mainSpecies or $conta: match to annot[,"Species"], annot[,"EntryName"], annot[,"GeneName"], if length==1 grep in  annot[,"Species"]
 }
 \examples{
-.checkKnitrProt()
+.commonSpecies()
 }
 \seealso{
 used in \code{readProtDiscovererFile},  \code{\link{readMaxQuantFile}}, \code{\link{readProlineFile}}, \code{\link{readFragpipeFile}}

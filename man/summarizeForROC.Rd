@@ -14,6 +14,7 @@ summarizeForROC(
   spec = c("H", "E", "S"),
   annotCol = "Species",
   filterMat = "filter",
+  batchMode = FALSE,
   tit = NULL,
   color = 1,
   plotROC = TRUE,
@@ -44,6 +45,8 @@ summarizeForROC(
 
 \item{filterMat}{(character) name (or index) of element of \code{test} containing matrix or vector of logical filtering results}
 
+\item{batchMode}{(logical) if \code{batchMode=TRUE} the function will return an empty matrix if no proteins qualify for computing ROC (eg all spike-proteins not passig filters), and \code{plotROC} will be set to \code{FALSE}}
+
 \item{tit}{(character) optinal custom title in graph}
 
 \item{color}{(character or integer) color in graph}
@@ -66,28 +69,28 @@ summarizeForROC(
 This function returns a numeric matrix containing the columns 'alph', 'spec', 'sens', 'prec', 'accur', 'FD' plus two columns with absolute numbers of lines (genes/proteins) passing the current threshold level alpha (1st species, all other species)
 }
 \description{
-This function takes statistical testing results (obtained using \code{\link{testRobustToNAimputation}} or \code{\link[wrMisc]{moderTest2grp}}, 
-based on \href{https://bioconductor.org/packages/release/bioc/html/limma.html}{limma}) and calculates specifcity and sensitivity values for plotting ROC-curves along a panel of thresholds.  
-Based on annotation (from test$annot) with the user-defined column for species (argument 'spec') the counts of TP (true positives), FP (false positves), FN (false negatives) and TN are determined. 
+This function takes statistical testing results (obtained using \code{\link{testRobustToNAimputation}} or \code{\link[wrMisc]{moderTest2grp}},
+based on \href{https://bioconductor.org/packages/release/bioc/html/limma.html}{limma}) and calculates specifcity and sensitivity values for plotting ROC-curves along a panel of thresholds.
+Based on annotation (from test$annot) with the user-defined column for species (argument 'spec') the counts of TP (true positives), FP (false positves), FN (false negatives) and TN are determined.
 In addition, an optional plot may be produced.
 }
 \details{
 Determining TP and FP counts requires 'ground trouth' experiments, where it is known in advance which proteins are expected to change abundance between two groups of samples.
 Typically this is done by mixing proteins of different species origin, the first species noted by argument 'spec' designes the species to be considered constant (expected as FN in statistical tests).
-Then, one or mutiple additional spike-in species can be defined. As the spike-in cocentration should have been altered between different gruops of samples, they are expected as TP. 
- 
-The main aim of this function consists in providing specifcity and sensitivity values, plus counts of TP (true positives), FP (false positves), FN (false negatives) and TN (true negatives),  
+Then, one or mutiple additional spike-in species can be defined. As the spike-in cocentration should have been altered between different gruops of samples, they are expected as TP.
+
+The main aim of this function consists in providing specifcity and sensitivity values, plus counts of TP (true positives), FP (false positves), FN (false negatives) and TN (true negatives),
 along various thrsholds (specified in column 'alph') for statistical tests preformed prior to calling this function.
- 
-Note, that the choice of species-annotation plays a crucial role who the counting results are obtained. 
+
+Note, that the choice of species-annotation plays a crucial role who the counting results are obtained.
 In case of multiple spike-in species the user should pay attention if they all are expected to change abundance at the same ratio.
 If not, it is advised to run this function multiple times sperately only with the subset of those species expected to change at same ratio.
-  
-The dot on the plotted curve shows the results at the level of the single threshold alpha=0.05.   
+
+The dot on the plotted curve shows the results at the level of the single threshold alpha=0.05.
 For plotting multiple ROC curves as overlay and additional graphical parameters/options you may use \code{\link{plotROC}}.
- 
+
 See also \href{https://en.wikipedia.org/wiki/Receiver_operating_characteristic}{ROC on Wkipedia} for explanations of TP,FP,FN and TN as well as examples.
-Note that numerous other packages also provide support for building and plotting ROC-curves : Eg \href{https://CRAN.R-project.org/package=dlstats}{rocPkgShort}, 
+Note that numerous other packages also provide support for building and plotting ROC-curves : Eg \href{https://CRAN.R-project.org/package=dlstats}{rocPkgShort},
  \href{https://CRAN.R-project.org/package=ROCR}{ROCR}, \href{https://CRAN.R-project.org/package=pROC}{pROC} or \href{https://CRAN.R-project.org/package=ROCit}{ROCit}
 }
 \examples{

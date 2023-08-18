@@ -57,7 +57,7 @@ plotROC(
 
 \item{speciesOrder}{(integer) custom order of species in legend}
 
-\item{txtLoc}{(numeric, length=3) location for text (x, y and proportional factor for line-offset, default is c(0.4,0.3,0.04))}
+\item{txtLoc}{(numeric, length=3) location for text (x, y location and proportional factor for line-offset, default is c(0.4,0.3,0.04))}
 
 \item{legCex}{(numeric) cex expansion factor for legend (see also \code{\link[graphics]{par}})}
 
@@ -75,8 +75,8 @@ plotROC(
 This function returns only a plot with ROC curves
 }
 \description{
-\code{plotROC} plots ROC curves based on results from \code{\link{summarizeForROC}}. 
-This function plots only, it does not return any data. It allows printing simultaneously multiple ROC curves from different studies, 
+\code{plotROC} plots ROC curves based on results from \code{\link{summarizeForROC}}.
+This function plots only, it does not return any data. It allows printing simultaneously multiple ROC curves from different studies,
 it is also compatible with data from 3 species mix as in proteomics benchmark.
 Input can be prepared using \code{\link[wrMisc]{moderTest2grp}} followed by \code{\link{summarizeForROC}}.
 }

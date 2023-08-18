@@ -243,7 +243,7 @@ resPL1 <- extractTestingResults(testPL, compNo=1, thrsh=0.05, FCthrs=2)
 
 ## ----pairWise3, fig.height=4.5, fig.width=9.5, fig.align="center", echo=TRUE----
 par(mar=c(5.5, 4.7, 4, 1))
-imageW(table1[,c("sig.PD.BH","sig.MQ.BH","sig.PL.BH" )], col=RColorBrewer::brewer.pal(9,"YlOrRd"),
+imageW(table1[,c("sig.PD.BH","sig.MQ.BH","sig.PL.BH" )], col=rev(RColorBrewer::brewer.pal(9,"YlOrRd")),
   transp=FALSE, tit="Number of BH.FDR passing proteins by the quantification approaches")
 mtext("Dark red for high number signif proteins", cex=0.75)
 
@@ -303,7 +303,7 @@ ratTab <- sapply(5:1, function(x) { y <- table1[match(rownames(AucAll),rownames(
 colnames(ratTab) <- paste0("\nclu",5:1,"\nn=",rev(table(kMAx)))
 layout(1)
 imageW(ratTab, tit="Frequency of rounded log2FC in the 5 clusters", xLab="log2FC (rounded)", col=RColorBrewer::brewer.pal(9,"YlOrRd"),las=1)
-mtext("dark red for low number signif proteins", cex=0.7)
+mtext("Dark red for enrichment of given pair-wise ratio", cex=0.7)
 
 ## ----ROC_grp5tab, echo=TRUE---------------------------------------------------
 colPanel <- 2:5
@@ -457,8 +457,8 @@ sumNAperMeth <- cbind(PD=countRawNA(dataPD), MQ=countRawNA(dataMQ), PL=countRawN
 UPS1na <- sub("_UPS","",dataPL$annot[UPS1$ac,"EntryName"])
 par(mar=c(6.8, 3.5, 4, 1))
 imageW(sumNAperMeth, rowNa=UPS1na, tit="Number of NAs in UPS proteins", xLab="", yLab="",
-  transp=FALSE, col=RColorBrewer::brewer.pal(9,"YlOrRd"))
-mtext("dark red for high number of NAs",cex=0.7)
+  transp=FALSE, col=rev(RColorBrewer::brewer.pal(9,"YlOrRd")))
+mtext("Dark red for high number of NAs",cex=0.7)
 
 ## ----PCA2PD, fig.height=12, fig.width=9.5, fig.align="center", echo=TRUE------
 try(plotPCAw(testPD$datImp[which(testPD$annot[,"SpecType"]=="spike"),], sampleGrp=grp9, tit="PCA on ProteomeDiscoverer, UPS1 only (NAs imputed)", rowTyName="proteins", useSymb2=0), silent=TRUE)

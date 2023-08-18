@@ -86,7 +86,7 @@ dim(dataMQ$quant)
 grp9 <- rep(1:9,each=3)
 head(grp9)
 
-## special group of proteins (we want to highlight lateron)
+## special group of proteins (we want to differentiate/ highlight lateron)
 UPS1ac <- c("P00915", "P00918", "P01031", "P69905", "P68871", "P41159", "P02768", "P62988",
   "P04040", "P00167", "P01133", "P02144", "P15559", "P62937", "Q06830", "P63165", "P00709", "P06732",
   "P12081", "P61626", "Q15843", "P02753", "P16083", "P63279", "P01008", "P61769", "P55957", "O76070",
@@ -106,6 +106,13 @@ table(dataMQ$annot[,"SpecType"])
 
 ## ----readMaxQuant4,  echo=TRUE------------------------------------------------
 dataMQ <- readMaxQuantFile(path1, specPref=specPrefMQ, sdrf="PXD001819", suplAnnotFile=TRUE, groupPref=list(lowNumberOfGroups=FALSE), plotGraph=FALSE)
+
+## ----exportSdrfDraftMaxQuant5,  echo=TRUE-------------------------------------
+path1 <- system.file("extdata", package="wrProteo")
+fiNaMQ <- "proteinGroups.txt.gz"
+dataMQ2 <- readMaxQuantFile(path1, file=fiNaMQ, refLi="mainSpe", sdrf=FALSE, suplAnnotFile=TRUE)
+## Here we'll write simply in the current temporary directory of this R-session
+exportSdrfDraft(dataMQ2, file.path(tempdir(),"testSdrf.tsv"))
 
 ## ----readMaxQuantPeptides,  echo=TRUE-----------------------------------------
 MQpepFi1 <- "peptides_tinyMQ.txt.gz"

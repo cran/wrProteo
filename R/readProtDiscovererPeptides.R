@@ -1,6 +1,6 @@
 #' Read Tabulated Files Exported by ProteomeDiscoverer At Peptide Level
 #'
-#' Depreciated old version of Peptide identification and quantification results from \href{https://www.thermofisher.com/order/catalog/product/OPTON-30812}{Thermo ProteomeDiscoverer}
+#' Initials petide identificationa and quantification results form \href{https://www.thermofisher.com/order/catalog/product/OPTON-30812}{Thermo ProteomeDiscoverer}
 #' which were exported as tabulated text can be imported and relevant information extracted.
 #' The final output is a list containing 3 elements: \code{$annot}, \code{$raw} and optional \code{$quant}, or returns data.frame with entire content of file if \code{separateAnnot=FALSE}.
 #'
@@ -50,12 +50,11 @@
 #' path1 <- system.file("extdata", package="wrProteo")
 #'
 #' @export
-readProtDiscovPeptides <- function(fileName, path=NULL, normalizeMeth="median", sampleNames=NULL, suplAnnotFile=TRUE, gr=NULL, sdrf=NULL, read0asNA=TRUE, quantCol="^Abundances*",
+readProtDiscovererPeptides <- function(fileName, path=NULL, normalizeMeth="median", sampleNames=NULL, suplAnnotFile=TRUE, gr=NULL, sdrf=NULL, read0asNA=TRUE, quantCol="^Abundances*",
   annotCol=NULL, contamCol="Contaminant", refLi=NULL, separateAnnot=TRUE, FDRCol=list(c("^Protein.FDR.Confidence","High"), c("^Found.in.Sample.","High")), plotGraph=TRUE,
-  titGraph="Proteome Discoverer", wex=1.6, specPref=c(conta="CON_|LYSC_CHICK", mainSpecies="OS=Homo sapiens"), silent=FALSE, debug=FALSE, callFrom=NULL) {  
-  message("+++ This function is depreciated, it has been replaced by readProtDiscovererPeptides() from the same package ! \n +++ Synthax and structure of output remain the same ! \n")
+  titGraph="Proteome Discoverer", wex=1.6, specPref=c(conta="CON_|LYSC_CHICK", mainSpecies="OS=Homo sapiens"), silent=FALSE, debug=FALSE, callFrom=NULL) {
   ## read ProteomeDiscoverer exported txt
-  fxNa <- wrMisc::.composeCallName(callFrom, newNa="readProtDiscovPeptides")
+  fxNa <- wrMisc::.composeCallName(callFrom, newNa="readProtDireadProtDiscovererPeptidesscovPeptides")
   oparMar <- if(plotGraph) graphics::par("mar") else NULL       # only if figure might be drawn
 
   reqPa <- c("utils","wrMisc")

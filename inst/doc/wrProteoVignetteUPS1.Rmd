@@ -559,7 +559,7 @@ However, some proteins with enthousiastic FDR values have very low log-FC amplit
 
 ```{r pairWise3, fig.height=4.5, fig.width=9.5, fig.align="center", echo=TRUE}
 par(mar=c(5.5, 4.7, 4, 1))
-imageW(table1[,c("sig.PD.BH","sig.MQ.BH","sig.PL.BH" )], col=RColorBrewer::brewer.pal(9,"YlOrRd"),
+imageW(table1[,c("sig.PD.BH","sig.MQ.BH","sig.PL.BH" )], col=rev(RColorBrewer::brewer.pal(9,"YlOrRd")),
   transp=FALSE, tit="Number of BH.FDR passing proteins by the quantification approaches")
 mtext("Dark red for high number signif proteins", cex=0.75)
 ```
@@ -597,8 +597,8 @@ The data get constructed by sliding through a panel of threshold-values for the 
 Due to the experimental setup we know that all yeast proteins should stay constant and only [UPS1 proteins](https://www.sigmaaldrich.com/FR/en/product/sigma/ups1) are expected to change.
 For each of these threshold values one counts the number of true positives (TP), false positives (FP) etc, allowing then to calculate _sensitivity_ and _specificity_.
 
- In the case of bechmarking quantitation efforts, ROC curves are used to judge how well heterologous spikes [UPS1 proteins](https://www.sigmaaldrich.com/FR/en/product/sigma/ups1) can be recognized as differentially abundant while constant yeast matrix proteins should not get classified as differential.
- Finally, ROC curves let us also gain some additional insights in the question which cutoff may be optimal or if the commonly used 5-percent FDR threshld cutoff allows getting the best out of the testing system.
+In the case of bechmarking quantitation efforts, ROC curves are used to judge how well heterologous spikes [UPS1 proteins](https://www.sigmaaldrich.com/FR/en/product/sigma/ups1) can be recognized as differentially abundant while constant yeast matrix proteins should not get classified as differential.
+Finally, ROC curves let us also gain some additional insights in the question which cutoff may be optimal or if the commonly used 5-percent FDR threshld cutoff allows getting the best out of the testing system.
 
 The next step consists in calculating the area under the curve (AUC) for the individual profiles of each pairwise comparison.
 Below, these calculations of _summarizeForROC()_ are run in batch.
@@ -692,7 +692,7 @@ ratTab <- sapply(5:1, function(x) { y <- table1[match(rownames(AucAll),rownames(
 colnames(ratTab) <- paste0("\nclu",5:1,"\nn=",rev(table(kMAx)))
 layout(1)
 imageW(ratTab, tit="Frequency of rounded log2FC in the 5 clusters", xLab="log2FC (rounded)", col=RColorBrewer::brewer.pal(9,"YlOrRd"),las=1)
-mtext("dark red for low number signif proteins", cex=0.7)
+mtext("Dark red for enrichment of given pair-wise ratio", cex=0.7)
 ```
 
 We can see, that the cluster of best ROC-curves (cluster 5) covers practically all UPS1 log-ratios from this experiment without being restricted just to the high ratios.
@@ -898,8 +898,8 @@ sumNAperMeth <- cbind(PD=countRawNA(dataPD), MQ=countRawNA(dataMQ), PL=countRawN
 UPS1na <- sub("_UPS","",dataPL$annot[UPS1$ac,"EntryName"])
 par(mar=c(6.8, 3.5, 4, 1))
 imageW(sumNAperMeth, rowNa=UPS1na, tit="Number of NAs in UPS proteins", xLab="", yLab="",
-  transp=FALSE, col=RColorBrewer::brewer.pal(9,"YlOrRd"))
-mtext("dark red for high number of NAs",cex=0.7)
+  transp=FALSE, col=rev(RColorBrewer::brewer.pal(9,"YlOrRd")))
+mtext("Dark red for high number of NAs",cex=0.7)
 ```
 
 Typically the number of NAs is similar when comparing the different quantitation approaches, it tends to be a bit higher with MaxQuant.
@@ -1128,7 +1128,7 @@ imageW(datUPS1[,,1]/datUPS1[,,3], col=rev(col1), tit="Regression score / median 
 mtext("dark red for high (good) lmScore/abundance ratio)", cex=0.75)
 ```
 
-From the heatmap-like plots we can see that some proteins are rather consistently quantified better by any of the methods.
+From the heatmap-like plots we can see that some proteins are rather consistently quantified by any of the methods.
 Some of the varaibility may be explained by the number of peptides (in case of MaxQuant 'razor-peptides' were used), see plot of 'regression score / number of peptides'.
 In contrast, UPS-protein median abundance does not correlate or explain this phenomenon (see last plot 'regression score / median abundance').
 So we cannot support the hypothesis that highly abundant proteins get quantified better.
@@ -1136,7 +1136,7 @@ So we cannot support the hypothesis that highly abundant proteins get quantified
 
 ### Grouping of UPS1 Proteins to Display Representative Proteins
 
-Using the linear regression score defined above we can rank UPS1 proteins and display representative ones in order to avoid crowed and repetitive figures.
+Using the linear regression score defined above we can rank UPS1 proteins and display representative ones in order to avoid crowded and repetitive figures.
 
 Now, we can try to group the regression scores into groups and easily display representative examples for each group.
 Here, we (pre)define that we want to obtain 5 groups (like ratings from 1 -5 starts), a k-Means clustering approach was chosen.

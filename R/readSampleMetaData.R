@@ -306,7 +306,7 @@ readSampleMetaData <- function(quantMeth, sdrf=NULL, suplAnnotFile=NULL, path=".
         if(isTRUE(chSd)) {
           if(!silent && length(abund) >0) if(nrow(summaryD) == ncol(abund)) { message(fxNa,"PROBLEM : Meta-data and abundance data do not match !  ",
             "Number of samples from ",suplAnnotFile[1]," (",nrow(summaryD),") and from main data (",ncol(abund),") do NOT match !! .. ignoring") }
-          #if(debug) save(sdrf,abund,suplAnnotFile,quantMeth,summaryD,quantMeth,syncColumns, file="C:\\E\\projects\\TCAmethods\\wrProteoRamus\\rSM4mq.RData") 
+          #if(debug) save(sdrf,abund,suplAnnotFile,quantMeth,summaryD,quantMeth,syncColumns, file="C:\\E\\projects\\TCAmethods\\wrProteoRamus\\rSM4mq.RData")
         }
         if(length(parametersD) >0) {   ## create 'parametersSd' for sdrf
           parametersCol <- paste0(c("MS/MS tol.","MS/MS deisotoping tolerance","MS/MS deisotoping tolerance unit")," (",MStype,")")    # also "Top MS/MS peaks per Da interval." ?
@@ -377,7 +377,7 @@ readSampleMetaData <- function(quantMeth, sdrf=NULL, suplAnnotFile=NULL, path=".
           if(!chSd) {
             if(!silent && length(abund) >0) if(nrow(summaryD) == ncol(abund)) { message(fxNa,"PROBLEM : meta-data and abundance data do not match !  ",
               "Number of samples from ",suplAnnotFile[1]," (",nrow(summaryD),") and from main data (",ncol(abund),") do NOT match !! .. ignoring") }
-            #if(debug) save(sdrf,abund,suplAnnotFile,quantMeth,summaryD,quantMeth, file="C:\\E\\projects\\TCAmethods\\wrProteoRamus\\rSM4mq.RData") 
+            #if(debug) save(sdrf,abund,suplAnnotFile,quantMeth,summaryD,quantMeth, file="C:\\E\\projects\\TCAmethods\\wrProteoRamus\\rSM4mq.RData")
           }
         }
         syncColumns["annotBySoft"] <- TRUE
@@ -395,11 +395,11 @@ readSampleMetaData <- function(quantMeth, sdrf=NULL, suplAnnotFile=NULL, path=".
         ## PD not much possible since colnames  ".F1.Sample",".F2.Sample",".F3.Sample",...
         ## most other software has summaryD in same order as abund
         if("MQ" %in% quantMeth) {   # colnames of abund not necessarly found in summaryD
-          summaryD <- wrMisc::matchMatrixLinesToRef(mat=summaryD, ref=colnames(abund), inclInfo=TRUE, silent=silent, debug=debug, callFrom=fxNa)
+          summaryD <- wrMisc::matchMatrixLinesToRef(mat=summaryD, ref=colnames(abund), inclInfo=TRUE, silent=TRUE, debug=debug, callFrom=fxNa)
           syncColumns["annotBySoft"] <- length(summaryD$newOrder)  >0
           summaryD <- summaryD$mat  }
         if(any(c("PL","FP") %in% quantMeth, na.rm=TRUE)) {
-          summaryD <- wrMisc::matchMatrixLinesToRef(mat=summaryD, ref=colnames(abund), inclInfo=TRUE, silent=silent, debug=debug, callFrom=fxNa)
+          summaryD <- wrMisc::matchMatrixLinesToRef(mat=summaryD, ref=colnames(abund), inclInfo=TRUE, silent=TRUE, debug=debug, callFrom=fxNa)
           syncColumns["annotBySoft"] <- length(summaryD$newOrder)  >0
           summaryD <- summaryD$mat  }
       }
@@ -481,6 +481,7 @@ readSampleMetaData <- function(quantMeth, sdrf=NULL, suplAnnotFile=NULL, path=".
         if(length(abund) >0 && nrow(sdrfDat) != ncol(abund)) {
           if(!silent) message(fxNa,"NOTE : Ignoring 'sdrf'  : it does NOT have the expected number or rows (",nrow(sdrfDat)," given but ",ncol(abund)," expected !)")
           sdrf <- sdrfDat <- NULL }}
+      if(debug) {message(fxNa,"rSM6a"); rSM6a <- list(sdrf=sdrf,sdrfDat=sdrfDat,abund=abund,uplAnnotFile=suplAnnotFile,quantMeth=quantMeth,abund=abund,summaryD=summaryD,parametersD=parametersD,syncColumns=syncColumns) }
 
       ## 2.2  need to match lines (samples) of sdrf (setupDat) to summaryD and/or colnames of abund
       if(length(sdrfDat) >0) {
@@ -513,19 +514,41 @@ readSampleMetaData <- function(quantMeth, sdrf=NULL, suplAnnotFile=NULL, path=".
             }
             syncColumns["sdrfDat"] <- TRUE
           } else if(!silent) message(fxNa, if(debug) "rSM6a  "," summaryD exists, but unable to find file-names")
-          if(debug) {message(fxNa,"rSM6a"); rSM6a <- list() }
+          if(debug) { message(fxNa,"rSM6a1  dim sdrfDat ",nrow(sdrfDat)," ",ncol(sdrfDat)); rSM6a1 <- list(sdrf=sdrf,sdrfDat=sdrfDat,abund=abund,uplAnnotFile=suplAnnotFile,quantMeth=quantMeth,abund=abund,summaryD=summaryD,parametersD=parametersD,syncColumns=syncColumns) }
 
           #message("==save Image  rSM6a.Rdata ==");  save(sdrf,sdrfDat,abund,suplAnnotFile,quantMeth,abund,summaryD,setupSdSoft, file="C:\\E\\projects\\TCAmethods\\wrProteoRamus\\rSM6a.Rdata")
         } else {             # no summaryD, try clanames of abund
           if(length(abund) >0 && length(dim(abund)) >1) {
+            if(debug) { message(fxNa,"rSM6b  dim sdrfDat ",nrow(sdrfDat)," ",ncol(sdrfDat)); rSM6b <- list(sdrf=sdrf,sdrfDat=sdrfDat,abund=abund,uplAnnotFile=suplAnnotFile,quantMeth=quantMeth,abund=abund,summaryD=summaryD,parametersD=parametersD,syncColumns=syncColumns) }
             ## requires utils::packageVersion("wrMisc") > "1.11.1"
+            sdrfDaIni <- sdrfDat
             sdrfDat <- wrMisc::matchMatrixLinesToRef(mat=sdrfDat, ref=colnames(abund), addRef=TRUE, silent=silent, debug=debug, callFrom=fxNa)  # 2way-grep
+            ## check matching ?
+            if(length(sdrfDat) <1) {                                       ## failed to align - further trim names
+              if(debug) { message(fxNa,"Failed to align - further trim names    rSM6a3   ")}
+              ## now look for bad separator '.' before text and remove
+              colNaAbund <- colnames(abund)
+              ch1 <- grep("[[:digit:]]\\.[[:alpha:]]", colNaAbund)
+              if(any(ch1)) {
+                selLoc <- sapply(gregexpr("[[:digit:]]\\.[[:alpha:]]", colNaAbund[ch1]), function(x) x[[1]])
+                colNaAbund[ch1] <- paste0(substr(colNaAbund[ch1],1,selLoc), substring(colNaAbund[ch1], selLoc+2)) }
+              sdrfDat <- wrMisc::matchMatrixLinesToRef(mat=sdrfDaIni, ref=colNaAbund, addRef=TRUE, silent=silent, debug=debug, callFrom=fxNa)  # 2way-grep
+              if(length(sdrfDat) <1) {
+                colNaEnum <- all(grepl("_[[:digit:]]+$", colNaAbund))
+                if(colNaEnum) { tm1 <- sub("_[[:digit:]]+$","", colNaAbund)
+                  colNaAbund2 <- sub("\\..+","", substr(colNaAbund, 1, nchar(tm1)))
+                  colNaAbund3 <- paste0(colNaAbund2,substring(colNaAbund, nchar(colNaAbund) -1),"$")    # without repeated text after 1st '.'
+                  sdrfDat <- wrMisc::matchMatrixLinesToRef(mat=sdrfDaIni, ref=colNaAbund3, addRef=TRUE, silent=silent, debug=debug, callFrom=fxNa)  # 2way-grep
+                }
+              }
+              if(length(sdrfDat) <1 && !silent) message(fxNa,"PROBLEM : FAILED to align sdrf to actual colnames of data !!!")
+            }
+            rm(sdrfDaIni)
             syncColumns["sdrfDat"] <- TRUE                         # really sure that synchronization successful ?
-            if(debug) message(fxNa, "rSM6b "," Custom experimental setup was given")
-          } else  message(fxNa, if(debug) "rSM6b ","Note : NO Additional information on filenames-order found, can't correct/adjust sdrf (ie sdrfDat) !!   rSM6x")
+          } else  message(fxNa, if(debug) "Note : NO Additional information on filenames-order found, can't correct/adjust sdrf (ie sdrfDat) !!   rSM6b")
         }
       }
-      if(debug) { message(fxNa,"rSM6c  dim sdrfDat ",nrow(sdrfDat)," ",ncol(sdrfDat)); rSM6c <- list() }
+      if(debug) { message(fxNa,"rSM6c  dim sdrfDat ",nrow(sdrfDat)," ",ncol(sdrfDat)); rSM6c <- list(sdrf=sdrf,sdrfDat=sdrfDat,abund=abund,uplAnnotFile=suplAnnotFile,quantMeth=quantMeth,abund=abund,summaryD=summaryD,parametersD=parametersD,syncColumns=syncColumns) }
 
       ## 2.3  ready to make setupSd
       if(length(sdrfDat) >0) {
@@ -624,4 +647,4 @@ readSampleMetaData <- function(quantMeth, sdrf=NULL, suplAnnotFile=NULL, path=".
   }
   ## finished readSampleMetaData
   setupSd }
-
+ 
