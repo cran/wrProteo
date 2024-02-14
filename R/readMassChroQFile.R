@@ -46,7 +46,11 @@ readMassChroQFile <- function(fileName, path=NULL, normalizeMeth="median", sampl
   specPref=c(conta="CON_|LYSC_CHICK", mainSpecies="OS=Homo sapiens"), gr=NULL, sdrf=NULL, suplAnnotFile=FALSE, groupPref=list(lowNumberOfGroups=TRUE), plotGraph=TRUE, silent=FALSE, debug=FALSE, callFrom=NULL) {
   ## read MassChroQ (pre-)treated data
   fxNa <- wrMisc::.composeCallName(callFrom, newNa="readMassChroQFile")
-  oparMar <- if(plotGraph) graphics::par("mar") else NULL       # only if figure might be drawn
+
+  oparMar <- graphics::par("mar")                     # old margins, for rest after figure
+  oparLayout <- graphics::par("mfcol")                # old layout, for rest after figure
+  if(plotGraph) on.exit(graphics::par(mar=oparMar, mfcol=oparLayout))            # restore old mar settings
+
   if(!isTRUE(silent)) silent <- FALSE
   if(isTRUE(debug)) silent <- FALSE else debug <- FALSE
   if(!requireNamespace("utils", quietly=TRUE)) stop("package 'utils' not found ! Please install first from CRAN")
@@ -67,7 +71,7 @@ readMassChroQFile <- function(fileName, path=NULL, normalizeMeth="median", sampl
     if(!inherits(tmp[[5]], "try-error")) {          # dont know under which name the object was saved in RData..
       if(length(ls1) +2 ==length(ls())) {
         tmp[[5]] <- get(ls()[which(!ls() %in% ls1 & ls() != "ls1")])            # found no way of removing initial object
-        if(!silent) message(fxNa,"Loading object '",ls()[which(!ls() %in% ls1 & ls() != "ls1")],"' as quantification data out of ",paFi)
+        if(!silent) message(fxNa,"Loading R-object '",ls()[which(!ls() %in% ls1 & ls() != "ls1")],"' as quantification data out of ",paFi)
       } else stop(" Either .RData is empty or element loaded has name of one of the arguments of this function and can't be recognized as such")
     } else stop("Failed to load .RData") }
   if(debug) {message(fxNa,"mc1")}
@@ -148,8 +152,8 @@ readMassChroQFile <- function(fileName, path=NULL, normalizeMeth="median", sampl
 
   ## meta-data
   notes <- c(inpFile=paFi, qmethod="MassChroQ", qMethVersion=if(length(infoDat) >0) unique(infoDat$Software.Revision) else NA,
-   	rawFilePath= if(length(infoDat) >0) infoDat$File.Name[1] else NA, normalizeMeth=normalizeMeth, call=match.call(),
-    created=as.character(Sys.time()), wrProteo.version=utils::packageVersion("wrProteo"), machine=Sys.info()["nodename"])
+   	rawFilePath= if(length(infoDat) >0) infoDat$File.Name[1] else NA, normalizeMeth=normalizeMeth, call=deparse(match.call()),
+    created=as.character(Sys.time()), wrProteo.version=paste(utils::packageVersion("wrProteo"), collapse="."), machine=Sys.info()["nodename"])
   ## prepare for final output
   if(isTRUE(separateAnnot)) list(raw=abund, quant=quant, annot=annot, counts=NULL, quantNotes=NULL, notes=notes) else data.frame(abund, annot)
 }

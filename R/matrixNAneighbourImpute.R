@@ -270,7 +270,7 @@ matrixNAneighbourImpute <- function(dat, gr, imputMethod="mode2", retnNA=TRUE, a
 
       msg <- list(li1=c(" n.woNA=",sum(!isNA),", n.NA =",sum(isNA)),
         li2=c("Imputing based on",paste0("'",imputMethod,"'"),"using",msg),
-        li3=if(any(chImp, na.rm=TRUE)) c("Note mean for imputation is ",if(chImp[1]) "below 0.05 " else "above 0.15", "quantile !!") )
+        li3=if(any(chImp, na.rm=TRUE)) c("Note, mean for imputation is ",if(chImp[1]) "below 0.05 " else "above 0.15", "quantile !!") )
       if(!silent) message(fxNa, paste(sapply(msg, paste, collapse=" "), collapse="\n    "))
 
       ## FIGURE

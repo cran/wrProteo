@@ -78,11 +78,12 @@ readMaxQuantFile <- function(path, fileName="proteinGroups.txt", normalizeMeth="
   titGraph=NULL, wex=1.6, plotGraph=TRUE, silent=FALSE, debug=FALSE, callFrom=NULL) {
   ## prepare
   fxNa <- wrMisc::.composeCallName(callFrom, newNa="readMaxQuantFile")
-  oparMar <- if(plotGraph) graphics::par("mar") else NULL       # only if figure might be drawn
+  oparMar <- graphics::par("mar")                     # old margins, for rest after figure
+  oparLayout <- graphics::par("mfcol")                # old layout, for rest after figure
+  on.exit(graphics::par(mar=oparMar, mfcol=oparLayout))            # restore old mar settings
   remStrainNo <- TRUE                   # if TRUE extract Species in very stringent pattern
   cleanDescription <- TRUE              # clean 'Description' for artifacts of truncated text (tailing ';' etc)
-  oparMar <- graphics::par("mar")
-
+  
   ## functions
 
   ## init check
@@ -405,19 +406,19 @@ readMaxQuantFile <- function(path, fileName="proteinGroups.txt", normalizeMeth="
     if(length(setupSd$sampleNames)==ncol(abund)) setupSd$sampleNames <- colNa else setupSd$groups <- colNa
     if(length(dim(counts)) >1 && length(counts) >0) colnames(counts) <- colNa
 
-    if(debug) {message(fxNa,"Read sample-meta data, rMQ14"); rMQ14 <- list(sdrf=sdrf,suplAnnotFile=suplAnnotFile,abund=abund, quant=quant,refLi=refLi,annot=annot,setupSd=setupSd)}
+    if(debug) {message(fxNa,"Read sample-meta data, rMQ14"); rMQ14 <- list(sdrf=sdrf,suplAnnotFile=suplAnnotFile,abund=abund, quant=quant,refLi=refLi,annot=annot,setupSd=setupSd,paFi=paFi,infoDat=infoDat,normalizeMeth=normalizeMeth)}
 
     ## main plotting of distribution of intensities
     custLay <- NULL
     if(is.numeric(plotGraph) && length(plotGraph) >0) {custLay <- as.integer(plotGraph); plotGraph <- TRUE} else {
         if(!isTRUE(plotGraph)) plotGraph <- FALSE}
     if(plotGraph) .plotQuantDistr(abund=abund, quant=quant, custLay=custLay, normalizeMeth=normalizeMeth, softNa="MaxQuant",
-      refLi=refLi, refLiIni=refLiIni, tit=titGraph, silent=silent, callFrom=fxNa, debug=debug)
+      refLi=refLi, refLiIni=refLiIni, tit=titGraph, silent=debug, callFrom=fxNa, debug=debug)
 ## meta-data
     notes <- c(inpFile=paFi, qmethod="MaxQuant", qMethVersion=if(length(infoDat) >0) unique(infoDat$Software.Revision) else NA,
-    	rawFilePath= if(length(infoDat) >0) infoDat$File.Name[1] else NA, normalizeMeth=normalizeMeth, call=match.call(),
-      created=as.character(Sys.time()), wrProteo.version=utils::packageVersion("wrProteo"), machine=Sys.info()["nodename"])
+    	rawFilePath= if(length(infoDat) >0) infoDat$File.Name[1] else NA, normalizeMeth=normalizeMeth, call=deparse(match.call()),
+      created=as.character(Sys.time()), wrProteo.version=paste(utils::packageVersion("wrProteo"), collapse="."), machine=Sys.info()["nodename"])
     ## final output
     if(isTRUE(separateAnnot)) list(raw=abund, quant=quant, annot=annot, counts=counts, sampleSetup=setupSd, quantNotes=parametersD, notes=notes) else data.frame(quant,annot) }
 }
-  
+    

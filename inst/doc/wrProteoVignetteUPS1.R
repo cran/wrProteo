@@ -1,4 +1,4 @@
-## ---- include = FALSE---------------------------------------------------------
+## ----include = FALSE----------------------------------------------------------
 knitr::opts_chunk$set(collapse=TRUE, comment = "#>")
 
 ## ----install, echo=TRUE, eval=FALSE-------------------------------------------
@@ -461,13 +461,13 @@ imageW(sumNAperMeth, rowNa=UPS1na, tit="Number of NAs in UPS proteins", xLab="",
 mtext("Dark red for high number of NAs",cex=0.7)
 
 ## ----PCA2PD, fig.height=12, fig.width=9.5, fig.align="center", echo=TRUE------
-try(plotPCAw(testPD$datImp[which(testPD$annot[,"SpecType"]=="spike"),], sampleGrp=grp9, tit="PCA on ProteomeDiscoverer, UPS1 only (NAs imputed)", rowTyName="proteins", useSymb2=0), silent=TRUE)
+try(plotPCAw(testPD$datImp[which(testPD$annot[,"SpecType"]=="spike"),], sampleGrp=grp9, tit="PCA on ProteomeDiscoverer, UPS1 only (NAs imputed)", rowTyName="proteins", useSymb2=0, silent=TRUE), silent=TRUE)
 
 ## ----PCA2MQ, fig.height=12, fig.width=9.5, fig.align="center", echo=TRUE------
-try(plotPCAw(testMQ$datImp[which(testMQ$annot[,"SpecType"]=="spike"),], sampleGrp=grp9, tit="PCA on MaxQuant, UPS1 only (NAs imputed)", rowTyName="proteins", useSymb2=0), silent=TRUE)
+try(plotPCAw(testMQ$datImp[which(testMQ$annot[,"SpecType"]=="spike"),], sampleGrp=grp9, tit="PCA on MaxQuant, UPS1 only (NAs imputed)", rowTyName="proteins", useSymb2=0, silent=TRUE), silent=TRUE)
 
 ## ----PCA2PL, fig.height=12, fig.width=9.5, fig.align="center", echo=TRUE------
-try(plotPCAw(testPL$datImp[which(testPL$annot[,"SpecType"]=="spike"),], sampleGrp=grp9, tit="PCA on Proline, UPS1 only (NAs imputed)", rowTyName="proteins", useSymb2=0), silent=TRUE)
+try(plotPCAw(testPL$datImp[which(testPL$annot[,"SpecType"]=="spike"),], sampleGrp=grp9, tit="PCA on Proline, UPS1 only (NAs imputed)", rowTyName="proteins", useSymb2=0, silent=TRUE), silent=TRUE)
 
 ## ----intraReplicCV1, fig.height=10, fig.width=12, fig.align="center", echo=TRUE----
 ## combined plot : all data (left), Ups1 (right)

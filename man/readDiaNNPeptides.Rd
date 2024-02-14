@@ -82,10 +82,10 @@ This function returns a list with \code{$raw} (initial/raw abundance values), \c
  and \code{$notes}; or if \code{separateAnnot=FALSE} the function returns a data.frame with annotation and quantitation only
 }
 \description{
-This function allows importing peptide identification and quantification results from \href{https://github.com/vdemichev/DiaNN}{DiaNN}, see also \doi{10.1038/s41592-019-0638-x}{Demichev et al, 2020}.
+This function allows importing peptide identification and quantification results from \href{https://github.com/vdemichev/DiaNN}{DiaNN}.
 Data should be exported as tabulated text (tsv) to allow import by thus function.
 Quantification data and other relevant information will be extracted similar like the other import-functions from this package.
-The final output is a list containing the elements: \code{$annot}, \code{$raw} and \code{$quant}, or a data.frame with the quantication data and a part of the annotation if argument \code{separateAnnot=FALSE}.
+The final output is a list containing as (main) elements: \code{$annot}, \code{$raw} and \code{$quant}, or a data.frame with the quantication data and a part of the annotation if argument \code{separateAnnot=FALSE}.
 }
 \details{
 This function has been developed using DiaNN version 1.8.x.

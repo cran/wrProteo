@@ -120,6 +120,8 @@ convAASeq2mass(pep1, seqN=FALSE)
 ```
 
 
+# Working With Fasta(Files)
+
 ## Reading Fasta Files (from Uniprot)
 
 This package contains a parser for Fasta-files allowing to separate different fields of meta-data like IDs, name and species of the respecive entries.
@@ -170,7 +172,7 @@ writeFasta2(fasta3, fileNa="testWrite.fasta")
 
 
 
-# Example : Analyzing Label-Free Quantitative Proteomics Data
+# Analyzing Label-Free Quantitative Proteomics Data
 
 ### Label-free Quantitative Proteomics Introduction
 
@@ -186,19 +188,20 @@ In general it is preferable to use XIC for comparing peptde of protein quantitie
 
 This package provides support for importing quantitation results from [Proteome Discoverer](https://www.thermofisher.com/order/catalog/product/OPTON-30812),
 [MaxQuant](https://www.maxquant.org), [Fragpipe](https://fragpipe.nesvilab.org), [Proline](https://www.profiproteomics.fr/proline/),
-[MassChroQ](http://pappso.inrae.fr/bioinfo/masschroq/) and [OpenMS](https://openms.de/).
+[MassChroQ](http://pappso.inrae.fr/bioinfo/masschroq/), [DIA-NN](https://github.com/vdemichev/DiaNN), [AlphaPept](https://github.com/MannLabs/alphapept), 
+[Wombat-P](https://github.com/wombat-p) and [OpenMS](https://openms.de/).
 
 
 All quantitation import functions offer special features for further separating annotation related information, like species, for later use.
 
 In most common real-world cases people typically analyze data using only one quantitation algorithm/software.
-Below in this vignette, we'll use only the quantitation data generated using MaxQuant (ProteomeDiscoverer, Proline, OpenMS and MassChroQ are supported, too). 
-The other vignette to [this package](https://CRAN.R-project.org/package=wrProteo) ("UPS-1 spike-in Experiments") shows in detail the import functions available for ProteomeDiscoverer and Proline
+Below in this vignette, we'll use only the quantitation data generated using MaxQuant (AlphaPept, DIA-NN, FragPipe, MassChroQ, OpenMS, ProteomeDiscoverer, Proline and Wombat-P are supported, too). 
+The other vignette to [this package](https://CRAN.R-project.org/package=wrProteo) ("UPS-1 spike-in Experiments") shows in detail the import functions available for MaxQuant, ProteomeDiscoverer and Proline
 and how further comparsions can be performed in bench-mark studies. 
 All these import functions generate an equivalent output format, separating (selected) annotation data (\$annot) from normalized log2-quantitation data (\$quant)
 and initial quantitation (\$raw).
 
-Normalization (discussed below in more detail) is an important part of 'preparing' the data for subsequant analysis.
+Normalization (discussed [below](#Normalization) in more detail) is an important part of 'preparing' the data for subsequant analysis.
 The import functions in this package allow performin an initial normalization step (with choice among multiple algorithims), too.
 Further information about the proteins identifed can be considered during normalization: 
 For example, it is possible to exclude contaminants like keratins which are frequently found among the higher abundant proteins which may potentially introduce bias at global normalization.
@@ -213,14 +216,15 @@ Biological replicates, however, make additional information accessible, allowing
 ### MaxQuant: Import Protein Quantification Data    {#ReadMaxQuant}
 
 [MaxQuant](https://www.maxquant.org) is free software provided by the [Max-Planck-Institute](https://www.biochem.mpg.de/de), 
-see [Tyanova et al 2016](https://doi.org/10.1038/nprot.2016.136). 
+see also [Tyanova et al 2016](https://doi.org/10.1038/nprot.2016.136). 
 Typically [MaxQuant](https://www.maxquant.org) exports by default quantitation data on level of consensus-proteins as a folder called txt with a file always called 'proteinGroups.txt'. 
 Data exported from [MaxQuant](https://www.maxquant.org) can get imported (and normalized) using `readMaxQuantFile()`,
 in a standard case one needs only to provide the path to the file 'proteinGroups.txt' which can be found the _combined/txt/_ folder produced by MaxQuant. 
 gz-compressed files can be read, too (as in the example below the file 'proteinGroups.txt.gz').
-The argument _specPref_ defaults to working with human proteins, here let's just set it to _NULL_ for ignoring.
+The argument _specPref_ allows giving further details about expected (primary) species, it defaults to working with human proteins.
+To get started, let's just set it to _NULL_ for ignoring.
 
-```{r readMaxQuant1, fig.height=8, fig.width=9.5, fig.align="center", echo=TRUE}
+```{r readMaxQuant1, fig.height=8, fig.width=9.5, fig.align="center", echo=TRUE} 
 path1 <- system.file("extdata", package="wrProteo")
 dataMQ <- readMaxQuantFile(path1, specPref=NULL, normalizeMeth="median")
 ## number of lines and columns of quantitation data
@@ -339,9 +343,11 @@ supplemental information about experimental setup will be mined and added to the
 
 ### ProteomeDiscoverer : Import Protein Quantification   {#ReadProteomeDiscoverer}
 
-[Proteome Discoverer](https://www.thermofisher.com/order/catalog/product/OPTON-30812) is commercial software from ThermoFisher (www.thermofisher.com).
+[Proteome Discoverer](https://www.thermofisher.com/order/catalog/product/OPTON-30812) is commercial software from ThermoFisher (www.thermofisher.com),
+see also [Orsburn, 2021](https://doi.org/10.3390/proteomes9010015).
 Data exported from [Proteome Discoverer](https://www.thermofisher.com/order/catalog/product/OPTON-30812) can get imported (typically the *xx_Proteins.txt* file)
 using `readProteomeDiscovererFile()`, for details please see the vignette "UPS-1 spike-in Experiments" also available with [this package](https://CRAN.R-project.org/package=wrProteo).
+The example below is just a toy data-set, normally one can identify and quantify many more proteins.
 
 
 ```{r readProteomeDiscovererProt1,  echo=TRUE}
@@ -370,10 +376,10 @@ The data get imported to a similar structure like the protein-level data, quanti
 ### DIA-NN: Import Protein Quantification Data      {#ReadDiaNN}
 
 [DIA-NN](https://github.com/vdemichev/DiaNN) is free software provided by the by Demichev, Ralser and Lilley labs,
-see [Demichev et al, 2020](https://doi.org/10.1038/s41592-019-0638-x).
+see also [Demichev et al, 2020](https://doi.org/10.1038/s41592-019-0638-x).
 Typically [DIA-NN](https://github.com/vdemichev/DiaNN) allows exporting quantitation data on level of consensus-proteins as tsv-formatted files.
 Such data can get imported (and normalized) using `readDiaNNFile()`.
-The example below is just a toy data-set, normally one can identify and quantify much more proteins.
+The example below is just a toy data-set, normally one can identify and quantify many more proteins.
 
 ```{r readDiaNN1, fig.height=8, fig.width=9.5, fig.align="center", echo=TRUE}
 diaNNFi1 <- "tinyDiaNN1.tsv.gz"
@@ -381,14 +387,14 @@ diaNNFi1 <- "tinyDiaNN1.tsv.gz"
 path1 <- system.file("extdata", package="wrProteo")
 ## let's define the main species and allow tagging some contaminants
 specPref1 <- c(conta="conta|CON_|LYSC_CHICK", mainSpecies="HUMAN")
-dataNN <- readDiaNNFile(path1, file=diaNNFi1, specPref=specPref1, tit="Tiny DIA-NN Data")
+dataNN <- readDiaNNFile(path1, file=diaNNFi1, specPref=specPref1, tit="Tiny DIA-NN Data", plotGraph=FALSE)
 summary(dataNN$quant)
 ```
 
 
 #### DIA-NN : Import Peptide Data                  {#ReadDiaNNPetides}
 
-Similarly data on peptide level can get imported (and normalized) using `readDiaNNPeptides()`.
+Similarly data from [DIA-NN](https://github.com/vdemichev/DiaNN) on peptide level can get imported (and normalized) using `readDiaNNPeptides()`.
 
 
 
@@ -396,8 +402,9 @@ Similarly data on peptide level can get imported (and normalized) using `readDia
 ### Proline : Import Protein Quantification Data         {#ReadProline}
 
 [Proline](https://www.profiproteomics.fr/proline/) is free software provided by the Profi-consortium,
-see [Bouyssi&eacute; et al 2020](https://doi.org/10.1016/j.jprot.2015.11.011).
+see also [Bouyssi&eacute; et al 2020](https://doi.org/10.1016/j.jprot.2015.11.011).
 Data exported from [Proline](https://www.profiproteomics.fr/proline/) (xlsx, csv or tsv format) can get imported using `readProlineFile()`.
+The example below is just a toy data-set, normally one can identify and quantify many more proteins.
 
 
 ```{r readProlineProt1,  echo=TRUE}
@@ -417,6 +424,8 @@ For a more complex example of using _readProlineFile()_ please see the vignette 
 [Fragpipe](https://fragpipe.nesvilab.org) is a database search tool for peptide identification, open-source developed by the [Nesvizhskii lab](https://www.nesvilab.org),
 see eg  [Kong et al 2017](https://doi.org/10.1038/nmeth.4256), [da Veiga Leprevost; et al 2020](https://doi.org/10.1038/s41592-020-0912-y) or other related publications.
 Data exported from [Fragpipe](https://fragpipe.nesvilab.org)  (in tsv format) can get imported using `readFragpipeFile()`.
+The example below is just a toy data-set, normally one can identify and quantify many more proteins.
+
 
 ```{r readFragpipe1,  echo=TRUE}
 FPproFi1 <- "tinyFragpipe1.tsv.gz"
@@ -433,10 +442,12 @@ As descibed with [MaxQuant](#ReadMaxQuant), additional meta-data as [sdrf](#Impo
 ### MassChroQ : Import Protein Quantification Data
 
 [MassChroQ](http://pappso.inrae.fr/bioinfo/masschroq/) is free open software provided by the [PAPPSO](http://pappso.inrae.fr),
-see [Valot et al 2011](https://doi.org/10.1002/pmic.201100120).
+see also [Valot et al 2011](https://doi.org/10.1002/pmic.201100120).
 Inital quantifications are on peptide basis and should be normalized and summarized using the R-package MassChroqR, which is also publicly available at the [PAPPSO](http://pappso.inrae.fr/bioinfo/).
 Quantifications at protein-level can be saved as matrix into an RData-file or written to tsv, csv or txt files for following import into the framework of this package
 using `readMassChroQFile()`, for details please see the help-page to this function.
+The example below is just a toy data-set, normally one can identify and quantify many more proteins.
+
 
 ```{r readMassChroq1,  echo=TRUE}
 MCproFi1 <- "tinyMC.RData"
@@ -444,11 +455,52 @@ dataMC <- readMassChroQFile(path1, file=MCproFi1, tit="Tiny MassChroq Example", 
 summary(dataMC$quant)
 ```
 
+As descibed with [MaxQuant](#ReadMaxQuant), additional meta-data as [sdrf](#ImportSdrf) can be imported in the same way.
+
+
+### AlphaPept : Import Protein Quantification Data       {#ReadAlphaPeptide}
+
+[AlphaPept](https://github.com/MannLabs/alphapept) is a free open-source search tool for peptide identification created by the Mann-lab,
+see eg [Strauss et al 2021](https://doi.org/10.1101/2021.07.23.453379).
+Data exported from AlphaPept (in csv format) can get imported using `readAlphaPeptFile()`.
+The example below is just a toy data-set, normally one can identify and quantify many more proteins.
+
+
+```{r readAlphaPept1,  echo=TRUE}
+APproFi1 <- "tinyAlpaPeptide.csv.gz"
+## let's define the main species and allow tagging some contaminants
+specPref1 <- c(conta="conta|CON_|LYSC_CHICK")
+dataAP <- readAlphaPeptFile(path1, file=APproFi1, specPref=specPref1, tit="Tiny AlphaPept Example", plotGraph=FALSE)
+summary(dataAP$quant)
+```
+
+As descibed with [MaxQuant](#ReadMaxQuant), additional meta-data as [sdrf](#ImportSdrf) can be imported in the same way.
+
+
+### Wombat-P : Import Protein Quantification Data       {#ReadWombatP}
+
+[Wombat-P](https://github.com/wombat-p) is a free open-source search tool for peptide identification created by an Elixir-consortium,
+see also [Bouyssie et al 2023](https://doi.org/10.1021/acs.jproteome.3c00636).
+Data exported from Wombat-P (in csv format) can get imported using `readWombatNormFile()`.
+The example below is just a toy data-set, normally one can identify and quantify many more proteins.
+
+
+```{r readWombarP1,  echo=TRUE}
+WBproFi1 <- "tinyWombCompo1.csv.gz"
+## let's define the main species and allow tagging some contaminants
+specPref1 <- c(conta="conta|CON_|LYSC_CHICK", mainSpecies="YEAST")
+dataWB <- readWombatNormFile(path1, file=WBproFi1, specPref=specPref1, tit="Tiny Wombat-P Example", plotGraph=FALSE)
+summary(dataWB$quant)
+```
+
+As descibed with [MaxQuant](#ReadMaxQuant), additional meta-data as [sdrf](#ImportSdrf) can be imported in the same way.
+
+
 
 ### OpenMS : Import Protein Quantification Data
 
 [OpenMS](https://openms.de/) is free open software provided by the deNBI Center for integrative Bioinformatics,
-see [Rost et al 2016](https://doi.org/10.1038/nmeth.3959).
+see also [Rost et al 2016](https://doi.org/10.1038/nmeth.3959).
 Peptide level data exported as csv get summarized from peptide to protein level and further normalized using `readOpenMSFile()`, for details please see the help-page to this function.
 
 
@@ -475,6 +527,32 @@ str(MQsdrf001819Setup)
 ```
 
 However, the recommended and most convenient way is to add/import meta-data directly when importing quantitation-data (eg using _readMaxQuantFile()_, _readProteomeDiscovererFile()_, etc).
+
+
+## Combining Proteomics Projects   {#FuseProteomicsProjects}
+
+If needed, function `fuseProteomicsProjects()` allows combining up to 3 separate data-sets previously imported using wrProteo.
+The user should very carefully think how and why he wants to fuse multiple separately imported data-sets, which might have their own charteristics.
+Note, the function presented here does not re-normalize the combined data, the user should investigate the data and decide on suitable strategies
+for further [normalization](#Normalization).
+
+Data from different software may not contain exactely the same proteins or peptides, only the common identifiers are retained by this approach.
+The user should pay attention to which identifyer should be used and that they do not appear multiple times in the the same data-set. 
+If, however, some IDs appear multiple times (ie as separate lines) in the same data-set, the corresponding numeric data will be summarized to a single line.
+This may may have notocable effect on the following biological interpretation.
+
+Thus, it is very important to know your data and to understand when lines that appear with the same identifyers should/may be fused/summarized without 
+doing damage to the later biological interpretation ! The user may specify for each dataset the colum out of the protein/peptide-annotation to use
+via the argument _columnNa_. 
+Then, this content will be matched as identical match, so when combining data from different software special care shoud be taken !
+
+```{r fuseProteomicsProjects1,  echo=TRUE}
+path1 <- system.file("extdata", package="wrProteo")
+dataMQ <- readMaxQuantFile(path1, specPref=NULL, normalizeMeth="median")
+dataMC <- readMassChroQFile(path1, file="tinyMC.RData", tit="Tiny MassChroq Example", plotGraph=FALSE)
+dataFused <- fuseProteomicsProjects(dataMQ, dataMC)
+str(dataFused$quant)
+```
 
 
 ## Normalization   {#Normalization}
@@ -611,7 +689,10 @@ head(testMQ$datImp[,1:6])
 ```
 
 
-## PCA        {#PCA}
+## Data Exploration With Graphical Support       {#DataExploreGraphics}
+
+
+### PCA                  {#PCA}
 
 Brielfy, principal components analysis ([PCA](https://en.wikipedia.org/wiki/Principal_component_analysis)) searches to decompose the data along all the axises defined by all samples. Then, the axis-combinations with the highest degree of correlation are searched.
 In principle one could also run PCA along the rows, ie the proteins, but their number is typically so high that the resultant plots get too crowded.
@@ -637,7 +718,7 @@ plotPCAw(testMQ$datImp, sampleGrp=grp9, tit="PCA on Protein Abundances (MaxQuant
 Please note, the vignette dedicated to spike-in experiments ("UPS-1 spike-in Experiments") presents a slightly different way of making PCA-plots for this specific type of experiment/data-set.
 
 
-## MA-plot
+### MA-plot            {#MAplot}
 
 MA-plots are mainly used for diagnostic purposes. Basically, an [MA-plot](https://en.wikipedia.org/wiki/MA_plot) displays the log-Fold-Change versus the average abundance.
 We'll use the function `MAplotW()` from the package [wrGraph](https://CRAN.R-project.org/package=wrGraph).
@@ -656,7 +737,7 @@ MAplotW(testMQ, useComp=2, namesNBest="passFC")
 ```
 
 
-## Volcano-Plot
+### Volcano-Plot        {#VolcanoPlot}
 
 A [Volcano-plot](https://en.wikipedia.org/wiki/Volcano_plot_\(statistics\)) allows to compare the simple fold-change (FC) opposed to the outcome of a statistcal test.
 Frequently we can obsereve, that a some proteins show very small FC but enthousiastic p-values and subsequently enthousiastic FDR-values.
@@ -670,7 +751,7 @@ The number of proteins retained by pair-wise comparison :
 VolcanoPlotW(testMQ, useComp=2, namesNBest="passFDR")
 ```
 
-Additional Note : Vlcano-plots may also help identifying bias in the data, in particular, to the question if normalization gave satisfactory results.
+Additional Note : Volcano-plots may also help identifying bias in the data, in particular, to the question if normalization gave satisfactory results.
 Based on the hypothesis of no global change used for normalization, normally, one would expect about the same number of down-regulated as up-regulated proteins.
 
 In fact, this experiment is somehow unusual since one set of samples got a strong increase in abundance for 48 UPS1 proteins while the other proteins remained constant.
@@ -777,7 +858,7 @@ head(UcscAnnot1)
 ```
 
 However, this annotation does not provide protein IDs. In order to obtain the corresponding protein IDs an additional step is required :
-Here we will use the batch search/conversion tool from [UniProt](https://www.uniprot.org/uploadlists).
+Here we will use the batch search/conversion tool from [UniProt](https://www.uniprot.org/id-mapping).
 In order to do so, we can export directly from _readUCSCtable()_ a small text-file which can be fed into the UniProt batch-search tool.
 
 ```{r readUCSC2, echo=TRUE}
@@ -787,13 +868,13 @@ expFi <- file.path(tempdir(),"deUcscForUniProt2.txt")
 UcscAnnot1 <- readUCSCtable(gtfFi, exportFileNa=expFi)
 ```
 
-Now everything is ready to go to [UniProt](https://www.uniprot.org/uploadlists) for retrieving the corresponding UniProt-IDs.
+Now everything is ready to go to [UniProt](https://www.uniprot.org/id-mapping) for retrieving the corresponding UniProt-IDs.
 Since we exported Ensemble transcript IDs (ENSTxxx), select converting from 'Ensembl Transcript' to 'UniProtKB'.
 Then, when downloading the conversion results, choose tab-separated file format (compression is recommended), this may take several seconds (depending on the size).
 
 It is suggested to rename the downloaded file so one can easily understand its content.
 Note, that the function `readUniProtExport()` can also read .gz compressed files.
-To continue this vignette we'll use a result which has been downloaded from [UniProt](https://www.uniprot.org/uploadlists) and renamed to 'deUniProt_hg38chr11extr.tab'.
+To continue this vignette we'll use a result which has been downloaded from [UniProt](https://www.uniprot.org/id-mapping) and renamed to 'deUniProt_hg38chr11extr.tab'.
 One may also optionally define a specific genomic region of interest using the argument 'targRegion', here the entire chromosome 11 was chosen.
 
 ```{r readUniProt1, echo=TRUE}
@@ -811,6 +892,8 @@ The function _readUniProtExport()_ switches to a more flexible search mode strip
 Finally, it should be added, that of course several other ways of retrieving annotation do exist, too.
 For example, as mentioned above, [Bioconductor](https://www.bioconductor.org)) offers serval packages dedicated to gene- and protein-annotation.
 
+
+# Appendix
 
 ## Acknowledgements
 

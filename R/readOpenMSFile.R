@@ -55,6 +55,7 @@ readOpenMSFile <- function(fileName=NULL, path=NULL, normalizeMeth="median", ref
   if(inherits(chPa, "try-error")) stop("package 'utils' not found ! Please install first")   
   if(isTRUE(debug)) silent <- FALSE
   if(!isTRUE(silent)) silent <- FALSE
+  infoDat <- NULL
   if(debug) message("rmso1")
   ## check & read file
   paFi <- wrMisc::checkFilePath(fileName, path, expectExt="csv", compressedOption=TRUE, stopIfNothing=TRUE, callFrom=fxNa, silent=silent,debug=debug)
@@ -196,8 +197,8 @@ readOpenMSFile <- function(fileName=NULL, path=NULL, normalizeMeth="median", ref
     }
     on.exit(graphics::par(opar)) }   #
   ## meta-data
-  notes <- c(inpFile=paFi, qmethod="OpenMS", normalizeMeth=normalizeMeth, pepSumMeth=sumMeth, nIniPep=nPep,
-    call=match.call(), created=as.character(Sys.time()), wrProteo.version=utils::packageVersion("wrProteo"), machine=Sys.info()["nodename"])
+  notes <- c(inpFile=paFi, qmethod="OpenMS", qMethVersion=if(length(infoDat) >0) unique(infoDat$Software.Revision) else NA, normalizeMeth=normalizeMeth, pepSumMeth=sumMeth, nIniPep=nPep,
+    call=deparse(match.call()), created=as.character(Sys.time()), wrProteo.version=paste(utils::packageVersion("wrProteo"), collapse="."), machine=Sys.info()["nodename"])
   ## final output
   if(separateAnnot) list(raw=abund[,,1], quant=quant, annot=annot, counts=abund[,,2], expSetup=expSetup, notes=notes) else data.frame(quant,annot)  
 }

@@ -12,10 +12,11 @@
   softNa = NULL,
   refLi = NULL,
   refLiIni = NULL,
-  figMarg = c(3, 3, 3, 1),
+  notLogAbund = NA,
+  figMarg = c(3.5, 3.5, 3, 1),
   tit = NULL,
   las = NULL,
-  cexAxis = 1,
+  cexAxis = 0.8,
   nameSer = NULL,
   cexNameSer = NULL,
   silent = FALSE,
@@ -38,7 +39,9 @@
 
 \item{refLiIni}{(integer) to display initial number reference lines}
 
-\item{figMarg}{(numeric) custom figure margins (will be passed to \code{\link[graphics]{par}})}
+\item{notLogAbund}{(logical) set to \code{TRUE} if \code{abund} is linear but should be plotted as log2}
+
+\item{figMarg}{(numeric, length=4) custom figure margins (will be passed to \code{\link[graphics]{par}}), defaults to c(3.5, 3.5, 3, 1)}
 
 \item{tit}{(character) custom title}
 
@@ -63,9 +66,9 @@ This function returns logical value (if data were valid for plotting) and produc
 This (low-level) function allows (generic) plotting of density distribution for quantitation import-functions
 }
 \examples{
-set.seed(2018);  datT8 <- matrix(round(rnorm(800)+3,1), nc=8, dimnames=list(paste(
+set.seed(2018);  datT8 <- matrix(round(rnorm(800) +3,1), nc=8, dimnames=list(paste(
   "li",1:100,sep=""), paste(rep(LETTERS[1:3],c(3,3,2)),letters[18:25],sep="")))
-.plotQuantDistr(datT8, quant=NULL, refLi=NULL, tit="Synthetic Data")
+.plotQuantDistr(datT8, quant=NULL, refLi=NULL, tit="Synthetic Data Distribution")                                
 }
 \seealso{
 used in \code{readProtDiscovererFile},  \code{\link{readMaxQuantFile}}, \code{\link{readProlineFile}}, \code{\link{readFragpipeFile}}

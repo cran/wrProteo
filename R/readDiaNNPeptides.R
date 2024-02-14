@@ -1,9 +1,9 @@
 #' Read Tabulated Files Exported by DiaNN At Peptide Level
 #'
-#' This function allows importing peptide identification and quantification results from \href{https://github.com/vdemichev/DiaNN}{DiaNN}, see also \doi{10.1038/s41592-019-0638-x}{Demichev et al, 2020}.
+#' This function allows importing peptide identification and quantification results from \href{https://github.com/vdemichev/DiaNN}{DiaNN}.
 #' Data should be exported as tabulated text (tsv) to allow import by thus function.
 #' Quantification data and other relevant information will be extracted similar like the other import-functions from this package.
-#' The final output is a list containing the elements: \code{$annot}, \code{$raw} and \code{$quant}, or a data.frame with the quantication data and a part of the annotation if argument \code{separateAnnot=FALSE}.
+#' The final output is a list containing as (main) elements: \code{$annot}, \code{$raw} and \code{$quant}, or a data.frame with the quantication data and a part of the annotation if argument \code{separateAnnot=FALSE}.
 #'
 #' @details
 #' This function has been developed using DiaNN version 1.8.x.
@@ -51,7 +51,7 @@
 #'
 #' @export
 readDiaNNPeptides <- function(fileName, path=NULL, normalizeMeth="median", sampleNames=NULL, read0asNA=TRUE, quantCol="\\.raw$",
-  annotCol=NULL,  refLi=NULL, separateAnnot=TRUE, FDRCol=NULL,    # contamCol="Contaminant",
+  annotCol=NULL,  refLi=NULL, separateAnnot=TRUE, FDRCol=NULL,   
   groupPref=list(lowNumberOfGroups=TRUE), plotGraph=TRUE, titGraph="DiaNN", wex=1.6, specPref=c(conta="CON_|LYSC_CHICK", mainSpecies="OS=Homo sapiens"),
   gr=NULL, sdrf=NULL, suplAnnotFile=FALSE, silent=FALSE, debug=FALSE, callFrom=NULL) {
 
@@ -227,8 +227,8 @@ readDiaNNPeptides <- function(fileName, path=NULL, normalizeMeth="median", sampl
 
     ## meta-data
     notes <- c(inpFile=paFi, qmethod="DiaNN", qMethVersion=if(length(infoDat) >0) unique(infoDat$Software.Revision) else NA,
-    	rawFilePath= if(length(infoDat) >0) infoDat$File.Name[1] else NA, normalizeMeth=normalizeMeth, call=match.call(),
-      created=as.character(Sys.time()), wrProteo.version=utils::packageVersion("wrProteo"), machine=Sys.info()["nodename"])
+    	rawFilePath= if(length(infoDat) >0) infoDat$File.Name[1] else NA, normalizeMeth=normalizeMeth, call=deparse(match.call()),
+      created=as.character(Sys.time()), wrProteo.version=paste(utils::packageVersion("wrProteo"), collapse="."), machine=Sys.info()["nodename"])
     ## final output
     if(isTRUE(separateAnnot)) list(raw=abund, quant=quant, annot=annot, counts=counts, sampleSetup=setupSd, quantNotes=parametersD, notes=notes) else data.frame(quant,annot) }
 }

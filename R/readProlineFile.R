@@ -95,7 +95,7 @@ readProlineFile <- function(fileName, path=NULL, normalizeMeth="median", logConv
   if(debug) {message(fxNa," rpf2")}
 
   ## read file
-  out <- counts <- fileTy <- NULL                    # initialize default
+  out <- counts <- fileTy <- infoDat <- NULL                    # initialize default
   if(length(grep("\\.xlsx$", paFi)) >0) {
     ## Extract out of Excel
     reqPa <- c("readxl")
@@ -333,8 +333,8 @@ readProlineFile <- function(fileName, path=NULL, normalizeMeth="median", logConv
 
 
     ## meta-data to export
-    notes <- c(inpFile=paFi, qmethod="Proline", normalizeMeth="none", call=match.call(),
-      created=as.character(Sys.time()), wrProteo.version=utils::packageVersion("wrProteo"), machine=Sys.info()["nodename"])
+    notes <- c(inpFile=paFi, qmethod="Proline", qMethVersion=if(length(infoDat) >0) unique(infoDat$Software.Revision) else NA, normalizeMeth="none", call=deparse(match.call()),
+      created=as.character(Sys.time()), wrProteo.version=paste(utils::packageVersion("wrProteo"), collapse="."), machine=Sys.info()["nodename"])
     ##
     if(separateAnnot) {
       if(!is.numeric(quant) && logConvert) { message(fxNa,"Problem: Abundance data seem not numeric, can't transform log2 !")}

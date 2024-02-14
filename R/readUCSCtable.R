@@ -4,7 +4,7 @@
 #' Files can be read as default UCSC exprot or as GTF-format. 
 #' In the context of proteomics we noticed that sometimes UniProt tables from UCSC are hard to match to identifiers from UniProt Fasta-files, ie many protein-identifiers won't match.
 #' For this reason additional support is given to reading 'Genes and Gene Predictions': Since this table does not include protein-identifiers, a non-redundant list of ENSxxx transcript identifiers 
-#' can be exprted as file for an additional stop of conversion, eg using a batch conversion tool at the site of \href{https://www.uniprot.org/uploadlists/}{UniProt}. 
+#' can be exprted as file for an additional stop of conversion, eg using a batch conversion tool at the site of \href{https://www.uniprot.org/id-mapping/}{UniProt}. 
 #' The initial genomic annotation can then be complemented using \code{\link{readUniProtExport}}. 
 #' Using this more elaborate route, we found higher coverage when trying to add genomic annotation to protein-identifiers to proteomics results with annnotation based on an initial Fasta-file. 
 #' 
@@ -122,7 +122,7 @@ readUCSCtable <- function(fiName, exportFileNa=NULL, gtf=NA, simplifyCols=c("gen
     if(length(exportFileNa) >0) {         # also need to remove ENST-version-tags (since UniProt won't recognize Ensemble gene IDs with version tags)
       exportFileNa <- gsub("\\\\", "/", exportFileNa)                 #"
       forFile <- unique(sub("\\.[[:digit:]]+$", "", ensG1[,"gene_id"], fixed=FALSE, perl=FALSE))
-      msg <- c("'  for conversion on https://www.uniprot.org/uploadlists")
+      msg <- c("'  for conversion on https://www.uniprot.org/id-mapping/") # was "https://www.uniprot.org/id-mapping/"
       if(!silent) message(fxNa," Write to file : ",paste(utils::head(forFile,4),collapse=", ")," ...")
       if(!silent) if(file.exists(exportFileNa[1])) message(fxNa," Beware, file '",exportFileNa[1],"' will be overwritten !") else  message(fxNa,
         " Exporting file  '",exportFileNa,msg[1])          # export to file for batch conversion on UniProt

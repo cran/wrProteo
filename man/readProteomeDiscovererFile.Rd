@@ -2,7 +2,7 @@
 % Please edit documentation in R/readProteomeDiscovererFile.R
 \name{readProteomeDiscovererFile}
 \alias{readProteomeDiscovererFile}
-\title{Read Tabulated Files Exported By ProteomeDiscoverer At Protein LevelrSM2}
+\title{Read Tabulated Files Exported By ProteomeDiscoverer At Protein Level}
 \usage{
 readProteomeDiscovererFile(
   fileName,
@@ -40,7 +40,10 @@ readProteomeDiscovererFile(
 
 \item{read0asNA}{(logical) decide if initial quntifications at 0 should be transformed to NA}
 
-\item{quantCol}{(character or integer) exact col-names, or if length=1 content of \code{quantCol} will be used as pattern to search among column-names for $quant using \code{grep}}
+\item{quantCol}{(character or integer) define ywhich columns should be extracted as quantitation data : The argument may be the exact column-names to be used, or if length=1 
+content of \code{quantCol} will be used as pattern to search among column-names for $quant using \code{grep};
+if \code{quantCol='allAfter_calc.pI'} all columns to the right of the column 'calc.pI' will be interpreted as quantitation data 
+(may be useful with files that have been manually edited before passing to wrProteo)}
 
 \item{annotCol}{(character) column names to be read/extracted for the annotation section (default  c("Accession","Description","Gene","Contaminant","Sum.PEP.Score","Coverage....","X..Peptides","X..PSMs","X..Unique.Peptides", "X..AAs","MW..kDa.") )}
 
@@ -90,15 +93,17 @@ This function returns a list with \code{$raw} (initial/raw abundance values), \c
 Protein identification and quantification results from
 \href{https://www.thermofisher.com/order/catalog/product/OPTON-30812}{Thermo ProteomeDiscoverer}
 which were exported as tabulated text can be imported and relevant information extracted.
-The final output is a list containing 3 elements: \code{$annot}, \code{$raw} and optional \code{$quant},
-or returns data.frame with entire content of file if \code{separateAnnot=FALSE}.
 }
 \details{
 This function has been developed using Thermo ProteomeDiscoverer versions 2.2 to 2.5.
 The format of resulting files at export also depends which columns are chosen as visible inside ProteomeDiscoverer and subsequently get chosen for export.
 Using the argument \code{suplAnnotFile} it is possible to specify a specific file (or search for default file) to read for extracting file-names as sample-names and other experiment realted information.
-If a column named \code{contamCol} is found, the data will be lateron filtered to remove all contaminants, set to \code{NULL} for keeping all contaminants
-This function replaces the depreciated function \code{readPDExport}.
+If a column named \code{contamCol} is found, the data will be lateron filtered to remove all contaminants, set to \code{NULL} for keeping all contaminants.
+
+The final output is a list containing as (main) elements: \code{$annot}, \code{$raw} and optional \code{$quant},
+or returns data.frame with entire content of file if \code{separateAnnot=FALSE}.
+
+This function replaces the depreciated function \code{readProtDiscovFile}.
 }
 \examples{
 path1 <- system.file("extdata", package="wrProteo")

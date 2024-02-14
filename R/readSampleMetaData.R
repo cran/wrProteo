@@ -479,7 +479,7 @@ readSampleMetaData <- function(quantMeth, sdrf=NULL, suplAnnotFile=NULL, path=".
           if(debug) message(fxNa,"It seems a full $sampleSetup may have been given") }
         if(length(dim(sdrfDat)) <2) sdrfDat <- as.matrix(sdrfDat)
         if(length(abund) >0 && nrow(sdrfDat) != ncol(abund)) {
-          if(!silent) message(fxNa,"NOTE : Ignoring 'sdrf'  : it does NOT have the expected number or rows (",nrow(sdrfDat)," given but ",ncol(abund)," expected !)")
+          if(!silent) message(fxNa,"Note : Ignoring 'sdrf'  : it does NOT have the expected number or rows (",nrow(sdrfDat)," given but ",ncol(abund)," expected !)")
           sdrf <- sdrfDat <- NULL }}
       if(debug) {message(fxNa,"rSM6a"); rSM6a <- list(sdrf=sdrf,sdrfDat=sdrfDat,abund=abund,uplAnnotFile=suplAnnotFile,quantMeth=quantMeth,abund=abund,summaryD=summaryD,parametersD=parametersD,syncColumns=syncColumns) }
 
@@ -514,9 +514,8 @@ readSampleMetaData <- function(quantMeth, sdrf=NULL, suplAnnotFile=NULL, path=".
             }
             syncColumns["sdrfDat"] <- TRUE
           } else if(!silent) message(fxNa, if(debug) "rSM6a  "," summaryD exists, but unable to find file-names")
-          if(debug) { message(fxNa,"rSM6a1  dim sdrfDat ",nrow(sdrfDat)," ",ncol(sdrfDat)); rSM6a1 <- list(sdrf=sdrf,sdrfDat=sdrfDat,abund=abund,uplAnnotFile=suplAnnotFile,quantMeth=quantMeth,abund=abund,summaryD=summaryD,parametersD=parametersD,syncColumns=syncColumns) }
+          if(debug) { message(fxNa,"rSM6a1  dim sdrfDat ",nrow(sdrfDat)," ",ncol(sdrfDat)); rSM6a1 <- list() }
 
-          #message("==save Image  rSM6a.Rdata ==");  save(sdrf,sdrfDat,abund,suplAnnotFile,quantMeth,abund,summaryD,setupSdSoft, file="C:\\E\\projects\\TCAmethods\\wrProteoRamus\\rSM6a.Rdata")
         } else {             # no summaryD, try clanames of abund
           if(length(abund) >0 && length(dim(abund)) >1) {
             if(debug) { message(fxNa,"rSM6b  dim sdrfDat ",nrow(sdrfDat)," ",ncol(sdrfDat)); rSM6b <- list(sdrf=sdrf,sdrfDat=sdrfDat,abund=abund,uplAnnotFile=suplAnnotFile,quantMeth=quantMeth,abund=abund,summaryD=summaryD,parametersD=parametersD,syncColumns=syncColumns) }

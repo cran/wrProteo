@@ -47,7 +47,7 @@ readDiaNNFile(
 
 \item{separateAnnot}{(logical) if \code{TRUE} output will be organized as list with \code{$annot}, \code{$abund} for initial/raw abundance values and \code{$quant} with final log2 (normalized) quantitations}
 
-\item{FDRCol}{(list) - not used}
+\item{FDRCol}{- not used (the argument was kept to remain with the same synthax as the other import functions fo this package)}
 
 \item{groupPref}{(list) additional parameters for interpreting meta-data to identify structure of groups (replicates), will be passed to \code{readSampleMetaData}.
 May contain \code{lowNumberOfGroups=FALSE} for automatically choosing a rather elevated number of groups if possible (defaults to low number of groups, ie higher number of samples per group)}
@@ -82,15 +82,15 @@ This function returns a list with \code{$raw} (initial/raw abundance values), \c
  and \code{$notes}; or if \code{separateAnnot=FALSE} the function returns a data.frame with annotation and quantitation only
 }
 \description{
-This function allows importing protein identification and quantification results from \href{https://github.com/vdemichev/DiaNN}{DIA-NN}, see also \doi{10.1038/s41592-019-0638-x}{Demichev et al, 2020}.
+This function allows importing protein identification and quantification results from \href{https://github.com/vdemichev/DiaNN}{DIA-NN}.
 Data should be exported as tabulated text (tsv) as protein-groups (pg) to allow import by thus function. 
-Quantification data and other relevant information will be extracted similar like the other import-functions from this package.
-The final output is a list containing the elements: \code{$annot}, \code{$raw} and \code{$quant}, or a data.frame with the quantication data and a part of the annotation if argument \code{separateAnnot=FALSE}.
+Quantification data and other relevant information will be parsed and extracted (similar to the other import-functions from this package).
+The final output is a list containing as (main) elements: \code{$annot}, \code{$raw} and \code{$quant}, or a data.frame with the quantication data and a part of the annotation if argument \code{separateAnnot=FALSE}.
 }
 \details{
 This function has been developed using DIA-NN version 1.8.x.
-Note, reading gene-group (gg) files is in priciple possible, but resulting files typically lack protein-identifiers which may lack in later steps of analysis.
-It is suggetsed to rather read protein-group (pg) files.
+Note, reading gene-group (gg) files is in priciple possible, but resulting files typically lack protein-identifiers which may be less convenient in later steps of analysis.
+Thus, it is suggested to rather read protein-group (pg) files.
 
 Using the argument \code{suplAnnotFile} it is possible to specify a specific file (or search for default file) to read for extracting file-names as sample-names and other experiment related information.
 }

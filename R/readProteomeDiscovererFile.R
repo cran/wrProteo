@@ -1,24 +1,29 @@
-#' Read Tabulated Files Exported By ProteomeDiscoverer At Protein LevelrSM2
+#' Read Tabulated Files Exported By ProteomeDiscoverer At Protein Level
 #'
 #' Protein identification and quantification results from
 #' \href{https://www.thermofisher.com/order/catalog/product/OPTON-30812}{Thermo ProteomeDiscoverer}
 #' which were exported as tabulated text can be imported and relevant information extracted.
-#' The final output is a list containing 3 elements: \code{$annot}, \code{$raw} and optional \code{$quant},
-#' or returns data.frame with entire content of file if \code{separateAnnot=FALSE}.
-#'
+#' 
 #' @details
 #' This function has been developed using Thermo ProteomeDiscoverer versions 2.2 to 2.5.
 #' The format of resulting files at export also depends which columns are chosen as visible inside ProteomeDiscoverer and subsequently get chosen for export.
 #' Using the argument \code{suplAnnotFile} it is possible to specify a specific file (or search for default file) to read for extracting file-names as sample-names and other experiment realted information.
-#' If a column named \code{contamCol} is found, the data will be lateron filtered to remove all contaminants, set to \code{NULL} for keeping all contaminants
-#' This function replaces the depreciated function \code{readPDExport}.
+#' If a column named \code{contamCol} is found, the data will be lateron filtered to remove all contaminants, set to \code{NULL} for keeping all contaminants.
+#' 
+#' The final output is a list containing as (main) elements: \code{$annot}, \code{$raw} and optional \code{$quant},
+#' or returns data.frame with entire content of file if \code{separateAnnot=FALSE}.
+#'
+#' This function replaces the depreciated function \code{readProtDiscovFile}.
 #'
 #' @param fileName (character) name of file to be read
 #' @param path (character) path of file to be read
 #' @param normalizeMeth (character) normalization method, defaults to \code{median}, for more details see \code{\link[wrMisc]{normalizeThis}})
 #' @param sampleNames (character) custom column-names for quantification data (ProteomeDiscoverer does not automatically use file-names from spectra); this argument has priority over \code{suplAnnotFile}
 #' @param read0asNA (logical) decide if initial quntifications at 0 should be transformed to NA
-#' @param quantCol (character or integer) exact col-names, or if length=1 content of \code{quantCol} will be used as pattern to search among column-names for $quant using \code{grep}
+#' @param quantCol (character or integer) define ywhich columns should be extracted as quantitation data : The argument may be the exact column-names to be used, or if length=1 
+#'   content of \code{quantCol} will be used as pattern to search among column-names for $quant using \code{grep};
+#'   if \code{quantCol='allAfter_calc.pI'} all columns to the right of the column 'calc.pI' will be interpreted as quantitation data 
+#'   (may be useful with files that have been manually edited before passing to wrProteo)
 #' @param contamCol (character or integer, length=1) which columns should be used for contaminants marked by ProteomeDiscoverer.
 #'  If a column named \code{contamCol} is found, the data will be lateron filtered to remove all contaminants, set to \code{NULL} for keeping all contaminants
 #' @param refLi (character or integer) custom specify which line of data is main species, if character (eg 'mainSpe'), the column 'SpecType' in $annot will be searched for exact match of the (single) term given
@@ -59,6 +64,10 @@ readProteomeDiscovererFile <- function(fileName, path=NULL, normalizeMeth="media
   silent=FALSE, debug=FALSE, callFrom=NULL) {
   ## read ProteomeDiscoverer exported txt
   fxNa <- wrMisc::.composeCallName(callFrom, newNa="readProteomeDiscovererFile")
+  oparMar <- graphics::par("mar")                     # old margins, for rest after figure
+  oparLayout <- graphics::par("mfcol")                # old layout, for rest after figure
+  on.exit(graphics::par(mar=oparMar, mfcol=oparLayout))            # restore old mar settings
+
   reqPa <- c("utils","wrMisc")
   chPa <- sapply(reqPa, requireNamespace, quietly=TRUE)
   if(any(!chPa)) stop("package(s) '",paste(reqPa[which(!chPa)], collapse="','"),"' not found ! Please install first from CRAN")
@@ -70,14 +79,12 @@ readProteomeDiscovererFile <- function(fileName, path=NULL, normalizeMeth="media
   infoDat <- infoFi <- setupSd <- parametersD <- NULL        # initialize
   .corPathW <- function(x) gsub("\\\\", "/", x)
 
-
   ## check if path & (tsv) file exist
   if(!grepl("\\.txt$|\\.txt\\.gz$", fileName)) message(fxNa,"Trouble ahead, expecting tabulated text file (the file'",fileName,"' might not be right format) !!")
   paFi <- wrMisc::checkFilePath(fileName, path, expectExt="txt", compressedOption=TRUE, stopIfNothing=TRUE, callFrom=fxNa, silent=silent, debug=debug)
 
   ## note : reading sample-setup from 'suplAnnotFile' at this place won't allow comparing if number of  samples/columns corresponds to data; do after reading main data
   if(debug) message(fxNa,"rpd0 .. Ready to read", if(length(path) >0) c(" from path ",path[1])," the file  ",fileName[1])
-
 
   ## read (main) file
   ## future: look for fast reading of files
@@ -92,10 +99,9 @@ readProteomeDiscovererFile <- function(fileName, path=NULL, normalizeMeth="media
       rpd1 <- list(tmp=tmp,paFi=paFi,annotCol=annotCol,fileName=fileName) }
 
     ## locate & extract annotation
-    #if(length(annotCol) <1) annotCol <- c("Protein.ID","Description","Gene","Gene..name","Contaminant","Sum.PEP.Score","Coverage....", "X..Peptides","X..PSMs","X..Unique.Peptides", "X..AAs","MW..kDa.","Marked..as","Marked as")
     ## default as R-friendly (convert standard cols later to this format)
     if(length(annotCol) <1) annotCol <- c("Accession","Description","Gene","Gene.Name","Marked.as", "Number.of.Peptides","Number.of.PSMs","Number.of.Unique.Peptides","Number.of.AAs","Coverage.in.Percent")
-    # also  ??    "Exp.q.value.Combined","Sum.PEP.Score"
+    ## also  ??    "Exp.q.value.Combined","Sum.PEP.Score"
     if(debug) message(fxNa,"rpd1a")
 
     ## option for future: also extract column "MarkedAs"
@@ -252,7 +258,6 @@ readProteomeDiscovererFile <- function(fileName, path=NULL, normalizeMeth="media
       ch1 <- match(quantCol, colnames(tmp))          # look for direct match (rarley ok)
       chNA <- is.na(ch1)
       if(all(chNA)) {                          # no direct match found
-
         ch1 <- match(paste0(quantCol,".F.Sample"), sub("\\.F[[:digit:]]+\\.Sample",".F.Sample",colnames(tmp)))    # match to simplified "Cancer01.F.Sample" instead of "Cancer01.F1.Sample"
         chNA <- is.na(ch1)
         if(all(chNA)) {                     # no composed match found
@@ -260,38 +265,46 @@ readProteomeDiscovererFile <- function(fileName, path=NULL, normalizeMeth="media
           message(fxNa,"grep on each indiv quantCol - Not yet developed")
           ## develop further ?
 
-          stop("None of samples found !!")
+          stop(fxNa,"None of samples found !!")
         }
       }
       if(any(chNA)) { message(fxNa,"Note : ",sum(chNA)," out of ",length(chNA)," samples NOT found !")
         ch1 <- ch1[which(!chNA)]
       }
     } else {    ## single value => use as search pattern
-      ## need to avoid "Abundances.Normalized.F1.Sample" or 'Abundances.Count.*'
-      ch1 <- grep(paste0(if(substr(quantCol,1,1) !="^") "^",quantCol,"\\.F[[:digit:]]+\\.Sample"), colnames(tmp))      # construct pattern code to  "Abundance.F1.Sample"
-      if(length(ch1) <1) {
-        ch1 <- grep(paste0(if(substr(quantCol,1,1) !="^") "^",quantCol,"s\\.F[[:digit:]]+\\.Sample"), colnames(tmp))   # construct pattern code to  "Abundances.F1.Sample"
+      if(debug) {message(fxNa,"rpd7b"); rpd7b <- list(annot=annot,specPref=specPref,chSp=chSp,tmp=tmp,quantCol=quantCol) }
+      if(identical("allAfter_calc.pI", quantCol)) {
+        calcPIcol <- c("calc.pI","calc..pI","calc pI","calc_pI")    # possible variations of 'calc.pI'
+        chCol <- calcPIcol %in% colnames(tmp)
+        if(any(chCol, na.rm=TRUE)) {
+          quantColInd <- (which(colnames(tmp)==calcPIcol[which(chCol)[1]]) +1) : ncol(tmp)
+        } else {quantColInd <- NULL; stop(fxNa,"Cannot find column called 'calc_pI' (or 'cal.pI); don't know which columns to choose as quantitation data !")}
+      } else {
+        ## need to avoid "Abundances.Normalized.F1.Sample" or 'Abundances.Count.*'
+        ch1 <- grep(paste0(if(substr(quantCol,1,1) !="^") "^",quantCol,"\\.F[[:digit:]]+\\.Sample"), colnames(tmp))      # construct pattern code to  "Abundance.F1.Sample"
         if(length(ch1) <1) {
-          ch1 <- grep(paste0(if(substr(quantCol,1,1) !="^") "^",quantCol,"s{0,1}\\.F[[:digit:]]"), colnames(tmp))      # construct pattern code to  "Abundances.F1"
-          ## challange : one may pick too many columns (type "Abundances.Normalized.F1.Sample" or 'Abundances.Count.*')
+          ch1 <- grep(paste0(if(substr(quantCol,1,1) !="^") "^",quantCol,"s\\.F[[:digit:]]+\\.Sample"), colnames(tmp))   # construct pattern code to  "Abundances.F1.Sample"
           if(length(ch1) <1) {
-            qC1 <- paste0(sub("\\\\.","", sub("S$","", quantCol)),"\\.S")
-            ch1 <- grep(qC1, colnames(tmp))      # construct pattern code to  "Abundance.S"
-            excluPat <- "\\.Normalized|\\.Count|\\.Ratio|\\.Grouped"
-            if(length(ch1) >0) { ch2 <- grepl(excluPat, colnames(tmp)[ch1])    # avoid  '.Normalized' (if not concerning all)
-              if(length(ch2) >0 && !all(ch2)) ch1 <- ch1[which(!ch2)]
-            } else {
-              ch1 <- grep(quantCol, colnames(tmp))      # use directly as pattern (may find too many)
+            ch1 <- grep(paste0(if(substr(quantCol,1,1) !="^") "^",quantCol,"s{0,1}\\.F[[:digit:]]"), colnames(tmp))      # construct pattern code to  "Abundances.F1"
+            ## challange : one may pick too many columns (type "Abundances.Normalized.F1.Sample" or 'Abundances.Count.*')
+            if(length(ch1) <1) {
+              qC1 <- paste0(sub("\\\\.","", sub("S$","", quantCol)),"\\.S")
+              ch1 <- grep(qC1, colnames(tmp))      # construct pattern code to  "Abundance.S"
+              excluPat <- "\\.Normalized|\\.Count|\\.Ratio|\\.Grouped"
               if(length(ch1) >0) { ch2 <- grepl(excluPat, colnames(tmp)[ch1])    # avoid  '.Normalized' (if not concerning all)
                 if(length(ch2) >0 && !all(ch2)) ch1 <- ch1[which(!ch2)]
               } else {
-                warning(fxNa,"Unable to find any matches to '",quantCol,"' !") }
+                ch1 <- grep(quantCol, colnames(tmp))      # use directly as pattern (may find too many)
+                if(length(ch1) >0) { ch2 <- grepl(excluPat, colnames(tmp)[ch1])    # avoid  '.Normalized' (if not concerning all)
+                  if(length(ch2) >0 && !all(ch2)) ch1 <- ch1[which(!ch2)]
+                } else {
+                  warning(fxNa,"Unable to find any matches to '",quantCol,"' !") }
+              }
             }
           }
+        if(debug) message(fxNa,"Found ",length(ch1)," quantitation-columns", if(length(ch1) >0) c(" (eg ",wrMisc::pasteC(colnames(tmp)[utils::head(ch1)], quoteC="'"),")"))
         }
-      if(debug) message(fxNa,"Found ",length(ch1)," quantitation-columns", if(length(ch1) >0) c(" (eg ",wrMisc::pasteC(colnames(tmp)[utils::head(ch1)], quoteC="'"),")"))
       }
-
     }
     quantColInd <- ch1
     if(length(quantColInd) <1) stop(msg,"  ('",quantCol,"') NOT FOUND !")
@@ -441,7 +454,7 @@ readProteomeDiscovererFile <- function(fileName, path=NULL, normalizeMeth="media
     if(length(suplAnnotFile) >0 || length(sdrf) >0) {
       setupSd <- readSampleMetaData(sdrf=sdrf, suplAnnotFile=suplAnnotFile, quantMeth="PD", path=path, abund=utils::head(quant), groupPref=groupPref, silent=silent, debug=debug, callFrom=fxNa)
     }
-    if(debug) {message(fxNa,"rpd13b .."); rpd13b <- list()}
+    if(debug) {message(fxNa,"rpd13b .."); rpd13b <- list(annot=annot,tmp=tmp,abund=abund,quant=quant,setupSd=setupSd,sampleNames=sampleNames,specPref=specPref,annotCol=annotCol,Rfriendly=Rfriendly,contamCol=contamCol,PSMCol=PSMCol,PepCol=PepCol,infoDat=infoDat, refLi=refLi)}
 
     ## finish groups of replicates & annotation setupSd
     setupSd <- .checkSetupGroups(abund=abund, setupSd=setupSd, gr=gr, sampleNames=sampleNames, quantMeth="PD", silent=silent, debug=debug, callFrom=fxNa)
@@ -459,11 +472,11 @@ readProteomeDiscovererFile <- function(fileName, path=NULL, normalizeMeth="media
     if(is.numeric(plotGraph) && length(plotGraph) >0) {custLay <- as.integer(plotGraph); plotGraph <- TRUE} else {
         if(!isTRUE(plotGraph)) plotGraph <- FALSE}
     if(plotGraph) .plotQuantDistr(abund=abund, quant=quant, custLay=custLay, normalizeMeth=normalizeMeth, softNa="Proteome Discoverer",
-      refLi=refLi, refLiIni=refLiIni, tit=titGraph, las=NULL, silent=silent, callFrom=fxNa, debug=debug)
+      refLi=refLi, refLiIni=refLiIni, notLogAbund=TRUE, tit=titGraph, las=NULL, silent=silent, callFrom=fxNa, debug=debug)
 
     ## meta-data
     notes <- c(inpFile=paFi, qmethod="ProteomeDiscoverer", qMethVersion=if(length(infoDat) >0) unique(infoDat$Software.Revision) else NA,
-    	rawFilePath= if(length(infoDat) >0) infoDat$File.Name[1] else NA, normalizeMeth=normalizeMeth, call=match.call(),
+    	rawFilePath= if(length(infoDat) >0) infoDat$File.Name[1] else NA, normalizeMeth=normalizeMeth, call=deparse(match.call()),
       created=as.character(Sys.time()), wrProteo.version=utils::packageVersion("wrProteo"), machine=Sys.info()["nodename"])
 
     ## final output
@@ -619,7 +632,6 @@ readProteomeDiscovererFile <- function(fileName, path=NULL, normalizeMeth="media
       saNa2 <- extrSamNaSetup(setupSd, quantMeth)           # from setupSd$annotBySoft (by quant method)
       sampleNames <- if(length(saNa2) ==ncol(abund)) saNa2 else if(length(setupSd$sdrfDat$comment.data.file.)==ncol(abund)) sub(rawExt,"", setupSd$sdrfDat$comment.data.file.)
     }
-
     ## now for gr
     if(length(gr) != ncol(abund)){
       if(!iniSaNa && !defaultColNa && length(saNa$grou) ==ncol(abund)) gr <- saNa$grou
@@ -645,7 +657,6 @@ readProteomeDiscovererFile <- function(fileName, path=NULL, normalizeMeth="media
       }
     }
     if(debug) {message(fxNa,"cSG4b"); cSG4b <- list()}
-
   }
   ## case of PD : check if  setupSd$annotBySoft$File.Name  usable
   if(defaultColNa && length(sampleNames) != ncol(abund)) {
@@ -663,7 +674,6 @@ readProteomeDiscovererFile <- function(fileName, path=NULL, normalizeMeth="media
         if(debug) message(fxNa,"cSG4c   Method ",quantMeth," : Extracted ",length(unique(gr)), " groups of replicates based on meta-data")
       }
   } }
-
 
   if(debug) {message(fxNa,"cSG5"); cSG5 <- list(sampleNames=sampleNames,gr=gr,abund=abund,iniSaNa=iniSaNa,iniGr=iniGr,setupSd=setupSd,defaultColNa=defaultColNa,saNa=saNa)}
   if(length(sampleNames) != ncol(abund) && defaultColNa & !silent) message(fxNa,"Still UNABLE to find suitable colnames")
@@ -690,7 +700,8 @@ readProteomeDiscovererFile <- function(fileName, path=NULL, normalizeMeth="media
 #' @param softNa (character, length=1) name of quantitation-software (typically 2-letter abbreviation, eg 'MQ')
 #' @param refLi (integer) to display number reference lines
 #' @param refLiIni (integer) to display initial number reference lines
-#' @param figMarg (numeric) custom figure margins (will be passed to \code{\link[graphics]{par}})
+#' @param notLogAbund (logical) set to \code{TRUE} if \code{abund} is linear but should be plotted as log2 
+#' @param figMarg (numeric, length=4) custom figure margins (will be passed to \code{\link[graphics]{par}}), defaults to c(3.5, 3.5, 3, 1)
 #' @param tit (character) custom title
 #' @param las (integer) indicate orientation of text in axes
 #' @param cexAxis (numeric) size of numeric axis labels as cex-expansion factor (see also \code{\link[graphics]{par}})
@@ -702,11 +713,11 @@ readProteomeDiscovererFile <- function(fileName, path=NULL, normalizeMeth="media
 #' @return This function returns logical value (if data were valid for plotting) and produces a density dustribution figure (if data were found valid)
 #' @seealso used in \code{readProtDiscovererFile},  \code{\link{readMaxQuantFile}}, \code{\link{readProlineFile}}, \code{\link{readFragpipeFile}}
 #' @examples
-#' set.seed(2018);  datT8 <- matrix(round(rnorm(800)+3,1), nc=8, dimnames=list(paste(
+#' set.seed(2018);  datT8 <- matrix(round(rnorm(800) +3,1), nc=8, dimnames=list(paste(
 #'   "li",1:100,sep=""), paste(rep(LETTERS[1:3],c(3,3,2)),letters[18:25],sep="")))
-#' .plotQuantDistr(datT8, quant=NULL, refLi=NULL, tit="Synthetic Data")
+#' .plotQuantDistr(datT8, quant=NULL, refLi=NULL, tit="Synthetic Data Distribution")                                
 #' @export
-.plotQuantDistr <- function(abund, quant, custLay=NULL, normalizeMeth=NULL, softNa=NULL, refLi=NULL, refLiIni=NULL, figMarg=c(3, 3, 3, 1), tit=NULL, las=NULL, cexAxis=1, nameSer=NULL, cexNameSer=NULL, silent=FALSE, callFrom=NULL, debug=FALSE) {
+.plotQuantDistr <- function(abund, quant, custLay=NULL, normalizeMeth=NULL, softNa=NULL, refLi=NULL, refLiIni=NULL, notLogAbund=NA, figMarg=c(3.5, 3.5, 3, 1), tit=NULL, las=NULL, cexAxis=0.8, nameSer=NULL, cexNameSer=NULL, silent=FALSE, callFrom=NULL, debug=FALSE) {
   ## generic plotting of densirt distribution for quantitation import-functions
   ## assume 'abund' (raw, non-normalized) and 'quant' (final normalized) to be valid matrix of data.frame !!
   ## 'custLay' ..(matrix) for layout()
@@ -716,75 +727,112 @@ readProteomeDiscovererFile <- function(fileName, path=NULL, normalizeMeth="media
   ## 'refLiIni' .. (integer) initial reference line(s)
 
   fxNa <- wrMisc::.composeCallName(callFrom, newNa=".plotQuantDistr")
-  oparMar <- graphics::par("mar")                # only if figure might be drawn
-  on.exit(graphics::par(mar=oparMar))            # restore old mar settings
-  if(debug) {message(fxNa,"pQD0 .. length custLay ", length(custLay) )}
-  ## check if abund & quant are redundant (while normalizeMeth="none")
-  if("none" %in% normalizeMeth && length(abund) >0 && (identical(quant,abund) || identical(quant,log2(abund)))) {
-    quant <- NULL
-    if(debug) message(fxNa,"No need for 2nd plot, 'abund' and 'quant' are identical ..")}
-
-  if(length(custLay) >0) graphics::layout(custLay) else {
-    if(!identical(normalizeMeth,"none") && length(quant) >0) { ch1 <- try(graphics::layout(1:2), silent=TRUE)
-      if(inherits(ch1, "try-error")) message(fxNa,"Problem with figure, Need to restore layout ..")}}
+  oparMar <- graphics::par("mar")                     # old margins, for rest after figure
+  oparLayout <- graphics::par("mfcol")                # old layout, for rest after figure
+  on.exit(graphics::par(mar=oparMar, mfcol=oparLayout))            # restore old mar settings
+  
+  if(debug) {message(fxNa,"pQD0 .. length custLay ", length(custLay)); pQD0 <- list(abund=abund,quant=quant,custLay=custLay,normalizeMeth=normalizeMeth,softNa=softNa,refLi=refLi)}
   plotGraph <- TRUE                                         # useful ? (to report if plot can be drawn as output ?)
+  ## check if abund & quant are redundant (while normalizeMeth="none")
+  abundQuantRed <- FALSE       # see if abund and quant are redundant (ie no need to plot twice)
+  if("none" %in% normalizeMeth && length(abund) >0 && length(quant) >0) {
+    if(identical(quant, abund) || identical(quant, log2(abund))) { abundQuantRed <- TRUE  
+      if(debug) message(fxNa,"No need for 2nd plot, 'abund' and 'quant' are identical ..") }  
+  }
+      
+  if(length(custLay) >0) graphics::layout(custLay) else {
+    if(!identical(normalizeMeth,"none") && length(quant) >0 && !abundQuantRed) { ch1 <- try(graphics::layout(1:2), silent=TRUE)
+      if(inherits(ch1, "try-error")) message(fxNa,"Problem with figure, Need to restore layout ..") else if(debug) message(fxNa,"Setting layout to 1:2") }}
   if(debug) { message(fxNa,"pQD1"); pQD1 <- list(abund=abund,quant=quant,custLay=custLay,normalizeMeth=normalizeMeth,softNa=softNa,refLi=refLi)}
-
 
   if(length(las) != 1 || !is.integer(las)) {
      ch1 <- c(if(length(abund) >0) ncol(abund) >7 || stats::median(nchar(colnames(abund)), na.rm=TRUE) >8 else FALSE,
        if(length(quant) >0) ncol(quant) >7 || stats::median(nchar(colnames(quant)), na.rm=TRUE) >8 else FALSE)
     las <- if(any(ch1)) 2 else 1 }
-  if(length(figMarg) !=4 || !is.numeric(figMarg)) {figMarg <- c(3, 3, 3, 1)
+  if(length(figMarg) != 4 || !is.numeric(figMarg)) {figMarg <- c(3.5, 3.8, 3, 1)     # mar: bot,le,top,ri
     if(debug) message(fxNa,"Invalid entry for argument 'figArg' (must be umeric of length=4), setting to default")}
-  ch1 <- try(graphics::par(mar=figMarg), silent=TRUE)                          # mar: bot,le,top,ri
+  ch1 <- try(graphics::par(mar=figMarg), silent=TRUE)                     
   if(inherits(ch1, "try-error")) message(fxNa,"Problem with figure, Need to restore mar ..")
   if(is.null(tit)) tit <- paste(softNa," quantification ")
   titSu <- if(length(refLi) >0) paste0(c(if(length(refLiIni) ==1) c("'",refLiIni,"'") else c(" by ",length(refLi)," selected lines")),collapse="")  else NULL #
   usePa <- c("wrGraph","sm")
   misPa <- !sapply(usePa, function(pkg) requireNamespace(pkg, quietly=TRUE))
-  if(debug) { message(fxNa,"pQD2 .. misPa ", wrMisc::pasteC(misPa,quoteC="'") )  }
+  titQ <- if(length(abund) >0) paste(tit, "(initial)",sep=" ") else tit
+  .findSuplLi <- function(x, n=3) {
+    if(length(x) >2) pretty(stats::quantile(x, c(0.15, 0.85), na.rm=TRUE), n) else NULL  
+  }
+  ## check log-status, ie notLogAbund 
+  if(length(abund) >0 && length(quant) >0) {
+   if(length(notLogAbund) <1) { notLogAbund <- NA
+     if(!silent) message(fxNa,"Invalid entry for 'notLogAbund', setting to default =NA") }
+   if(is.na(notLogAbund)) {
+    dAb <- diff(range(abund, na.rm=TRUE))
+    dQa <- diff(range(quant, na.rm=TRUE))
+    sugLogAbun <- dAb > 2^(signif(dQa,3) -2) && dAb > 3*dQa
+    if(debug) message(fxNa,"Trying to figure out if log2 should be taken for 'abund': ",dAb > 2^(signif(dQa,3) -2)," and ", dAb > 3*dQa)
+    if(sugLogAbun) {
+      notLogAbund <- TRUE }   # abund is very likely linear scale, while quant is likely log-scale
+  } }
+  msg <- c("Invalid entry for 'notLogAbund',","Unknown log-status,"," assuming data is log2, ie notLogAbund=FALSE")
+  if(length(notLogAbund) <1 && !silent) { notLogAbund <- FALSE
+    if(!silent) message(fxNa, msg[-2])
+  } else if(any(is.na(notLogAbund))) { notLogAbund <- notLogAbund[which(is.na(notLogAbund))] <- FALSE
+    if(!silent) message(fxNa, msg[-1]) }      
+  
+  colNa <- if(length(abund) >0) colnames(abund) else colnames(quant)
+  if(length(colNa) >0) {
+    ncharAx <- stats::quantile(nchar(colNa), c(0.5,0.9), na.rm=TRUE)
+    if(length(cexNameSer) !=1 || any(is.na(cexNameSer))) cexNameSer <- sort(round( c(7/ncharAx[2], 1.9/log(length(colNa)), 1, 0.48), 2))[2]     # adjust cex series-names to length and ncol
+    suplLineA <- if(length(abund) >0) {.findSuplLi(if(isTRUE(notLogAbund)) log2(abund) else abund)} else NA
+    suplLineQ <- if(length(quant) >0)  .findSuplLi(quant) else NA
 
+  } else { ncharAx <- cexNameSer <- suplLineA <- suplLineQ <- NA
+    if(debug) message(fxNa," Note : BOTH 'abund' and 'quant' are EMPTY - NOTHING TO PLOT")}  
+  
+  ## check axis cex
+  if(debug) { message(fxNa,"pQD2 .. misPa ", wrMisc::pasteC(misPa,quoteC="'"),";  abund is linear ",notLogAbund); pQD2 <- list(abund=abund,quant=quant,custLay=custLay,normalizeMeth=normalizeMeth,softNa=softNa,refLi=refLi,tit=tit,titQ=titQ,suplLineA=suplLineA,suplLineQ=suplLineQ,ncharAx=ncharAx) }
+  
+  chNeg <- sum(abund <0, na.rm=TRUE)
+  if(chNeg >0 && notLogAbund) { notLogAbund <- FALSE
+    if(!silent) message(fxNa,"Data suggest taking log2 might be useful, but due to presence of ",chNeg," negative values this is not possible")  
+  } 
   if(any(misPa, na.rm=TRUE)) {
     if(!silent) message(fxNa,"Please install package(s) ", wrMisc::pasteC(usePa[which(misPa)])," from CRAN for drawing vioplots")
     if(length(abund) >0) {
       ## wrGraph not available : simple boxplot
-      ch1 <- try(graphics::boxplot(log2(abund), main=paste(tit,"(initial)", sep=" "), las=1, outline=FALSE), silent=TRUE)
+      ch1 <- try(graphics::boxplot(if(isTRUE(notLogAbund)) suppressWarnings(log2(abund)) else abund, main=titQ, las=1, outline=FALSE), silent=TRUE)
       if(inherits(ch1, "try-error")) {plotGraph <- FALSE; if(!silent) message(fxNa,"UNABLE to draw boxplot of distribution !!  ", sub("^Error in",":",ch1))} else {
-        graphics::abline(h=round(log2(stats::median(abund,na.rm=TRUE))) +c(-2:2), lty=2, col=grDevices::grey(0.6))} }
+        graphics::abline(h=suplLineA, lty=2, col=grDevices::grey(0.6))} }
+
     ## plot normalized
-    if(length(quant) >0) {
-      if(identical(normalizeMeth,"none") | length(quant) <0) {
+    if(length(quant) >0 && !abundQuantRed) {      
+      if(identical(normalizeMeth,"none") || length(quant) <0) {
         if(debug) {message(fxNa,"pQD3 .. dim quant: ", nrow(quant)," li and  ",ncol(quant)," cols; colnames : ",wrMisc::pasteC(colnames(quant))," ")}
         ch1 <- try(graphics::boxplot(quant, main=paste(tit," (",normalizeMeth,"-normalized",titSu,")"), las=1, outline=FALSE), silent=TRUE)
         if(inherits(ch1, "try-error")) if(!silent) message(fxNa,"UNABLE to draw boxplot of normalized distribution !!  ", sub("^Error in",":",ch1)) else {
-          graphics::abline(h=round(stats::median(quant, na.rm=TRUE)) +c(-2:2), lty=2, col=grDevices::grey(0.6)) } } }
+          graphics::abline(h=suplLineQ, lty=2, col=grDevices::grey(0.6)) } } }
 
   } else {                                            # wrGraph and sm are available
-    if(debug) {message(fxNa,"pQD4  draw vioplotW "  )  }
-    if(length(abund) >0) {
-      tit1 <- if(length(quant) >0) paste(tit, "(initial)",sep=" ") else tit
-      chNeg <- sum(abund <0, na.rm=TRUE)
+    if(debug) { message(fxNa,"pQD4  draw vioplotW ,  abund is linear ",notLogAbund); pQD4 <- list(abund=abund,quant=quant,tit=tit,normalizeMeth=normalizeMeth,softNa=softNa,refLi=refLi,titQ=titQ,notLogAbund=notLogAbund,titSu=titSu,las=las, cexAxis=cexAxis, nameSer=nameSer, cexNameSer=cexNameSer,notLogAbund=notLogAbund,abundQuantRed=abundQuantRed ) }
+    if(length(abund) >0) {       
       if(length(chNeg) <1) abund <- suppressWarnings(log2(abund))           #  presume as true 'raw', ie  NOT log2
-      ch1 <- try(wrGraph::vioplotW(abund, tit=tit1, wex=NULL, las=las, cexAxis=cexAxis, nameSer=nameSer, cexNameSer=cexNameSer, silent=silent, callFrom=fxNa), silent=TRUE)
+      if(debug) message(fxNa," Try 1st Vioplot ,  is linear abundance data ",notLogAbund,",  cexNameSer ",cexNameSer)
+      ch1 <- try(wrGraph::vioplotW(if(isTRUE(notLogAbund)) log2(abund) else abund, tit=titQ, wex=NULL, las=las, cexAxis=cexAxis, nameSer=nameSer, cexNameSer=cexNameSer, horizontal=FALSE, silent=debug, debug=debug, callFrom=fxNa), silent=TRUE)
       if(inherits(ch1, "try-error")) {plotGraph <- FALSE; if(!silent) message(fxNa,"UNABLE to plot vioplotW !!  ", sub("^Error in",":",ch1))
-      } else graphics::abline(h=round(stats::median(abund, na.rm=TRUE)) +c(-2:2), lty=2, col=grDevices::grey(0.6))
+      } else graphics::abline(h=suplLineA, lty=2, col=grDevices::grey(0.6))
     }
-    ## now normalized
-    if(length(quant) >0) {
-      if(identical(quant, abund)) {quant <- NULL;
-        if(!silent) message(fxNa,"Note : 'quant' and 'abund' were found identical, omit 2nd (redundant) graph ..") }
+    ## now normalized (and/or log-scale)
+    if(length(quant) >0  && !abundQuantRed) {
       if(debug) {message(fxNa,"pQD5  draw norm/quant as vioplotW() ", length(quant) >0)}
-      if(length(quant) >0) {
-        if(debug) {message(fxNa,"pQD6  draw vioplotW() for normalized")}            ## now normalized
-        tit1 <- if(length(normalizeMeth) ==1) paste(tit,", ",normalizeMeth,"-normalized",titSu) else paste(tit,", ",titSu)
-        ch1 <- try(wrGraph::vioplotW(quant, tit=tit1, wex=NULL, las=las, cexAxis=cexAxis, nameSer=nameSer, cexNameSer=cexNameSer, silent=silent, callFrom=fxNa), silent=TRUE)
-        if(inherits(ch1, "try-error")) { if(!silent) message(fxNa,"UNABLE to plot vioplotW for normalized data !!  ", sub("^Error in",":",ch1))
-        } else graphics::abline(h=round(stats::median(quant, na.rm=TRUE)) +c(-2:2), lty=2, col=grDevices::grey(0.6)) }
+      tit1 <- if(length(normalizeMeth) ==1) paste(tit,", ",normalizeMeth,"-normalized",titSu) else paste(tit,", ",titSu)
+      if(debug) message(fxNa," Try 2nd Vioplot ")
+      ch1 <- try(wrGraph::vioplotW(quant, tit=tit1, wex=NULL, las=las, cexAxis=cexAxis, nameSer=nameSer, cexNameSer=cexNameSer, horizontal=FALSE, silent=debug, debug=debug,callFrom=fxNa), silent=TRUE)
+      if(inherits(ch1, "try-error")) { if(!silent) message(fxNa,"UNABLE to plot vioplotW for normalized data !!  ", sub("^Error in",":",ch1))
+      } else graphics::abline(h=suplLineQ, lty=2, col=grDevices::grey(0.6))
     }
   }
   plotGraph }
-
+   
 
 
 #' Extract additional information to construct colum SpecType
@@ -843,7 +891,6 @@ readProteomeDiscovererFile <- function(fileName, path=NULL, normalizeMeth="media
     if(any(!chNa) && ! silent) message(fxNa," ",wrMisc::pasteC(c("mainSpecies","conta")[which(!chNa)], quoteC="'")," Seem absent from 'specPref' !")
     .MultGrep2 <- function(pat, y) {y <- as.matrix(y); z <- if(length(pat)==1) grepl(pat, y) else rowSums(sapply(pat, grepl, y)) >0
       if(length(dim(y)) >1) rowSums(matrix(z, ncol=ncol(y))) >0 else z }  # (multiple) grepl() when length of pattern 'pat' >0
-
     mulP <- lapply(specPref, .MultGrep2, annot)
     chLe <- sapply(mulP, length)
     ## assign to annot
@@ -877,4 +924,4 @@ readProteomeDiscovererFile <- function(fileName, path=NULL, normalizeMeth="media
     simple=c("Human","Mouse","Rat","Pig","Guinea pigs", "Cow","Rabit", "Sheep",
       "Celegans","Droso","Zebrafish","Frog","Axolotl",  "Arabidopsis","Potato","Sugar beet",   "Yeast","Ecoli","Mtuberculosis")  )
 }
-
+    

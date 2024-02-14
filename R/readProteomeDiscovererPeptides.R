@@ -50,11 +50,11 @@
 #' path1 <- system.file("extdata", package="wrProteo")
 #'
 #' @export
-readProtDiscovererPeptides <- function(fileName, path=NULL, normalizeMeth="median", sampleNames=NULL, suplAnnotFile=TRUE, gr=NULL, sdrf=NULL, read0asNA=TRUE, quantCol="^Abundances*",
+readProteomeDiscovererPeptides <- function(fileName, path=NULL, normalizeMeth="median", sampleNames=NULL, suplAnnotFile=TRUE, gr=NULL, sdrf=NULL, read0asNA=TRUE, quantCol="^Abundances*",
   annotCol=NULL, contamCol="Contaminant", refLi=NULL, separateAnnot=TRUE, FDRCol=list(c("^Protein.FDR.Confidence","High"), c("^Found.in.Sample.","High")), plotGraph=TRUE,
   titGraph="Proteome Discoverer", wex=1.6, specPref=c(conta="CON_|LYSC_CHICK", mainSpecies="OS=Homo sapiens"), silent=FALSE, debug=FALSE, callFrom=NULL) {
   ## read ProteomeDiscoverer exported txt
-  fxNa <- wrMisc::.composeCallName(callFrom, newNa="readProtDireadProtDiscovererPeptidesscovPeptides")
+  fxNa <- wrMisc::.composeCallName(callFrom, newNa="readProteomeDiscovererPeptides")
   oparMar <- if(plotGraph) graphics::par("mar") else NULL       # only if figure might be drawn
 
   reqPa <- c("utils","wrMisc")
@@ -298,9 +298,24 @@ readProtDiscovererPeptides <- function(fileName, path=NULL, normalizeMeth="media
 
     ## meta-data
     notes <- c(inpFile=paFi, qmethod="ProteomeDiscoverer", qMethVersion=if(length(infoDat) >0) unique(infoDat$Software.Revision) else NA,
-    	rawFilePath= if(length(infoDat) >0) infoDat$File.Name[1] else NA, normalizeMeth=normalizeMeth, call=match.call(),
+    	rawFilePath= if(length(infoDat) >0) infoDat$File.Name[1] else NA, normalizeMeth=normalizeMeth, call=deparse(match.call()),
       created=as.character(Sys.time()), wrProteo.version=utils::packageVersion("wrProteo"), machine=Sys.info()["nodename"])
+
     ## final output
     if(isTRUE(separateAnnot)) list(raw=abund, quant=quant, annot=annot, counts=counts, sampleSetup=setupSd, quantNotes=parametersD, notes=notes) else data.frame(quant,annot)
 }
 
+
+#' readProtDiscovererPeptides, depreciated
+#'
+#' This function has been depreciated and replaced by \code{\link{readProteomeDiscovererPeptides}} (from this package).
+#'
+#' @param ...  Actually, this function doesn't ready any input any more
+#' @return This function returns \code{NULL}
+#' @seealso \code{\link{readProteomeDiscovererFile}}, \code{\link{readProteomeDiscovererPeptides}}
+#' @export
+readProtDiscovererPeptides <- function(...) {
+  .Deprecated(new="readProteomeDiscovererPeptides", package="wrMisc", msg="The function readProtDiscovererPeptides() has been deprecated and replaced by readProteomeDiscovererPeptides() in this package")  # only this message will be shown..
+  NULL
+}
+  

@@ -1,4 +1,4 @@
-#' Read Tabulated Files Exported by ProteomeDiscoverer At Peptide Level
+#' Read Tabulated Files Exported by ProteomeDiscoverer At Peptide Level, Deprecated
 #'
 #' Depreciated old version of Peptide identification and quantification results from \href{https://www.thermofisher.com/order/catalog/product/OPTON-30812}{Thermo ProteomeDiscoverer}
 #' which were exported as tabulated text can be imported and relevant information extracted.
@@ -56,8 +56,11 @@ readProtDiscovPeptides <- function(fileName, path=NULL, normalizeMeth="median", 
   message("+++ This function is depreciated, it has been replaced by readProtDiscovererPeptides() from the same package ! \n +++ Synthax and structure of output remain the same ! \n")
   ## read ProteomeDiscoverer exported txt
   fxNa <- wrMisc::.composeCallName(callFrom, newNa="readProtDiscovPeptides")
-  oparMar <- if(plotGraph) graphics::par("mar") else NULL       # only if figure might be drawn
 
+  .Deprecated(new="readProtDiscovererPeptides", package="wrProteo", msg="The function readProtDiscovPeptides() has been deprecated and replaced by readProtDiscovererPeptides() from the same package
+     \n +++ Synthax and structure of output remain the same ! \n")
+
+  oparMar <- if(plotGraph) graphics::par("mar") else NULL       # only if figure might be drawn
   reqPa <- c("utils","wrMisc")
   chPa <- sapply(reqPa, requireNamespace, quietly=TRUE)
   if(any(!chPa)) stop("package(s) '",paste(reqPa[which(!chPa)], collapse="','"),"' not found ! Please install first from CRAN")

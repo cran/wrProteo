@@ -1,4 +1,4 @@
-## ---- include = FALSE---------------------------------------------------------
+## ----include = FALSE----------------------------------------------------------
 knitr::opts_chunk$set(collapse=TRUE, comment = "#>")
 
 ## ----install, echo=TRUE, eval=FALSE-------------------------------------------
@@ -132,7 +132,7 @@ diaNNFi1 <- "tinyDiaNN1.tsv.gz"
 path1 <- system.file("extdata", package="wrProteo")
 ## let's define the main species and allow tagging some contaminants
 specPref1 <- c(conta="conta|CON_|LYSC_CHICK", mainSpecies="HUMAN")
-dataNN <- readDiaNNFile(path1, file=diaNNFi1, specPref=specPref1, tit="Tiny DIA-NN Data")
+dataNN <- readDiaNNFile(path1, file=diaNNFi1, specPref=specPref1, tit="Tiny DIA-NN Data", plotGraph=FALSE)
 summary(dataNN$quant)
 
 ## ----readProlineProt1,  echo=TRUE---------------------------------------------
@@ -153,9 +153,30 @@ MCproFi1 <- "tinyMC.RData"
 dataMC <- readMassChroQFile(path1, file=MCproFi1, tit="Tiny MassChroq Example", plotGraph=FALSE)
 summary(dataMC$quant)
 
+## ----readAlphaPept1,  echo=TRUE-----------------------------------------------
+APproFi1 <- "tinyAlpaPeptide.csv.gz"
+## let's define the main species and allow tagging some contaminants
+specPref1 <- c(conta="conta|CON_|LYSC_CHICK")
+dataAP <- readAlphaPeptFile(path1, file=APproFi1, specPref=specPref1, tit="Tiny AlphaPept Example", plotGraph=FALSE)
+summary(dataAP$quant)
+
+## ----readWombarP1,  echo=TRUE-------------------------------------------------
+WBproFi1 <- "tinyWombCompo1.csv.gz"
+## let's define the main species and allow tagging some contaminants
+specPref1 <- c(conta="conta|CON_|LYSC_CHICK", mainSpecies="YEAST")
+dataWB <- readWombatNormFile(path1, file=WBproFi1, specPref=specPref1, tit="Tiny Wombat-P Example", plotGraph=FALSE)
+summary(dataWB$quant)
+
 ## ----readSampleMetaData2,  echo=TRUE------------------------------------------
 MQsdrf001819Setup <- readSampleMetaData(quantMeth="MQ", sdrf="PXD001819", path=path1, suplAnnotFile="summary.txt.gz", abund=dataMQ$quant)
 str(MQsdrf001819Setup)
+
+## ----fuseProteomicsProjects1,  echo=TRUE--------------------------------------
+path1 <- system.file("extdata", package="wrProteo")
+dataMQ <- readMaxQuantFile(path1, specPref=NULL, normalizeMeth="median")
+dataMC <- readMassChroQFile(path1, file="tinyMC.RData", tit="Tiny MassChroq Example", plotGraph=FALSE)
+dataFused <- fuseProteomicsProjects(dataMQ, dataMC)
+str(dataFused$quant)
 
 ## ----NA_MaxQuant, echo=TRUE---------------------------------------------------
 ## Let's inspect NA values as graphic

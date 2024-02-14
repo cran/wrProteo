@@ -2,7 +2,7 @@
 % Please edit documentation in R/readProtDiscovFile.R
 \name{readProtDiscovFile}
 \alias{readProtDiscovFile}
-\title{Read Tabulated Files Exported By ProteomeDiscoverer At Protein Level}
+\title{Read Tabulated Files Exported By ProteomeDiscoverer At Protein Level, Deprecated}
 \usage{
 readProtDiscovFile(
   fileName,

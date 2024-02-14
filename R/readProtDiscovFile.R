@@ -1,4 +1,4 @@
-#' Read Tabulated Files Exported By ProteomeDiscoverer At Protein Level
+#' Read Tabulated Files Exported By ProteomeDiscoverer At Protein Level, Deprecated
 #'
 #' Depreciated old version of Protein identification and quantification results from
 #' \href{https://www.thermofisher.com/order/catalog/product/OPTON-30812}{Thermo ProteomeDiscoverer}
@@ -64,7 +64,9 @@ readProtDiscovFile <- function(fileName, path=NULL, normalizeMeth="median", samp
   silent=FALSE, debug=FALSE, callFrom=NULL) {
   ## read ProteomeDiscoverer exported txt
 
-  message("+++ This function is depreciated, it has been replaced by readProteomeDiscovererFile() from the same package ! \n +++ Synthax and structure of output remain the same ! \n")
+  .Deprecated(new="readProtDiscovererFile", package="wrProteo", msg="The function readProtDiscovFile() has been deprecated and replaced by readProtDiscovererFile() from the same package
+     \n +++ Synthax and structure of output remain the same ! \n")
+
   fxNa <- wrMisc::.composeCallName(callFrom, newNa="readProtDiscovFile")
   reqPa <- c("utils","wrMisc")
   chPa <- sapply(reqPa, requireNamespace, quietly=TRUE)

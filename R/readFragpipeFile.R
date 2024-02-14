@@ -343,8 +343,8 @@ readFragpipeFile <- function(fileName, path=NULL, normalizeMeth="median", sample
 
     ## meta-data
     notes <- c(inpFile=paFi, qmethod="FragPipe", qMethVersion=if(length(infoDat) >0) unique(infoDat$Software.Revision) else NA,
-    	rawFilePath= if(length(infoDat) >0) infoDat$File.Name[1] else NA, normalizeMeth=normalizeMeth, call=match.call(),
-      created=as.character(Sys.time()), wrProteo.version=utils::packageVersion("wrProteo"), machine=Sys.info()["nodename"])
+    	rawFilePath= if(length(infoDat) >0) infoDat$File.Name[1] else NA, normalizeMeth=normalizeMeth, call=deparse(match.call()),
+      created=as.character(Sys.time()), wrProteo.version=paste(utils::packageVersion("wrProteo"), collapse="."), machine=Sys.info()["nodename"])
     ## final output
     if(isTRUE(separateAnnot)) list(raw=abund, quant=quant, annot=annot, counts=counts, sampleSetup=setupSd, quantNotes=parametersD, notes=notes) else data.frame(quant,annot) }
 }

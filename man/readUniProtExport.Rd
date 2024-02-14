@@ -34,8 +34,8 @@ may be given as character like \code{chr11:1-135,086,622} or as \code{list} with
 This function returns a data.frame (with columns $EnsID, $Entry, $Entry.name, $Status, $Protein.names, $Gene.names, $Length; if \code{deUcsc} is integrated plus: $chr, $type, $start, $end, $score, $strand, $Ensrnot, $avPos)
 }
 \description{
-This function allows reading and importing protein-ID conversion results from \href{https://www.uniprot.org/uploadlists/}{UniProt}.
-To do so, first copy/paste your query IDs into \href{https://www.uniprot.org/uploadlists/}{UniProt} 'Retrieve/ID mapping' field called '1. Provide your identifiers' (or upload as file), verify '2. Select options'.
+This function allows reading and importing protein-ID conversion results from \href{https://www.uniprot.org/id-mapping/}{UniProt}.
+To do so, first copy/paste your query IDs into \href{https://www.uniprot.org/id-mapping/}{UniProt} 'Retrieve/ID mapping' field called '1. Provide your identifiers' (or upload as file), verify '2. Select options'.
 In a typical case of 'enst000xxx' IDs  you may leave default settings, ie 'Ensemble Transcript' as input and 'UniProt KB' as output. Then, 'Submit' your search and retreive results via 
 'Download', you need to specify a 'Tab-separated' format ! If you download as 'Compressed' you need to decompress the .gz file before running the function \code{readUCSCtable} 
 In addition, a file with UCSC annotation (Ensrnot accessions and chromosomic locations, obtained using \code{\link{readUCSCtable}}) can be integrated.
@@ -43,7 +43,7 @@ In addition, a file with UCSC annotation (Ensrnot accessions and chromosomic loc
 \details{
 In a typicall use case, first chromosomic location annotation is extracted from UCSC for the species of interest and imported to R using  \code{\link{readUCSCtable}} . 
 However, the tables provided by UCSC don't contain Uniprot IDs. Thus, an additional (batch-)conversion step needs to get added. 
-For this reason \code{\link{readUCSCtable}} allows writing a file with Ensemble transcript IDs which can be converted tu UniProt IDs at the site of  \href{https://www.uniprot.org/uploadlists/}{UniProt}. 
+For this reason \code{\link{readUCSCtable}} allows writing a file with Ensemble transcript IDs which can be converted tu UniProt IDs at the site of  \href{https://www.uniprot.org/id-mapping/}{UniProt}. 
 Then, UniProt annotation (downloaded as tab-separated) can be imported and combined with the genomic annotation using this function.
 }
 \examples{

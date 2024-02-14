@@ -91,7 +91,9 @@ readMaxQuantPeptides <- function(path, fileName="peptides.txt", normalizeMeth="m
   cleanDescription <- TRUE              # clean 'Description' for artifacts of truncated text (tailing ';' etc)
   setupSd <- NULL                   # initialize
 
-  oparMar <- graphics::par("mar")
+  oparMar <- graphics::par("mar")                     # old margins, for rest after figure
+  oparLayout <- graphics::par("mfcol")                # old layout, for rest after figure
+  on.exit(graphics::par(mar=oparMar, mfcol=oparLayout))            # restore old mar settings
   reqPa <- c("utils","wrMisc")
   chPa <- sapply(reqPa, requireNamespace, quietly=TRUE)
   if(any(!chPa)) stop("package(s) '",paste(reqPa[which(!chPa)], collapse="','"),"' not found ! Please install first from CRAN")
@@ -338,13 +340,13 @@ readMaxQuantPeptides <- function(path, fileName="peptides.txt", normalizeMeth="m
     if(is.numeric(plotGraph) && length(plotGraph) >0) {custLay <- as.integer(plotGraph); plotGraph <- TRUE} else {
         if(!isTRUE(plotGraph)) plotGraph <- FALSE}
     if(plotGraph) .plotQuantDistr(abund=abund, quant=quant, custLay=custLay, normalizeMeth=normalizeMeth, softNa="MaxQuant Peptides",
-      refLi=refLi, refLiIni=refLiIni, tit=titGraph, silent=silent, callFrom=fxNa, debug=debug)
+      refLi=refLi, refLiIni=refLiIni, tit=titGraph, silent=debug, callFrom=fxNa, debug=debug)
 
 
     ## meta-data
     notes <- c(inpFile=file.path(path,fileName), qmethod="MaxQuant", qMethVersion=if(length(parametersD) >0) "xx" else NA,
-      rawFilePath=if(length(parametersD) >0) "xx" else NA, normalizeMeth=normalizeMeth, call=match.call(), created=as.character(Sys.time()),
-      wrProteo.version=utils::packageVersion("wrProteo"), machine=Sys.info()["nodename"])
+      rawFilePath=if(length(parametersD) >0) "xx" else NA, normalizeMeth=normalizeMeth, call=deparse(match.call()), created=as.character(Sys.time()),
+      wrProteo.version=paste(utils::packageVersion("wrProteo"), collapse="."), machine=Sys.info()["nodename"])
     ## prepare for final output
     if(isTRUE(separateAnnot)) list(raw=abund, quant=quant, annot=MQann, counts=counts, sampleSetup=setupSd, quantNotes=parametersD, notes=notes) else data.frame(abund, MQann) }
 }

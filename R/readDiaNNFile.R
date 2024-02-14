@@ -1,14 +1,14 @@
 #' Read Tabulated Files Exported by DIA-NN At Protein Level
 #'
-#' This function allows importing protein identification and quantification results from \href{https://github.com/vdemichev/DiaNN}{DIA-NN}, see also \doi{10.1038/s41592-019-0638-x}{Demichev et al, 2020}.
+#' This function allows importing protein identification and quantification results from \href{https://github.com/vdemichev/DiaNN}{DIA-NN}.
 #' Data should be exported as tabulated text (tsv) as protein-groups (pg) to allow import by thus function. 
-#' Quantification data and other relevant information will be extracted similar like the other import-functions from this package.
-#' The final output is a list containing the elements: \code{$annot}, \code{$raw} and \code{$quant}, or a data.frame with the quantication data and a part of the annotation if argument \code{separateAnnot=FALSE}.
+#' Quantification data and other relevant information will be parsed and extracted (similar to the other import-functions from this package).
+#' The final output is a list containing as (main) elements: \code{$annot}, \code{$raw} and \code{$quant}, or a data.frame with the quantication data and a part of the annotation if argument \code{separateAnnot=FALSE}.
 #'
 #' @details
 #' This function has been developed using DIA-NN version 1.8.x.
-#' Note, reading gene-group (gg) files is in priciple possible, but resulting files typically lack protein-identifiers which may lack in later steps of analysis.
-#' It is suggetsed to rather read protein-group (pg) files.
+#' Note, reading gene-group (gg) files is in priciple possible, but resulting files typically lack protein-identifiers which may be less convenient in later steps of analysis.
+#' Thus, it is suggested to rather read protein-group (pg) files.
 #'
 #' Using the argument \code{suplAnnotFile} it is possible to specify a specific file (or search for default file) to read for extracting file-names as sample-names and other experiment related information.
 #'
@@ -21,7 +21,7 @@
 #' @param refLi (character or integer) custom specify which line of data is main species, if character (eg 'mainSpe'), the column 'SpecType' in $annot will be searched for exact match of the (single) term given
 #' @param separateAnnot (logical) if \code{TRUE} output will be organized as list with \code{$annot}, \code{$abund} for initial/raw abundance values and \code{$quant} with final log2 (normalized) quantitations
 #' @param annotCol (character) column names to be read/extracted for the annotation section (default  c("Accession","Description","Gene","Contaminant","Sum.PEP.Score","Coverage....","X..Peptides","X..PSMs","X..Unique.Peptides", "X..AAs","MW..kDa.") )
-#' @param FDRCol (list) - not used
+#' @param FDRCol - not used (the argument was kept to remain with the same synthax as the other import functions fo this package)
 #' @param wex (integer) relative expansion factor of the violin-plot (will be passed to \code{\link[wrGraph]{vioplotW}})
 #' @param specPref (character or list) define characteristic text for recognizing (main) groups of species (1st for comtaminants - will be marked as 'conta', 2nd for main species- marked as 'mainSpe',
 #'  and optional following ones for supplemental tags/species - maked as 'species2','species3',...);
@@ -52,13 +52,15 @@
 #' summary(dataNN$quant)
 #' @export
 readDiaNNFile <- function(fileName, path=NULL, normalizeMeth="median", sampleNames=NULL, read0asNA=TRUE, quantCol="\\.raw$",
-  annotCol=NULL,  refLi=NULL, separateAnnot=TRUE, FDRCol=NULL,    # contamCol="Contaminant",
+  annotCol=NULL,  refLi=NULL, separateAnnot=TRUE, FDRCol=NULL,   
   groupPref=list(lowNumberOfGroups=TRUE), plotGraph=TRUE, titGraph="DiaNN", wex=1.6, specPref=c(conta="CON_|LYSC_CHICK", mainSpecies="OS=Homo sapiens"),
   gr=NULL, sdrf=NULL, suplAnnotFile=FALSE, silent=FALSE, debug=FALSE, callFrom=NULL) {
 
   ## read DiaNN exported txt
   fxNa <- wrMisc::.composeCallName(callFrom, newNa="readDiaNNFile")
-  oparMar <- if(plotGraph) graphics::par("mar") else NULL       # only if figure might be drawn
+  oparMar <- graphics::par("mar")                     # old margins, for rest after figure
+  oparLayout <- graphics::par("mfcol")                # old layout, for rest after figure
+  on.exit(graphics::par(mar=oparMar, mfcol=oparLayout))            # restore old mar settings
 
   reqPa <- c("utils","wrMisc")
   chPa <- sapply(reqPa, requireNamespace, quietly=TRUE)
@@ -207,7 +209,6 @@ readDiaNNFile <- function(fileName, path=NULL, normalizeMeth="median", sampleNam
 
     ### GROUPING OF REPLICATES AND SAMPLE META-DATA
     if(length(suplAnnotFile) >0 || length(sdrf) >0) {
-      #setupSd <- readSampleMetaData(sdrf=rdn13$sdrf, suplAnnotFile=T, quantMeth="DN", path=rdn13$path, abund=utils::head(rdn13$quant), groupPref=rdn13$groupPref, silent=rdn13$silent, debug=rdn13$debug, callFrom="readDN")
       setupSd <- readSampleMetaData(sdrf=sdrf, suplAnnotFile=separateAnnot, quantMeth="DN", path=path, abund=utils::head(quant), groupPref=groupPref, silent=silent, debug=debug, callFrom=fxNa)
     }
     if(debug) {message(fxNa,"rdn13b .."); rdn13b <- list()}
@@ -229,15 +230,15 @@ readDiaNNFile <- function(fileName, path=NULL, normalizeMeth="median", sampleNam
     if(is.numeric(plotGraph) && length(plotGraph) >0) {custLay <- as.integer(plotGraph); plotGraph <- TRUE} else {
         if(!isTRUE(plotGraph)) plotGraph <- FALSE}
     if(plotGraph) .plotQuantDistr(abund=abund, quant=quant, custLay=custLay, normalizeMeth=normalizeMeth, softNa="DiaNN",
-      refLi=refLi, refLiIni=refLiIni, tit=titGraph, silent=silent, callFrom=fxNa, debug=debug)
+      refLi=refLi, refLiIni=refLiIni, tit=titGraph, silent=debug, callFrom=fxNa, debug=debug)
     if(debug) {message(fxNa,"Read sample-meta data, rdn15"); rdn15 <- list()}
 
 
     ## meta-data
     notes <- c(inpFile=paFi, qmethod="DiaNN", qMethVersion=if(length(infoDat) >0) unique(infoDat$Software.Revision) else NA,
-    	rawFilePath= if(length(infoDat) >0) infoDat$File.Name[1] else NA, normalizeMeth=normalizeMeth, call=match.call(),
-      created=as.character(Sys.time()), wrProteo.version=utils::packageVersion("wrProteo"), machine=Sys.info()["nodename"])
+    	rawFilePath= if(length(infoDat) >0) infoDat$File.Name[1] else NA, normalizeMeth=normalizeMeth, call=deparse(match.call()),
+      created=as.character(Sys.time()), wrProteo.version=paste(utils::packageVersion("wrProteo"), collapse="."), machine=Sys.info()["nodename"])
     ## final output
     if(isTRUE(separateAnnot)) list(raw=abund, quant=quant, annot=annot, counts=counts, sampleSetup=setupSd, quantNotes=parametersD, notes=notes) else data.frame(quant,annot) }
 }
-
+ 

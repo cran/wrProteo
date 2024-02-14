@@ -922,17 +922,17 @@ Via indexing we choose only the lines./proteins with the annoation 'spike' (ie U
 
 #### PCA of UPS1 for ProteomeDiscoverer
 ```{r PCA2PD, fig.height=12, fig.width=9.5, fig.align="center", echo=TRUE}
-try(plotPCAw(testPD$datImp[which(testPD$annot[,"SpecType"]=="spike"),], sampleGrp=grp9, tit="PCA on ProteomeDiscoverer, UPS1 only (NAs imputed)", rowTyName="proteins", useSymb2=0), silent=TRUE)
+try(plotPCAw(testPD$datImp[which(testPD$annot[,"SpecType"]=="spike"),], sampleGrp=grp9, tit="PCA on ProteomeDiscoverer, UPS1 only (NAs imputed)", rowTyName="proteins", useSymb2=0, silent=TRUE), silent=TRUE)
 ```
 
 #### PCA of UPS1 for MaxQuant
 ```{r PCA2MQ, fig.height=12, fig.width=9.5, fig.align="center", echo=TRUE}
-try(plotPCAw(testMQ$datImp[which(testMQ$annot[,"SpecType"]=="spike"),], sampleGrp=grp9, tit="PCA on MaxQuant, UPS1 only (NAs imputed)", rowTyName="proteins", useSymb2=0), silent=TRUE)
+try(plotPCAw(testMQ$datImp[which(testMQ$annot[,"SpecType"]=="spike"),], sampleGrp=grp9, tit="PCA on MaxQuant, UPS1 only (NAs imputed)", rowTyName="proteins", useSymb2=0, silent=TRUE), silent=TRUE)
 ```
 
 #### PCA of UPS1 for Proline
 ```{r PCA2PL, fig.height=12, fig.width=9.5, fig.align="center", echo=TRUE}
-try(plotPCAw(testPL$datImp[which(testPL$annot[,"SpecType"]=="spike"),], sampleGrp=grp9, tit="PCA on Proline, UPS1 only (NAs imputed)", rowTyName="proteins", useSymb2=0), silent=TRUE)
+try(plotPCAw(testPL$datImp[which(testPL$annot[,"SpecType"]=="spike"),], sampleGrp=grp9, tit="PCA on Proline, UPS1 only (NAs imputed)", rowTyName="proteins", useSymb2=0, silent=TRUE), silent=TRUE)
 ```
 
 Based on PCA plots one can see that the concentrations 125 - 500 aMol are very much alike and detecting differences may perform better when not combining them, as also confirmed by ROC part later.
@@ -950,6 +950,7 @@ Here we plot all intra-group CVs (defined by UPS1-concentration), either the CVs
 
 In the figure below the complete series (including yeast) is shown on the left side, the human UPS1 proteins only on the right side.
 Briefly, vioplots show a kernel-estimate for the distribution, in addition, a box-plot is also integrated (see vignette to package [wrGraph](https://CRAN.R-project.org/package=wrGraph)).
+
 
 ```{r intraReplicCV1, fig.height=10, fig.width=12, fig.align="center", echo=TRUE}
 ## combined plot : all data (left), Ups1 (right)
