@@ -160,6 +160,12 @@ specPref1 <- c(conta="conta|CON_|LYSC_CHICK")
 dataAP <- readAlphaPeptFile(path1, file=APproFi1, specPref=specPref1, tit="Tiny AlphaPept Example", plotGraph=FALSE)
 summary(dataAP$quant)
 
+## ----readIonbot1,  echo=TRUE--------------------------------------------------
+path1 <- system.file("extdata", package="wrProteo")
+fiIonbot <- "tinyIonbotFile1.tsv.gz"
+datIobPep <- readIonbotPeptides(fiIonbot, path=path1)
+summary(datIobPep$quant)
+
 ## ----readWombarP1,  echo=TRUE-------------------------------------------------
 WBproFi1 <- "tinyWombCompo1.csv.gz"
 ## let's define the main species and allow tagging some contaminants

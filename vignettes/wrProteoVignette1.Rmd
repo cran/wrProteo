@@ -18,7 +18,7 @@ vignette: >
 
 ## Introduction
 
-This package contains a collection of various tools for Proteomics used at the [proteomics platform](https://proteomics.igbmc.fr) of the [IGBMC](https://www.igbmc.fr).
+This package contains a collection of various tools for Proteomics used at the [proteomics platform](https://www.igbmc.fr/en/plateformes-technologiques/translate-to-english-proteomique) of the [IGBMC](https://www.igbmc.fr).
 To get started, we need to load the packages "[wrMisc](https://CRAN.R-project.org/package=wrMisc)" and 
 this package ([wrProteo](https://CRAN.R-project.org/package=wrProteo)), both are available from CRAN.
 The packages [wrGraph](https://CRAN.R-project.org/package=wrGraph) and [RColorBrewer](https://CRAN.R-project.org/package=RColorBrewer) get used internally by some of the functions from this package for (optional/improved) figures.
@@ -477,6 +477,26 @@ summary(dataAP$quant)
 As descibed with [MaxQuant](#ReadMaxQuant), additional meta-data as [sdrf](#ImportSdrf) can be imported in the same way.
 
 
+
+### Ionbot : Import Protein Quantification Data       {#ReadIonbot}
+
+[ionbot](https://ionbot.cloud/about) is a database search tool for protein and peptide identification, developed by the [ComPomics group headed by L Martens](https://www.compomics.com/),
+see eg  [Kong et al 2017](https://doi.org/10.1101/2021.07.02.450686) or other related publications.
+Peptide identification and quantification data exported from [ionbot](https://ionbot.cloud/about)  (in tsv format) can get imported using `readIonbotPeptides()`.
+The example below is just a tiny toy data-set, normally one can identify and quantify many more proteins.
+
+
+```{r readIonbot1,  echo=TRUE}
+path1 <- system.file("extdata", package="wrProteo")
+fiIonbot <- "tinyIonbotFile1.tsv.gz"
+datIobPep <- readIonbotPeptides(fiIonbot, path=path1)
+summary(datIobPep$quant)
+```
+
+As descibed with [MaxQuant](#ReadMaxQuant), additional meta-data as [sdrf](#ImportSdrf) can be imported in the same way.
+
+
+
 ### Wombat-P : Import Protein Quantification Data       {#ReadWombatP}
 
 [Wombat-P](https://github.com/wombat-p) is a free open-source search tool for peptide identification created by an Elixir-consortium,
@@ -898,7 +918,7 @@ For example, as mentioned above, [Bioconductor](https://www.bioconductor.org)) o
 ## Acknowledgements
 
 The author would like to acknowledge the support by the [IGBMC](https://www.igbmc.fr) (CNRS UMR 7104, Inserm U 1258, UdS), [CNRS](http://www.cnrs.fr/en), [Universit&eacute; de Strasbourg (UdS)](https://www.unistra.fr) and [Inserm](https://www.inserm.fr).
-All collegues from the [proteomics platform](https://proteomics.igbmc.fr) at the IGBMC work very commited to provide high quality mass-spectrometry data (including some of those used here).
+All collegues from the [proteomics platform](https://www.igbmc.fr/en/plateformes-technologiques/translate-to-english-proteomique) at the IGBMC work very commited to provide high quality mass-spectrometry data (including some of those used here).
 The author wishes to thank the [CRAN-staff](https://CRAN.R-project.org) for all their help with new entries and their efforts in maintaining this repository of R-packages.
 Furthermore, many very fruitful discussions with colleages on national and international level have helped to improve the tools presented here.
 

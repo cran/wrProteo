@@ -2,7 +2,7 @@
 % Please edit documentation in R/corColumnOrder.R
 \name{corColumnOrder}
 \alias{corColumnOrder}
-\title{Order Columns in list of matrixes}
+\title{Order Columns In List Of Matrixes And Vectors}
 \usage{
 corColumnOrder(
   dat,
@@ -17,7 +17,7 @@ corColumnOrder(
 )
 }
 \arguments{
-\item{dat}{(matrix, list or MArrayLM-object from limma) main input of which columns should get re-ordered, may be output from \code{\link{moderTestXgrp}} or \code{\link{moderTest2grp}}.}
+\item{dat}{(matrix, list or MArrayLM-object from limma) main input of which columns should get re-ordered, may be output from \code{moderTestXgrp} or \code{moderTest2grp}.}
 
 \item{replNames}{(character) new column-names (in order as input from \code{dat}), allows renaming colnames before defining new order}
 
@@ -33,25 +33,26 @@ corColumnOrder(
 
 \item{debug}{(logical) display additional messages for debugging}
 
-\item{callFrom}{(character) allow easier tracking of message(s) produced}
+\item{callFrom}{(character) allow easier tracking of messages produced}
 }
 \value{
 This function returns an object of same class as input \code{dat}  (ie matrix, list or MArrayLM-object from limma)
 }
 \description{
 This function orders columns in list of matrixes (or matrix) according to argument \code{sampNames}.
-This function can be used to adjust/correct the order of samples after reading data using \code{readMaxQuantFile()}, \code{readPDExport()} etc.
-The input may also be MArrayLM-type object from package \href{https://bioconductor.org/packages/release/bioc/html/limma.html}{limma} or from \code{\link{moderTestXgrp}} or \code{\link{moderTest2grp}}.
+It can be used to adjust/correct the order of samples after reading data using \code{readMaxQuantFile()}, \code{readProteomeDiscovererFile()} etc.
+The input may also be MArrayLM-type object from package \href{https://bioconductor.org/packages/release/bioc/html/limma.html}{limma} or 
+from functions \code{moderTestXgrp} or \code{moderTest2grp}.
 }
 \examples{
 grp <- factor(rep(LETTERS[c(3,1,4)], c(2,3,3)))
 dat1 <- matrix(1:15, ncol=5, dimnames=list(NULL,c("D","A","C","E","B")))
 corColumnOrder(dat1, sampNames=LETTERS[1:5])
 
-dat1 <- list(quant=dat1,raw=dat1)
-  dat1
-corColumnOrder(dat1, sampNames=LETTERS[1:5])
+dat2 <- list(quant=dat1, raw=dat1)
+dat2
+corColumnOrder(dat2, sampNames=LETTERS[1:5])
 }
 \seealso{
-\code{\link{moderTestXgrp}} for single comparisons; \code{\link[base]{order}}
+\code{\link{readMaxQuantFile}}, \code{\link{readProteomeDiscovererFile}}; \code{\link[wrMisc]{moderTestXgrp}} or \code{\link[wrMisc]{moderTest2grp}}
 }

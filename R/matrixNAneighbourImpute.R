@@ -298,7 +298,7 @@ matrixNAneighbourImpute <- function(dat, gr, imputMethod="mode2", retnNA=TRUE, a
         if(isTRUE(figImputDetail)) graphics::mtext(paste(sapply(msg[1:2],paste,collapse=" "),collapse="\n "), side=3, line=-1.2, cex=0.75, adj=0,col=grDevices::grey(0.3))
         graphics::legend("topright",c("final","initial","imputed"), col=colPanel, text.col=colPanel, cex=0.9, seg.len=0.3, lwd=4)
       }
-      return(if(isTRUE(retnNA)) list(data=dat, nNA=sum(isNA) , randParam=imputMethod, NAneigLst=list(NAneighbour=NAneighbour, nNaNei=nNaNei, medMod=medMod, charAll=charAll, linMod=all.lm)) else dat)
+      return(if(isTRUE(retnNA)) list(data=dat, nNA=sum(isNA), randParam=imputMethod, NAneigLst=list(NAneighbour=NAneighbour, nNaNei=nNaNei, medMod=medMod, charAll=charAll, linMod=all.lm), seed=seedNo) else dat)
     }
   } else { if(!silent) message(fxNa,msg)}
   dat }

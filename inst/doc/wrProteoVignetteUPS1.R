@@ -3,16 +3,18 @@ knitr::opts_chunk$set(collapse=TRUE, comment = "#>")
 
 ## ----install, echo=TRUE, eval=FALSE-------------------------------------------
 #  ## This is R code, you can run this to redo all analysis presented here.
-#  ## If not already installed, you'll have to install wrMisc and wrProteo first.
 #  install.packages("wrMisc")
-#  install.packages("wrProteo")
 #  ## These packages are used for the graphics
 #  install.packages("wrGraph")
 #  install.packages("RColorBrewer")
+#  if(!requireNamespace("knitr", quietly=TRUE)) install.packages("knitr")
 #  
 #  ## Installation of limma from Bioconductor
 #  if(!requireNamespace("BiocManager", quietly=TRUE)) install.packages("BiocManager")
 #  BiocManager::install("limma")
+#  
+#  ## now all dependecies are installed...
+#  install.packages("wrProteo")
 #  
 #  ## You cat also see all vignettes for this package by typing :
 #  browseVignettes("wrProteo")    #  ... and the select the html output
@@ -102,9 +104,9 @@ path1 <- system.file("extdata", package="wrProteo")
 fiNaMQ <- "proteinGroups.txt.gz"
 
 ## We need to define the setup of species
-specPrefMQ <- list(conta="CON_|LYSC_CHICK", mainSpecies="OS=Saccharomyces cerevisiae", spike=UPS1$ac)
+specPrefMQ <- list(conta="CON_|LYSC_CHICK", mainSpecies="OS=Saccharomyces cerevisiae", spike=UPS1$ac, sampleNames="sdrf")
 dataMQ <- readMaxQuantFile(path1, file=fiNaMQ, specPref=specPrefMQ, refLi="mainSpe",
-  sdrf=c("PXD001819","max"), suplAnnotFile=TRUE, plotGraph=FALSE)
+  sdrf=c("PXD001819","max",sdrfOrder=TRUE), suplAnnotFile=TRUE, plotGraph=FALSE)
 
 ## ----readMaxQuant2, fig.height=8, fig.width=9.5, fig.align="center", echo=TRUE----
 ## The number of lines and colums
@@ -117,9 +119,9 @@ table(dataMQ$annot[,"SpecType"], useNA="always")
 path1 <- system.file("extdata", package="wrProteo")
 fiNaPd <- "pxd001819_PD24_Proteins.txt.gz"
 ## Next, we define the setup of species
-specPrefPD <- list(conta="Bos tauris|Gallus", mainSpecies="Saccharomyces cerevisiae", spike=UPS1$ac)
+specPrefPD <- list(conta="Bos tauris|Gallus", mainSpecies="Saccharomyces cerevisiae", spike=UPS1$ac, sampleNames="sdrf")
 dataPD <- readProteomeDiscovererFile(file=fiNaPd, path=path1, refLi="mainSpe", specPref=specPrefPD,
-  sdrf=c("PXD001819","max"), plotGraph=FALSE)
+  sdrf=c("PXD001819", "max", sdrfOrder=TRUE), plotGraph=FALSE)
 
 ## ----readProteomeDiscoverer2, fig.height=8, fig.width=9.5, fig.align="center", echo=TRUE----
 ## The number of lines and colums
@@ -132,16 +134,9 @@ table(dataPD$annot[,"SpecType"], useNA="always")
 path1 <- system.file("extdata", package="wrProteo")
 fiNaPl <- "pxd001819_PL.xlsx"
 
-specPrefPL <- list(conta="_conta", mainSpecies="Saccharomyces cerevisiae", spike=UPS1$ac)
+specPrefPL <- list(conta="_conta", mainSpecies="Saccharomyces cerevisiae", spike=UPS1$ac, sampleNames="sdrf")
 dataPL <- readProlineFile(fiNaPl, path=path1, specPref=specPrefPL, normalizeMeth="median", refLi="mainSpe",
-  sdrf=c("PXD001819","max"), plotGraph=FALSE)
-
-## ----postTreatmPL, echo=TRUE--------------------------------------------------
-head(colnames(dataPL$raw), 7)
-dataPL <- cleanListCoNames(dataPL, rem=c("Levure2ug+ UPS1-"), subst=cbind(c("fmol","mol-"), c("000amol","mol_R")), mathOper="/2")
-
-## let's check the result
-head(colnames(dataPL$raw),8)
+  sdrf=c("PXD001819", "max", sdrfOrder=TRUE), plotGraph=FALSE)
 
 ## ----readProlineInfo, fig.height=8, fig.width=9.5, fig.align="center", echo=TRUE----
 ## The number of lines and colums
@@ -150,15 +145,23 @@ dim(dataPL$quant)
 summary(dataPL$quant[,1:8])        # the first 8 cols
 table(dataPL$annot[,"SpecType"], useNA="always")
 
+## ----saveCheck1, echo=FALSE---------------------------------------------------
+## devel only ?
+if(any(c("PP3-0014-A", "PP1-1072-A", "SERV-SPECTRO2") %in% Sys.info()["nodename"])) {                   # message("++ This is a WR checking/testing session ! ++")
+  wdirS <- "C:\\E\\projects\\TCAmethods\\wrProteoRamus" 
+  save.image(file=file.path(wdirS,"vignUPS1_atImport_22jul24.RData"))   # after correction : rescale after normalization
+}
+
 ## ----rearrange1, echo=TRUE----------------------------------------------------
 ## bring all results (MaxQuant,ProteomeDiscoverer, ...) in same ascending order
 ## as reference will use the order from ProteomeDiscoverer, it's output is already in a convenient order
-sampNa <- colnames(dataPD$quant)
+sampNa <- colnames(dataPD$quant)[order(dataPD$sampleSetup$level)]
 
 ## it is more convenient to re-order columns this way in each project
-dataPD <- corColumnOrder(dataPD, sampNames=sampNa)          # already in good order
-dataMQ <- corColumnOrder(dataMQ, replNames=paste0("UPS1_",sub("amol_", "amol_R", colnames(dataMQ$quant))), sampNames=sampNa)  # incl canged names
-dataPL <- corColumnOrder(dataPL, replNames=paste0("UPS1_",colnames(dataPL$quant)), sampNames=sampNa)               # incl canged names
+dataMQ <- corColumnOrder(dataMQ, sampNames=sampNa)         
+dataPD <- corColumnOrder(dataPD, sampNames=sampNa)         
+dataPL <- corColumnOrder(dataPL, sampNames=sampNa)         
+
 
 ## ----postTreatm1, echo=TRUE---------------------------------------------------
 ## Need to rename $annot[,"SpecType"]
@@ -174,7 +177,7 @@ dataPL <- replMissingProtNames(dataPL)
 
 ## synchronize order of groups
 (grp9 <- dataMQ$sampleSetup$level)
-names(grp9) <- rep(paste0(UPSconc,"amol"), each=3)
+names(grp9) <- paste0(names(grp9),"amol")
 dataPL$sampleSetup$groups <- dataMQ$sampleSetup$groups <- dataPD$sampleSetup$groups <- grp9  # synchronize order of groups
 
 ## ----postTreatmCheck, echo=TRUE-----------------------------------------------
@@ -443,9 +446,9 @@ if(packageVersion("wrGraph")  >= "1.2.5"){
   try(VolcanoPlotW(testPL, useComp=j, FCthrs=1.5, FdrThrs=0.05, annColor=c(4,2,3), ProjNa=methNa[3], expFCarrow=TRUE, silent=TRUE),silent=TRUE)}
 
 ## ----nNA2, echo=TRUE----------------------------------------------------------
-tab1 <- rbind(PD=sumNAperGroup(dataPD$raw[which(dataPD$annot[,"SpecType"]=="UPS1"),], grp9),
-  MQ=sumNAperGroup(dataMQ$raw[which(dataMQ$annot[,"SpecType"]=="UPS1"),], grp9),
-  PL= sumNAperGroup(dataPL$raw[which(dataPL$annot[,"SpecType"]=="UPS1"),], grp9)  )
+tab1 <- rbind(PD=sumNAperGroup(dataPD$raw[which(dataPD$annot[,"SpecType"]=="spike"),], grp9),
+  MQ=sumNAperGroup(dataMQ$raw[which(dataMQ$annot[,"SpecType"]=="spike"),], grp9),
+  PL= sumNAperGroup(dataPL$raw[which(dataPL$annot[,"SpecType"]=="spike"),], grp9)  )
 kable(tab1, caption="The number of NAs in the UPS1 proteins", align="c")
 
 ## ----nNAfig1, fig.height=3.5, fig.width=9.5, fig.align="center", echo=TRUE----
@@ -457,7 +460,7 @@ sumNAperMeth <- cbind(PD=countRawNA(dataPD), MQ=countRawNA(dataMQ), PL=countRawN
 UPS1na <- sub("_UPS","",dataPL$annot[UPS1$ac,"EntryName"])
 par(mar=c(6.8, 3.5, 4, 1))
 imageW(sumNAperMeth, rowNa=UPS1na, tit="Number of NAs in UPS proteins", xLab="", yLab="",
-  transp=FALSE, col=rev(RColorBrewer::brewer.pal(9,"YlOrRd")))
+  transp=FALSE, col=RColorBrewer::brewer.pal(9,"YlOrRd"))
 mtext("Dark red for high number of NAs",cex=0.7)
 
 ## ----PCA2PD, fig.height=12, fig.width=9.5, fig.align="center", echo=TRUE------
@@ -504,7 +507,7 @@ datUPS1 <- array(NA, dim=c(length(UPS1$ac),length(methNa),7), dimnames=list(UPS1
 ## ----linModelPD, fig.height=17, fig.width=9.5, fig.align="center", echo=TRUE----
 lmPD <- list(length=length(NamesUpsPD))
 doPl <- FALSE
-lmPD[1:length(NamesUpsPD)] <- lapply(NamesUpsPD[1:length(NamesUpsPD)], linModelSelect, dat=dataPD,
+lmPD[1:length(NamesUpsPD)] <- lapply(NamesUpsPD[1:length(NamesUpsPD)], wrMisc::linModelSelect, dat=dataPD,
   expect=names(grp9), startLev=1:5, cexXAxis=0.7, logExpect=TRUE, plotGraph=doPl, silent=TRUE)
 names(lmPD) <- NamesUpsPD
 
@@ -512,7 +515,7 @@ names(lmPD) <- NamesUpsPD
 ## We make a little summary of regression-results (ProteomeDiscoverer)
 tmp <- cbind(log10(sapply(lmPD, function(x) x$coef[2,4])), sapply(lmPD, function(x) x$coef[2,1]), sapply(lmPD, function(x) x$startLev))
 datUPS1[,1,c("logp","slope","startFr")] <- tmp[match(rownames(datUPS1), names(lmPD)), ]
-datUPS1[,1,"medAbund"] <- apply(wrMisc::.scale01(dataPD$datImp)[match(UPS1$ac,rownames(dataPD$datImp)),],1,median,na.rm=TRUE)
+datUPS1[,1,"medAbund"] <- apply(wrMisc::.scale01(dataPD$datImp)[match(UPS1$ac, rownames(dataPD$datImp)),], 1,median,na.rm=TRUE)
 
 ## ----linModelMQ, echo=TRUE----------------------------------------------------
 lmMQ <- list(length=length(NamesUpsMQ))
@@ -555,10 +558,17 @@ plotMultRegrPar(datUPS1, 3, xlim=xyRa[,1], ylim=xyRa[,2],tit="Proline UPS1, p-va
 ## ----combRegrScore1, echo=TRUE------------------------------------------------
 for(i in 1:(dim(datUPS1)[2])) datUPS1[,i,"sco"] <- -datUPS1[,i,"logp"] - (datUPS1[,i,"slope"] -1)^2    # cut at > 8
 
+## ----saveCheck2, echo=FALSE---------------------------------------------------
+## devel only ?
+if(any(c("PP3-0014-A", "PP1-1072-A", "SERV-SPECTRO2") %in% Sys.info()["nodename"])) {                   # message("++ This is a WR checking/testing session ! ++")
+  wdirS <- "C:\\E\\projects\\TCAmethods\\wrProteoRamus" 
+  save.image(file=file.path(wdirS,"vignUPS1_atSumRegr_22jul24.RData"))   # after correction : rescale after normalization
+}
+
 ## ----combRegrScore2, echo=TRUE------------------------------------------------
-datUPS1[,1,2] <- rowSums(dataPD$count[match(UPS1$ac,dataPD$annot[,1]),,"NoOfPeptides"], na.rm=TRUE)
-datUPS1[,2,2] <- rowSums(dataMQ$count[match(UPS1$ac,dataMQ$annot[,1]),,1], na.rm=TRUE)
-datUPS1[,3,2] <- rowSums(dataPL$count[match(UPS1$ac,dataPL$annot[,1]),,"NoOfPeptides"], na.rm=TRUE)
+datUPS1[,1,2] <- rowSums(dataPD$counts[match(UPS1$ac,dataPD$annot[,1]),,1], na.rm=TRUE)
+datUPS1[,2,2] <- rowSums(dataMQ$counts[match(UPS1$ac,dataMQ$annot[,1]),,1], na.rm=TRUE)
+datUPS1[,3,2] <- rowSums(dataPL$counts[match(UPS1$ac,dataPL$annot[,1]),,"NoOfPeptides"], na.rm=TRUE)
 
 ## ----combRegrScore3, fig.height=6, fig.width=9.5, fig.align="center", echo=TRUE----
 layout(matrix(1:4, ncol=2))

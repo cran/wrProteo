@@ -34,9 +34,11 @@
 #'  and optional following ones for supplemental tags/species - maked as 'species2','species3',...);
 #'  if list and list-element has multiple values they will be used for exact matching of accessions (ie 2nd of argument \code{annotCol})
 #' @param gr (character or factor) custom defined pattern of replicate association, will override final grouping of replicates from \code{sdrf} and/or \code{suplAnnotFile} (if provided)   \code{}
-#' @param sdrf (character, list or data.frame) optional extraction and adding of experimenal meta-data: if character, this may be the ID at ProteomeExchange, 
-#'   the second element may give futher indicatations for automatic organization of groups of replicates. 
-#'   Besides, the output from \code{readSdrf} or a list from \code{defineSamples} may be provided; if \code{gr} is provided, \code{gr} gets priority for grouping of replicates
+#' @param sdrf (character, list or data.frame) optional extraction and adding of experimenal meta-data: if character, this may be the ID at ProteomeExchange,
+#'   the second & third elements may give futher indicatations for automatic organization of groups of replicates.
+#'   Besides, the output from \code{readSdrf} or a list from \code{defineSamples} may be provided;
+#'   if \code{gr} is provided, \code{gr} gets priority for grouping of replicates;
+#'   if \code{sdrfOrder=TRUE} the output will be put in order of sdrf
 #' @param suplAnnotFile (logical or character) optional reading of supplemental files produced by quantification software; however, if \code{gr} is provided, \code{gr} gets priority for grouping of replicates;
 #'  if \code{TRUE} defaults to file '*InputFiles.txt' (needed to match information of \code{sdrf}) which can be exported next to main quantitation results;
 #'  if \code{character} the respective file-name (relative or absolute path)
@@ -65,6 +67,7 @@ readProlineFile <- function(fileName, path=NULL, normalizeMeth="median", logConv
   if(any(!chPa)) stop("package(s) '",paste(reqPa[which(!chPa)], collapse="','"),"' not found ! Please install first from CRAN")
   if(!isTRUE(silent)) silent <- FALSE
   if(isTRUE(debug)) silent <- FALSE else debug <- FALSE
+  setupSd <- NULL
   if(debug) {message(fxNa," rpf1")}
 
   .adjustDecUnit <- function(txt, abbr=NULL, unit=NULL, silent=TRUE, callFrom=NULL) {
@@ -92,7 +95,7 @@ readProlineFile <- function(fileName, path=NULL, normalizeMeth="median", logConv
   ## check if path & file exist
   if(!grepl("\\.csv$|\\.xlsx$|\\.tsv$|\\.csv\\.gz$|\\.tsv\\.gz$", fileName)) message(fxNa,"Trouble ahead ? Expecting .xlsx, .csv or .tsv file (the file'",fileName,"' might not be right format) !!")
   paFi <- wrMisc::checkFilePath(fileName, path, expectExt=NULL, compressedOption=TRUE, stopIfNothing=TRUE, callFrom=fxNa, silent=silent,debug=debug)
-  if(debug) {message(fxNa," rpf2")}
+  if(debug) {message(fxNa," rpf2"); rpf2 <- list()}
 
   ## read file
   out <- counts <- fileTy <- infoDat <- NULL                    # initialize default
@@ -115,7 +118,7 @@ readProlineFile <- function(fileName, path=NULL, normalizeMeth="median", logConv
         prSh <- length(sheets)
         if(!silent) message(fxNa,"No sheets containing 'Protein' in name found, try using : '",sheets[prSh],"'")
       }
-      if(debug) message(fxNa,"Ready to use sheet ",prSh,"   rpf4")
+      if(debug) {message(fxNa,"Ready to use sheet ",prSh,"   rpf4")}
       out <- as.data.frame(if(debug) readxl::read_xlsx(paFi[1], sheet=prSh) else suppressMessages(readxl::read_xlsx(paFi[1], sheet=prSh)))
       qCoSh <- which(sheets=="Quant config")
       quantConf <- if(length(qCoSh) >0) { if(debug) readxl::read_xlsx(paFi[1], sheet=qCoSh[1]) else suppressMessages(readxl::read_xlsx(paFi[1], sheet=qCoSh[1]))} else NULL
@@ -161,7 +164,7 @@ readProlineFile <- function(fileName, path=NULL, normalizeMeth="median", logConv
         if(!silent) message(fxNa,"Data read as txt, adjusting argument 'quantCol' to '^Intensity' ",c("NOT ")[length(chQuCol) <1]," succeful")
       }
     }
-    if(debug) {message(fxNa," rpf8"); rpf8 <- list(fileName=fileName,chPa=chPa,path=path,tmp=tmp,out=out,bestT=bestT)}
+    if(debug) {message(fxNa," rpf8"); rpf8 <- list()}
 
     ## quant info settings from separate sheet:
     quanConfFile <- "Quant config.tsv"
@@ -181,7 +184,7 @@ readProlineFile <- function(fileName, path=NULL, normalizeMeth="median", logConv
     ## adopt annotCol
     annotCol <- sub("^#","X.",annotCol)
   }
-  if(debug) {message(fxNa," rpf9")}
+  if(debug) {message(fxNa," rpf9"); rpf9 <- list(fileName=fileName,chPa=chPa,paFi=paFi,path=path,tmp=tmp,out=out,bestT=bestT,annotCol=annotCol) }
 
   if(length(tmp) >0) {
     ## look for  annotation columns
@@ -202,7 +205,7 @@ readProlineFile <- function(fileName, path=NULL, normalizeMeth="median", logConv
         colnames(out)[metaCo2] <- annotCol[1:2]
         metaCo <- union(metaCo2,metaCo) }
     }
-    if(debug) {message(fxNa," rpf11")}
+    if(debug) {message(fxNa," rpf11"); rpf11 <- list()}
 
     ## further refine : separate Accession (ie annotCol[1]) (eg P00359) from ProteinName (eg TDH3)
     annot <- as.matrix(out[,metaCo])
@@ -212,7 +215,7 @@ readProlineFile <- function(fileName, path=NULL, normalizeMeth="median", logConv
       "",annot[,annotCol[2]])        # supposes annotCol[2], without db|accession|EntryName
     tmp2 <- cbind(Accession=sub("\\|[[:print:]]+$","",tmp), EntryName=sub("^[[:alnum:]]+-{0,1}[[:digit:]]{0,2}\\|","",tmp),
       ProteinName=sub("\\ [[:upper:]]{2}=[[:print:]]+","",tmp3) , GN=NA, Species=NA, Contam=NA, SpecType=NA) #
-    if(debug) {message(fxNa," rpf12")}
+    if(debug) {message(fxNa," rpf12"); rpf12 <- list(fileName=fileName,chPa=chPa,path=path,tmp=tmp,out=out,bestT=bestT,annotCol=annotCol, annot=annot,tmp=tmp,tmp3=tmp3,tmp2=tmp2)}
 
     ## recover GN
     GNLi <- grep("\\ GN=[[:upper:]]{2,}[[:digit:]]*", tmp3)
@@ -238,7 +241,7 @@ readProlineFile <- function(fileName, path=NULL, normalizeMeth="median", logConv
       if(length(chSp) >0) { nch1 <- nchar(sub("^[[:upper:]][[:lower:]]+\\ [[:lower:]]+", "", annot[chSp,"Species"]))
         annot[chSp,"Species"] <- substr(annot[chSp,"Species"], 1, nchar(annot[chSp,"Species"]) - nch1) }
     }
-    if(debug) {message(fxNa," rpf14"); rpf14 <- list(out=out,annot=annot,specPref=specPref,quantCol=quantCol,rowNa=rowNa,tmp=tmp)}
+    if(debug) {message(fxNa," rpf14"); rpf14 <- list()}
 
     ## set protein/gene annotation to common format
     chNa <- match(c("GN","ProteinName"), colnames(annot))
@@ -267,7 +270,7 @@ readProlineFile <- function(fileName, path=NULL, normalizeMeth="median", logConv
         for(i in 1:sum(chLe)) pepCount[,,i] <- as.matrix(out[,supCol[[which(chLe)[i]]]])
       } else pepCount <- NULL
     }
-    if(debug) {message(fxNa," rpf15"); rpf15 <- list(out=out,annot=annot,specPref=specPref,quantCol=quantCol,rowNa=rowNa,tmp=tmp)}
+    if(debug) {message(fxNa," rpf15"); rpf15 <- list(out=out,abund=abund,annot=annot,specPref=specPref,quantCol=quantCol,trimColnames=trimColnames,rowNa=rowNa,tmp=tmp)}
 
     ## check abundance/quantitation data
     chNum <- is.numeric(abund)
@@ -275,11 +278,12 @@ readProlineFile <- function(fileName, path=NULL, normalizeMeth="median", logConv
     rownames(abund) <- rowNa
     ##
     ## Custom (alternative) colnames
+    if(identical("sdrf",sampleNames)) {specPref$sampleNames <- sampleNames; sampleNames <- NULL}
     if(length(sampleNames) ==ncol(abund)) {
       colnames(abund) <- colnames(pepCount) <- sampleNames
     } else {
       colnames(abund) <- sub(if(length(quantCol) >1) "^abundance" else quantCol, "", colnames(abund))
-      if(trimColnames) colnames(abund) <- wrMisc::.trimFromStart(wrMisc::.trimFromEnd(colnames(abund)))
+      if(trimColnames) colnames(abund) <- wrMisc::.trimLeft(wrMisc::.trimRight(colnames(abund)))
     }
 
     ## treat colnames, eg problem with pxd001819 : some colnames writen as amol, other as fmol
@@ -294,11 +298,11 @@ readProlineFile <- function(fileName, path=NULL, normalizeMeth="median", logConv
     if(is.character(refLi) && length(refLi) ==1) {
       refLi <- which(annot[,"SpecType"] ==refLi)
       if(length(refLi) <1 && identical(refLiIni, "mainSpe")) refLi <- which(annot[,"SpecType"] =="mainSpecies")              # fix compatibility problem  'mainSpe' to 'mainSpecies'
-      if(length(refLi) <1 ) { refLi <- 1:nrow(abund)
+      if(length(refLi) <1) { refLi <- 1:nrow(abund)
         if(!silent) message(fxNa,"Could not find any proteins matching argument 'refLi=",refLiIni,"', ignoring ...")
       } else {
         if(!silent) message(fxNa,"Normalize using (custom) subset of ",length(refLi)," lines specified as '",refLiIni,"'")}}    # may be "mainSpe"
-    if(debug) { message(fxNa," rpf16b"); rpf16b <- list()}
+    if(debug) { message(fxNa," rpf16b"); rpf16b <- list(abund=abund,annot=annot,sampleNames=sampleNames,normalizeMeth=normalizeMeth,refLi=refLi,sdrf=sdrf,suplAnnotFile=suplAnnotFile,path=path,fxNa=fxNa,silent=silent)}
 
     ## take log2 & normalize
     if(length(normalizeMeth) <1) normalizeMeth <- "median"
@@ -308,6 +312,10 @@ readProlineFile <- function(fileName, path=NULL, normalizeMeth="median", logConv
     ### GROUPING OF REPLICATES AND SAMPLE META-DATA
     if(length(suplAnnotFile) >0 || length(sdrf) >0) {
       if(isTRUE(suplAnnotFile[1])) suplAnnotFile <- paFi
+      if(length(sampleNames) %in% c(1, ncol(abund))) groupPref$sampleNames <- sampleNames
+      if(length(gr) %in% c(1, ncol(abund))) groupPref$gr <- gr
+      if("sampleNames" %in% names(specPref)) groupPref$sampleNames <- specPref$sampleNames
+      
       setupSd <- readSampleMetaData(sdrf=sdrf, suplAnnotFile=suplAnnotFile, quantMeth="PL", path=path, abund=utils::head(quant), groupPref=groupPref, silent=silent, debug=debug, callFrom=fxNa)
     }
     if(debug) {message(fxNa,"rpf16d .."); rpf16d <- list(sdrf=sdrf,gr=gr,suplAnnotFile=suplAnnotFile, quant=quant,refLi=refLi,annot=annot,setupSd=setupSd,sampleNames=sampleNames)}
@@ -315,11 +323,50 @@ readProlineFile <- function(fileName, path=NULL, normalizeMeth="median", logConv
     ## finish groups of replicates & annotation setupSd
     ## need to transform fmol in amol for proper understanding & matching with metadata
     setupSd <- .checkSetupGroups(abund=abund, setupSd=setupSd, gr=gr, sampleNames=sampleNames, quantMeth="PL", silent=silent, debug=debug, callFrom=fxNa)
+    if(debug) {message(fxNa,"rpf16d2 .."); rpf16d2 <- list(sdrf=sdrf,gr=gr,suplAnnotFile=suplAnnotFile, quant=quant,abund=abund,refLi=refLi,annot=annot,setupSd=setupSd,sampleNames=sampleNames)}
+
+    ## harmonize sample-names/1
     colNa <- if(length(setupSd$sampleNames)==ncol(abund)) setupSd$sampleNames else setupSd$groups
-    chGr <- grepl("^X[[:digit:]]", colNa)                                                # check & remove heading 'X' from initial column-names starting with digits
-    if(any(chGr)) colNa[which(chGr)] <- sub("^X","", colNa[which(chGr)])                 # 
-    colnames(quant) <- colnames(abund) <- colNa
-    if(length(setupSd$sampleNames)==ncol(abund)) setupSd$sampleNames <- colNa else setupSd$groups <- colNa
+
+    ## option : set order of samples as sdrf
+    if("sdrfOrder" %in% names(sdrf) && isTRUE(as.logical(sdrf["sdrfOrder"])) && length(setupSd$iniSdrfOrder)==ncol(abund) && ncol(abund) >1) {  # set order according to sdrf (only if >1 samples)
+      nOrd <- order(setupSd$iniSdrfOrder)
+      ## rename columns according to sdrf and set order of quant and abund ..
+      abund <- abund[,nOrd]
+      if(length(quant) >0) quant <- quant[,nOrd]
+      if(length(setupSd$sampleNames)==ncol(quant)) {
+        colNa <- colnames(abund) <- setupSd$sampleNames <- setupSd$sampleNaSdrf[nOrd]  #old# setupSd$sampleNames[nOrd]         ## take sample names from sdrf via  setupSd$sampleNaSdrf
+        if(length(quant) >0) colnames(quant) <- setupSd$sampleNaSdrf[nOrd]  #old# setupSd$sampleNames[nOrd]
+      } else colNa <- colnames(abund)
+      ## now adapt order of setupSd, incl init Sdrf
+      if(length(setupSd) >0) { 
+        is2dim <- sapply(setupSd, function(x,le) length(dim(x))==2 && nrow(x)==le, le=length(nOrd))    # look for matr or df to change order of lines
+        if(any(is2dim) >0) for(i in which(is2dim)) setupSd[[i]] <- setupSd[[i]][nOrd,]
+        isVe <- sapply(setupSd, function(x,le) length(x)==le && length(dim(x)) <1, le=length(nOrd))    # look for vector to change order in setupSd
+        if(any(isVe) >0) for(i in which(isVe)) setupSd[[i]] <- setupSd[[i]][nOrd] }
+      gr <- gr[nOrd]
+
+      if(length(counts) >0 && length(dim(counts))==3) counts <- array(counts[,nOrd,], dim=c(nrow(counts), length(nOrd), dim(counts)[3]), 
+        dimnames=list(rownames(counts), colnames(counts)[nOrd], dimnames(counts)[[3]]))
+      ## try re-adjusting levels
+      tm1 <- sub("^[[:alpha:]]+( |_|-|\\.)+[[:alpha:]]+","", colnames(abund))  # remove heading text
+      if(all(grepl("^[[:digit:]]", tm1))) {
+        tm1 <- try(as.numeric(sub("( |_|-|\\.)*[[:alpha:]].*","", tm1)), silent=TRUE)   # remove tailing text and try converting to numeric
+        if(!inherits(tm1, "try-error")) {
+          setupSd$level <- match(tm1, sort(unique(tm1)))
+          names(setupSd$level) <- tm1
+          if(!silent) message(fxNa,"Sucessfully re-adjusted levels after bringing in order of Sdrf")}
+      }     
+    } else {
+
+      ## harmonize sample-names/2
+      colNa <- colnames(abund)
+      chGr <- grepl("^X[[:digit:]]", colNa)                                                # check & remove heading 'X' from initial column-names starting with digits
+      if(any(chGr)) colNa[which(chGr)] <- sub("^X","", colNa[which(chGr)])                 #
+      colnames(quant) <- colNa
+      if(length(abund) >0) colnames(abund) <- colNa  
+    }  
+    if(length(setupSd$sampleNames)==ncol(abund)) setupSd$sampleNames <- colNa #no#else setupSd$groups <- colNa
     if(length(dim(counts)) >1 && length(counts) >0) colnames(counts) <- colNa
 
     if(debug) {message(fxNa,"Read sample-meta data, rpf17"); rpf17 <- list(sdrf=sdrf,suplAnnotFile=suplAnnotFile,abund=abund, quant=quant,refLi=refLi,annot=annot,setupSd=setupSd,sampleNames=sampleNames)}

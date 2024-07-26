@@ -42,11 +42,11 @@
 #' @param remConta (logical) option to remove all proteins identified as contaminants
 #' @param separateAnnot (logical) if \code{TRUE} output will be organized as list with \code{$annot}, \code{$abund} for initial/raw abundance values and \code{$quant} with final normalized quantitations
 #' @param gr (character or factor) custom defined pattern of replicate association, will override final grouping of replicates from \code{sdrf} and/or \code{suplAnnotFile} (if provided)   \code{}
-#' @param sdrf (logical, character, list or data.frame) optional extraction and adding of experimenal meta-data:
-#'   if \code{sdrf=TRUE} the 1st sdrf in the directory above \code{fileName} will be used
-#'   if character, this may be the ID at ProteomeExchange,
-#'   the second element may give futher indicatations for automatic organization of groups of replicates.
-#'   Besides, the output from \code{readSdrf} or a list from \code{defineSamples} may be provided; if \code{gr} is provided, \code{gr} gets priority for grouping of replicates
+#' @param sdrf (character, list or data.frame) optional extraction and adding of experimenal meta-data: if character, this may be the ID at ProteomeExchange,
+#'   the second & third elements may give futher indicatations for automatic organization of groups of replicates.
+#'   Besides, the output from \code{readSdrf} or a list from \code{defineSamples} may be provided;
+#'   if \code{gr} is provided, \code{gr} gets priority for grouping of replicates;
+#'   if \code{sdrfOrder=TRUE} the output will be put in order of sdrf
 #' @param suplAnnotFile (logical or character) optional reading of supplemental files produced by Compomics; if \code{gr} is provided, it gets priority for grouping of replicates
 #'  if \code{TRUE} default to files 'summary.txt' (needed to match information of \code{sdrf}) and 'parameters.txt' which can be found in the same folder as the main quantitation results;
 #'  if \code{character} the respective file-names (relative ro absolute path), 1st is expected to correspond to 'summary.txt' (tabulated text, the samples as given to Compomics) and 2nd to 'parameters.txt' (tabulated text, all parameters given to Compomics)
@@ -196,7 +196,7 @@ readAlphaPeptFile <- function(fileName="results_proteins.csv", path=NULL, fasta=
     colnames(abund) <- sub(extrColNames$LFQ,"", sub("^LFQ.intensity\\.","", colnames(abund)))
 
     if(trimColNames) {  ## further trim
-      colnames(abund) <- wrMisc::.trimFromStart(wrMisc::.trimFromEnd( sub(paste0("^",quantCol),"", colnames(abund))))
+      colnames(abund) <- wrMisc::.trimLeft(wrMisc::.trimRight( sub(paste0("^",quantCol),"", colnames(abund))))
       ## no trim needed for AlphaPept ?
     }
     if(debug) {message(fxNa,"rAP3"); rAP3 <- list(abund=abund,paFi=paFi,path=path,chPa=chPa,tmp=tmp,remConta=remConta,fasta=fasta)}
@@ -413,18 +413,58 @@ readAlphaPeptFile <- function(fileName="results_proteins.csv", path=NULL, fasta=
       headAbund <- utils::head(quant)
       chX <- grepl("^X[[:digit:]]",colnames(quant))                     #check for heading X in all colnames
       if(any(chX)) colnames(headAbund)[which(chX)] <- sub("^X", "", colnames(headAbund)[which(chX)])
-      ## check for matching : (as done within readSampleMetaData) - can't , sdrf not read yet ...
+      if(length(sampleNames) %in% c(1, ncol(abund))) groupPref$sampleNames <- sampleNames
+      if(length(gr) %in% c(1, ncol(abund))) groupPref$gr <- gr
+    ## check for matching : (as done within readSampleMetaData) - can't , sdrf not read yet ...
       setupSd <- readSampleMetaData(sdrf=sdrf, suplAnnotFile=suplAnnotFile, quantMeth=paste0("AP"), path=NULL, abund=headAbund, groupPref=groupPref, silent=silent, debug=debug, callFrom=fxNa)
     }
     if(debug) {message(fxNa,"rAP13 .."); rAP13 <- list(sdrf=sdrf,gr=gr,suplAnnotFile=suplAnnotFile,abund=abund, quant=quant,refLi=refLi,annot=annot,setupSd=setupSd,sampleNames=sampleNames)}
 
     ## finish groups of replicates & annotation setupSd
     setupSd <- .checkSetupGroups(abund=abund, setupSd=setupSd, gr=gr, sampleNames=sampleNames, quantMeth="AP", silent=silent, debug=debug, callFrom=fxNa)
+
+    ## harmonize sample-names/1
     colNa <- if(length(setupSd$sampleNames)==ncol(abund)) setupSd$sampleNames else setupSd$groups
-    chGr <- grepl("^X[[:digit:]]", colNa)                                                # check & remove heading 'X' from initial column-names starting with digits
-    if(any(chGr)) colNa[which(chGr)] <- sub("^X","", colNa[which(chGr)])                 #
-    colnames(quant) <- colnames(abund) <- colNa
-    if(length(setupSd$sampleNames)==ncol(abund)) setupSd$sampleNames <- colNa else setupSd$groups <- colNa
+
+    ## option : set order of samples as sdrf
+    if("sdrfOrder" %in% names(sdrf) && isTRUE(as.logical(sdrf["sdrfOrder"])) && length(setupSd$iniSdrfOrder)==ncol(abund) && ncol(abund) >1) {  # set order according to sdrf (only if >1 samples)
+      nOrd <- order(setupSd$iniSdrfOrder)
+      ## rename columns according to sdrf and set order of quant and abund ..
+      abund <- abund[,nOrd]
+      if(length(quant) >0) quant <- quant[,nOrd]
+      if(length(setupSd$sampleNames)==ncol(quant)) {
+        colNa <- colnames(abund) <- setupSd$sampleNames <- setupSd$sampleNaSdrf[nOrd]  #old# setupSd$sampleNames[nOrd]         ## take sample names from sdrf via  setupSd$sampleNaSdrf
+        if(length(quant) >0) colnames(quant) <- setupSd$sampleNaSdrf[nOrd]  #old# setupSd$sampleNames[nOrd]
+      } else colNa <- colnames(abund)
+      ## now adapt order of setupSd, incl init Sdrf
+      if(length(setupSd) >0) { 
+        is2dim <- sapply(setupSd, function(x,le) length(dim(x))==2 && nrow(x)==le, le=length(nOrd))    # look for matr or df to change order of lines
+        if(any(is2dim) >0) for(i in which(is2dim)) setupSd[[i]] <- setupSd[[i]][nOrd,]
+        isVe <- sapply(setupSd, function(x,le) length(x)==le && length(dim(x)) <1, le=length(nOrd))    # look for vector to change order in setupSd
+        if(any(isVe) >0) for(i in which(isVe)) setupSd[[i]] <- setupSd[[i]][nOrd] }
+      gr <- gr[nOrd]
+
+      if(length(counts) >0 && length(dim(counts))==3) counts <- array(counts[,nOrd,], dim=c(nrow(counts), length(nOrd), dim(counts)[3]), 
+        dimnames=list(rownames(counts), colnames(counts)[nOrd], dimnames(counts)[[3]]))
+      ## try re-adjusting levels
+      tm1 <- sub("^[[:alpha:]]+( |_|-|\\.)+[[:alpha:]]+","", colnames(abund))  # remove heading text
+      if(all(grepl("^[[:digit:]]", tm1))) {
+        tm1 <- try(as.numeric(sub("( |_|-|\\.)*[[:alpha:]].*","", tm1)), silent=TRUE)   # remove tailing text and try converting to numeric
+        if(!inherits(tm1, "try-error")) {
+          setupSd$level <- match(tm1, sort(unique(tm1)))
+          names(setupSd$level) <- tm1
+          if(!silent) message(fxNa,"Sucessfully re-adjusted levels after bringing in order of Sdrf")}
+      }     
+    } else {
+
+      ## harmonize sample-names/2
+      colNa <- colnames(abund)
+      chGr <- grepl("^X[[:digit:]]", colNa)                                                # check & remove heading 'X' from initial column-names starting with digits
+      if(any(chGr)) colNa[which(chGr)] <- sub("^X","", colNa[which(chGr)])                 #
+      colnames(quant) <- colNa
+      if(length(abund) >0) colnames(abund) <- colNa  
+    }  
+    if(length(setupSd$sampleNames)==ncol(abund)) setupSd$sampleNames <- colNa #no#else setupSd$groups <- colNa
     if(length(dim(counts)) >1 && length(counts) >0) colnames(counts) <- colNa
 
     if(debug) {message(fxNa,"Read sample-meta data, rAP14"); rAP14 <- list(sdrf=sdrf,suplAnnotFile=suplAnnotFile,abund=abund, quant=quant,refLi=refLi,annot=annot,setupSd=setupSd,plotGraph=plotGraph,normalizeMeth=normalizeMeth,isLog2=isLog2)}

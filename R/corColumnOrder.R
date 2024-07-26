@@ -1,11 +1,12 @@
-#' Order Columns in list of matrixes
+#' Order Columns In List Of Matrixes And Vectors
 #'
 #' @description
 #' This function orders columns in list of matrixes (or matrix) according to argument \code{sampNames}.
-#' This function can be used to adjust/correct the order of samples after reading data using \code{readMaxQuantFile()}, \code{readPDExport()} etc.
-#' The input may also be MArrayLM-type object from package \href{https://bioconductor.org/packages/release/bioc/html/limma.html}{limma} or from \code{\link{moderTestXgrp}} or \code{\link{moderTest2grp}}.
+#' It can be used to adjust/correct the order of samples after reading data using \code{readMaxQuantFile()}, \code{readProteomeDiscovererFile()} etc.
+#' The input may also be MArrayLM-type object from package \href{https://bioconductor.org/packages/release/bioc/html/limma.html}{limma} or 
+#' from functions \code{moderTestXgrp} or \code{moderTest2grp}.
 #'
-#' @param dat (matrix, list or MArrayLM-object from limma) main input of which columns should get re-ordered, may be output from \code{\link{moderTestXgrp}} or \code{\link{moderTest2grp}}.
+#' @param dat (matrix, list or MArrayLM-object from limma) main input of which columns should get re-ordered, may be output from \code{moderTestXgrp} or \code{moderTest2grp}.
 #' @param replNames (character) new column-names (in order as input from \code{dat}), allows renaming colnames before defining new order
 #' @param sampNames (character) column-names in desired order for output (must match colnames of \code{dat} or \code{replNames}, if used)
 #' @param newNames depreciated, plese use \code{replNames} instead
@@ -13,17 +14,17 @@
 #' @param annotElem (character) name of list-element of \code{dat} with annotation data to get in new order
 #' @param silent (logical) suppress messages
 #' @param debug (logical) display additional messages for debugging
-#' @param callFrom (character) allow easier tracking of message(s) produced
+#' @param callFrom (character) allow easier tracking of messages produced
 #' @return This function returns an object of same class as input \code{dat}  (ie matrix, list or MArrayLM-object from limma)
-#' @seealso \code{\link{moderTestXgrp}} for single comparisons; \code{\link[base]{order}}
+#' @seealso  \code{\link{readMaxQuantFile}}, \code{\link{readProteomeDiscovererFile}}; \code{\link[wrMisc]{moderTestXgrp}} or \code{\link[wrMisc]{moderTest2grp}}
 #' @examples
 #' grp <- factor(rep(LETTERS[c(3,1,4)], c(2,3,3)))
 #' dat1 <- matrix(1:15, ncol=5, dimnames=list(NULL,c("D","A","C","E","B")))
 #' corColumnOrder(dat1, sampNames=LETTERS[1:5])
 #'
-#' dat1 <- list(quant=dat1,raw=dat1)
-#'   dat1
-#' corColumnOrder(dat1, sampNames=LETTERS[1:5])
+#' dat2 <- list(quant=dat1, raw=dat1)
+#' dat2
+#' corColumnOrder(dat2, sampNames=LETTERS[1:5])
 #' @export
 corColumnOrder <- function(dat, replNames=NULL, sampNames, useListElem=c("quant","raw","counts"), annotElem="sampleSetup", newNames=NULL, silent=FALSE, debug=FALSE, callFrom=NULL) {
   ## order columns in list of matrixes (or matrix) according to 'sampNames'
@@ -68,7 +69,7 @@ corColumnOrder <- function(dat, replNames=NULL, sampNames, useListElem=c("quant"
   if(length(useListElem) >0) {
     chEl <- useListElem %in% names(dat)
     if(any(!chEl, na.rm=TRUE)) useListElem <- useListElem[which(chEl)]
-    if(length(useListElem) <1) warning(fxNa,"After cleaning 'useListElem' nothing remains !?!")
+    if(length(useListElem) <1) {warning(fxNa,"After cleaning 'useListElem' nothing remains !?!");  datOK <- FALSE}
   }
 
   ## main
@@ -114,7 +115,7 @@ corColumnOrder <- function(dat, replNames=NULL, sampNames, useListElem=c("quant"
           if(debug) message(fxNa,"Sucessfully adjusted quantitation data to new order") }}
         }
       }
-    } else { newO <- NA
+    } else { newO <- NA; datOK <- FALSE
       if(!silent) message(fxNa,"Failed to adjust quantitative/count data")}
 
     }

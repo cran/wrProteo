@@ -37,6 +37,8 @@ A data.frame containing all annotation data will be returned. To stay conform wi
 \details{
 The packages utils and wrMisc must be installed.
 Please note that reading sdrf files (if not provided as local copy) will take a few seconds, depending on the responsiveness of github.
+This function only handles the main reading of sdrf data and some diagnostic checks.
+For mining sdrf data please look at \code{\link[wrMisc]{replicateStructure}} and \code{\link{readSampleMetaData}}.
 }
 \examples{
 ## This may take a few sconds...
@@ -46,5 +48,5 @@ str(sdrf001819)
 
 }
 \seealso{
-in \code{\link[utils]{read.table}}
+\code{\link{readSampleMetaData}},  \code{\link[wrMisc]{replicateStructure}},
 }

@@ -1,8 +1,8 @@
-#' Accession-Numbers And Names Of UPS-1 Proteins
+#' Accession-Numbers And Names Of UPS1 Proteins
 #'
-#' \href{https://www.sigmaaldrich.com/FR/en/product/sigma/ups1}{UPS-1} and UPS-2 are mix of 48 of human proteins frequently used 
-#' as standard in spike-in experiments. They are comercially available from Sigma-Aldrich.
-#' This function allows accessing their accession-numbers and associated Names on \href{https://www.uniprot.org/}{UniProt}
+#' UPS1 (see https://www.sigmaaldrich.com/FR/en/product/sigma/ups1) and UPS2 are commerical products consisting of a mix of 48 human (purified) proteins.
+#' They are frequently used as standard in spike-in experiments, available from \href{https://www.sigmaaldrich.com}{Sigma-Aldrich}.
+#' This function allows accessing their protein accession numbers and associated names on \href{https://www.uniprot.org/}{UniProt}
 #'  
 #' @return This function returns data.frame with accession-numbers as stated by the supplier (\code{$acFull}),
 #'  trimmed accession-numbers, ie without version numbers (\code{$ac}) 

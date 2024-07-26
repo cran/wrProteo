@@ -65,8 +65,10 @@ if list and list-element has multiple values they will be used for exact matchin
 \item{gr}{(character or factor) custom defined pattern of replicate association, will override final grouping of replicates from \code{sdrf} and/or \code{suplAnnotFile} (if provided)   \code{}}
 
 \item{sdrf}{(character, list or data.frame) optional extraction and adding of experimenal meta-data: if character, this may be the ID at ProteomeExchange,
-the second element may give futher indicatations for automatic organization of groups of replicates.
-Besides, the output from \code{readSdrf} or a list from \code{defineSamples} may be provided; if \code{gr} is provided, \code{gr} gets priority for grouping of replicates}
+the second & third elements may give futher indicatations for automatic organization of groups of replicates.
+Besides, the output from \code{readSdrf} or a list from \code{defineSamples} may be provided;
+if \code{gr} is provided, \code{gr} gets priority for grouping of replicates;
+if \code{sdrfOrder=TRUE} the output will be put in order of sdrf}
 
 \item{suplAnnotFile}{(logical or character) optional reading of supplemental files; however, if \code{gr} is provided, \code{gr} gets priority for grouping of replicates;
 if \code{character} the respective file-name (relative or absolute path)}

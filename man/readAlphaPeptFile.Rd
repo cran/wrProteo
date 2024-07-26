@@ -66,11 +66,11 @@ if \code{character} a fasta-file at this location will be read/used/}
 
 \item{gr}{(character or factor) custom defined pattern of replicate association, will override final grouping of replicates from \code{sdrf} and/or \code{suplAnnotFile} (if provided)   \code{}}
 
-\item{sdrf}{(logical, character, list or data.frame) optional extraction and adding of experimenal meta-data:
-if \code{sdrf=TRUE} the 1st sdrf in the directory above \code{fileName} will be used
-if character, this may be the ID at ProteomeExchange,
-the second element may give futher indicatations for automatic organization of groups of replicates.
-Besides, the output from \code{readSdrf} or a list from \code{defineSamples} may be provided; if \code{gr} is provided, \code{gr} gets priority for grouping of replicates}
+\item{sdrf}{(character, list or data.frame) optional extraction and adding of experimenal meta-data: if character, this may be the ID at ProteomeExchange,
+the second & third elements may give futher indicatations for automatic organization of groups of replicates.
+Besides, the output from \code{readSdrf} or a list from \code{defineSamples} may be provided;
+if \code{gr} is provided, \code{gr} gets priority for grouping of replicates;
+if \code{sdrfOrder=TRUE} the output will be put in order of sdrf}
 
 \item{suplAnnotFile}{(logical or character) optional reading of supplemental files produced by Compomics; if \code{gr} is provided, it gets priority for grouping of replicates
 if \code{TRUE} default to files 'summary.txt' (needed to match information of \code{sdrf}) and 'parameters.txt' which can be found in the same folder as the main quantitation results;

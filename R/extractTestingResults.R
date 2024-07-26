@@ -1,6 +1,6 @@
 #' Extract Results From Moderated t-tests
 #'
-#' This function allows convenient access to results produced using the functions \code{\link{moderTest2grp}} or \code{moderTestXgrp}.
+#' This function allows convenient access to results produced using the functions \code{\link[wrMisc]{moderTest2grp}} or \code{moderTestXgrp}.
 #' The user can define the threshold which type of multiple testing correction should be used
 #'  (as long as the  multiple testing correction method was actually performed as part of testing).
 #'  
@@ -16,9 +16,9 @@
 #' @param fileTy (character) file-type to be used with argument \code{filename}, may be 'csvEur' or 'csvUS'
 #' @param silent (logical) suppress messages
 #' @param debug (logical) display additional messages for debugging
-#' @param callFrom (character) allow easier tracking of message(s) produced
-#' @return This function returns a limma-type MA-object (which can be handeled like a list)
-#' @seealso \code{\link{moderTest2grp}} for single comparisons, \code{\link{moderTestXgrp}} for multiple comparisons, \code{\link[limma]{lmFit}} and the \code{eBayes}-family of functions in package \href{https://bioconductor.org/packages/release/bioc/html/limma.html}{limma}
+#' @param callFrom (character) allow easier tracking of messages produced
+#' @return This function returns a limma-type MA-object (which can be handeled just like a list)
+#' @seealso \code{\link{testRobustToNAimputation}}, \code{\link[wrMisc]{moderTestXgrp}} or \code{\link[wrMisc]{moderTest2grp}}
 #' @examples
 #' grp <- factor(rep(LETTERS[c(3,1,4)],c(2,3,3)))
 #' set.seed(2017); t8 <- matrix(round(rnorm(208*8,10,0.4),2), ncol=8,

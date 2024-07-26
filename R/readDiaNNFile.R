@@ -61,13 +61,15 @@ readDiaNNFile <- function(fileName, path=NULL, normalizeMeth="median", sampleNam
   oparMar <- graphics::par("mar")                     # old margins, for rest after figure
   oparLayout <- graphics::par("mfcol")                # old layout, for rest after figure
   on.exit(graphics::par(mar=oparMar, mfcol=oparLayout))            # restore old mar settings
+  if(isTRUE(debug)) silent <- FALSE else debug <- FALSE
+  if(!isTRUE(silent)) silent <- FALSE
 
   reqPa <- c("utils","wrMisc")
   chPa <- sapply(reqPa, requireNamespace, quietly=TRUE)
   if(any(!chPa)) stop("package(s) '",paste(reqPa[which(!chPa)], collapse="','"),"' not found ! Please install first from CRAN")
   if(!isTRUE(silent)) silent <- FALSE
   if(isTRUE(debug)) silent <- FALSE else debug <- FALSE
-         excluCol <- "^Abundances.Count"   # exclude this from quantifications columns
+         ##excluCol <- "^Abundances.Count"   # exclude this from quantifications columns
   cleanDescription <- TRUE          # clean 'Description' for artifacts of truncated text (tailing ';' etc)
   infoDat <- infoFi <- setupSd <- parametersD <- NULL        # initialize
 
@@ -209,6 +211,8 @@ readDiaNNFile <- function(fileName, path=NULL, normalizeMeth="median", sampleNam
 
     ### GROUPING OF REPLICATES AND SAMPLE META-DATA
     if(length(suplAnnotFile) >0 || length(sdrf) >0) {
+      if(length(sampleNames) %in% c(1, ncol(abund))) groupPref$sampleNames <- sampleNames
+      if(length(gr) %in% c(1, ncol(abund))) groupPref$gr <- gr
       setupSd <- readSampleMetaData(sdrf=sdrf, suplAnnotFile=separateAnnot, quantMeth="DN", path=path, abund=utils::head(quant), groupPref=groupPref, silent=silent, debug=debug, callFrom=fxNa)
     }
     if(debug) {message(fxNa,"rdn13b .."); rdn13b <- list()}
@@ -216,11 +220,46 @@ readDiaNNFile <- function(fileName, path=NULL, normalizeMeth="median", sampleNam
 
     ## finish groups of replicates & annotation setupSd
     setupSd <- .checkSetupGroups(abund=abund, setupSd=setupSd, gr=gr, sampleNames=sampleNames, quantMeth="DN", silent=silent, debug=debug, callFrom=fxNa)
-    colNa <- if(length(setupSd$sampleNames)==ncol(abund)) setupSd$sampleNames else setupSd$groups
-    chGr <- grepl("^X[[:digit:]]", colNa)                                                # check & remove heading 'X' from initial column-names starting with digits
-    if(any(chGr)) colNa[which(chGr)] <- sub("^X","", colNa[which(chGr)])                 # 
-    colnames(quant) <- colnames(abund) <- colNa
-    if(length(setupSd$sampleNames)==ncol(abund)) setupSd$sampleNames <- colNa else setupSd$groups <- colNa
+
+    ## option : set order of samples as sdrf
+    if("sdrfOrder" %in% names(sdrf) && isTRUE(as.logical(sdrf["sdrfOrder"])) && length(setupSd$iniSdrfOrder)==ncol(abund) && ncol(abund) >1) {  # set order according to sdrf (only if >1 samples)
+      nOrd <- order(setupSd$iniSdrfOrder)
+      ## rename columns according to sdrf and set order of quant and abund ..
+      abund <- abund[,nOrd]
+      if(length(quant) >0) quant <- quant[,nOrd]
+      if(length(setupSd$sampleNames)==ncol(quant)) {
+        colNa <- colnames(abund) <- setupSd$sampleNames <- setupSd$sampleNaSdrf[nOrd]  #old# setupSd$sampleNames[nOrd]         ## take sample names from sdrf via  setupSd$sampleNaSdrf
+        if(length(quant) >0) colnames(quant) <- setupSd$sampleNaSdrf[nOrd]  #old# setupSd$sampleNames[nOrd]
+      } else colNa <- colnames(abund)
+      ## now adapt order of setupSd, incl init Sdrf
+      if(length(setupSd) >0) { 
+        is2dim <- sapply(setupSd, function(x,le) length(dim(x))==2 && nrow(x)==le, le=length(nOrd))    # look for matr or df to change order of lines
+        if(any(is2dim) >0) for(i in which(is2dim)) setupSd[[i]] <- setupSd[[i]][nOrd,]
+        isVe <- sapply(setupSd, function(x,le) length(x)==le && length(dim(x)) <1, le=length(nOrd))    # look for vector to change order in setupSd
+        if(any(isVe) >0) for(i in which(isVe)) setupSd[[i]] <- setupSd[[i]][nOrd] }
+      gr <- gr[nOrd]
+
+      if(length(counts) >0 && length(dim(counts))==3) counts <- array(counts[,nOrd,], dim=c(nrow(counts), length(nOrd), dim(counts)[3]), 
+        dimnames=list(rownames(counts), colnames(counts)[nOrd], dimnames(counts)[[3]]))
+      ## try re-adjusting levels
+      tm1 <- sub("^[[:alpha:]]+( |_|-|\\.)+[[:alpha:]]+","", colnames(abund))  # remove heading text
+      if(all(grepl("^[[:digit:]]", tm1))) {
+        tm1 <- try(as.numeric(sub("( |_|-|\\.)*[[:alpha:]].*","", tm1)), silent=TRUE)   # remove tailing text and try converting to numeric
+        if(!inherits(tm1, "try-error")) {
+          setupSd$level <- match(tm1, sort(unique(tm1)))
+          names(setupSd$level) <- tm1
+          if(!silent) message(fxNa,"Sucessfully re-adjusted levels after bringing in order of Sdrf")}
+      }     
+    } else {
+
+      ## harmonize sample-names/2
+      colNa <- colnames(abund)
+      chGr <- grepl("^X[[:digit:]]", colNa)                                                # check & remove heading 'X' from initial column-names starting with digits
+      if(any(chGr)) colNa[which(chGr)] <- sub("^X","", colNa[which(chGr)])                 #
+      colnames(quant) <- colNa
+      if(length(abund) >0) colnames(abund) <- colNa  
+    }  
+    if(length(setupSd$sampleNames)==ncol(abund)) setupSd$sampleNames <- colNa #no#else setupSd$groups <- colNa
     if(length(dim(counts)) >1 && length(counts) >0) colnames(counts) <- colNa
 
     if(debug) {message(fxNa,"Read sample-meta data, rdn14"); rdn14 <- list(setupSd=setupSd, sdrf=sdrf, suplAnnotFile=suplAnnotFile,quant=quant,abund=abund,plotGraph=plotGraph)}

@@ -2,13 +2,13 @@
 % Please edit documentation in R/readMaxQuantPeptides.R
 \name{readMaxQuantPeptides}
 \alias{readMaxQuantPeptides}
-\title{Read Peptide Identificationa and Quantitation Data-Files (peptidess.txt) Produced By MaxQuant}
+\title{Read Peptide Identification and Quantitation Data-Files (peptides.txt) Produced By MaxQuant}
 \usage{
 readMaxQuantPeptides(
   path,
   fileName = "peptides.txt",
   normalizeMeth = "median",
-  quantCol = "LFQ.intensity",
+  quantCol = "Intensity",
   contamCol = "Potential.contaminant",
   pepCountCol = "Experiment",
   refLi = NULL,
@@ -49,7 +49,7 @@ readMaxQuantPeptides(
 
 \item{sampleNames}{(character) custom column-names for quantification data; this argument has priority over \code{suplAnnotFile}}
 
-\item{extrColNames}{(character) column names to be read (1st position: prefix for LFQ quantitation, default 'LFQ.intensity';
+\item{extrColNames}{(character) column names to be read (1st position: prefix for quantitation, default 'intensity';
 2nd: column name for peptide-IDs, default )}
 
 \item{specPref}{(character) prefix to identifiers allowing to separate i) recognize contamination database,
@@ -65,9 +65,11 @@ for initial/raw abundance values and \code{$quant} with final normalized quantit
 \item{gr}{(character or factor) custom defined pattern of replicate association, will override final grouping of
 replicates from \code{sdrf} and/or \code{suplAnnotFile} (if provided)   \code{}}
 
-\item{sdrf}{(character, list or data.frame) optional extraction and adding of experimenal meta-data: if character,
-this may be the ID at ProteomeExchange. Besides, the output from \code{readSdrf} or a list from \code{defineSamples} may be provided;
-if \code{gr} is provided, it gets priority for grouping of replicates}
+\item{sdrf}{(character, list or data.frame) optional extraction and adding of experimenal meta-data: if character, this may be the ID at ProteomeExchange,
+the second & third elements may give futher indicatations for automatic organization of groups of replicates.
+Besides, the output from \code{readSdrf} or a list from \code{defineSamples} may be provided;
+if \code{gr} is provided, \code{gr} gets priority for grouping of replicates;
+if \code{sdrfOrder=TRUE} the output will be put in order of sdrf}
 
 \item{suplAnnotFile}{(logical or character) optional reading of supplemental files produced by MaxQuant; if \code{gr} is provided, it gets priority for grouping of replicates
 if \code{TRUE} default to files 'summary.txt' (needed to match information of \code{sdrf}) and 'parameters.txt' which can be found in the same folder as the main quantitation results;

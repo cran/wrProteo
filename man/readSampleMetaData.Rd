@@ -10,7 +10,8 @@ readSampleMetaData(
   suplAnnotFile = NULL,
   path = ".",
   abund = NULL,
-  groupPref = list(lowNumberOfGroups = TRUE),
+  groupPref = list(lowNumberOfGroups = TRUE, sampleNames = NULL, gr = NULL),
+  chUnit = TRUE,
   silent = FALSE,
   debug = FALSE,
   callFrom = NULL
@@ -23,25 +24,32 @@ readSampleMetaData(
 if character, this may be the ID at ProteomeExchange or a similarly formatted local file. \code{sdrf} will get priority over \code{suplAnnotFile}, if provided.}
 
 \item{suplAnnotFile}{(logical or character) optional reading of supplemental files produced by MaxQuant; if \code{gr} is provided, it gets priority for grouping of replicates
-if \code{TRUE} in case of \code{method=="MQ"} (MaxQuant) default to files 'summary.txt' (needed to match information of \code{sdrf}) and 'parameters.txt' which can be found in the same folder as the main quantitation results;
+if \code{TRUE} in case of \code{method=='MQ'} (MaxQuant) default to files 'summary.txt' (needed to match information of \code{sdrf}) and 'parameters.txt' which can be found in the same folder as the main quantitation results;
 if \code{character} the respective file-names (relative ro absolute path), 1st is expected to correspond to 'summary.txt' (tabulated text, the samples as given to MaxQuant) and 2nd to 'parameters.txt' (tabulated text, all parameters given to MaxQuant)
-in case of \code{method=="PL"} (Proline), this argument should contain the initial file-name (for the identification and quantification data) in the first position}
+in case of \code{method=='PL'} (Proline), this argument should contain the initial file-name (for the identification and quantification data) in the first position}
 
 \item{path}{(character) optional path of file(s) to be read}
 
 \item{abund}{(matrix or data.frame) experimental quantitation data; only column-names will be used for aligning order of annotated samples}
 
 \item{groupPref}{(list) additional parameters for interpreting meta-data to identify structure of groups (replicates);
-May contain \code{lowNumberOfGroups=FALSE} for automatically choosing a rather elevated number of groups if possible (defaults to low number of groups, ie higher number of samples per group)}
+May contain \code{lowNumberOfGroups=FALSE} for automatically choosing a rather elevated number of groups if possible (defaults to low number of groups, ie higher number of samples per group).
+A vector of custom sample-names may be provided via \code{sampleNames=...} (must be of correct length);
+if contains \code{sampleNames="sdrf"} sample-names will be used from trimmed file-names.}
 
-\item{silent}{(logical) suppress messages}
+\item{chUnit}{(logical or character) optional adjustig of group-labels from sample meta-data in case multipl different unit-prefixes are used to single common prefix 
+(eg adjust '100pMol' and '1nMol' to '100pMol' and '1000pMol') for better downstream analysis. This option will call \code{\link[wrMisc]{adjustUnitPrefix}} and \code{\link[wrMisc]{checkUnitPrefix}} from package \code{wrMisc}
+If \code{character} exatecly this/these unit-names will be searched in sample-names and checked if multiple different decimal prefixes are used; 
+if \code{TRUE} the default set of unit-names ('Mol','mol', 'days','day','m','sec','s','h') will be checked in the sample-names for different decimal prefixes}
+
+\item{silent}{(logical) suppress messages if \code{TRUE}}
 
 \item{debug}{(logical) additional messages for debugging}
 
 \item{callFrom}{(character) allow easier tracking of messages produced}
 }
 \value{
-This function returns a list with \code{$lev} and \code{$level} (grouping of samples given as integer), and \code{$meth} (method by which grouping as determined).
+This function returns a list with \code{$level} (grouping of samples given as integer), and \code{$meth} (method by which grouping as determined).
  If valid \code{sdrf} was given, the resultant list contains in addition \code{$sdrfDat} (data.frame of annotation).
  Alternatively it may contain a \code{$sdrfExport} if sufficient information has been gathered (so far only for MaxQuant) for a draft sdrf for export (that should be revised and completed by the user).
  If software annotation has been found it will be shown in \code{$annotBySoft}.
@@ -71,5 +79,5 @@ str(sdrf001819Setup)
 
 }
 \seealso{
-this function is used internally by \code{\link{readMaxQuantFile}}, \code{\link{readProtDiscovFile}} etc; use \code{\link{readSdrf}} for reading sdrf-files, \code{\link[wrMisc]{replicateStructure}} for mining annotation columns
+this function is used internally by \code{\link{readMaxQuantFile}},\code{/link{readProteomeDiscovererFile}} etc; uses \code{\link{readSdrf}} for reading sdrf-files, \code{\link[wrMisc]{replicateStructure}} for mining annotation columns
 }

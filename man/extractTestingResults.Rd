@@ -45,13 +45,13 @@ extractTestingResults(
 
 \item{debug}{(logical) display additional messages for debugging}
 
-\item{callFrom}{(character) allow easier tracking of message(s) produced}
+\item{callFrom}{(character) allow easier tracking of messages produced}
 }
 \value{
-This function returns a limma-type MA-object (which can be handeled like a list)
+This function returns a limma-type MA-object (which can be handeled just like a list)
 }
 \description{
-This function allows convenient access to results produced using the functions \code{\link{moderTest2grp}} or \code{moderTestXgrp}.
+This function allows convenient access to results produced using the functions \code{\link[wrMisc]{moderTest2grp}} or \code{moderTestXgrp}.
 The user can define the threshold which type of multiple testing correction should be used
  (as long as the  multiple testing correction method was actually performed as part of testing).
 }
@@ -70,5 +70,5 @@ test8 <- moderTestXgrp(t8, grp)
 extractTestingResults(test8)
 }
 \seealso{
-\code{\link{moderTest2grp}} for single comparisons, \code{\link{moderTestXgrp}} for multiple comparisons, \code{\link[limma]{lmFit}} and the \code{eBayes}-family of functions in package \href{https://bioconductor.org/packages/release/bioc/html/limma.html}{limma}
+\code{\link{testRobustToNAimputation}}, \code{\link[wrMisc]{moderTestXgrp}} or \code{\link[wrMisc]{moderTest2grp}}
 }

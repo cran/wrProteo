@@ -18,8 +18,8 @@ shortSoftwName <- function(x, tryAsLower=TRUE, silent=FALSE, debug=FALSE, callFr
   fxNa <- wrMisc::.composeCallName(callFrom, newNa="shortwSoftName")
   if(isTRUE(debug)) silent <- FALSE
   if(!isTRUE(silent)) silent <- FALSE
-  y <- cbind(softna=c("DIA-NN","ProteomeDiscoverer","Compomics","MaxQuant","Proline","TPP","FragPipe","MassChroQ","OpenMS"),
-    shortna= c("DN","PD","CP","MQ","PL","TP","FP","MC","OM")  )
+  y <- cbind(softna=c("DIA-NN","ProteomeDiscoverer","Compomics","MaxQuant","Proline","TPP","FragPipe","MassChroQ","OpenMS","Ionbot"),
+    shortna= c("DN","PD","CP","MQ","PL","TP","FP","MC","OM","IB")  )
   out <- y[match(x, y[,1]), 2]
   chNa <- is.na(out)
   if(any(chNa) && tryAsLower) out[which(chNa)] <- y[match(tolower(sub("\\-","",x[which(chNa)])), tolower(y[,1])), 2]

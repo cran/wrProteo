@@ -1,4 +1,4 @@
-#' Read file of protein sequences in fasta format
+#' Read File Of Protein Sequences In Fasta Format
 #'
 #' Read fasta formatted file (from \href{https://www.uniprot.org}{UniProt}) to extract (protein) sequences and name.
 #' If \code{tableOut=TRUE} output may be organized as matrix for separating meta-annotation (eg uniqueIdentifier, entryName, proteinName, GN) in separate columns.
@@ -7,25 +7,30 @@
 #' @param delim (character) delimeter at header-line
 #' @param databaseSign (character) characters at beginning right after the '>' (typically specifying the data-base-origin), they will be excluded from the sequance-header
 #' @param removeEntries (character) if \code{'empty'} allows removing entries without any sequence entries; set to \code{'duplicated'} to remove duplicate entries (same sequence and same header)
-#' @param tableOut (logical) toggle to return named character-vector or matrix with enhaced parsing of fasta-header. The resulting matrix will contain the comumns 'database','uniqueIdentifier','entryName','proteinName','sequence' and further columns depending on argument \code{UniprSep}
+#' @param tableOut (logical) toggle to return named character-vector or matrix with enhaced parsing of fasta-header. 
+#'   The resulting matrix will contain the comumns 'database','uniqueIdentifier','entryName','proteinName','sequence' and further columns depending on argument \code{UniprSep}
 #' @param UniprSep (character) separators for further separating entry-fields if \code{tableOut=TRUE}, see also \href{https://www.uniprot.org/help/fasta-headers}{UniProt-FASTA-headers}
+#' @param strictSpecPattern (logical or character) pattern for recognizing EntryName which is typically preceeding ProteinName (separated by ' '); if \code{TRUE} the 
+#'   name (capital letters and digits) must contain in the second part '_' plus capital letters, if \code{FALSE} the second part may be absent; if not matching pattern the text will be at the beggining of the ProteinName
 #' @param cleanCols (logical) remove columns with all entries NA, if \code{tableOut=TRUE}
 #' @param debug (logical) supplemental messages for debugging
 #' @param silent (logical) suppress messages
 #' @param callFrom (character) allows easier tracking of messages produced
-#' @return This function returns (depending on parameter \code{tableOut}) a) a simple character vector (of sequence) with Uniprot ID as name or b) a matrix with columns: 'database','uniqueIdentifier','entryName','proteinName','sequence' and further columns depending on argument \code{UniprSep}
-#' @seealso  \code{\link{writeFasta2}} for writing as fasta, or for reading \code{\link[base]{scan}} or  \code{read.fasta} from the package \href{https://CRAN.R-project.org/package=seqinr}{seqinr}
+#' @return This function returns (depending on argument \code{tableOut}) a simple character vector (of sequences) with (entire) Uniprot annotation as name or 
+#'   b) a matrix with columns: 'database','uniqueIdentifier','entryName','proteinName','sequence' and further columns depending on argument \code{UniprSep}
+#' @seealso  \code{\link{writeFasta2}} for writing as fasta; for reading \code{\link[base]{scan}} or  \code{read.fasta} from the package \href{https://CRAN.R-project.org/package=seqinr}{seqinr}
 #' @examples
 #' ## Tiny example with common contaminants
-#' path1 <- system.file('extdata',package='wrProteo')
+#' path1 <- system.file('extdata', package='wrProteo')
 #' fiNa <-  "conta1.fasta.gz"
-#' fasta1 <- readFasta2(file.path(path1,fiNa))
+#' fasta1 <- readFasta2(file.path(path1, fiNa))
 #' ## now let's read and further separate annotation-fields
-#' fasta2 <- readFasta2(file.path(path1,fiNa),tableOut=TRUE)
+#' fasta2 <- readFasta2(file.path(path1, fiNa), tableOut=TRUE)
 #' str(fasta1)
 #' @export
 readFasta2 <- function(filename, delim="|", databaseSign=c("sp","tr","generic","gi"), removeEntries=NULL, tableOut=FALSE, UniprSep=c("OS=","OX=","GN=","PE=","SV="),
-  cleanCols=TRUE, silent=FALSE, callFrom=NULL, debug=FALSE){
+  strictSpecPattern=TRUE, cleanCols=TRUE, silent=FALSE, callFrom=NULL, debug=FALSE){
+  ##  strictSpecPattern .. decide if species MUST be cited in 'entryName' as "_[[:upper]]+"  (eg 'THMS2_HUMAN')
   ## read fasta formatted file (from Uniprot) to extract (protein) sequences and name
   ## info about Uniprot fasta https://www.uniprot.org/help/fasta-headers
   ## return (based on 'tableOut') simple character vector (of sequence) with Uniprot ID as name or matrix with cols:'ID','Sequence','EntryName','ProteinName','OS','GN'
@@ -36,7 +41,7 @@ readFasta2 <- function(filename, delim="|", databaseSign=c("sp","tr","generic","
   deli2 <- if(nchar(delim==1)) paste0("\\",delim) else paste(paste0("\\",unlist(strsplit(delim,""))),collapse="") #"
   ## initial test reading
   if(!file.exists(filename)) stop(" file ",filename," not existing")
-  sca <- try(readLines(filename))
+  sca <- try(readLines(filename), silent=TRUE)
   ## faster reading of file ? see https://www.r-bloggers.com/2011/08/faster-files-in-r/
   if(inherits(sca, "try-error")) stop(fxNa,"File ",filename," exits but could not read !")
   if(debug) {message(fxNa,"Successfully read file '",filename,"'")}
@@ -136,34 +141,36 @@ readFasta2 <- function(filename, delim="|", databaseSign=c("sp","tr","generic","
     UniprSep <- sub("^ ","",sub(" $","",UniprSep))                              # remove heading or tailing space
     out <- matrix(NA, nrow=length(id0), ncol=length(UniprSep) +5,
       dimnames=list(NULL,c("database","uniqueIdentifier","entryName","proteinName","sequence",sub("=$","",sub("^ +","",UniprSep)) )))
-    aftS <- "[[:alpha:]][[:upper:]]*[[:digit:]]*[[:upper:]]*_[[:upper:]]+[[:digit:]]* "                               # some CAPs + ev some digits
-    if(debug) {message(fxNa," rf7"); rf7 <- list(out=out,chLe=chLe,newLi=newLi,entryName=entryName,id=id,filename=filename,delim=delim,databaseSign=databaseSign,removeEntries=removeEntries,tableOut=tableOut,UniprSep=UniprSep)}
+    if(debug) {message(fxNa," rf7"); rf7 <- list(out=out,chLe=chLe,newLi=newLi,entryName=entryName,id=id,filename=filename,delim=delim,databaseSign=databaseSign,removeEntries=removeEntries,tableOut=tableOut,UniprSep=UniprSep,dbSig=dbSig)}
 
     ## suplID (if available)
-    entryNameS <- sub(aftS, "", entryName)                                    # get everything before Uniprot like sparator  (space+2upper+"="+anyText)
-    nch <- nchar(entryName)
-    ncha <- nchar(entryNameS)
-    suplID <- if(any(ncha >0, na.rm=TRUE)) substr(entryName, 1, nch -1-ncha) else rep(NA, length(entryName))
-    chS <- ncha == nchar(entryName)
-    out[,c("database","uniqueIdentifier","entryName","proteinName","sequence")] <- cbind(dbSig, id, entryNameS, suplID, seqs)
-    if(debug) {message(fxNa," rf8"); rf8 <- list(out=out,chLe=chLe,newLi=newLi,entryName=entryName,id=id,filename=filename,delim=delim,databaseSign=databaseSign,removeEntries=removeEntries,tableOut=tableOut,UniprSep=UniprSep)}
+    ## check if 1st word of entryName looks like ID
+    entryNameS <- sub(" [[:upper:]].+","", entryName)
+    paEN <- if(is.character(strictSpecPattern) && length(strictSpecPattern) > 0) strictSpecPattern else {
+      if(isTRUE(strictSpecPattern)) "^[[:upper:]]+[[:digit:]]([[:upper:]]|[[:digit:]])*_[[:upper:]]+$" else "^[[:upper:]]+[[:digit:]]([[:upper:]]|[[:digit:]])*(_[[:upper:]]+){0,1}$"}
+    chEn <- grepl(paEN, entryNameS)
+    if(any(!chEn)) entryNameS[which(!chEn)] <- ""
+    if(any(chEn)) entryName[which(chEn)] <- substring(entryName[which(chEn)], nchar(entryNameS[which(chEn)])+2)     # shorten entryName since UniqueIdentifier was split off
+    out[,c("database","uniqueIdentifier","entryName","proteinName","sequence")] <- cbind(dbSig, id, entryNameS, entryName, seqs)
+    if(debug) {message(fxNa," rf8"); rf8 <- list(out=out,chLe=chLe,newLi=newLi,entryName=entryName,entryNameS=entryNameS,id=id,filename=filename,delim=delim,databaseSign=databaseSign,removeEntries=removeEntries,tableOut=tableOut,UniprSep=UniprSep)}
 
     ## extract part after current uniprSep and the before something looking like next uniprSep
-    grUni <- lapply(UniprSep, grep, entryNameS)                   # which entires/lines concerned
+    grUni <- lapply(UniprSep, grep, entryName)                   # which entires/lines concerned
     chUni <- which(sapply(grUni, length) >0)              # which separators concerned
     UniprSep <- c(UniprSep, "ZYXWVUTSR=")                 # need to add dummy sequence for last
     if(any(chUni, na.rm=TRUE)) for(i in chUni) {
       aftS <- paste(sapply(UniprSep[-1*(1:i)], function(x) paste0("\ ",x,"[[:alnum:]]+[[:print:]]*")),collapse="|")
       curS <- paste(sapply(UniprSep[i], function(x) paste0("^[[:print:]]* ",x)),collapse="|")
-      out[grUni[[i]], sub("=$","",UniprSep[i]) ] <- sub(aftS,"", sub(curS,"", entryNameS[grUni[[i]]]))           # c(3,5+i)
+      out[grUni[[i]], sub("=$","",UniprSep[i]) ] <- sub(aftS,"", sub(curS,"", entryName[grUni[[i]]]))           # c(3,5+i)
+      out[grUni[[i]], "proteinName"] <- sub(paste0(" ",UniprSep[i],".*"),"", out[grUni[[i]], "proteinName"])                   # trim current & all behind
     }
     ## propagate NONAME to empty proteinName
     ch1 <- grepl("NONAME", out[,2]) & nchar(out[,"proteinName"]) <1
     if(any(ch1, na.rm=TRUE)) out[which(ch1),"proteinName"] <- out[which(ch1),2]
-
+  
     ## remove cols with all NA
     chNA <- colSums(!is.na(out)) <1
     if(any(chNA) && isTRUE(cleanCols)) out <- if(sum(!chNA) >1) out[,which(!chNA)] else matrix(out[,which(!chNA)], ncol=1, dimnames=list(NULL,colnames(out)[which(!chNA)])) # remove columns with NA only
-  } else {out <- seqs; names(out) <- entryName}
+  } else {out <- seqs; names(out) <- paste(id, entryName)}
   out }
   

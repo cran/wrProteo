@@ -35,8 +35,10 @@
 #'  if list and list-element has multiple values they will be used for exact matching of accessions (ie 2nd of argument \code{annotCol})
 #' @param gr (character or factor) custom defined pattern of replicate association, will override final grouping of replicates from \code{sdrf} and/or \code{suplAnnotFile} (if provided)   \code{}
 #' @param sdrf (character, list or data.frame) optional extraction and adding of experimenal meta-data: if character, this may be the ID at ProteomeExchange,
-#'   the second element may give futher indicatations for automatic organization of groups of replicates.
-#'   Besides, the output from \code{readSdrf} or a list from \code{defineSamples} may be provided; if \code{gr} is provided, \code{gr} gets priority for grouping of replicates
+#'   the second & third elements may give futher indicatations for automatic organization of groups of replicates.
+#'   Besides, the output from \code{readSdrf} or a list from \code{defineSamples} may be provided;
+#'   if \code{gr} is provided, \code{gr} gets priority for grouping of replicates;
+#'   if \code{sdrfOrder=TRUE} the output will be put in order of sdrf
 #' @param suplAnnotFile (logical or character) optional reading of supplemental files produced by ProteomeDiscoverer; however, if \code{gr} is provided, \code{gr} gets priority for grouping of replicates;
 #'  if \code{TRUE} defaults to file '*InputFiles.txt' (needed to match information of \code{sdrf}) which can be exported next to main quantitation results;
 #'  if \code{character} the respective file-name (relative or absolute path)
@@ -77,6 +79,7 @@ readProteomeDiscovererFile <- function(fileName, path=NULL, normalizeMeth="media
   #excluCol <- c("^Abundance\\.Count","^Abundances\\.Count","^Abundance\\.Ratio","^Abundances\\.Ratio","^Abundance\\.Grouped","^Abundances\\.Grouped")   # exclude this from quantifications columns
   cleanDescription <- TRUE          # clean 'Description' for artifacts of truncated text (tailing ';' etc)
   infoDat <- infoFi <- setupSd <- parametersD <- NULL        # initialize
+
   .corPathW <- function(x) gsub("\\\\", "/", x)
 
   ## check if path & (tsv) file exist
@@ -84,7 +87,8 @@ readProteomeDiscovererFile <- function(fileName, path=NULL, normalizeMeth="media
   paFi <- wrMisc::checkFilePath(fileName, path, expectExt="txt", compressedOption=TRUE, stopIfNothing=TRUE, callFrom=fxNa, silent=silent, debug=debug)
 
   ## note : reading sample-setup from 'suplAnnotFile' at this place won't allow comparing if number of  samples/columns corresponds to data; do after reading main data
-  if(debug) message(fxNa,"rpd0 .. Ready to read", if(length(path) >0) c(" from path ",path[1])," the file  ",fileName[1])
+  if(debug) {message(fxNa,"rpd0 .. Ready to read", if(length(path) >0) c(" from path ",path[1])," the file  ",fileName[1]); 
+    rpd0 <- list(fileName=fileName,path=path,paFi=paFi,chPa=chPa) }
 
   ## read (main) file
   ## future: look for fast reading of files
@@ -100,7 +104,7 @@ readProteomeDiscovererFile <- function(fileName, path=NULL, normalizeMeth="media
 
     ## locate & extract annotation
     ## default as R-friendly (convert standard cols later to this format)
-    if(length(annotCol) <1) annotCol <- c("Accession","Description","Gene","Gene.Name","Marked.as", "Number.of.Peptides","Number.of.PSMs","Number.of.Unique.Peptides","Number.of.AAs","Coverage.in.Percent")
+    if(length(annotCol) <1) annotCol <- c("Accession","Description","Gene","GeneName","Gene.Name","Marked.as", "Number.of.Peptides","Number.of.PSMs","Number.of.Unique.Peptides","Number.of.AAs","Coverage.in.Percent")
     ## also  ??    "Exp.q.value.Combined","Sum.PEP.Score"
     if(debug) message(fxNa,"rpd1a")
 
@@ -144,13 +148,18 @@ readProteomeDiscovererFile <- function(fileName, path=NULL, normalizeMeth="media
       }
       out }
 
+     
     ## check for essential colnames !
     annot <- cbind(Accession=.extrCol(annotCol[1], tmp, silent=silent, fxNa=fxNa),    # 1st typically 'Accession'
       EntryName=NA, GeneName=NA, Description=.extrCol(annotCol[2], tmp, silent=silent, fxNa=fxNa), Species=NA, Contam=NA)  #, iniDescription=NA)
-    #annot[,"iniDescription"] <- annot[,"Description"]
+    
+    ## address different naming/writing of GeneName
+    GNco <- colnames(tmp) %in% c("Gene.Name","GeneName")
+    if(any(GNco)) { annot[,"GeneName"] <- sub(" +$","",tmp[,GNco])       # also remove tailing space
+      annotCol <- annotCol[-which(annotCol %in% c("Gene.Name","GeneName"))]
+    }
     ## add other cols form annotCol
-
-    if(debug) { message(fxNa,"rpd1b "); rpd1b <- list() }
+    if(debug) { message(fxNa,"rpd1b "); rpd1b <- list(tmp=tmp,annot=annot,paFi=paFi,annotCol=annotCol,fileName=fileName) }
     #notAnnCol <- c( "Accession","Description","Gene","Number.of.Peptides","Number.of.PSMs","Number.of.Unique.Peptides")
     if(length(annotCol) >2) { chSupCol <- match(annotCol[-(1:2)], colnames(tmp))
       if(sum(is.na(chSupCol)) < length(annotCol) -2) annot <- cbind(annot, tmp[,wrMisc::naOmit(chSupCol)])
@@ -158,7 +167,7 @@ readProteomeDiscovererFile <- function(fileName, path=NULL, normalizeMeth="media
     ## note 'EntryName' (eg 'UBE2C_HUMAN' not avail in PD)
     ## note 'GeneName' (eg 'UBE2C' can be extracted out of 'Description' after GN=
     ## extract GN
-    if(debug) { message(fxNa,"rpd1c "); rpd1c <- list(tmp=tmp,paFi=paFi,annotCol=annotCol,fileName=fileName)  }
+    if(debug) { message(fxNa,"rpd1c "); rpd1c <- list()  }
 
     ##  add more annot cols
     ## check for R-friendly
@@ -197,7 +206,10 @@ readProteomeDiscovererFile <- function(fileName, path=NULL, normalizeMeth="media
 
     ## extract Species from  'Description'
     chSpe <- grep(" OS=[[:alpha:]]", annot[,"Description"])
-    if(length(chSpe) >0)  annot[chSpe,"Species"] <- sub(" [[:upper:]]{2}=.*","", sub(".* OS=","", annot[chSpe,"Description"]))
+    if(length(chSpe) >0)  { annot[chSpe,"Species"] <- sub(" [[:upper:]]{2}=.*","", sub(".* OS=","", annot[chSpe,"Description"]))
+      chStr <- grep("^[[:upper:]][[:lower:]]+ [[:lower:]]+ \\(.", annot[chSpe,"Species"])                           # check for add'l strain name
+      if(length(chStr) >0) annot[chSpe[chStr],"Species"]  <- substr(annot[chSpe[chStr],"Species"], 1, nchar(annot[chSpe[chStr],"Species"]) -2 -nchar(sub("^[[:upper:]][[:lower:]]+ [[:lower:]]+ \\(","", annot[chSpe[chStr],"Species"] )))       # remove strain no
+    }
 
     ## clean 'Description' entries: remove tailing punctuation or open brackets (ie not closed) at end of (truncated) fasta header
     if(cleanDescription) {
@@ -276,8 +288,11 @@ readProteomeDiscovererFile <- function(fileName, path=NULL, normalizeMeth="media
       if(identical("allAfter_calc.pI", quantCol)) {
         calcPIcol <- c("calc.pI","calc..pI","calc pI","calc_pI")    # possible variations of 'calc.pI'
         chCol <- calcPIcol %in% colnames(tmp)
+        endCol <- c("Number.of.Protein.Groups","Modifications")
+        chEnd <- colnames(tmp) %in% endCol
+        lastCol <- if(any(chEnd)) min(which(chEnd)) -1 else ncol(tmp)
         if(any(chCol, na.rm=TRUE)) {
-          quantColInd <- (which(colnames(tmp)==calcPIcol[which(chCol)[1]]) +1) : ncol(tmp)
+          quantColInd <- (which(colnames(tmp)==calcPIcol[which(chCol)[1]]) +1) : lastCol
         } else {quantColInd <- NULL; stop(fxNa,"Cannot find column called 'calc_pI' (or 'cal.pI); don't know which columns to choose as quantitation data !")}
       } else {
         ## need to avoid "Abundances.Normalized.F1.Sample" or 'Abundances.Count.*'
@@ -304,9 +319,9 @@ readProteomeDiscovererFile <- function(fileName, path=NULL, normalizeMeth="media
           }
         if(debug) message(fxNa,"Found ",length(ch1)," quantitation-columns", if(length(ch1) >0) c(" (eg ",wrMisc::pasteC(colnames(tmp)[utils::head(ch1)], quoteC="'"),")"))
         }
+        quantColInd <- ch1
       }
     }
-    quantColInd <- ch1
     if(length(quantColInd) <1) stop(msg,"  ('",quantCol,"') NOT FOUND !")
         ## look for columns endig with 'intensity'  ?
     quantCol <- quantColInd
@@ -340,6 +355,7 @@ readProteomeDiscovererFile <- function(fileName, path=NULL, normalizeMeth="media
     if(debug) { message(fxNa,"rpd9 .. dim annot ",nrow(annot)," and ",ncol(annot)); rpd9 <- list(annot=annot,tmp=tmp,abund=abund,sampleNames=sampleNames,specPref=specPref,annotCol=annotCol,Rfriendly=Rfriendly,contamCol=contamCol,PSMCol=PSMCol,PepCol=PepCol,infoDat=infoDat) }
 
     ## add custom sample names (if provided)
+    if(identical("sdrf",sampleNames)) {specPref$sampleNames <- sampleNames; sampleNames <- NULL}
     if(length(sampleNames) ==ncol(abund) && ncol(abund) >0) {
       if(debug) { message(fxNa,"rpd9b") }
       if(length(unique(sampleNames)) < length(sampleNames)) {
@@ -359,7 +375,7 @@ readProteomeDiscovererFile <- function(fileName, path=NULL, normalizeMeth="media
       names(chFDR) <- sapply(FDRCol, function(x) x[1])
       chFDR <- chFDR[which(sapply(chFDR, length) >0)]
       if(length(chFDR) >0) {
-        i <- 1    # so far just use 1st instance matching
+        i <- 1              # so far just use 1st instance matching
         searchFor <- FDRCol[[which(sapply(FDRCol, function(x) x[1]) %in% names(chFDR)[i])]]
         filtFdrHi <- tmp[,chFDR[[i]]] == searchFor[2]  # find occurances of best tag 'High'
         roSu <- rowSums(filtFdrHi) <1
@@ -416,7 +432,7 @@ readProteomeDiscovererFile <- function(fileName, path=NULL, normalizeMeth="media
         abund <- abund[,-ncol(abund)]                         # remove extra column (ie "iniIndex")
         chAc <- duplicated(annot[,"Accession"], fromLast=FALSE)
     } }
-    if(debug) { message(fxNa,"rpd11b .. dim abund ",nrow(abund)," and ",ncol(abund)); rpd11b <- list(annot=annot,tmp=tmp,abund=abund,sampleNames=sampleNames,specPref=specPref,annotCol=annotCol,Rfriendly=Rfriendly,contamCol=contamCol,PSMCol=PSMCol,PepCol=PepCol,infoDat=infoDat)}
+    if(debug) { message(fxNa,"rpd11b .. dim abund ",nrow(abund)," and ",ncol(abund)); rpd11b <- list()}
 
     ## Now we are ready to add unique rownames
     if(any(chAc, na.rm=TRUE)) {
@@ -429,11 +445,11 @@ readProteomeDiscovererFile <- function(fileName, path=NULL, normalizeMeth="media
     PepCol <- if(length(PepCol) ==1) grep(PepCol, colnames(tmp)) else NULL
     usTy <- c("PSM","NoOfPeptides")[which(c(length(PSMCol), length(PepCol)) ==ncol(abund))]
     if(length(usTy) >0) {
-      counts <- array(NA,dim=c(nrow(abund),ncol(abund),length(usTy)), dimnames=list(rownames(abund),colnames(abund),usTy))
+      counts <- array(NA,dim=c(nrow(abund), ncol(abund), min(1, length(usTy))), dimnames=list(rownames(abund), colnames(abund),usTy))
       if("PSM" %in% usTy) counts[,,"PSM"] <- as.matrix(tmp[,PSMCol])
       if("NoOfPeptides" %in% usTy) counts[,,"NoOfPeptides"] <- as.matrix(tmp[,PepCol])
     } else counts <- NULL
-    if(debug) {message(fxNa,"rpd12 .. "); rpd12 <- list(annot=annot,tmp=tmp,abund=abund,sampleNames=sampleNames,specPref=specPref,annotCol=annotCol,refLi=refLi,Rfriendly=Rfriendly,contamCol=contamCol,PSMCol=PSMCol,PepCol=PepCol,infoDat=infoDat)}
+    if(debug) {message(fxNa,"rpd12 .. "); rpd12 <- list(annot=annot,tmp=tmp,abund=abund,sampleNames=sampleNames,specPref=specPref,annotCol=annotCol,refLi=refLi,Rfriendly=Rfriendly,contamCol=contamCol,PSMCol=PSMCol,PepCol=PepCol,counts=counts,infoDat=infoDat)}
 
     ## check for reference for normalization
     refLiIni <- refLi
@@ -448,24 +464,68 @@ readProteomeDiscovererFile <- function(fileName, path=NULL, normalizeMeth="media
     ## take log2 & normalize
     quant <- try(wrMisc::normalizeThis(log2(abund), method=normalizeMeth, mode="additive", refLines=refLi, silent=silent, debug=debug, callFrom=fxNa), silent=TRUE)
     if(debug) { message(fxNa,"rpd13 .. dim quant: ", nrow(quant)," li and  ",ncol(quant)," cols; colnames : ",wrMisc::pasteC(colnames(quant))," ");
-      rpd13 <- list(annot=annot,tmp=tmp,abund=abund,quant=quant,sampleNames=sampleNames,specPref=specPref,annotCol=annotCol,Rfriendly=Rfriendly,contamCol=contamCol,PSMCol=PSMCol,PepCol=PepCol,infoDat=infoDat, refLi=refLi)}
+      rpd13 <- list(annot=annot,tmp=tmp,abund=abund,quant=quant,sampleNames=sampleNames,specPref=specPref,annotCol=annotCol,Rfriendly=Rfriendly,contamCol=contamCol,PSMCol=PSMCol,PepCol=PepCol,counts=counts,infoDat=infoDat, refLi=refLi)}
 
     ### GROUPING OF REPLICATES AND SAMPLE META-DATA
     if(length(suplAnnotFile) >0 || length(sdrf) >0) {
+      if(length(sampleNames) %in% c(1, ncol(abund))) groupPref$sampleNames <- sampleNames
+      if(length(gr) %in% c(1, ncol(abund))) groupPref$gr <- gr
+      if("sampleNames" %in% names(specPref)) groupPref$sampleNames <- specPref$sampleNames
       setupSd <- readSampleMetaData(sdrf=sdrf, suplAnnotFile=suplAnnotFile, quantMeth="PD", path=path, abund=utils::head(quant), groupPref=groupPref, silent=silent, debug=debug, callFrom=fxNa)
     }
-    if(debug) {message(fxNa,"rpd13b .."); rpd13b <- list(annot=annot,tmp=tmp,abund=abund,quant=quant,setupSd=setupSd,sampleNames=sampleNames,specPref=specPref,annotCol=annotCol,Rfriendly=Rfriendly,contamCol=contamCol,PSMCol=PSMCol,PepCol=PepCol,infoDat=infoDat, refLi=refLi)}
+    if(debug) {message(fxNa,"rpd13b ..");  rpd13b <- list()}
 
     ## finish groups of replicates & annotation setupSd
     setupSd <- .checkSetupGroups(abund=abund, setupSd=setupSd, gr=gr, sampleNames=sampleNames, quantMeth="PD", silent=silent, debug=debug, callFrom=fxNa)
+    if(debug) {message(fxNa,"rpd13c .."); rpd13c <- list(annot=annot,tmp=tmp,abund=abund,quant=quant,gr=gr,sdrf=sdrf,setupSd=setupSd,sampleNames=sampleNames,specPref=specPref,annotCol=annotCol,Rfriendly=Rfriendly,contamCol=contamCol,PSMCol=PSMCol,PepCol=PepCol,counts=counts,infoDat=infoDat, refLi=refLi)}
+
+    ## harmonize sample-names/1
     colNa <- if(length(setupSd$sampleNames)==ncol(abund)) setupSd$sampleNames else setupSd$groups
-    chGr <- grepl("^X[[:digit:]]", colNa)                                                # check & remove heading 'X' from initial column-names starting with digits
-    if(any(chGr)) colNa[which(chGr)] <- sub("^X","", colNa[which(chGr)])                 #
-    colnames(quant) <- colnames(abund) <- colNa
-    if(length(setupSd$sampleNames)==ncol(abund)) setupSd$sampleNames <- colNa else setupSd$groups <- colNa
+
+    ## option : set order of samples as sdrf
+    if("sdrfOrder" %in% names(sdrf) && isTRUE(as.logical(sdrf["sdrfOrder"])) && length(setupSd$iniSdrfOrder)==ncol(abund) && ncol(abund) >1) {  # set order according to sdrf (only if >1 samples)
+      nOrd <- order(setupSd$iniSdrfOrder)
+      ## rename columns according to sdrf and set order of quant and abund ..
+      abund <- abund[,nOrd]
+      if(length(quant) >0) quant <- quant[,nOrd]
+      if(length(setupSd$sampleNames)==ncol(quant)) {
+        colNa <- colnames(abund) <- setupSd$sampleNames <- setupSd$sampleNaSdrf[nOrd]  #old# setupSd$sampleNames[nOrd]         ## take sample names from sdrf via  setupSd$sampleNaSdrf
+        if(length(quant) >0) colnames(quant) <- setupSd$sampleNaSdrf[nOrd]  #old# setupSd$sampleNames[nOrd]
+      } else colNa <- colnames(abund)
+      ## now adapt order of setupSd, incl init Sdrf
+      if(length(setupSd) >0) { 
+        is2dim <- sapply(setupSd, function(x,le) length(dim(x))==2 && nrow(x)==le, le=length(nOrd))    # look for matr or df to change order of lines
+        if(any(is2dim) >0) for(i in which(is2dim)) setupSd[[i]] <- setupSd[[i]][nOrd,]
+        isVe <- sapply(setupSd, function(x,le) length(x)==le && length(dim(x)) <1, le=length(nOrd))    # look for vector to change order in setupSd
+        if(any(isVe) >0) for(i in which(isVe)) setupSd[[i]] <- setupSd[[i]][nOrd] }
+      gr <- gr[nOrd]
+
+      if(length(counts) >0 && length(dim(counts))==3) counts <- array(counts[,nOrd,], dim=c(nrow(counts), length(nOrd), dim(counts)[3]), 
+        dimnames=list(rownames(counts), colnames(counts)[nOrd], dimnames(counts)[[3]]))
+      if(debug) {message(fxNa,"rpd13d .."); rpd13d <- list(annot=annot,tmp=tmp,abund=abund,quant=quant,gr=gr,sdrf=sdrf,setupSd=setupSd,sampleNames=sampleNames,specPref=specPref,annotCol=annotCol,Rfriendly=Rfriendly,contamCol=contamCol,PSMCol=PSMCol,PepCol=PepCol,counts=counts,infoDat=infoDat, refLi=refLi)}
+
+      ## try re-adjusting levels
+      tm1 <- sub("^[[:alpha:]]+( |_|-|\\.)+[[:alpha:]]+","", colnames(abund))  # remove heading text
+      if(all(grepl("^[[:digit:]]", tm1))) {
+        tm1 <- try(as.numeric(sub("( |_|-|\\.)*[[:alpha:]].*","", tm1)), silent=TRUE)   # remove tailing text and try converting to numeric
+        if(!inherits(tm1, "try-error")) {
+          setupSd$level <- match(tm1, sort(unique(tm1)))
+          names(setupSd$level) <- tm1
+          if(!silent) message(fxNa,"Sucessfully re-adjusted levels after bringing in order of Sdrf")}
+      }     
+    } else {
+
+      ## harmonize sample-names/2
+      colNa <- colnames(abund)
+      chGr <- grepl("^X[[:digit:]]", colNa)                                                # check & remove heading 'X' from initial column-names starting with digits
+      if(any(chGr)) colNa[which(chGr)] <- sub("^X","", colNa[which(chGr)])                 #
+      colnames(quant) <- colNa
+      if(length(abund) >0) colnames(abund) <- colNa  
+    }  
+    if(length(setupSd$sampleNames)==ncol(abund)) setupSd$sampleNames <- colNa #no#else setupSd$groups <- colNa
     if(length(dim(counts)) >1 && length(counts) >0) colnames(counts) <- colNa
 
-    if(debug) {message(fxNa,"Read sample-meta data, rpd14"); rpd14 <- list(sdrf=sdrf,suplAnnotFile=suplAnnotFile,abund=abund, quant=quant,refLi=refLi,annot=annot,setupSd=setupSd,sampleNames=sampleNames)}
+    if(debug) {message(fxNa,"Read sample-meta data, rpd14"); rpd14 <- list(sdrf=sdrf,suplAnnotFile=suplAnnotFile,abund=abund, quant=quant,refLi=refLi,annot=annot,setupSd=setupSd,counts=counts,sampleNames=sampleNames)}
 
     ## main plotting of distribution of intensities
     custLay <- NULL
@@ -505,7 +565,7 @@ readProteomeDiscovererFile <- function(fileName, path=NULL, normalizeMeth="media
 #' set.seed(2021)
 #' @export
 .checkSetupGroups <- function(abund, setupSd, gr=NULL, sampleNames=NULL, quantMeth=NULL, silent=FALSE, callFrom=NULL, debug=FALSE) {
-  ## additional/final chek & adjustments to sample-names after readSampleMetaData()
+  ## additional/final check & adjustments to sample-names after readSampleMetaData()
   ## examine
   ## returns enlaged/updated list 'setupSd' (set setupSd$sampleNames,  setupSd$groups)
 
@@ -518,21 +578,22 @@ readProteomeDiscovererFile <- function(fileName, path=NULL, normalizeMeth="media
   delPat <- "_[[:digit:]]+$|\\ [[:digit:]]+$|\\-[[:digit:]]+$"             # remove enumerators, ie tailing numbers after separator
   rawExt <- "\\.raw$|\\.Raw$|\\.RAW$"     # paste(paste0("\\.",c("Raw","raw","RAW"),"$"), collapse="|")
   .corPathW <- function(x) gsub("\\\\", "/", x)
+  .adjPat <- function(x) { out <- match(x, unique(x)); names(out) <- names(x); out}  # needed ??
 
   extrSamNaSetup <- function(setS, meth) {
     ## extract (use-given) sampleNames out of setupSd$annotBySoft (colnames may depend on quant-method)
-    if(!any(c("PD","MQ","PL","FP") %in% meth, na.rm=TRUE)) meth <- "other"
+    if(!any(c("PD","MQ","PL","FP","IB") %in% meth, na.rm=TRUE)) meth <- "other"
     switch(meth, PD = NULL,
-      MQ = setupSd$annotBySoft$Experiment , PL = setupSd$annotBySoft$Experiment, FP = setupSd$annotBySoft$Experiment, other=NULL)}
+      MQ=setupSd$annotBySoft$Experiment , PL=setupSd$annotBySoft$Experiment, FP=setupSd$annotBySoft$Experiment, IB=NULL, other=NULL)}
 
-  defColNa <- function(colN, meth) {                             # check if colN may represent default colnames (ie not useful since wo any indication about samples)
+  defColNa <- function(colN, meth) {                     # check if colN may represent default colnames (ie not useful since wo any indication about samples)
     ## note MQ : requires setExperiment to be defined by user, set each sample as different for getting quant by sample !
     ## note FP : requires setExperiment to be defined by user (defining different bioreplictates sufficient for getting quant by sample)
-    if(!any(c("PD","MQ","PL","FP") %in% meth, na.rm=TRUE)) meth <- "other"
+    if(!any(c("PD","MQ","PL","FP","IB") %in% meth, na.rm=TRUE)) meth <- "other"
     switch(meth, PD = all(grepl("F[[:digit:]]+\\.Sample$", colN), na.rm=TRUE),
-      MQ = FALSE , PL = FALSE, FP = FALSE, other=FALSE)}
+      MQ=FALSE , PL=FALSE, FP=FALSE, IB=FALSE, other=FALSE)}
 
-  .extrColNames <- function(abun, meth, silent=FALSE, callFrom=NULL, debug=FALSE) {   ## get sampleNames  from colnames of abund & clean
+  .extrColNames <- function(abun, meth, silent=FALSE, callFrom=NULL, debug=FALSE) {   ## get sampleNames  from file-names/colnames of abund & clean
     fxNa <- wrMisc::.composeCallName(callFrom, newNa=".extrColNames")
       # abun=abund; meth=quantMeth
     grou <- grou2 <- NULL
@@ -554,8 +615,9 @@ readProteomeDiscovererFile <- function(fileName, path=NULL, normalizeMeth="media
       if(any(c("FP") %in% meth)) colNa <- sub("MaxLFQ Intensity$|Intensity$","", colNa)
       if(any(c("MQ") %in% meth)) colNa <- sub("^LFQ Intensity","", colNa)
       if("PL" %in% meth) colNa <- sub("^abundance|^Abundance","", colNa)
-      colNa <- sub(" +$|\\.+$|_+$|\\-+$","", colNa)         # remove tailing separators (' ','.','_','-')
-      colNa <- sub("^ +|^\\.+|^_+|^\\-+","", colNa)         # heading tailing separators
+      if(any(c("IB") %in% meth)) colNa <- sub("^Intensity_{0,1}","", colNa)
+      colNa <- gsub(" +$|\\.+$|_+$|\\-+$","", colNa)         # remove tailing separators (' ','.','_','-')
+      colNa <- gsub("^ +|^\\.+|^_+|^\\-+","", colNa)         # heading tailing separators
       chDu <- duplicated(colNa)
       if(!silent && any(chDu)) message(fxNa,"NOTE : ",sum(chDu)," DUPLICATED colnames for abund !!   (eg  ",wrMisc::pasteC(utils::head(unique(colNa[which(chDu)]), 3))," )")
       if(debug) {message(fxNa,"eCN3"); eCN3 <- list()}
@@ -570,7 +632,7 @@ readProteomeDiscovererFile <- function(fileName, path=NULL, normalizeMeth="media
         colNa <- sub("\\.raw$|\\.RAW$","", colNa)
         sep <- c("_","\\-","\\.")
          #sub("\\.mzDB|\\.t\\.xml","",colNa)
-        rmTx <- paste0(c("Sample","Samp","Replicate","Rep"),"$")
+        rmTx <- paste0(c("Sample","Samp","Replicate","Repl","Rep"),"$")
         rmTx <- paste(paste0(rep(sep, each=length(rmTx)), rep(rmTx, length(sep))), collapse="|")
         grou2 <- sub(rmTx,"",sub(delPat,"", colNa))                               # remove tailing enumerators..
       }
@@ -579,113 +641,216 @@ readProteomeDiscovererFile <- function(fileName, path=NULL, normalizeMeth="media
     if(debug) {message(fxNa,"eCN4 done"); eCN4 <- list()}
     list(sampleNames=colNa, grou=grou2) }
 
-  ## finish groups of replicates & annotation setupSd
-  if(debug) { message(fxNa,"cSG0"); cSG0 <- list(gr=gr,abund=abund,sampleNames=sampleNames, setupSd=setupSd) }          # sampleNames=sampleNames
+  .replSingleWord <- function(ii, tx, se, replBy="") {   ## for single word in all tx; moove to wrMisc?
+    ## ii .. word to remove
+    ## tx .. ini char-vector
+    ## se .. possible separators                           
+    if(length(se) >1) se <- paste0("(",paste(se,collapse="|"),")")
+    i2 <- grepl(paste0("^",ii), tx)      # heading
+    out <- rep(NA, length(tx))
+    ## need to protect special characters in ii
+    ii <- wrMisc::protectSpecChar(ii)
+    if(any(i2)) out[which(i2)] <- sub(paste0("^",ii,se), replBy, tx[which(i2)])       # heading : remove with following sep (if avail)
+    if(any(!i2)) out[which(!i2)] <- sub(paste0("(",se,ii,")|(^",ii,")"), replBy, tx[which(!i2)])   # not heading (may be heding now..): remove preceeding sep
+    out }
 
-  ## grou2 ... colnames modified to pattern ; grou .. pattern as index, + names (level names)
-
-  colNa <- grou <- grou2 <- NULL
-  iniSaNa <- iniGr <- FALSE
-  ## if valid user-defied sampleNames is given => use
-  if(length(sampleNames) != ncol(abund)) {
-    if(debug && length(sampleNames) >0) message(fxNa,"Invalid entry of 'sampleNames' (length= ",length(sampleNames),"  but  ",ncol(abund)," expected)  ...ignoring")
-    sampleNames <- NULL
-  } else { iniSaNa <- TRUE
-    setupSd$sampleNames <- sampleNames }
-  if(debug) {message(fxNa,"cSG1"); cSG1 <- list()}
-
-  ## if valid user-defied grouping is given => use
-  if(length(gr) != ncol(abund)) {
-    if(debug && length(gr) >0) message(fxNa,"Invalid entry of 'gr' (length= ",length(gr),"  but  ",ncol(abund)," expected)  ...ignoring")
-    gr <- NULL
-  } else {
-    ## check if setupSd has 'prioritized' grouping
-    if("groups" %in% names(setupSd)) {
-      setupSd$level <- setupSd$groups
-    } else {
-      iniGr <- TRUE
-      setupSd$level <- match(gr, unique(gr))
-      setupSd$groups <- names(setupSd$level) <- gr } }
-  if(debug) {message(fxNa,"cSG2"); cSG2 <- list()}
-
-  defaultColNa <- defColNa(colN=colnames(abund), meth=quantMeth)
-  saNa <- .extrColNames(abund, meth=quantMeth, silent=silent,callFrom=fxNa,debug=debug)      # sampleNames  from colnames of abund & clean
-  if(debug) {message(fxNa,"cSG3"); cSG3 <- list(sampleNames=sampleNames,gr=gr,abund=abund,iniSaNa=iniSaNa,iniGr=iniGr,setupSd=setupSd,defaultColNa=defaultColNa,saNa=saNa)}
-
-  ## sampleNames/colnames : use orig colnames if avail  (priority to colnames)
-  #colNa <- if(defaultColNa) NULL else sub(rawExt,"", colnames(abund))  # redundant to saNa$sampleNames
-
-  if(length(setupSd$level) ==ncol(abund)) gr <- setupSd$lev <- setupSd$level else {
-    if(length(setupSd$groups) ==ncol(abund)) gr <- setupSd$lev <- setupSd$groups }
-  if(debug) { message(fxNa,"cSG3b"); cSG3b <- list()}
-
-  #if("lev" %in% names(setupSd)) {
-  if(length(setupSd$lev) ==ncol(abund)) {
-    ## thus, we do have setupSd
-    ## sampleNames/colnames : use orig colnames if avail  (priority to colnames)
-    if(!iniSaNa && !defaultColNa && length(saNa$sampleNames) ==ncol(abund)) sampleNames <- saNa$sampleNames
-    if(!iniSaNa && length(setupSd$sampleNames) ==ncol(abund)) sampleNames <- setupSd$sampleNames           # setupSd$sampleNames has prioroty (if defined)
-      ## compare grouping of orig colnames to sdrf ?
-
-    if(length(sampleNames) !=ncol(abund)) {
-      ## get sampleNames from setupSd (as far as possible)
-      saNa2 <- extrSamNaSetup(setupSd, quantMeth)           # from setupSd$annotBySoft (by quant method)
-      sampleNames <- if(length(saNa2) ==ncol(abund)) saNa2 else if(length(setupSd$sdrfDat$comment.data.file.)==ncol(abund)) sub(rawExt,"", setupSd$sdrfDat$comment.data.file.)
+ .trimRedWord <- function(txt, sep=c(" ","_","-","/"), minLe=3, strict=TRUE, silent=TRUE, callFrom=NULL, debug=FALSE) {
+    ## moove to wrMisc?
+    ## function to trim redundant words (@separator) similar to wrMisc::trimRedundText()
+    ## strict .. (logical) requires separator to occur in each single character-string to be considered
+    ## minLe .. min length for words to be considered (otherwise frequently problem with '1')
+    ##
+    datOK <- length(txt) >0
+    if(datOK) { chNA <- is.na(txt)
+      if(all(chNA)) datOK <- FALSE else tx1 <- txt[which(!chNA)] 
+    }     
+    if(datOK) {
+      #strict=TRUE
+      chSe <- sapply(sep, function(x) nchar(tx1) > nchar(gsub(x,"",tx1)))
+      chS2 <- if(strict) colSums(chSe) ==length(tx1) else colSums(chSe) >0       # if strict require at least instace of 'sep' in each element      
+      if(debug) {message(fxNa,"tRW1"); tRW1 <- list(txt=txt,sep=sep,chSe=chSe,chS2=chS2,strit=strict,tx1=tx1)}
+      if(any(chS2)) sep <- sep[which(chS2)] else datOK <- FALSE           # reduce to sep found
     }
-    ## now for gr
-    if(length(gr) != ncol(abund)){
-      if(!iniSaNa && !defaultColNa && length(saNa$grou) ==ncol(abund)) gr <- saNa$grou
-      if(!iniSaNa && length(setupSd$groups) ==ncol(abund)) gr <- setupSd$groups           # setupSd$groups has prioroty (if defined)
+    if(datOK) {
+      allW <- unique(unlist(strsplit(tx1, paste(sep, collapse="|")), use.names=FALSE))
+      ## keep only >2 char words
+      chLe <- nchar(allW) >= minLe
+      if(any(!chLe)) allW <- allW[which(chLe)]       
+      ## check all 'words' for recurring in each char-string
+      if(length(allW) >0) { 
+        chW <- colSums(sapply(allW, grepl, tx1)) ==length(tx1)
+        if(any(chW)) {          
+          rmWo <- names(chW[which(chW)])
+          #chLe <- nchar(rmWo) >0
+          if(debug) {message(fxNa,"tRW2"); tRW2 <- list(txt=txt,sep=sep,chS2=chS2,strit=strict,tx1=tx1,chW=chW,allW=allW,rmWo=rmWo,chLe=chLe)}
+          if(length(rmWo) >0) {
+            for(wo in rmWo) tx1 <- .replSingleWord(wo, tx1, sep) 
+            txt[which(!chNA)] <- tx1 
+          }
+          
+          if(any(chLe)) {
+            rmWo <- rmWo[which(chLe)]
+            for(wo in rmWo) tx1 <- .replSingleWord(wo, tx1, sep) 
+            txt[which(!chNA)] <- tx1 }
+      } }
     }
-    if(debug) {message(fxNa,"cSG4a"); cSG4a <- list()}
+    txt }
 
-  } else {
-    ## (no setupSd)
-    ## get sampleNames from abund (as far as possible)
-    if(iniSaNa && length(sampleNames) != ncol(abund)) {
-      if(defaultColNa) { if(length(gr)==ncol(abund)) sampleNames <- wrMisc::correctToUnique(gr)   # case of PD : use gr if suitable
-      } else sampleNames <- saNa$sampleNames                                                      # other use colnames of abund
-    }
-    ## now for gr  (no setupSd)
-    if(!iniGr) {
-      if(!defaultColNa) {         ## standard case (eg MQ)
-        ## guess gr from colnames
-        if(debug) message(fxNa,"Guess 'gr' from colnames,  ",quantMeth,"")
-        gr <- saNa$grou
-      } else {     ##  (PD:) no way to guess groups
-        if(!silent) message(fxNa,"Difficulty to identify groups of replicates (no setupSd) in case of absence of metadata by method ",quantMeth,"")
-      }
-    }
-    if(debug) {message(fxNa,"cSG4b"); cSG4b <- list()}
-  }
-  ## case of PD : check if  setupSd$annotBySoft$File.Name  usable
-  if(defaultColNa && length(sampleNames) != ncol(abund)) {
-    chOr <- NA                           # initialize
-    if(length(setupSd$annotBySoft$File.Name) ==ncol(abund)) chOr <- match(setupSd$annotBySoft$File.Name, setupSd$sdrfDat$comment.data.file.)
-    if(!any(is.na(chOr))) {
-      if(!all(chOr ==1:ncol(abund), na.rm=TRUE)) {
-        sampleNames <-  sub("\\.raw$|\\.RAW$","", setupSd$annotBySoft$File.Name)
-        ## try extracting pattern of replicates
-        colNa <- sub("\\.raw$|\\.RAW$","", basename(sub(rawExt,"", .corPathW(colnames(sampleNames)))))
-        sep <- c("_","\\-","\\.")
-        rmTx <- paste0(c("Sample","Samp","Replicate","Rep"),"$")
-        rmTx <- paste(paste0(rep(sep, each=length(rmTx)), rep(rmTx, length(sep))), collapse="|")
-        gr <- sub(rmTx,"", sub(delPat,"", colNa))                               # remove tailing enumerators..
-        if(debug) message(fxNa,"cSG4c   Method ",quantMeth," : Extracted ",length(unique(gr)), " groups of replicates based on meta-data")
-      }
-  } }
+  rmSharedWords <- function(x, sep=c("_"," ","."), anySep=TRUE, newSep=NULL, fixed=TRUE, minLe=2) {
+    ## function to trim redundant words (@separator) similar to wrMisc::trimRedundText()
+    ## remove common/repeated words as occuring in each instance of x; words are separarated by sep (ignoring NAs); separators must be consistent (no mixing of separators allowed)
+    ## special characters will be automatically protected, order does NOT matter, multiple repeats will be removed, too
+    ## note : anySep=TRUE will consider all separators at one time (), thus combinations with different separators won't be distinguished
+    ## note : heading separators will be removed in any case
+    ## move to wrMisc ??
+    #example#   x1 <- c("aa_A1 yy_zz.txt", NA, "B2 yy_aa_aa_zz.txt"); rmSharedWords(x1)
+    datOK <- length(x) >0 && length(sep) >0
+    if(datOK) {
+      chNA <- is.na(x)
+      x2 <- if(any(chNA)) x[-which(chNA)] else x
+      redSep <- which(colSums(sapply(wrMisc::protectSpecChar(sep), function(y) nchar(x2) > nchar(sub(y,"", x2))))==length(x2))
+    } else x2 <- x
+    if(datOK && length(redSep) >0) {
+      se2 <- sep[redSep]                                  # reduce to separators appearing in all cases
+      if(length(newSep) >1) newSep <- newSep[redSep]
+      if(isTRUE(anySep)) {    # combine all separators
+        iP <- paste(wrMisc::protectSpecChar(sep), collapse="|")
+        se2 <- paste(sep, collapse="|")
+        fixed <- FALSE
+      } else  { se2 <- sep
+        iP <- wrMisc::protectSpecChar(sep) }
+      for(i in 1:length(se2)) {
+        i2 <- iP[i]
+        chSep <- if(i==1) TRUE else all(nchar(x2) > nchar(sub(i2,"", x2)))            # check current separator 'se2' if occuring in each instance
+        if(chSep) {
+          spl <- strsplit(x2, split=if(isTRUE(fixed)) se2[i] else iP[i], fixed=fixed)        
+          rmW <- Reduce(intersect, spl)                              # get words common in all instances
+          if(length(rmW) >0) { 
+            nCh <- nchar(rmW)
+            chL <- nCh >= minLe | nCh ==0
+            if(any(chL)) {
+              spl <- lapply(spl, function(y) y[-which(y %in% unique(c(rmW[which(chL)], if(TRUE) "")))])       # remove repeated/common 'words'
+              newSe <- if(length(newSep) >0) {if(length(newSep) < length(sep)) rep(newSep,i)[i] else newSep[i]} else sep[1]
+              x2 <- sapply(spl, paste, collapse=newSe) } }                      # paste collapse
+        }
+      } }
+    if(datOK && any(chNA)) {out <- x; out[-which(chNA)] <- x2; out} else x2 }
+    
 
-  if(debug) {message(fxNa,"cSG5"); cSG5 <- list(sampleNames=sampleNames,gr=gr,abund=abund,iniSaNa=iniSaNa,iniGr=iniGr,setupSd=setupSd,defaultColNa=defaultColNa,saNa=saNa)}
-  if(length(sampleNames) != ncol(abund) && defaultColNa & !silent) message(fxNa,"Still UNABLE to find suitable colnames")
-  if(length(gr) != ncol(abund) && defaultColNa && debug) message(fxNa,"Still UNABLE to find suitable groups")
-  ## set result to object
   if(!is.list(setupSd)) { if(length(setupSd) >0) warning(fxNa,"BIZZARE format of 'setupSd', it's content will be lost")
     setupSd <- list()}
-  setupSd$sampleNames <- sampleNames
-  setupSd$groups <- gr
-  setupSd
+  ## finish groups of replicates & annotation setupSd
+  if(debug) { message(fxNa,"cSG0"); cSG0 <- list(gr=gr,abund=abund,sampleNames=sampleNames, setupSd=setupSd, quantMeth=quantMeth) }          # sampleNames=sampleNames
+
+  ## grX .. (new) pattern, setupSd$groups .. as index, + names (level names)
+
+  ## special case : fractionated samples : need to change assignment of sample-names here ???
+
+  colNa <- grou <- grou2 <- saNa <- grX <- NULL
+  iniSaNa <- iniGr <- FALSE
+  iniSetupSd <- length(setupSd) >0   # check if init 'setupSd' given
+
+  ## OPTIONS : 
+  ## 1) use custom -values (if avail)
+  ## 2) extract from 'setupSd' (if avail)
+  ## 3) from prev mined from setupSd (groups & levels, not for sampleNames)
+  ## 4) pick/mine from colnames of 'abund'
+
+  ## sampleNames/colnames  : if valid user-defied sampleNames is given => use
+  if(length(sampleNames) == ncol(abund)) {
+    ##  1) use externally given sampleName ...
+    iniSaNa <- TRUE
+    setupSd$sampleNames <- sampleNames 
+  } else {
+    if(length(sampleNames) ==1 && any(grepl("^sdrf\\.",sampleNames)) && "sdrfDat" %in% setupSd$sdrfDat) {
+      ## 2) arguments orients towards sdrf  => check for sdrf column to use
+      chSd <- colnames(setupSd$sdrfDat) %in% sub("^sdrf\\.", "", sampleNames)
+      if(any(chSd, na.rm=TRUE)) {                   ##  OK to use
+        iniSaNa <- TRUE
+        if(debug) message(fxNa,"Setting 'sampleNames' based on sdrf-column ")
+        setupSd$sampleNames <- setupSd$sdrfDat[,which(chSd)[1]] }
+    } else {
+      ## 4.0) from prev mined from setupSd (sampleNames)
+      ##   special case PD : check if  setupSd$annotBySoft$File.Name  usable
+      if("PD" %in% quantMeth && length(setupSd$annotBySoft$File.Name) ==ncol(abund)) {
+        chOr <- match(basename(setupSd$annotBySoft$File.Name), basename(setupSd$sdrfDat$comment.data.file.))
+        if(!any(is.na(chOr))) {
+          if(all(chOr ==1:ncol(abund), na.rm=TRUE)) {
+            setupSd$sampleNames <-  sub("\\.raw$|\\.RAW$","", setupSd$annotBySoft$File.Name)
+          }
+        }
+      } else {
+        ## 4.1)  default names based on colnames 
+        saNa <- .extrColNames(abund, meth=quantMeth, silent=silent,callFrom=fxNa,debug=debug)  
+        setupSd$sampleNames <- if(length(saNa$sampleNames) ==ncol(abund)) saNa$sampleNames else if(length(setupSd$sdrfDat$comment.data.file.)==ncol(abund)) sub(rawExt,"", setupSd$sdrfDat$comment.data.file.)
+    } }
+  }
+  if(debug) {message(fxNa,"cSG1"); cSG1 <- list(abund=abund,setupSd=setupSd,gr=gr)}
+
+  if(length(gr) == ncol(abund)) {  
+    ## 1) if valid user-defied grouping is given => use
+    iniGr <- TRUE
+    grX <- gr
+  } else {  
+    if(debug && length(gr) >1) message(fxNa,"Invalid entry of 'gr' (length= ",length(gr),"  but  ",ncol(abund)," expected)  ...ignoring")    
+    if(length(gr) <1  && "sdrfDat" %in% names(setupSd)) {   # && any(grepl("^sdrf\\.",gr))
+      ##  2) argument orients towards sdrf  => check for sdrf column to use
+      chSd <- colnames(setupSd$sdrfDat) %in% sub("^sdrf\\.", "", gr)
+      if(any(chSd, na.rm=TRUE)) { grX <- setupSd$sdrfDat[,which(chSd)[1]]
+        iniGr <- TRUE }
+    } else {
+      if(length(setupSd) >0) {
+        ## 3) use from setupSd -if avail 
+        if("PD" %in% quantMeth && length(setupSd$annotBySoft$File.Name) ==ncol(abund)) {
+          ##   special case PD : check if  setupSd$annotBySoft$File.Name  usable
+          colNa <- setupSd$sampleNames #basename(setupSd$annotBySoft$File.Name)  #sub("\\.raw$|\\.RAW$","", basename(sub(rawExt,"", .corPathW(colnames(sampleNames)))))
+          sep <- c("_","\\-","\\.")
+          rmTx <- paste0(c("Samples","Sample","Samp","Replicates","Replicate","Rep"),"$")
+          rmTx <- paste(paste0(rep(sep, each=length(rmTx)), rep(rmTx, length(sep))), collapse="|")
+          grX <- sub(rmTx,"", sub(delPat,"", setupSd$sampleNames))                               # remove tailing enumerators..
+          
+          
+          
+          if(debug) message(fxNa,"cSG1a   Method ",quantMeth," : Extracted ",length(unique(grX)), " groups of replicates based on meta-data")
+        } else grX <- setupSd$level
+      } else {
+        ## 4) use/mine colnames
+        if(length(saNa) <1) saNa <- .extrColNames(abund, meth=quantMeth, silent=silent,callFrom=fxNa,debug=debug)       # extrSamNaSetup(setupSd, quantMeth) 
+        if(length(saNa$grou) ==ncol(abund)) { grX <- saNa$grou
+        } else {
+          if(!silent) message(fxNa,"Having TROUBLE finding where sample-groups are defined !!")
+      } }
+    }
+  }
+  if(debug) {message(fxNa,"cSG2"); cSG2 <- list(sampleNames=sampleNames,gr=gr,grX=grX,abund=abund,iniSaNa=iniSaNa,iniGr=iniGr,setupSd=setupSd)}
+
+  ## sampleNames based on sdrf
+  if("sdrfDat" %in% names(setupSd)) { 
+    useSdrfCol <- "comment.data.file."
+    setupSd$sampleNaSdrf <- sub("(\\.RAW$)|(\\.Raw$)|(\\.raw$)", "", setupSd$sdrfDat[,useSdrfCol] )
+    setupSd$sampleNaSdrf <- rmSharedWords(setupSd$sampleNaSdrf)
   }
 
+  if(length(grX) >0) {
+    if(sum(duplicated(grX)) +1 ==ncol(abund) && ncol(abund) >1) {
+      if(!silent) message(fxNa,"NO clear distinction of groups found, all samples were put in single group/class")           
+    }
+    setupSd$level <- match(grX, unique(grX))       # make pattern
+    setupSd$groups <- names(setupSd$level) <- grX 
+  }  
+  if(debug) {message(fxNa,"cSG3"); cSG3 <- list()}
+
+  ## simplify terms ?
+  if(TRUE) {
+    #old#setupSd$sampleNames <- .trimRedWord(setupSd$sampleNames, sep=c(" ","_","-","/"), strict=TRUE, silent=silent, callFrom=fxNa, debug=debug)
+    setupSd$sampleNames <- rmSharedWords(setupSd$sampleNames, sep=c("_"," ","-","/"))
+    #old#setupSd$groups <-  names(setupSd$level) <- .trimRedWord(setupSd$groups, sep=c(" ","_","-","/"), strict=TRUE, silent=silent, callFrom=fxNa, debug=debug)
+    setupSd$groups <-  names(setupSd$level) <- rmSharedWords(setupSd$groups, sep=c("_"," ","-","/"))
+  }
+  if(debug) {message(fxNa,"cSG4"); cSG4 <- list()}
+  ## set result to object
+  setupSd
+  }
 
 
 
