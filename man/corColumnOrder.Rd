@@ -2,12 +2,12 @@
 % Please edit documentation in R/corColumnOrder.R
 \name{corColumnOrder}
 \alias{corColumnOrder}
-\title{Order Columns In List Of Matrixes And Vectors}
+\title{Order Columns In List Of Matrixes, Data.frames And Vectors}
 \usage{
 corColumnOrder(
   dat,
-  replNames = NULL,
   sampNames,
+  replNames = NULL,
   useListElem = c("quant", "raw", "counts"),
   annotElem = "sampleSetup",
   newNames = NULL,
@@ -19,28 +19,28 @@ corColumnOrder(
 \arguments{
 \item{dat}{(matrix, list or MArrayLM-object from limma) main input of which columns should get re-ordered, may be output from \code{moderTestXgrp} or \code{moderTest2grp}.}
 
-\item{replNames}{(character) new column-names (in order as input from \code{dat}), allows renaming colnames before defining new order}
+\item{sampNames}{(character) column-names in desired order for output (its content must match colnames of \code{dat} or \code{replNames}, if used)}
 
-\item{sampNames}{(character) column-names in desired order for output (must match colnames of \code{dat} or \code{replNames}, if used)}
+\item{replNames}{(character) option for replacing column-names by new/different colnames; should be vector of NEW column-names (in order as input from \code{dat} !), allows renaming colnames before defining new order}
 
 \item{useListElem}{(character) in case \code{dat} is list, all list-elements who's columns should get (re-)ordered}
 
 \item{annotElem}{(character) name of list-element of \code{dat} with annotation data to get in new order}
 
-\item{newNames}{depreciated, plese use \code{replNames} instead}
+\item{newNames}{depreciated, pleqse use \code{replNames} instead}
 
 \item{silent}{(logical) suppress messages}
 
 \item{debug}{(logical) display additional messages for debugging}
 
-\item{callFrom}{(character) allow easier tracking of messages produced}
+\item{callFrom}{(character) allows easier tracking of messages produced}
 }
 \value{
 This function returns an object of same class as input \code{dat}  (ie matrix, list or MArrayLM-object from limma)
 }
 \description{
-This function orders columns in list of matrixes (or matrix) according to argument \code{sampNames}.
-It can be used to adjust/correct the order of samples after reading data using \code{readMaxQuantFile()}, \code{readProteomeDiscovererFile()} etc.
+This function orders columns in list of matrixes (or matrix) according to argument \code{sampNames} and also offers an option for changing names of columns.
+It was (initially) designed to adjust/correct the order of samples after import using \code{readMaxQuantFile()}, \code{readProteomeDiscovererFile()} etc.
 The input may also be MArrayLM-type object from package \href{https://bioconductor.org/packages/release/bioc/html/limma.html}{limma} or 
 from functions \code{moderTestXgrp} or \code{moderTest2grp}.
 }
@@ -52,6 +52,7 @@ corColumnOrder(dat1, sampNames=LETTERS[1:5])
 dat2 <- list(quant=dat1, raw=dat1)
 dat2
 corColumnOrder(dat2, sampNames=LETTERS[1:5])
+corColumnOrder(dat2, sampNames=LETTERS[1:5], replNames=c("Dd","Aa","Cc","Ee","Bb"))
 }
 \seealso{
 \code{\link{readMaxQuantFile}}, \code{\link{readProteomeDiscovererFile}}; \code{\link[wrMisc]{moderTestXgrp}} or \code{\link[wrMisc]{moderTest2grp}}

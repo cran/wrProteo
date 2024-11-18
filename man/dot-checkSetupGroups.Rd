@@ -2,7 +2,7 @@
 % Please edit documentation in R/readProteomeDiscovererFile.R
 \name{.checkSetupGroups}
 \alias{.checkSetupGroups}
-\title{Additional/final chek and adjustments to sample-order after readSampleMetaData()}
+\title{Additional/final Check And Adjustments To Sample-order After readSampleMetaData()}
 \usage{
 .checkSetupGroups(
   abund,

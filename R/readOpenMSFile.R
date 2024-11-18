@@ -197,7 +197,8 @@ readOpenMSFile <- function(fileName=NULL, path=NULL, normalizeMeth="median", ref
     }
     on.exit(graphics::par(opar)) }   #
   ## meta-data
-  notes <- c(inpFile=paFi, qmethod="OpenMS", qMethVersion=if(length(infoDat) >0) unique(infoDat$Software.Revision) else NA, normalizeMeth=normalizeMeth, pepSumMeth=sumMeth, nIniPep=nPep,
+  notes <- c(inpFile=paFi, qmethod="OpenMS", qMethVersion=if(length(infoDat) >0) unique(infoDat$Software.Revision) else NA, 
+    identType="protein", normalizeMeth=normalizeMeth, pepSumMeth=sumMeth, nIniPep=nPep,
     call=deparse(match.call()), created=as.character(Sys.time()), wrProteo.version=paste(utils::packageVersion("wrProteo"), collapse="."), machine=Sys.info()["nodename"])
   ## final output
   if(separateAnnot) list(raw=abund[,,1], quant=quant, annot=annot, counts=abund[,,2], expSetup=expSetup, notes=notes) else data.frame(quant,annot)  

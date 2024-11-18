@@ -41,7 +41,7 @@ readFasta2 <- function(filename, delim="|", databaseSign=c("sp","tr","generic","
   deli2 <- if(nchar(delim==1)) paste0("\\",delim) else paste(paste0("\\",unlist(strsplit(delim,""))),collapse="") #"
   ## initial test reading
   if(!file.exists(filename)) stop(" file ",filename," not existing")
-  sca <- try(readLines(filename), silent=TRUE)
+  sca <- try(suppressWarnings(readLines(filename)), silent=TRUE)
   ## faster reading of file ? see https://www.r-bloggers.com/2011/08/faster-files-in-r/
   if(inherits(sca, "try-error")) stop(fxNa,"File ",filename," exits but could not read !")
   if(debug) {message(fxNa,"Successfully read file '",filename,"'")}
@@ -121,7 +121,7 @@ readFasta2 <- function(filename, delim="|", databaseSign=c("sp","tr","generic","
   entryName <- sub("^ ","", sub("\\.$","",entryName))          # remove heading space or tailing point
   seqs <- apply(useLi, 1, function(x) paste(sca[x[1]:x[2]], collapse=""))
 
-  if(debug) {message(fxNa," rf5")}
+  if(debug) {message(fxNa," rf5b")}
 
   if(any(c("duplicate","duplicated") %in% tolower(removeEntries), na.rm=TRUE) ) {
     chDup <- duplicated(seqs, fromLast=FALSE) & duplicated(entryName, fromLast=FALSE)
@@ -132,27 +132,33 @@ readFasta2 <- function(filename, delim="|", databaseSign=c("sp","tr","generic","
   } }
 
   if(debug) {message(fxNa," len seqs ",length(seqs),"  rf6");
-     rf6 <- list(out=out,chLe=chLe,newLi=newLi,entryName=entryName,id=id,filename=filename,delim=delim,databaseSign=databaseSign,removeEntries=removeEntries,tableOut=tableOut,UniprSep=UniprSep) }
+     rf6 <- list(out=out,chLe=chLe,newLi=newLi,entryName=entryName,id=id,filename=filename,delim=delim,databaseSign=databaseSign,removeEntries=removeEntries,tableOut=tableOut,UniprSep=UniprSep,strictSpecPattern=strictSpecPattern,seqs=seqs) }
+  ## Uniil here 'entryName' is entire annot wo 1st block   
 
 
   if(isTRUE(tableOut)) {           # further separating name/description field
     ## Uniprot headers : https://www.uniprot.org/help/fasta-headers
     ## >db|uniqueIdentifier|entryName proteinName OS=OrganismName OX=OrganismIdentifier [GN=GeneName] PE=ProteinExistence SV=SequenceVersion
-    UniprSep <- sub("^ ","",sub(" $","",UniprSep))                              # remove heading or tailing space
+    UniprSep <- sub("^ ","",sub(" $","", UniprSep))                              # remove heading or tailing space
     out <- matrix(NA, nrow=length(id0), ncol=length(UniprSep) +5,
       dimnames=list(NULL,c("database","uniqueIdentifier","entryName","proteinName","sequence",sub("=$","",sub("^ +","",UniprSep)) )))
-    if(debug) {message(fxNa," rf7"); rf7 <- list(out=out,chLe=chLe,newLi=newLi,entryName=entryName,id=id,filename=filename,delim=delim,databaseSign=databaseSign,removeEntries=removeEntries,tableOut=tableOut,UniprSep=UniprSep,dbSig=dbSig)}
+    if(debug) {message(fxNa," rf7"); rf7 <- list(out=out,chLe=chLe,newLi=newLi,entryName=entryName,id=id,filename=filename,delim=delim,databaseSign=databaseSign,removeEntries=removeEntries, strictSpecPattern=strictSpecPattern,tableOut=tableOut,UniprSep=UniprSep,dbSig=dbSig,seqs=seqs)}
 
     ## suplID (if available)
     ## check if 1st word of entryName looks like ID
-    entryNameS <- sub(" [[:upper:]].+","", entryName)
-    paEN <- if(is.character(strictSpecPattern) && length(strictSpecPattern) > 0) strictSpecPattern else {
-      if(isTRUE(strictSpecPattern)) "^[[:upper:]]+[[:digit:]]([[:upper:]]|[[:digit:]])*_[[:upper:]]+$" else "^[[:upper:]]+[[:digit:]]([[:upper:]]|[[:digit:]])*(_[[:upper:]]+){0,1}$"}
+    entryNameS <- sub(" [[:upper:]].+","", entryName)     # first block before space+Upper  => should become 'entryName'
+    ## define pattern how 'entryName' should look like
+    paEN <- if(is.character(strictSpecPattern) && length(strictSpecPattern) ==1) strictSpecPattern else {
+      if(isTRUE(strictSpecPattern)) "^([[:upper:]]+[[:digit:]]*)([[:upper:]]+[[:digit:]]*){0,1}(_[[:upper:]]+[[:digit:]]*){0,3}$" else 
+                                    "^[[:upper:]]+[[:digit:]]([[:upper:]]|[[:digit:]])*(_[[:upper:]]+){0,1}"}
     chEn <- grepl(paEN, entryNameS)
+    
+    ## 20sep24 problem : nothing remains !
+    
     if(any(!chEn)) entryNameS[which(!chEn)] <- ""
-    if(any(chEn)) entryName[which(chEn)] <- substring(entryName[which(chEn)], nchar(entryNameS[which(chEn)])+2)     # shorten entryName since UniqueIdentifier was split off
+    if(any(chEn)) entryName[which(chEn)] <- substring(entryName[which(chEn)], nchar(entryNameS[which(chEn)]) +2)     # shorten entryName since UniqueIdentifier was split off
     out[,c("database","uniqueIdentifier","entryName","proteinName","sequence")] <- cbind(dbSig, id, entryNameS, entryName, seqs)
-    if(debug) {message(fxNa," rf8"); rf8 <- list(out=out,chLe=chLe,newLi=newLi,entryName=entryName,entryNameS=entryNameS,id=id,filename=filename,delim=delim,databaseSign=databaseSign,removeEntries=removeEntries,tableOut=tableOut,UniprSep=UniprSep)}
+    if(debug) {message(fxNa," rf8"); rf8 <- list(out=out,chLe=chLe,newLi=newLi,entryName=entryName,entryNameS=entryNameS,id=id,filename=filename,delim=delim,databaseSign=databaseSign,removeEntries=removeEntries,tableOut=tableOut,UniprSep=UniprSep,seqs=seqs)}
 
     ## extract part after current uniprSep and the before something looking like next uniprSep
     grUni <- lapply(UniprSep, grep, entryName)                   # which entires/lines concerned
@@ -164,6 +170,7 @@ readFasta2 <- function(filename, delim="|", databaseSign=c("sp","tr","generic","
       out[grUni[[i]], sub("=$","",UniprSep[i]) ] <- sub(aftS,"", sub(curS,"", entryName[grUni[[i]]]))           # c(3,5+i)
       out[grUni[[i]], "proteinName"] <- sub(paste0(" ",UniprSep[i],".*"),"", out[grUni[[i]], "proteinName"])                   # trim current & all behind
     }
+    if(debug) {message(fxNa," rf9"); rf9 <- list(out=out,chLe=chLe,newLi=newLi,entryName=entryName,entryNameS=entryNameS,id=id,filename=filename,delim=delim,databaseSign=databaseSign,removeEntries=removeEntries,tableOut=tableOut,UniprSep=UniprSep)}
     ## propagate NONAME to empty proteinName
     ch1 <- grepl("NONAME", out[,2]) & nchar(out[,"proteinName"]) <1
     if(any(ch1, na.rm=TRUE)) out[which(ch1),"proteinName"] <- out[which(ch1),2]
@@ -172,5 +179,6 @@ readFasta2 <- function(filename, delim="|", databaseSign=c("sp","tr","generic","
     chNA <- colSums(!is.na(out)) <1
     if(any(chNA) && isTRUE(cleanCols)) out <- if(sum(!chNA) >1) out[,which(!chNA)] else matrix(out[,which(!chNA)], ncol=1, dimnames=list(NULL,colnames(out)[which(!chNA)])) # remove columns with NA only
   } else {out <- seqs; names(out) <- paste(id, entryName)}
+  if(debug) {message(fxNa,"finish with dim out ",nrow(out)," x ",ncol(out),"   rf9b")}
   out }
   

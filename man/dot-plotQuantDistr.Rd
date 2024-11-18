@@ -2,7 +2,7 @@
 % Please edit documentation in R/readProteomeDiscovererFile.R
 \name{.plotQuantDistr}
 \alias{.plotQuantDistr}
-\title{Generic plotting of density distribution for quantitation import-functions}
+\title{Generic Plotting Of Density Distribution For Quantitation Import-functions}
 \usage{
 .plotQuantDistr(
   abund,

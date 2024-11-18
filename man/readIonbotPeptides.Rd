@@ -9,7 +9,6 @@ readIonbotPeptides(
   path = NULL,
   normalizeMeth = "median",
   sampleNames = NULL,
-  suplAnnotFile = TRUE,
   gr = NULL,
   sdrf = NULL,
   read0asNA = TRUE,
@@ -20,7 +19,8 @@ readIonbotPeptides(
   separateAnnot = TRUE,
   FDRCol = list(c("^Protein.FDR.Confidence", "High"), c("^Found.in.Sample.", "High")),
   plotGraph = TRUE,
-  chUnit = TRUE,
+  suplAnnotFile = TRUE,
+  groupPref = list(lowNumberOfGroups = TRUE, chUnit = TRUE),
   titGraph = "Ionbot",
   wex = 1.6,
   specPref = c(conta = "CON_|LYSC_CHICK", mainSpecies = "OS=Homo sapiens"),
@@ -37,10 +37,6 @@ readIonbotPeptides(
 \item{normalizeMeth}{(character) normalization method, defaults to \code{median}, for more details see \code{/link[wrMisc]{normalizeThis}}}
 
 \item{sampleNames}{(character) new column-names for quantification data (ProteomeDiscoverer does not automatically use file-names from spectra); this argument has priority over \code{suplAnnotFile}}
-
-\item{suplAnnotFile}{(logical or character) optional reading of supplemental files produced by ProteomeDiscoverer; however, if \code{gr} is provided, \code{gr} gets priority for grouping of replicates;
-if \code{TRUE} defaults to file '*InputFiles.txt' (needed to match information of \code{sdrf}) which can be exported next to main quantitation results;
-if \code{character} the respective file-name (relative or absolute path)}
 
 \item{gr}{(character or factor) custom defined pattern of replicate association, will override final grouping of replicates from \code{sdrf} and/or \code{suplAnnotFile} (if provided)}
 
@@ -68,7 +64,13 @@ If a column named \code{contamCol} is found, the data will be lateron filtered t
 
 \item{plotGraph}{(logical or integer) optional plot of type vioplot of initial and normalized data (using \code{normalizeMeth}); if integer, it will be passed to \code{layout} when plotting}
 
-\item{chUnit}{(logical or character) will be passed to \code{readSampleMetaData()} for (optional) adjustig of unit-prefixes in meta-data group labels, in case multiple different unit-prefixes 
+\item{suplAnnotFile}{(logical or character) optional reading of supplemental files produced by ProteomeDiscoverer; however, if \code{gr} is provided, \code{gr} gets priority for grouping of replicates;
+if \code{TRUE} defaults to file '*InputFiles.txt' (needed to match information of \code{sdrf}) which can be exported next to main quantitation results;
+if \code{character} the respective file-name (relative or absolute path)}
+
+\item{groupPref}{(list) additional parameters for interpreting meta-data to identify structure of groups (replicates), will be passed to \code{readSampleMetaData}.
+May contain \code{lowNumberOfGroups=FALSE} for automatically choosing a rather elevated number of groups if possible (defaults to low number of groups, ie higher number of samples per group)
+May contain \code{chUnit} (logical or character) to be passed to \code{readSampleMetaData()} for (optional) adjustig of unit-prefixes in meta-data group labels, in case multiple different unit-prefixes 
 are used (eg '100pMol' and '1nMol').}
 
 \item{titGraph}{(character) depreciated custom title to plot, please use 'tit'}
@@ -83,32 +85,24 @@ if list and list-element has multiple values they will be used for exact matchin
 
 \item{debug}{(logical) additional messages for debugging}
 
-\item{callFrom}{(character) allow easier tracking of messages produced}
+\item{callFrom}{(character) allows easier tracking of messages produced}
 }
 \value{
 This function returns a list with \code{$raw} (initial/raw abundance values), \code{$quant} with final normalized quantitations, \code{$annot}, \code{$counts} an array with number of peptides, \code{$quantNotes}
   and \code{$notes}; or if \code{separateAnnot=FALSE} the function returns a data.frame with annotation and quantitation only
 }
 \description{
-Thins function allows importing initial petide identification and quantification results from Ionbot
+This function allows importing initial petide identification and quantification results from  \href{https://ionbot.cloud/about}{Ionbot} 
 which were exported as tabulated tsv can be imported and relevant information extracted.
 The final output is a list containing 3 main elements: \code{$annot}, \code{$raw} and optional \code{$quant}, or returns data.frame with entire content of file if \code{separateAnnot=FALSE}.
 }
 \details{
-The format of resulting files at export also depends which columns are chosen as visible inside ProteomeDiscoverer and subsequently get chosen for export.
 Using the argument \code{suplAnnotFile} it is possible to specify a specific file (or search for default file) to read for extracting file-names as sample-names 
 and other experiment realted information.
-
-If a column named \code{contamCol} is found, the data will be lateron filtered to remove all contaminants, set to \code{NULL} for keeping all contaminants
-
-
-Besides, full raw-file path will be extracted for $notes in final output.
 }
 \examples{
 path1 <- system.file("extdata", package="wrProteo")
 fiIonbot <- "tinyIonbotFile1.tsv.gz"
-#fiNa <- "C:\\E\\projects\\MassSpec\\smallProj\\2024\\ionbot_UPS1_9815\\Ionbot_Pept\\QuantifiedPeptides.tsv"
-
 datIobPep <- readIonbotPeptides(fiIonbot, path=path1) 
 
 }

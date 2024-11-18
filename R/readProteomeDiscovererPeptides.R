@@ -39,6 +39,10 @@
 #' @param specPref (character or list) define characteristic text for recognizing (main) groups of species (1st for comtaminants - will be marked as 'conta', 2nd for main species- marked as 'mainSpe',
 #'  and optional following ones for supplemental tags/species - maked as 'species2','species3',...);
 #'  if list and list-element has multiple values they will be used for exact matching of accessions (ie 2nd of argument \code{annotCol})
+#' @param groupPref (list) additional parameters for interpreting meta-data to identify structure of groups (replicates), will be passed to \code{readSampleMetaData}.
+#'   May contain \code{lowNumberOfGroups=FALSE} for automatically choosing a rather elevated number of groups if possible (defaults to low number of groups, ie higher number of samples per group)
+#'   May contain \code{chUnit} (logical or character) to be passed to \code{readSampleMetaData()} for (optional) adjustig of unit-prefixes in meta-data group labels, in case multiple different unit-prefixes 
+#'   are used (eg '100pMol' and '1nMol').
 #' @param plotGraph (logical or integer) optional plot of type vioplot of initial and normalized data (using \code{normalizeMeth}); if integer, it will be passed to \code{layout} when plotting
 #' @param silent (logical) suppress messages
 #' @param debug (logical) additional messages for debugging
@@ -52,7 +56,7 @@
 #' @export
 readProteomeDiscovererPeptides <- function(fileName, path=NULL, normalizeMeth="median", sampleNames=NULL, suplAnnotFile=TRUE, gr=NULL, sdrf=NULL, read0asNA=TRUE, quantCol="^Abundances*",
   annotCol=NULL, contamCol="Contaminant", refLi=NULL, separateAnnot=TRUE, FDRCol=list(c("^Protein.FDR.Confidence","High"), c("^Found.in.Sample.","High")), plotGraph=TRUE,
-  titGraph="Proteome Discoverer", wex=1.6, specPref=c(conta="CON_|LYSC_CHICK", mainSpecies="OS=Homo sapiens"), silent=FALSE, debug=FALSE, callFrom=NULL) {
+  titGraph="Proteome Discoverer", wex=1.6, specPref=c(conta="CON_|LYSC_CHICK", mainSpecies="OS=Homo sapiens"), groupPref=list(lowNumberOfGroups=TRUE, chUnit=TRUE), silent=FALSE, debug=FALSE, callFrom=NULL) {
   ## read ProteomeDiscoverer exported txt
   fxNa <- wrMisc::.composeCallName(callFrom, newNa="readProteomeDiscovererPeptides")
   oparMar <- if(plotGraph) graphics::par("mar") else NULL       # only if figure might be drawn
@@ -175,6 +179,12 @@ readProteomeDiscovererPeptides <- function(fileName, path=NULL, normalizeMeth="m
     annot <- cbind(annot, Charge=tmp[,usColCha])
   }
 
+  ## mine info to add 'EntryName' and 'Accession' 
+  if("Master.Protein.Accessions" %in% colnames(annot)) {
+    annot <- cbind(Accession=annot[,"Master.Protein.Accessions"], EntryName=NA, annot)
+    ## no info for 'EntryName' in orig file, need to import from fasta !!
+  }
+  if(debug) {message(fxNa,"Done extracting pep seq    rPDP4c"); rPDP4c <- list(fileName=fileName,path=path, paFi=paFi,normalizeMeth=normalizeMeth,sampleNames=sampleNames,suplAnnotFile=suplAnnotFile,read0asNA=read0asNA,quantCol=quantCol,seqCol=seqCol,pepSeq=pepSeq,annot=annot,annot1=annot1,specPref=specPref,cleanDescription=cleanDescription,tmp=tmp,seqCol=seqCol,maSeCo=maSeCo,modifSensible=modifSensible) }
 
   ## look for tags from  specPref & create col SpecType
   if(length(specPref) >0) {
@@ -182,13 +192,10 @@ readProteomeDiscovererPeptides <- function(fileName, path=NULL, normalizeMeth="m
     annot <- .extrSpecPref(specPref, annot, useColumn=c("Master.Protein.Accessions"), silent=silent, debug=debug, callFrom=fxNa)   # set annot[,"specPref"] according to specPref   # use ? "Fasta.headers"
   } else if(debug) message(fxNa,"Note: Argument 'specPref' not specifed (empty)")
   
-
-
-
   
   rm(annot1)
   if(debug) {message(fxNa,"rPDP4c .. Done extracting peptide annotation ")
-     rPDP4c <- list(fileName=fileName,path=path, paFi=paFi,normalizeMeth=normalizeMeth,sampleNames=sampleNames,suplAnnotFile=suplAnnotFile,read0asNA=read0asNA,quantCol=quantCol,cleanDescription=cleanDescription,tmp=tmp,seqCol=seqCol,pepSeq=pepSeq,annot=annot,maSeCo=maSeCo,modifSensible=modifSensible, pepSeq=pepSeq,hasMod=hasMod, annot=annot,quantCol=quantCol)}
+     rPDP4c <- list(fileName=fileName,path=path, paFi=paFi,normalizeMeth=normalizeMeth,sampleNames=sampleNames,suplAnnotFile=suplAnnotFile,read0asNA=read0asNA,quantCol=quantCol,cleanDescription=cleanDescription,tmp=tmp,seqCol=seqCol,pepSeq=pepSeq,annot=annot,specPref=specPref,maSeCo=maSeCo,modifSensible=modifSensible, pepSeq=pepSeq,hasMod=hasMod, annot=annot,quantCol=quantCol)}
 
   ## ABUNDANCE
     ## locate & extract abundance/quantitation data
@@ -285,7 +292,11 @@ readProteomeDiscovererPeptides <- function(fileName, path=NULL, normalizeMeth="m
 
     quant <- try(wrMisc::normalizeThis(log2(abund), method=normalizeMeth, mode="additive", refLines=refLi, silent=silent, debug=debug, callFrom=fxNa), silent=TRUE)
     if(debug) { message(fxNa,"rPDP9d .. dim quant: ", nrow(quant)," li and  ",ncol(quant)," cols; colnames : ",wrMisc::pasteC(colnames(quant))," "); 
-       rPDP9d <- list(annot=annot,tmp=tmp,abund=abund,quant=quant,sampleNames=sampleNames,specPref=specPref,annotCol=annotCol,contamCol=contamCol,infoDat=infoDat,refLi=refLi) } }
+       rPDP9d <- list(annot=annot,tmp=tmp,abund=abund,quant=quant,sampleNames=sampleNames,specPref=specPref,annotCol=annotCol,contamCol=contamCol,infoDat=infoDat,refLi=refLi) } 
+  
+    ## add rownames based on prot-name ? annot has only accession but no protein-names !!
+       
+  }
 
 
   ### GROUPING OF REPLICATES AND SAMPLE META-DATA
@@ -293,26 +304,34 @@ readProteomeDiscovererPeptides <- function(fileName, path=NULL, normalizeMeth="m
   if(length(suplAnnotFile) >0 || length(sdrf) >0) {
     if(length(sampleNames) %in% c(1, ncol(abund))) groupPref$sampleNames <- sampleNames
     if(length(gr) %in% c(1, ncol(abund))) groupPref$gr <- gr
-    setupSd <- readSampleMetaData(sdrf=sdrf, suplAnnotFile=suplAnnotFile, quantMeth="PD", path=path, abund=utils::head(abund), silent=silent, debug=debug, callFrom=fxNa)
-  }
+    setupSd <- readSampleMetaData(sdrf=sdrf, suplAnnotFile=suplAnnotFile, quantMeth="OD", path=path, abund=utils::head(quant), chUnit=isTRUE(groupPref$chUnit), groupPref=groupPref, silent=silent, debug=debug, callFrom=fxNa)
+}
 
     ## finish groups of replicates & annotation setupSd
     setupSd <- .checkSetupGroups(abund=abund, setupSd=setupSd, gr=gr, sampleNames=sampleNames, quantMeth="PD", silent=silent, debug=debug, callFrom=fxNa)
-    if(debug) {message(fxNa,"rPDP13b"); rPDP13b <- list()}
+    if(debug) {message(fxNa,"rPDP13b"); rPDP13b <- list(sdrf=sdrf,suplAnnotFile=suplAnnotFile,abund=abund, quant=quant,refLi=refLi,annot=annot,setupSd=setupSd,sampleNames=sampleNames)}
 
     ## harmonize sample-names/1
     colNa <- if(length(setupSd$sampleNames)==ncol(abund)) setupSd$sampleNames else setupSd$groups
 
+    ### NEW      
+    ## option : choose (re-)naming of levels & columns on most redundance
+    if(length(setupSd$sampleNames)==ncol(quant) && length(setupSd$sampleNaSdrf)==ncol(quant)) {
+      ## check if setupSd$sampleNaSdrf  or   setupSd$sampleNames contain better info (some info on replicates)
+      chRed1 <- sum(duplicated(sub("(_|\\.| )[[:digit:]]+.*","", setupSd$sampleNaSdrf)), na.rm=TRUE)
+      chRed2 <- sum(duplicated(sub("(_|\\.| )[[:digit:]]+.*","", setupSd$sampleNames)), na.rm=TRUE)
+      if(chRed2 < chRed1) {                                          # use info for levels depending on where more 
+        colNa <- colnames(abund) <- setupSd$sampleNames <- setupSd$sampleNaSdrf                     ## take sample names from sdrf via  setupSd$sampleNaSdrf
+      } else {
+        colNa <- colnames(abund) <- setupSd$sampleNames }          ## take sample names from sdrf via  setupSd$sampleNaSdrf
+    }    
     ## option : set order of samples as sdrf
     if("sdrfOrder" %in% names(sdrf) && isTRUE(as.logical(sdrf["sdrfOrder"])) && length(setupSd$iniSdrfOrder)==ncol(abund) && ncol(abund) >1) {  # set order according to sdrf (only if >1 samples)
       nOrd <- order(setupSd$iniSdrfOrder)
-      ## rename columns according to sdrf and set order of quant and abund ..
       abund <- abund[,nOrd]
       if(length(quant) >0) quant <- quant[,nOrd]
-      if(length(setupSd$sampleNames)==ncol(quant)) {
-        colNa <- colnames(abund) <- setupSd$sampleNames <- setupSd$sampleNaSdrf[nOrd]  #old# setupSd$sampleNames[nOrd]         ## take sample names from sdrf via  setupSd$sampleNaSdrf
-        if(length(quant) >0) colnames(quant) <- setupSd$sampleNaSdrf[nOrd]  #old# setupSd$sampleNames[nOrd]
-      } else colNa <- colnames(abund)
+      #setupSd$level <- setupSd$level[nOrd]
+      ## rename columns according to sdrf and set order of quant and abund ..
       ## now adapt order of setupSd, incl init Sdrf
       if(length(setupSd) >0) { 
         is2dim <- sapply(setupSd, function(x,le) length(dim(x))==2 && nrow(x)==le, le=length(nOrd))    # look for matr or df to change order of lines
@@ -323,6 +342,9 @@ readProteomeDiscovererPeptides <- function(fileName, path=NULL, normalizeMeth="m
 
       if(length(counts) >0 && length(dim(counts))==3) counts <- array(counts[,nOrd,], dim=c(nrow(counts), length(nOrd), dim(counts)[3]), 
         dimnames=list(rownames(counts), colnames(counts)[nOrd], dimnames(counts)[[3]]))
+      if(debug) {message(fxNa,"rMPD13c .."); rPDP13c <- list(path=path,chPa=chPa,tmp=tmp,groupPref=groupPref,quantCol=quantCol,abund=abund,chNum=chNum,
+        sdrf=sdrf,quant=quant,annot=annot,setupSd=setupSd)}
+        
       ## try re-adjusting levels
       tm1 <- sub("^[[:alpha:]]+( |_|-|\\.)+[[:alpha:]]+","", colnames(abund))  # remove heading text
       if(all(grepl("^[[:digit:]]", tm1))) {
@@ -332,7 +354,7 @@ readProteomeDiscovererPeptides <- function(fileName, path=NULL, normalizeMeth="m
           names(setupSd$level) <- tm1
           if(!silent) message(fxNa,"Sucessfully re-adjusted levels after bringing in order of Sdrf")}
       }     
-    } else {
+    } else {     # no sdrf-info
 
       ## harmonize sample-names/2
       colNa <- colnames(abund)
@@ -343,7 +365,7 @@ readProteomeDiscovererPeptides <- function(fileName, path=NULL, normalizeMeth="m
     }  
     if(length(setupSd$sampleNames)==ncol(abund)) setupSd$sampleNames <- colNa #no#else setupSd$groups <- colNa
     if(length(dim(counts)) >1 && length(counts) >0) colnames(counts) <- colNa
-
+    
     if(debug) {message(fxNa,"Read sample-meta data, rPDP14"); rPDP14 <- list(sdrf=sdrf,suplAnnotFile=suplAnnotFile,abund=abund, quant=quant,refLi=refLi,annot=annot,setupSd=setupSd,sampleNames=sampleNames)}
 
     ## main plotting of distribution of intensities
@@ -355,7 +377,7 @@ readProteomeDiscovererPeptides <- function(fileName, path=NULL, normalizeMeth="m
 
     ## meta-data
     notes <- c(inpFile=paFi, qmethod="ProteomeDiscoverer", qMethVersion=if(length(infoDat) >0) unique(infoDat$Software.Revision) else NA,
-    	rawFilePath= if(length(infoDat) >0) infoDat$File.Name[1] else NA, normalizeMeth=normalizeMeth, call=deparse(match.call()),
+    	identType="peptide", rawFilePath= if(length(infoDat) >0) infoDat$File.Name[1] else NA, normalizeMeth=normalizeMeth, call=deparse(match.call()),
       created=as.character(Sys.time()), wrProteo.version=utils::packageVersion("wrProteo"), machine=Sys.info()["nodename"])
 
     ## final output

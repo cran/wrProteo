@@ -23,6 +23,7 @@ readProteomeDiscovererPeptides(
   titGraph = "Proteome Discoverer",
   wex = 1.6,
   specPref = c(conta = "CON_|LYSC_CHICK", mainSpecies = "OS=Homo sapiens"),
+  groupPref = list(lowNumberOfGroups = TRUE, chUnit = TRUE),
   silent = FALSE,
   debug = FALSE,
   callFrom = NULL
@@ -71,6 +72,11 @@ If a column named \code{contamCol} is found, the data will be lateron filtered t
 \item{specPref}{(character or list) define characteristic text for recognizing (main) groups of species (1st for comtaminants - will be marked as 'conta', 2nd for main species- marked as 'mainSpe',
 and optional following ones for supplemental tags/species - maked as 'species2','species3',...);
 if list and list-element has multiple values they will be used for exact matching of accessions (ie 2nd of argument \code{annotCol})}
+
+\item{groupPref}{(list) additional parameters for interpreting meta-data to identify structure of groups (replicates), will be passed to \code{readSampleMetaData}.
+May contain \code{lowNumberOfGroups=FALSE} for automatically choosing a rather elevated number of groups if possible (defaults to low number of groups, ie higher number of samples per group)
+May contain \code{chUnit} (logical or character) to be passed to \code{readSampleMetaData()} for (optional) adjustig of unit-prefixes in meta-data group labels, in case multiple different unit-prefixes 
+are used (eg '100pMol' and '1nMol').}
 
 \item{silent}{(logical) suppress messages}
 

@@ -44,6 +44,8 @@
 #'  if \code{character} the respective file-name (relative or absolute path)
 #' @param groupPref (list) additional parameters for interpreting meta-data to identify structure of groups (replicates), will be passed to \code{readSampleMetaData}.
 #'   May contain \code{lowNumberOfGroups=FALSE} for automatically choosing a rather elevated number of groups if possible (defaults to low number of groups, ie higher number of samples per group)
+#'   May contain \code{chUnit} (logical or character) to be passed to \code{readSampleMetaData()} for (optional) adjustig of unit-prefixes in meta-data group labels, in case multiple different unit-prefixes 
+#'   are used (eg '100pMol' and '1nMol').
 #' @param silent (logical) suppress messages
 #' @param callFrom (character) allow easier tracking of messages produced
 #' @param debug (logical) display additional messages for debugging
@@ -58,7 +60,8 @@
 readProlineFile <- function(fileName, path=NULL, normalizeMeth="median", logConvert=TRUE, sampleNames=NULL, quantCol="^abundance_",
   annotCol=c("accession","description","is_validated","protein_set_score","X.peptides","X.specific_peptides"), remStrainNo=TRUE,
   pepCountCol=c("^psm_count_","^peptides_count_"), trimColnames=FALSE, refLi=NULL, separateAnnot=TRUE, plotGraph=TRUE, titGraph=NULL,
-  wex=2, specPref=c(conta="_conta\\|", mainSpecies="OS=Homo sapiens"), gr=NULL, sdrf=NULL, suplAnnotFile=TRUE, groupPref=list(lowNumberOfGroups=TRUE), silent=FALSE, callFrom=NULL, debug=FALSE) {
+  wex=2, specPref=c(conta="_conta\\|", mainSpecies="OS=Homo sapiens"), gr=NULL, sdrf=NULL, suplAnnotFile=TRUE, 
+  groupPref=list(lowNumberOfGroups=TRUE, chUnit=TRUE), silent=FALSE, callFrom=NULL, debug=FALSE) {
   ## 'quantCol', 'annotCol' (character) exact col-names or if length=1 pattern to search among col-names for $quant or $annot
   fxNa <- wrMisc::.composeCallName(callFrom, newNa="readProlineFile")
   oparMar <- if(plotGraph) graphics::par("mar") else NULL       # only if figure might be drawn
@@ -316,7 +319,7 @@ readProlineFile <- function(fileName, path=NULL, normalizeMeth="median", logConv
       if(length(gr) %in% c(1, ncol(abund))) groupPref$gr <- gr
       if("sampleNames" %in% names(specPref)) groupPref$sampleNames <- specPref$sampleNames
       
-      setupSd <- readSampleMetaData(sdrf=sdrf, suplAnnotFile=suplAnnotFile, quantMeth="PL", path=path, abund=utils::head(quant), groupPref=groupPref, silent=silent, debug=debug, callFrom=fxNa)
+      setupSd <- readSampleMetaData(sdrf=sdrf, suplAnnotFile=suplAnnotFile, quantMeth="PL", path=path, abund=utils::head(quant), chUnit=isTRUE(groupPref$chUnit), groupPref=groupPref, silent=silent, debug=debug, callFrom=fxNa)
     }
     if(debug) {message(fxNa,"rpf16d .."); rpf16d <- list(sdrf=sdrf,gr=gr,suplAnnotFile=suplAnnotFile, quant=quant,refLi=refLi,annot=annot,setupSd=setupSd,sampleNames=sampleNames)}
 
@@ -380,7 +383,8 @@ readProlineFile <- function(fileName, path=NULL, normalizeMeth="median", logConv
 
 
     ## meta-data to export
-    notes <- c(inpFile=paFi, qmethod="Proline", qMethVersion=if(length(infoDat) >0) unique(infoDat$Software.Revision) else NA, normalizeMeth="none", call=deparse(match.call()),
+    notes <- c(inpFile=paFi, qmethod="Proline", qMethVersion=if(length(infoDat) >0) unique(infoDat$Software.Revision) else NA, 
+      identType="protein", normalizeMeth="none", call=deparse(match.call()),
       created=as.character(Sys.time()), wrProteo.version=paste(utils::packageVersion("wrProteo"), collapse="."), machine=Sys.info()["nodename"])
     ##
     if(separateAnnot) {

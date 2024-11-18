@@ -40,30 +40,34 @@ if(length(pxd001819meta) >0) {
   UPSconc <- c(50, 125, 250, 500, 2500, 5000, 12500, 25000, 50000)       # in case access to github failed
 }
 
-## ----functions1, echo=TRUE----------------------------------------------------
+## ----metaData2, echo=TRUE-----------------------------------------------------
 ## A few elements and functions we'll need lateron
 methNa <- c("ProteomeDiscoverer","MaxQuant","Proline")
 names(methNa) <- c("PD","MQ","PL")
 
+## ----metaData3, echo=TRUE-----------------------------------------------------
 ## The accession numbers for the UPS1 proteins
-UPS1 <- data.frame(ac=c("P00915", "P00918", "P01031", "P69905", "P68871", "P41159", "P02768", "P62988",
-  "P04040", "P00167", "P01133", "P02144", "P15559", "P62937", "Q06830", "P63165",
-  "P00709", "P06732", "P12081", "P61626", "Q15843", "P02753", "P16083", "P63279",
-  "P01008", "P61769", "P55957", "O76070", "P08263", "P01344", "P01127", "P10599",
-  "P99999", "P06396", "P09211", "P01112", "P01579", "P02787", "O00762", "P51965",
-  "P08758", "P02741", "P05413", "P10145", "P02788", "P10636-8", "P00441", "P01375"),
-  species=rep("Homo sapiens", 48),
-  name=NA)
+UPS1 <- getUPS1acc(updated=FALSE)
+  
+#UPS1 <- data.frame(ac=c("P00915", "P00918", "P01031", "P69905", "P68871", "P41159", "P02768", "P62988",
+#  "P04040", "P00167", "P01133", "P02144", "P15559", "P62937", "Q06830", "P63165",
+#  "P00709", "P06732", "P12081", "P61626", "Q15843", "P02753", "P16083", "P63279",
+#  "P01008", "P61769", "P55957", "O76070", "P08263", "P01344", "P01127", "P10599",
+#  "P99999", "P06396", "P09211", "P01112", "P01579", "P02787", "O00762", "P51965",
+#  "P08758", "P02741", "P05413", "P10145", "P02788", "P10636-8", "P00441", "P01375"),
+#  species=rep("Homo sapiens", 48),
+#  name=NA)
 
 ## ----functions2, echo=TRUE----------------------------------------------------
 ## additional functions
 replSpecType <- function(x, annCol="SpecType", replBy=cbind(old=c("mainSpe","species2"), new=c("Yeast","UPS1")), silent=TRUE) {
   ## rename $annot[,"SpecType"] to more specific names
+  fxNa <- "replSpecType"
   chCol <- annCol[1] %in% colnames(x$annot)
   if(chCol) { chCol <- which(colnames(x$annot)==annCol[1])
     chIt <- replBy[,1] %in% unique(x$annot[,chCol])    # check items to replace if present
     if(any(chIt)) for(i in which(chIt)) {useLi <- which(x$annot[,chCol] %in% replBy[i,1]); cat("useLi",head(useLi),"\n"); x$annot[useLi,chCol] <- replBy[i,2]}
-  } else if(!silent) message(" replSpecType: 'annCol' not found in x$annot !")
+  } else if(!silent) message(fxNa," 'annCol' not found in x$annot !")
   x }
 
 plotConcHist <- function(mat, ref, refColumn=3:4, matCluNa="cluNo", lev=NULL, ylab=NULL, tit=NULL) {
@@ -114,6 +118,7 @@ dim(dataMQ$quant)
 ## A quick summary of some columns of quantitation data
 summary(dataMQ$quant[,1:7])                # the first 8 cols
 table(dataMQ$annot[,"SpecType"], useNA="always")
+table(dataMQ$annot[,"Species"], useNA="always")
 
 ## ----readProteomeDiscoverer1, fig.height=8, fig.width=9.5, fig.align="center", echo=TRUE----
 path1 <- system.file("extdata", package="wrProteo")
@@ -129,6 +134,7 @@ dim(dataPD$quant)
 ## A quick summary of some columns of quantitation data
 summary(dataPD$quant[,1:7])        # the first 8 cols
 table(dataPD$annot[,"SpecType"], useNA="always")
+table(dataPD$annot[,"Species"], useNA="always")
 
 ## ----readProline, fig.height=8, fig.width=9.5, fig.align="center", echo=TRUE----
 path1 <- system.file("extdata", package="wrProteo")
@@ -144,6 +150,7 @@ dim(dataPL$quant)
 ## A quick summary of some columns of quantitation data
 summary(dataPL$quant[,1:8])        # the first 8 cols
 table(dataPL$annot[,"SpecType"], useNA="always")
+table(dataPL$annot[,"Species"], useNA="always")
 
 ## ----saveCheck1, echo=FALSE---------------------------------------------------
 ## devel only ?
@@ -155,7 +162,11 @@ if(any(c("PP3-0014-A", "PP1-1072-A", "SERV-SPECTRO2") %in% Sys.info()["nodename"
 ## ----rearrange1, echo=TRUE----------------------------------------------------
 ## bring all results (MaxQuant,ProteomeDiscoverer, ...) in same ascending order
 ## as reference will use the order from ProteomeDiscoverer, it's output is already in a convenient order
-sampNa <- colnames(dataPD$quant)[order(dataPD$sampleSetup$level)]
+sampNa <- colnames(dataMQ$quant)[order(dataPD$sampleSetup$level)]
+   dataMQ0=dataMQ
+   dataPL0=dataPL
+   dataPD0=dataPD
+   dataMQ$quant[1:4,1:6]
 
 ## it is more convenient to re-order columns this way in each project
 dataMQ <- corColumnOrder(dataMQ, sampNames=sampNa)         
@@ -173,6 +184,7 @@ dataPL <- replSpecType(dataPL, replBy=cbind(old=c("mainSpe","species2"), new=c("
 dataPD <- replMissingProtNames(dataPD)
 dataMQ <- replMissingProtNames(dataMQ)
 dataPL <- replMissingProtNames(dataPL)
+    table(dataMQ$annot[,"SpecType"])
     table(dataPD$annot[,"SpecType"])
 
 ## synchronize order of groups
@@ -193,7 +205,7 @@ tabS[which(is.na(tabS))] <- 0
 tabT[which(is.na(tabT))] <- 0
 kable(cbind(tabS[,2:1], tabT), caption="Number of proteins identified, by custom tags, species and software")
 
-## ----metaData2, echo=TRUE-----------------------------------------------------
+## ----metaData4, echo=TRUE-----------------------------------------------------
 kable(cbind(dataMQ$sampleSetup$sdrf[,c(23,7,19,22)], groups=dataMQ$sampleSetup$groups))
 
 ## ----NA_ProteomeDiscoverer, echo=TRUE-----------------------------------------
@@ -246,7 +258,7 @@ resPL1 <- extractTestingResults(testPL, compNo=1, thrsh=0.05, FCthrs=2)
 
 ## ----pairWise3, fig.height=4.5, fig.width=9.5, fig.align="center", echo=TRUE----
 par(mar=c(5.5, 4.7, 4, 1))
-imageW(table1[,c("sig.PD.BH","sig.MQ.BH","sig.PL.BH" )], col=rev(RColorBrewer::brewer.pal(9,"YlOrRd")),
+imageW(table1[,c("sig.PD.BH","sig.MQ.BH","sig.PL.BH" )], col=(RColorBrewer::brewer.pal(9,"YlOrRd")),
   transp=FALSE, tit="Number of BH.FDR passing proteins by the quantification approaches")
 mtext("Dark red for high number signif proteins", cex=0.75)
 
@@ -298,14 +310,14 @@ AucRep <- table(AucAll[,"cluNo"])[rank(unique(AucAll[,"cluNo"]))]   # representa
 AucRep <- round(cumsum(AucRep) -AucRep/2 +0.1)
 
 ## select representative for each cluster
-kable(round(AucAll[AucRep,c("Auc.PD","Auc.MQ","Auc.PL","cluNo")],3), caption="Selected representative for each cluster ", align="c")
+kable(round(AucAll[AucRep,c("Auc.PD","Auc.MQ","Auc.PL","cluNo")], 3), caption="Selected representative for each cluster ", align="c")
 
 ## ----freqOfFCperClu, echo=TRUE------------------------------------------------
 ratTab <- sapply(5:1, function(x) { y <- table1[match(rownames(AucAll),rownames(table1)),]
   table(factor(signif(y[which(AucAll[,"cluNo"]==x),"log2rat"],1), levels=unique(signif(table1[,"log2rat"],1))) )})
 colnames(ratTab) <- paste0("\nclu",5:1,"\nn=",rev(table(kMAx)))
 layout(1)
-imageW(ratTab, tit="Frequency of rounded log2FC in the 5 clusters", xLab="log2FC (rounded)", col=RColorBrewer::brewer.pal(9,"YlOrRd"),las=1)
+imageW(ratTab, tit="Frequency of rounded log2FC in the 5 clusters", xLab="log2FC (rounded)", col=c("grey95", RColorBrewer::brewer.pal(8,"YlOrRd")), las=1)
 mtext("Dark red for enrichment of given pair-wise ratio", cex=0.7)
 
 ## ----ROC_grp5tab, echo=TRUE---------------------------------------------------
@@ -457,9 +469,10 @@ countRawNA <- function(dat, newOrd=UPS1$ac, relative=FALSE) {  # count number of
   if(relative) out/nrow(dat$raw) else out }
 
 sumNAperMeth <- cbind(PD=countRawNA(dataPD), MQ=countRawNA(dataMQ), PL=countRawNA(dataPL) )
-UPS1na <- sub("_UPS","",dataPL$annot[UPS1$ac,"EntryName"])
+UPS1na <- sub("_UPS","", dataPL$annot[(rownames(dataPL$annot) %in% UPS1$acFull),"EntryName"])
 par(mar=c(6.8, 3.5, 4, 1))
-imageW(sumNAperMeth, rowNa=UPS1na, tit="Number of NAs in UPS proteins", xLab="", yLab="",
+#imageW(sumNAperMeth, rowNa=UPS1na, tit="Number of NAs in UPS  proteins", xLab="", yLab="",
+imageW(sumNAperMeth, tit="Number of NAs in UPS  proteins", xLab="", yLab="",
   transp=FALSE, col=RColorBrewer::brewer.pal(9,"YlOrRd"))
 mtext("Dark red for high number of NAs",cex=0.7)
 
@@ -542,14 +555,14 @@ datUPS1[,3,"medAbund"] <- apply(wrMisc::.scale01(dataPL$datImp)[match(UPS1$ac,ro
 
 ## ----linModelStartStat,  echo=TRUE--------------------------------------------
 ## at which concentration of UPS1 did the best regression start ?
-stTab <- sapply(1:5, function(x) apply(datUPS1[,,"startFr"],2,function(y) sum(x==y)))
-colnames(stTab) <- paste("lev",1:5,sep="_")
+stTab <- sapply(1:5, function(x) apply(datUPS1[,,"startFr"], 2, function(y) sum(x==y, na.rm=TRUE)))
+colnames(stTab) <- paste("lev", 1:5, sep="_")
 kable(stTab, caption = "Frequency of starting levels for regression")
 
 ## ----linModelPlotAll, fig.height=12, fig.width=9.5, fig.align="center", echo=TRUE----
 layout(matrix(1:4,ncol=2))
 subTi <- "fill according to median abundance (blue=low - green - red=high)"
-xyRa <- apply(datUPS1[,,4:5], 3, range, na.rm=T)
+xyRa <- apply(datUPS1[,,4:5], 3, range, na.rm=TRUE)
 
 plotMultRegrPar(datUPS1, 1, xlim=xyRa[,1], ylim=xyRa[,2],tit="ProteomeDiscoverer UPS1, p-value vs slope",subTit=subTi)    # adj wr 9jan23
 plotMultRegrPar(datUPS1, 2, xlim=xyRa[,1], ylim=xyRa[,2],tit="MaxQuant UPS1, p-value vs slope",subTit=subTi)

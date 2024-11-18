@@ -1,18 +1,15 @@
 #' Read Tabulated Files Exported by Ionbot At Peptide Level
 #'
-#' Thins function allows importing initial petide identification and quantification results from Ionbot
+#' This function allows importing initial petide identification and quantification results from  \href{https://ionbot.cloud/about}{Ionbot} 
 #' which were exported as tabulated tsv can be imported and relevant information extracted.
 #' The final output is a list containing 3 main elements: \code{$annot}, \code{$raw} and optional \code{$quant}, or returns data.frame with entire content of file if \code{separateAnnot=FALSE}.
 #'
 #' @details
-#' The format of resulting files at export also depends which columns are chosen as visible inside ProteomeDiscoverer and subsequently get chosen for export.
 #' Using the argument \code{suplAnnotFile} it is possible to specify a specific file (or search for default file) to read for extracting file-names as sample-names 
 #' and other experiment realted information.
 #'
-#' If a column named \code{contamCol} is found, the data will be lateron filtered to remove all contaminants, set to \code{NULL} for keeping all contaminants
 #' 
 #'
-#' Besides, full raw-file path will be extracted for $notes in final output.
 #'
 #' @param fileName (character) name of file to be read
 #' @param path (character) path of file to be read
@@ -24,9 +21,6 @@
 #'   Besides, the output from \code{readSdrf} or a list from \code{defineSamples} may be provided;
 #'   if \code{gr} is provided, \code{gr} gets priority for grouping of replicates;
 #'   if \code{sdrfOrder=TRUE} the output will be put in order of sdrf
-#' @param suplAnnotFile (logical or character) optional reading of supplemental files produced by ProteomeDiscoverer; however, if \code{gr} is provided, \code{gr} gets priority for grouping of replicates;
-#'  if \code{TRUE} defaults to file '*InputFiles.txt' (needed to match information of \code{sdrf}) which can be exported next to main quantitation results;
-#'  if \code{character} the respective file-name (relative or absolute path)
 #' @param read0asNA (logical) decide if initial quntifications at 0 should be transformed to NA
 #' @param quantCol (character or integer) exact col-names, or if length=1 content of \code{quantCol} will be used as pattern to search among column-names for $quant using \code{grep}
 #' @param contamCol (character or integer, length=1) which columns should be used for contaminants marked by ProteomeDiscoverer.
@@ -36,32 +30,35 @@
 #' @param annotCol (character) column names to be read/extracted for the annotation section (default 
 #'   c("Accession","Description","Gene","Contaminant","Sum.PEP.Score","Coverage....","X..Peptides","X..PSMs","X..Unique.Peptides", "X..AAs","MW..kDa.") )
 #' @param FDRCol (list) optional indication to search for protein FDR information
-#' @param chUnit (logical or character) will be passed to \code{readSampleMetaData()} for (optional) adjustig of unit-prefixes in meta-data group labels, in case multiple different unit-prefixes 
-#'   are used (eg '100pMol' and '1nMol'). 
+#' @param groupPref (list) additional parameters for interpreting meta-data to identify structure of groups (replicates), will be passed to \code{readSampleMetaData}.
+#'   May contain \code{lowNumberOfGroups=FALSE} for automatically choosing a rather elevated number of groups if possible (defaults to low number of groups, ie higher number of samples per group)
+#'   May contain \code{chUnit} (logical or character) to be passed to \code{readSampleMetaData()} for (optional) adjustig of unit-prefixes in meta-data group labels, in case multiple different unit-prefixes 
+#'   are used (eg '100pMol' and '1nMol').
 #' @param titGraph (character) custom title to plot
 #' @param titGraph (character) depreciated custom title to plot, please use 'tit'
 #' @param wex (integer) relative expansion factor of the violin-plot (will be passed to \code{/link[wrGraph]{vioplotW}})
+#' @param suplAnnotFile (logical or character) optional reading of supplemental files produced by ProteomeDiscoverer; however, if \code{gr} is provided, \code{gr} gets priority for grouping of replicates;
+#'  if \code{TRUE} defaults to file '*InputFiles.txt' (needed to match information of \code{sdrf}) which can be exported next to main quantitation results;
+#'  if \code{character} the respective file-name (relative or absolute path)
 #' @param specPref (character or list) define characteristic text for recognizing (main) groups of species (1st for comtaminants - will be marked as 'conta', 2nd for main species- marked as 'mainSpe',
 #'   and optional following ones for supplemental tags/species - maked as 'species2','species3',...);
 #'   if list and list-element has multiple values they will be used for exact matching of accessions (ie 2nd of argument \code{annotCol})
 #' @param plotGraph (logical or integer) optional plot of type vioplot of initial and normalized data (using \code{normalizeMeth}); if integer, it will be passed to \code{layout} when plotting
 #' @param silent (logical) suppress messages
 #' @param debug (logical) additional messages for debugging
-#' @param callFrom (character) allow easier tracking of messages produced
+#' @param callFrom (character) allows easier tracking of messages produced
 #' @return This function returns a list with \code{$raw} (initial/raw abundance values), \code{$quant} with final normalized quantitations, \code{$annot}, \code{$counts} an array with number of peptides, \code{$quantNotes}
 #'   and \code{$notes}; or if \code{separateAnnot=FALSE} the function returns a data.frame with annotation and quantitation only
 #' @seealso \code{/link[utils]{read.table}}, \code{/link{readMaxQuantFile}}, \code{/link{readProteomeDiscovererFile}}, \code{/link[wrMisc]{normalizeThis}}) 
 #' @examples
 #' path1 <- system.file("extdata", package="wrProteo")
 #' fiIonbot <- "tinyIonbotFile1.tsv.gz"
-#' #fiNa <- "C:\\E\\projects\\MassSpec\\smallProj\\2024\\ionbot_UPS1_9815\\Ionbot_Pept\\QuantifiedPeptides.tsv"
-#' 
 #' datIobPep <- readIonbotPeptides(fiIonbot, path=path1) 
 #'
 #' @export
-readIonbotPeptides <- function(fileName, path=NULL, normalizeMeth="median", sampleNames=NULL, suplAnnotFile=TRUE, gr=NULL, sdrf=NULL, read0asNA=TRUE, quantCol="^Abundances*",
+readIonbotPeptides <- function(fileName, path=NULL, normalizeMeth="median", sampleNames=NULL, gr=NULL, sdrf=NULL, read0asNA=TRUE, quantCol="^Abundances*",
   annotCol=NULL, contamCol="Contaminant", refLi=NULL, separateAnnot=TRUE, FDRCol=list(c("^Protein.FDR.Confidence","High"), c("^Found.in.Sample.","High")), plotGraph=TRUE, 
-  chUnit=TRUE, titGraph="Ionbot", wex=1.6, specPref=c(conta="CON_|LYSC_CHICK", mainSpecies="OS=Homo sapiens"), silent=FALSE, debug=FALSE, callFrom=NULL) {
+  suplAnnotFile=TRUE, groupPref=list(lowNumberOfGroups=TRUE, chUnit=TRUE), titGraph="Ionbot", wex=1.6, specPref=c(conta="CON_|LYSC_CHICK", mainSpecies="OS=Homo sapiens"), silent=FALSE, debug=FALSE, callFrom=NULL) {
   ## read ProteomeDiscoverer exported txt
   fxNa <- wrMisc::.composeCallName(callFrom, newNa="readIonbotPeptides")    # Ionbot
   oparMar <- if(plotGraph) graphics::par("mar") else NULL       # only if figure might be drawn
@@ -196,8 +193,16 @@ readIonbotPeptides <- function(fileName, path=NULL, normalizeMeth="median", samp
     ## look if available, for specif tags 
     annot <- .extrSpecPref(specPref, annot, useColumn=c("Protein.Groups","Species"), silent=silent, debug=debug, callFrom=fxNa)   # set annot[,"specPref"] according to specPref
   } else if(debug) message(fxNa,"Note: Argument 'specPref' not specifed (empty)")
+  
+  ## mine info to add 'EntryName' and 'Accession' 
+  if("Protein.Groups" %in% colnames(annot)) {
+    ## problem : may contain multiple ids from mult prot (separated by '__') - use last 
+    entNa <- sub(".+\\|","", annot[,"Protein.Groups"])    # get last (assuming as 'EntryName')
+    annot <- cbind(Accession=sub(".+\\|","", substr(annot[,"Protein.Groups"], 1, nchar(annot[,"Protein.Groups"]) - nchar(entNa) -1)), EntryName=entNa, annot )  # get entry before last, assuming as 'Accession'
+  }
+  ## 
     
-##  include charge - not avail in ionbot.peptides
+  ##  include charge - not avail in ionbot.peptides
   rm(annot1)
   if(debug) {message(fxNa,"rIBP4c .. Done extracting peptide annotation ")
      rIBP4c <- list(fileName=fileName,path=path, paFi=paFi,normalizeMeth=normalizeMeth,sampleNames=sampleNames,suplAnnotFile=suplAnnotFile,read0asNA=read0asNA,quantCol=quantCol,cleanDescription=cleanDescription,tmp=tmp,seqCol=seqCol,pepSeq=pepSeq,annot=annot,maSeCo=maSeCo,modifSensible=modifSensible, pepSeq=pepSeq,hasMod=hasMod, annot=annot,specPref=specPref)}
@@ -298,37 +303,49 @@ readIonbotPeptides <- function(fileName, path=NULL, normalizeMeth="median", samp
     } else try(wrMisc::normalizeThis(log2(abund), method=normalizeMeth, refLines=refLi, silent=silent, callFrom=fxNa), silent=TRUE)       #
     if(debug) { message(fxNa,"rIBP9d .. dim quant: ", nrow(quant)," li and  ",ncol(quant)," cols; colnames : ",wrMisc::pasteC(colnames(quant))," ")} }
 
-  ## PD colnames are typically very cryptic, replace ..
+  ##  colnames may be cryptic, replace .. (needed with IB ??)
   if(length(sampleNames)==ncol(abund) && all(!is.na(sampleNames)) ) {   # custom sample names given
     colnames(abund) <- colnames(abund) <- sampleNames
     if(length(counts) >0) colnames(counts) <- sampleNames }
-  if(debug) {message(fxNa,"  rIBP13"); rIBP13 <- list(sdrf=sdrf,suplAnnotFile=suplAnnotFile,abund=abund, quant=quant,refLi=refLi,annot=annot,sampleNames=sampleNames)}
+  if(debug) {message(fxNa,"  rIBP12b"); rIBP12b <- list(sdrf=sdrf,suplAnnotFile=suplAnnotFile,abund=abund, quant=quant,refLi=refLi,annot=annot,sampleNames=sampleNames)}
 
   ### GROUPING OF REPLICATES AND SAMPLE META-DATA
-  ## META-DATA : read additional annotation & documentation files produced by PD
+  ## META-DATA : read additional annotation & documentation files produced by IB
     #sdrfFi <- wrMisc::checkFilePath(fileName, path, expectExt="tsv", compressedOption=TRUE, stopIfNothing=TRUE, callFrom=fxNa, silent=silent,debug=debug)
 
   if(length(suplAnnotFile) >0 || length(sdrf) >0) {
     if(length(sampleNames) %in% c(1, ncol(abund))) groupPref$sampleNames <- sampleNames
     if(length(gr) %in% c(1, ncol(abund))) groupPref$gr <- gr
-    setupSd <- readSampleMetaData(sdrf=sdrf, suplAnnotFile=suplAnnotFile, quantMeth="IB", path=path, abund=utils::head(abund), chUnit=chUnit, silent=silent, debug=debug, callFrom=fxNa)
+    setupSd <- readSampleMetaData(sdrf=sdrf, suplAnnotFile=suplAnnotFile, quantMeth="IB", path=path, abund=utils::head(quant), chUnit=isTRUE(groupPref$chUnit), groupPref=groupPref, silent=silent, debug=debug, callFrom=fxNa)
   }
-  if(debug) {message(fxNa,"  rIBP13b"); rIBP13b <- list(sdrf=sdrf,suplAnnotFile=suplAnnotFile,abund=abund, quant=quant,refLi=refLi,annot=annot,sampleNames=sampleNames,setupSd=setupSd)}
+  if(debug) {message(fxNa,"  rIBP13"); rIBP13 <- list(sdrf=sdrf,suplAnnotFile=suplAnnotFile,abund=abund, quant=quant,refLi=refLi,annot=annot,sampleNames=sampleNames,setupSd=setupSd)}
 
     ## finish groups of replicates & annotation setupSd
     setupSd <- .checkSetupGroups(abund=utils::head(abund), setupSd=setupSd, gr=gr, sampleNames=sampleNames, quantMeth="IB", silent=silent, debug=debug, callFrom=fxNa)
-    if(debug) {message(fxNa,"  rIBP13c"); rIBP13c <- list(sdrf=sdrf,suplAnnotFile=suplAnnotFile,abund=abund, quant=quant,refLi=refLi,annot=annot,sampleNames=sampleNames,setupSd=setupSd)}
+    if(debug) {message(fxNa,"  rIBP13b"); rIBP13b <- list(sdrf=sdrf,suplAnnotFile=suplAnnotFile,abund=abund, quant=quant,refLi=refLi,annot=annot,sampleNames=sampleNames,setupSd=setupSd)}
 
+    ## harmonize sample-names/1
+    colNa <- if(length(setupSd$sampleNames)==ncol(abund)) setupSd$sampleNames else setupSd$groups
+
+
+    ## option : choose (re-)naming of levels & columns on most redundance
+    if(length(setupSd$sampleNames)==ncol(quant) && length(setupSd$sampleNaSdrf)==ncol(quant)) {
+      ## check if setupSd$sampleNaSdrf  or   setupSd$sampleNames contain better info (some info on replicates)
+      chRed1 <- sum(duplicated(sub("(_|\\.| )[[:digit:]]+.*","", setupSd$sampleNaSdrf)), na.rm=TRUE)
+      chRed2 <- sum(duplicated(sub("(_|\\.| )[[:digit:]]+.*","", setupSd$sampleNames)), na.rm=TRUE)
+      if(chRed2 < chRed1) {                                          # use info for levels depending on where more 
+        colNa <- colnames(abund) <- setupSd$sampleNames <- setupSd$sampleNaSdrf                     ## take sample names from sdrf via  setupSd$sampleNaSdrf
+      } else {
+        colNa <- colnames(abund) <- setupSd$sampleNames }          ## take sample names from sdrf via  setupSd$sampleNaSdrf
+      #setupSd$level  
+    }    
     ## option : set order of samples as sdrf
     if("sdrfOrder" %in% names(sdrf) && isTRUE(as.logical(sdrf["sdrfOrder"])) && length(setupSd$iniSdrfOrder)==ncol(abund) && ncol(abund) >1) {  # set order according to sdrf (only if >1 samples)
       nOrd <- order(setupSd$iniSdrfOrder)
-      ## rename columns according to sdrf and set order of quant and abund ..
       abund <- abund[,nOrd]
       if(length(quant) >0) quant <- quant[,nOrd]
-      if(length(setupSd$sampleNames)==ncol(quant)) {
-        colNa <- colnames(abund) <- setupSd$sampleNames <- setupSd$sampleNaSdrf[nOrd]  #old# setupSd$sampleNames[nOrd]         ## take sample names from sdrf via  setupSd$sampleNaSdrf
-        if(length(quant) >0) colnames(quant) <- setupSd$sampleNaSdrf[nOrd]  #old# setupSd$sampleNames[nOrd]
-      } else colNa <- colnames(abund)
+      #setupSd$level <- setupSd$level[nOrd]
+      ## rename columns according to sdrf and set order of quant and abund ..
       ## now adapt order of setupSd, incl init Sdrf
       if(length(setupSd) >0) { 
         is2dim <- sapply(setupSd, function(x,le) length(dim(x))==2 && nrow(x)==le, le=length(nOrd))    # look for matr or df to change order of lines
@@ -339,6 +356,9 @@ readIonbotPeptides <- function(fileName, path=NULL, normalizeMeth="median", samp
 
       if(length(counts) >0 && length(dim(counts))==3) counts <- array(counts[,nOrd,], dim=c(nrow(counts), length(nOrd), dim(counts)[3]), 
         dimnames=list(rownames(counts), colnames(counts)[nOrd], dimnames(counts)[[3]]))
+      if(debug) {message(fxNa,"rIBP13c .."); rIBP13c <- list(path=path,chPa=chPa,tmp=tmp,groupPref=groupPref,quantCol=quantCol,abund=abund,chNum=chNum,
+        sdrf=sdrf,quant=quant,annot=annot,setupSd=setupSd)}
+        
       ## try re-adjusting levels
       tm1 <- sub("^[[:alpha:]]+( |_|-|\\.)+[[:alpha:]]+","", colnames(abund))  # remove heading text
       if(all(grepl("^[[:digit:]]", tm1))) {
@@ -348,7 +368,7 @@ readIonbotPeptides <- function(fileName, path=NULL, normalizeMeth="median", samp
           names(setupSd$level) <- tm1
           if(!silent) message(fxNa,"Sucessfully re-adjusted levels after bringing in order of Sdrf")}
       }     
-    } else {
+    } else {     # no sdrf-info
 
       ## harmonize sample-names/2
       colNa <- colnames(abund)
@@ -371,10 +391,9 @@ readIonbotPeptides <- function(fileName, path=NULL, normalizeMeth="median", samp
 
     ## meta-data
     notes <- c(inpFile=paFi, qmethod="Ionbot", qMethVersion=if(length(infoDat) >0) unique(infoDat$Software.Revision) else NA,
-    	rawFilePath= if(length(infoDat) >0) infoDat$File.Name[1] else NA, normalizeMeth=normalizeMeth, call=deparse(match.call()),
+    	identType="peptide", rawFilePath= if(length(infoDat) >0) infoDat$File.Name[1] else NA, normalizeMeth=normalizeMeth, call=deparse(match.call()),
       created=as.character(Sys.time()), wrProteo.version=utils::packageVersion("wrProteo"), machine=Sys.info()["nodename"])
 
     ## final output
     if(isTRUE(separateAnnot)) list(raw=abund, quant=quant, annot=annot, counts=counts, sampleSetup=setupSd, quantNotes=parametersD, notes=notes) else data.frame(quant,annot)
 }
-  

@@ -38,7 +38,7 @@
 #'   if \code{TRUE} the default set of unit-names ('Mol','mol', 'days','day','m','sec','s','h') will be checked in the sample-names for different decimal prefixes
 #' @param silent (logical) suppress messages if \code{TRUE}
 #' @param debug (logical) additional messages for debugging
-#' @param callFrom (character) allow easier tracking of messages produced
+#' @param callFrom (character) allows easier tracking of messages produced
 #' @return This function returns a list with \code{$level} (grouping of samples given as integer), and \code{$meth} (method by which grouping as determined).
 #'  If valid \code{sdrf} was given, the resultant list contains in addition \code{$sdrfDat} (data.frame of annotation).
 #'  Alternatively it may contain a \code{$sdrfExport} if sufficient information has been gathered (so far only for MaxQuant) for a draft sdrf for export (that should be revised and completed by the user).
@@ -82,7 +82,7 @@ readSampleMetaData <- function(quantMeth, sdrf=NULL, suplAnnotFile=NULL, path=".
 
 
   .corPathW <- function(x) gsub("\\\\", "/", x)
-  .adjPat <- function(x) { out <- match(x, unique(x)); names(out) <- if(length(names(x)) >0) names(x) else x; out}  # pattern
+  .adjPat <- function(x) { out <- match(x, unique(x)); names(out) <- if(length(names(x)) >0) names(x) else x; out}   # reduce to integer-pattern (with names)
   .adjTrimPat <- function(x) { x <- wrMisc::rmEnumeratorName(x, incl=c("anyCase","trim0","rmEnum"), sepEnum=c(" ","-","_"), nameEnum=c("Number","No","#","","Replicate","Sample"))
     out <- match(x, unique(x)); names(out) <- names(x); out}   # used
 
@@ -92,15 +92,9 @@ readSampleMetaData <- function(quantMeth, sdrf=NULL, suplAnnotFile=NULL, path=".
       leL2 <- tabulate(leL)
       lst <- lst[which(leL==which.max(leL2))] }
     as.data.frame(lst) }
-  .chColOrder <- function(sdr1, sdr2, colNa=c("comment.file.uri.","comment.data.file.")) { out <- NULL
-    ## use sdr1 as old/inital, sdr2 as new; return vector for re-establishing init order
-    for(i in colNa) {
-      if(i %in% colnames(sdr1) && i %in% colnames(sdr2)  && sum(duplicated(sdr1[,i])) <1 && length(out) <1) {out <- match(sdr1[,i], sdr2[,i]); break }
-    }
-    out }
-
+    
   .replSingleWord <- function(ii, tx, se, replBy="") {   ## for single word in all tx; moove to wrMisc?
-    ## moove to wrMisc? (also used inside .checkSetupGroups () )
+    ## NOT USED ANY MORE (when using  wrMisc::rmSharedWords);  moove to wrMisc? 
     ## ii .. word to remove
     ## tx .. ini char-vector
     ## se .. possible separators                           
@@ -114,7 +108,8 @@ readSampleMetaData <- function(quantMeth, sdrf=NULL, suplAnnotFile=NULL, path=".
     out }
 
  .trimRedWord <- function(txt, sep=c(" ","_","-","/"), minLe=3, strict=TRUE, silent=TRUE, callFrom=NULL, debug=FALSE) {
-    ## moove to wrMisc? (also used inside .checkSetupGroups () )
+    ## replaced by wrMisc::rmSharedWords  (also used inside .checkSetupGroups () )
+    ## NOT USED ANY MORE (when using  wrMisc::rmSharedWords) 
     ## function to trim redundant words (@separator) similar to wrMisc::trimRedundText()
     ## strict .. (logical) requires separator to occur in each single character-string to be considered
     ## minLe .. min length for words to be considered (otherwise frequently problem with '1')
@@ -154,12 +149,23 @@ readSampleMetaData <- function(quantMeth, sdrf=NULL, suplAnnotFile=NULL, path=".
       } }
     }
     txt }
-  ## end suppl fx
 
+  if( utils::packageVersion("wrMisc") > "1.15.1.1")  .trimRedWord <- wrMisc::rmSharedWords
+
+  .chColOrder <- function(sdr1, sdr2, colNa=c("comment.file.uri.","comment.data.file.")) { out <- NULL
+        ## use sdr1 as old/inital, sdr2 as new; return vector for re-establishing init order
+        ## NOT USED ANY MORE !!
+        for(i in colNa) {
+          if(i %in% colnames(sdr1) && i %in% colnames(sdr2)  && sum(duplicated(sdr1[,i])) <1 && length(out) <1) {out <- match(sdr1[,i], sdr2[,i]); break }
+        }
+        out }
+  ## end suppl fx
+  
 
   path <- if(length(path) <1) "." else path[1]
   nSamp0 <- if(length(dim(abund)) >1) ncol(abund) else 0
   chSoft <- c("MQ", "PD", "PL", "FP","MC","AP","IB","NN")
+  defUnits <- c("Mol","mol", "days","day","m","sec","s","h")   # for unit-conversion of sample/column-names
   syncColumns <- c(sdrfDat=NA, annotBySoft=NA)
   if(datOK) {
     if("maxquant" %in% tolower(quantMeth)) quantMeth <- "MQ"
@@ -182,7 +188,7 @@ readSampleMetaData <- function(quantMeth, sdrf=NULL, suplAnnotFile=NULL, path=".
     ## 1.1 SOFTWARE specific META-DATA : read additional annotation & documentation files produced by var software as  summaryD & parametersD
     if(length(suplAnnotFile) >0)  {     # read quant software-generated sample annotation
       chFiNa <- NULL                    # initialize
-      if(debug) {message(fxNa,"rSM1"); rSM1 <- list(sdrf=sdrf,abund=abund,path=path,suplAnnotFile=suplAnnotFile,quantMeth=quantMeth,syncColumns=syncColumns) }
+      if(debug) {message(fxNa,"rSM1"); rSM1 <- list(sdrf=sdrf,abund=abund,path=path,suplAnnotFile=suplAnnotFile,quantMeth=quantMeth,syncColumns=syncColumns,groupPref=groupPref) }
            ## option 1 : suplAnnotFile has path (do not use default 'path'), use same path for default suplAnnotFile (if applicable)
            ## option 2 : suplAnnotFile has no path, use 'path' for sdrf & suplAnnotFile
 
@@ -356,6 +362,7 @@ readSampleMetaData <- function(quantMeth, sdrf=NULL, suplAnnotFile=NULL, path=".
     if(debug) { message(fxNa,"rSM2"); rSM2 <- list(sdrf=sdrf,abund=abund,suplAnnotFile=suplAnnotFile,quantMeth=quantMeth,summaryD=summaryD,parametersD=parametersD,suplAnnotFile=suplAnnotFile,syncColumns=syncColumns) }
 
 
+
     ## 1.2 basic check of summaryD to quant data, extract supl info for sdrf
     if(length(summaryD) >0) {      ##  more checks
       if(length(abund) <1) message(fxNa,"Can't verify/correct names of annotation since content of 'abund' has was not given (ie NULL) or has no colnames") else {
@@ -468,7 +475,7 @@ readSampleMetaData <- function(quantMeth, sdrf=NULL, suplAnnotFile=NULL, path=".
 
       ## other software ? ...
 
-      if(debug) { message(fxNa,"rSM4d"); rSM4d <- list(sdrf=sdrf,abund=abund,suplAnnotFile=suplAnnotFile,quantMeth=quantMeth,abund=abund,summaryD=summaryD,parametersD=parametersD,groupPref=groupPref,syncColumns=syncColumns) }
+      if(debug) { message(fxNa,"rSM4d"); rSM4d <- list(sdrf=sdrf,abund=abund,suplAnnotFile=suplAnnotFile,quantMeth=quantMeth,abund=abund,summaryD=summaryD,parametersD=parametersD,groupPref=groupPref,syncColumns=syncColumns,setupSdSoft=setupSdSoft,sdrf=sdrf) }
 
 
       ## 1.3 TRY CHECKING/ADJUSTING ORDER of summaryD
@@ -477,20 +484,33 @@ readSampleMetaData <- function(quantMeth, sdrf=NULL, suplAnnotFile=NULL, path=".
         ## PD not much possible since colnames  ".F1.Sample",".F2.Sample",".F3.Sample",...
         ## most other software has summaryD in same order as abund
         if("MQ" %in% quantMeth) {   # colnames of abund not necessarly found in summaryD
-          summaryD <- wrMisc::matchMatrixLinesToRef(mat=summaryD, ref=colnames(abund), inclInfo=TRUE, silent=TRUE, debug=debug, callFrom=fxNa)
+          summaryD <- wrMisc::matchMatrixLinesToRef(mat=summaryD, ref=colnames(abund), inclInfo=TRUE, silent=TRUE, debug=FALSE, callFrom=fxNa)
           syncColumns["annotBySoft"] <- length(summaryD$newOrder)  >0
           summaryD <- summaryD$mat  }
         if(any(c("PL","FP") %in% quantMeth, na.rm=TRUE)) {
-          summaryD <- wrMisc::matchMatrixLinesToRef(mat=summaryD, ref=colnames(abund), inclInfo=TRUE, silent=TRUE, debug=debug, callFrom=fxNa)
+          summaryD <- wrMisc::matchMatrixLinesToRef(mat=summaryD, ref=colnames(abund), inclInfo=TRUE, silent=TRUE, debug=FALSE, callFrom=fxNa)
           syncColumns["annotBySoft"] <- length(summaryD$newOrder)  >0
           summaryD <- summaryD$mat  }
       }
+      if(debug) { message(fxNa,"rSM4e"); rSM4e <- list(sdrf=sdrf,abund=abund,suplAnnotFile=suplAnnotFile,quantMeth=quantMeth,abund=abund,summaryD=summaryD,parametersD=parametersD,groupPref=groupPref,syncColumns=syncColumns,setupSdSoft=setupSdSoft,sdrf=sdrf) }
 
       ## 1.4   replicateStructure  (produce setupSdSoft$level)
       grp <- NULL
 
       ## 1.4.1  (special case) replicate structure based on custom gr (if given as groupPref$gr)
-      if(length(summaryD) >0 && length(groupPref$gr)==ncol(abund)) setupSdSoft$level <- grp <- .adjPat(groupPref$gr)
+      if(length(groupPref$gr) <1) { setupSdSoft$level <- grp <- .adjPat(groupPref$gr)
+      } else { 
+        if(length(groupPref$gr)==1) {
+          ## now length(groupPref$gr)==1
+          if(groupPref$gr=="colnames") grp <- .adjPat(wrMisc::rmEnumeratorName(colnames(abund), incl=c("anyCase","trim0","rmEnum"), sepEnum=c(" ","-","_"), nameEnum=c("Number","No","#","","Replicate","Sample"), silent=silent, debug=debug, callFrom=fxNa))
+  
+          if(grepl("^sdrf", groupPref$gr)) setupSdSoft$level <- grp <- rep(groupPref$gr, ncol(abund))  # temporal fill (sdrf not read yet)
+   
+          #if(grepl("^groupPref\\$[[:alpha:]]", groupPref$gr)) {
+          #} else if(groupPref$gr=="sdrf")
+  
+      } }
+      
       
       ## 1.4.2  (special case) replicate structure based on custom colNames (if 'sampleNames' given and 'gr' not given)
       if(length(grp) <1 && length(summaryD) >0 && length(groupPref$sampleNames)==nrow(summaryD) && length(groupPref$gr) <1) {
@@ -500,13 +520,14 @@ readSampleMetaData <- function(quantMeth, sdrf=NULL, suplAnnotFile=NULL, path=".
           grp <- .adjPat(wrMisc::rmEnumeratorName(groupPref$sampleNames, incl=c("anyCase","trim0","rmEnum"), sepEnum=c(" ","-","_"), nameEnum=c("Number","No","#","","Replicate","Sample"), silent=silent, debug=debug, callFrom=fxNa))
         }
       }
+      if(debug) { message(fxNa,"rSM4f"); rSM4f <- list(sdrf=sdrf,abund=abund,suplAnnotFile=suplAnnotFile,quantMeth=quantMeth,abund=abund,summaryD=summaryD,parametersD=parametersD,groupPref=groupPref,syncColumns=syncColumns,setupSdSoft=setupSdSoft,sdrf=sdrf) }
 
       ## 1.4.3  replicateStructure   (of summaryD)
       if(length(grp) <1) {
         setupSdSoft <- wrMisc::replicateStructure(summaryD, silent=silent, debug=debug, callFrom=fxNa)
         chLe <- names(setupSdSoft) %in% "lev"
         if(any(chLe)) names(setupSdSoft)[which(chLe)] <- "level"        # rename ..
-        if(debug) { message(fxNa,"rSM4e"); rSM4e <- list() }
+        if(debug) { message(fxNa,"rSM4f"); rSM4f <- list() }
 
         ## so far no direct information about groups (all filenames are different), need to try to find out (remove enumerators)
         if(all(!duplicated(setupSdSoft$level)) && length(abund) >0) {
@@ -533,13 +554,16 @@ readSampleMetaData <- function(quantMeth, sdrf=NULL, suplAnnotFile=NULL, path=".
               }
             }
           }
-          if(debug) { message(fxNa,"rSM4f"); rSM4f <- list() }
+          if(debug) { message(fxNa,"rSM4h"); rSM4h <- list() }
 
         } else { if(!silent) message(fxNa,"Note : Abundance data are ABSENT, CANNOT adjust order of annotation to abundance data")}
       } 
-      if(length(grp) >0) summaryD <- as.data.frame(cbind(summaryD, grp=names(grp), grpInd=grp))                 # add presumed grouping to summaryD
+
+      if(length(grp) >0) { if(length(names(grp)) ==0) names(grp) <- grp
+        summaryD <- as.data.frame(cbind(summaryD, grp=names(grp), grpInd=grp))}                 # add presumed grouping to summaryD
     } else grp <- NULL
-    if(debug) { message(fxNa,"rSM5"); rSM5 <- list(sdrf=sdrf,grp=grp,abund=abund,suplAnnotFile=suplAnnotFile,quantMeth=quantMeth,abund=abund,summaryD=summaryD,parametersD=parametersD,setupSdSoft=setupSdSoft) }
+    if(debug) { message(fxNa,"rSM5"); rSM5 <- list(sdrf=sdrf,grp=grp,abund=abund,groupPref=groupPref,suplAnnotFile=suplAnnotFile,quantMeth=quantMeth,abund=abund,summaryD=summaryD,parametersD=parametersD,setupSdSoft=setupSdSoft) }
+   
 
 
     ### 2  READ SDRF annotation & pick groups of replicates; has priority over grouping based on summary.txt
@@ -591,7 +615,7 @@ readSampleMetaData <- function(quantMeth, sdrf=NULL, suplAnnotFile=NULL, path=".
         if(length(abund) >0 && nrow(sdrfDat) != ncol(abund)) {
           if(!silent) message(fxNa,"Note : Ignoring 'sdrf'  : it does NOT have the expected number or rows (",nrow(sdrfDat)," given but ",ncol(abund)," expected !)")
           sdrf <- sdrfDat <- NULL }}
-      if(debug) {message(fxNa,"rSM6a"); rSM6a <- list() }
+      if(debug) {message(fxNa,"rSM6a"); rSM6a <- list(sdrf=sdrf,sdrfDat=sdrfDat,abund=abund,suplAnnotFile=suplAnnotFile,groupPref=groupPref,quantMeth=quantMeth,abund=abund,summaryD=summaryD,parametersD=parametersD,syncColumns=syncColumns) }
 
       ## 2.2  need to match lines (samples) of sdrf (setupDat) to summaryD and/or colnames of abund
       if(length(sdrfDat) >0) {
@@ -618,21 +642,23 @@ readSampleMetaData <- function(quantMeth, sdrf=NULL, suplAnnotFile=NULL, path=".
             if(sum(is.na(chFi)) >0) { warning(fxNa,"UNABLE to match all filenames from sdrf and ",basename(.corPathW(suplAnnotFile)),
                " ! \n  ++ BEWARE : Grouping of replicates may be incorrect !! \n") 
             } else {
+              ## Adjust order of sdrf to data (summaryD)
               if(!silent && rmRaw) message(fxNa,"Note : Some filenames contain '.raw', others do NOT; solved inconsistency ..")
-              iniSdrfOrder <- chFi
+              iniSdrfOrder <- (1:nrow(sdrfDat))[chFi]
               sdrfDat <- sdrfDat[chFi,]
               if(!silent) message(fxNa,"Successfully adjusted order of sdrf to content of ",basename(.corPathW(suplAnnotFile)))
             }
             syncColumns["sdrfDat"] <- TRUE
           } else if(!silent) message(fxNa, if(debug) "rSM6a  "," summaryD exists, but unable to find file-names")
-          if(debug) { message(fxNa,"rSM6a1  dim sdrfDat ",nrow(sdrfDat)," ",ncol(sdrfDat)); rSM6a1 <- list() }
+          if(debug) { message(fxNa,"rSM6a1  dim sdrfDat ",nrow(sdrfDat)," ",ncol(sdrfDat)); rSM6a1 <- list(sdrf=sdrf,sdrfDat=sdrfDat,abund=abund,suplAnnotFile=suplAnnotFile,groupPref=groupPref,quantMeth=quantMeth,abund=abund,summaryD=summaryD,parametersD=parametersD,syncColumns=syncColumns,iniSdrfOrder=iniSdrfOrder) }
 
         } else {             # no summaryD, try colnames of abund
-          if(length(abund) >0 && length(dim(abund)) >1) {
+          if(length(abund) >0 && length(dim(abund)) >1) {   ## valid abund
             if(debug) { message(fxNa,"rSM6b  dim sdrfDat ",nrow(sdrfDat)," ",ncol(sdrfDat)); rSM6b <- list(sdrf=sdrf,sdrfDat=sdrfDat,abund=abund,uplAnnotFile=suplAnnotFile,quantMeth=quantMeth,abund=abund,summaryD=summaryD,parametersD=parametersD,syncColumns=syncColumns) }
             ## requires utils::packageVersion("wrMisc") > "1.11.1"
             sdrfDaIni <- sdrfDat
-            sdrfDat <- wrMisc::matchMatrixLinesToRef(mat=sdrfDat, ref=colnames(abund), addRef=TRUE, silent=silent, debug=debug, callFrom=fxNa)  # 2way-grep
+            #old#sdrfDat <- wrMisc::matchMatrixLinesToRef(mat=cbind(sdrfDat, iniSdrfOrd=1:nrow(sdrfDat)), ref=colnames(abund), addRef=TRUE, exclCol=ncol(sdrfDat)+1, silent=silent, debug=debug, callFrom=fxNa)  # 2way-grep
+            sdrfDat <- wrMisc::matchMatrixLinesToRef(mat=cbind(sdrfDat, iniSdrfOrd=1:nrow(sdrfDat)), ref=colnames(abund), addRef=TRUE, silent=silent, debug=debug, callFrom=fxNa)  # 2way-grep
             ## check matching ?
             if(length(sdrfDat) <1) {                                       ## failed to align - further trim names
               if(debug) { message(fxNa,"Failed to align - further trim names    rSM6a3   ")}
@@ -642,106 +668,179 @@ readSampleMetaData <- function(quantMeth, sdrf=NULL, suplAnnotFile=NULL, path=".
               if(any(ch1)) {
                 selLoc <- sapply(gregexpr("[[:digit:]]\\.[[:alpha:]]", colNaAbund[ch1]), function(x) x[[1]])
                 colNaAbund[ch1] <- paste0(substr(colNaAbund[ch1],1,selLoc), substring(colNaAbund[ch1], selLoc+2)) }
-              sdrfDat <- wrMisc::matchMatrixLinesToRef(mat=sdrfDaIni, ref=colNaAbund, addRef=TRUE, silent=silent, debug=debug, callFrom=fxNa)  # 2way-grep
+              sdrfDat <- wrMisc::matchMatrixLinesToRef(mat=cbind(sdrfDaIni, 1:nrow(sdrfDat)), ref=colNaAbund, exclCol=ncol(sdrfDat)+1, addRef=TRUE, silent=silent, debug=debug, callFrom=fxNa)  # 2way-grep
               if(length(sdrfDat) <1) {
                 colNaEnum <- all(grepl("_[[:digit:]]+$", colNaAbund))
                 if(colNaEnum) { tm1 <- sub("_[[:digit:]]+$","", colNaAbund)
                   colNaAbund2 <- sub("\\..+","", substr(colNaAbund, 1, nchar(tm1)))
                   colNaAbund3 <- paste0(colNaAbund2,substring(colNaAbund, nchar(colNaAbund) -1),"$")    # without repeated text after 1st '.'
-                  sdrfDat <- wrMisc::matchMatrixLinesToRef(mat=sdrfDaIni, ref=colNaAbund3, addRef=TRUE, silent=silent, debug=debug, callFrom=fxNa)  # 2way-grep
+                  ## Adjust order of sdrf to data ()
+                  sdrfDat <- wrMisc::matchMatrixLinesToRef(mat=cbind(sdrfDaIni, 1:nrow(sdrfDat)), ref=colNaAbund3, addRef=TRUE, exclCol=ncol(sdrfDat)+1, silent=silent, debug=debug, callFrom=fxNa)  # 2way-grep
                 }
               }
               if(length(sdrfDat) <1 && !silent) message(fxNa,"PROBLEM : FAILED to align sdrf to actual colnames of data !!!")
             }
              
-            iniSdrfOrder <- .chColOrder(sdrfDaIni, sdrfDat, colNa=c("comment.file.uri.","comment.data.file."))
-            if(debug) { message(fxNa,"rSM6c  dim sdrfDat ",nrow(sdrfDat)," ",ncol(sdrfDat)); rSM6c <- list() }
-            
+            iniSdrfOrder <- sdrfDat$iniSdrfOrd
+            sdrfDat <- sdrfDat[,-ncol(sdrfDat)]   # why remove col 'ref' ?
+            if(debug) { message(fxNa,"rSM6a2  dim sdrfDat ",nrow(sdrfDat)," ",ncol(sdrfDat)); rSM6a2 <- list() }            
             rm(sdrfDaIni)                                                                                                                                                                             
-
             syncColumns["sdrfDat"] <- TRUE                         # really sure that synchronization successful ?
-          } else  message(fxNa, if(debug) "Note : NO Additional information on filenames-order found, can't correct/adjust sdrf (ie sdrfDat) !!   rSM6b")
+          } else  if(!silent) message(fxNa,"Note : NO Additional information on filenames-order found, can't correct/adjust sdrf (ie sdrfDat) !!", if(debug) "   rSM6a3")
+          if(debug) { message(fxNa,"rSM6a4  dim sdrfDat ",nrow(sdrfDat)," ",ncol(sdrfDat)); rSM6a4 <- list(sdrf=sdrf,sdrfDat=sdrfDat,abund=abund,suplAnnotFile=suplAnnotFile,groupPref=groupPref,quantMeth=quantMeth,abund=abund,summaryD=summaryD,parametersD=parametersD,syncColumns=syncColumns,iniSdrfOrder=iniSdrfOrder) }
         }
       }
-      if(debug) { message(fxNa,"rSM6d  dim sdrfDat ",nrow(sdrfDat)," ",ncol(sdrfDat)); rSM6d <- list(sdrf=sdrf,sdrfDat=sdrfDat,abund=abund,suplAnnotFile=suplAnnotFile,quantMeth=quantMeth,groupPref=groupPref,summaryD=summaryD,parametersD=parametersD,syncColumns=syncColumns,iniSdrfOrder=iniSdrfOrder) }
+      if(debug) { message(fxNa,"rSM6d  dim sdrfDat ",nrow(sdrfDat)," ",ncol(sdrfDat)); rSM6d <- list(sdrf=sdrf,sdrfDat=sdrfDat,abund=abund,suplAnnotFile=suplAnnotFile,quantMeth=quantMeth,groupPref=groupPref,summaryD=summaryD,parametersD=parametersD,syncColumns=syncColumns,iniSdrfOrder=iniSdrfOrder,setupSd=setupSd) }
 
 
       ## 2.3  ready to make setupSd
-      if(length(sdrfDat) >0 && all(dim(sdrfDat) >0)) {
-        ## check for column 'comment.technical.replicate.' and/or 'characteristics.spiked.compound.'
-        useSdrfCol <- 1:ncol(sdrfDat)  
-        chTechnReplCol <- colnames(sdrfDat) %in% "comment.technical.replicate."
-        if(any(chTechnReplCol, na.rm=TRUE)) useSdrfCol <- useSdrfCol[-which(chTechnReplCol)]
-
-        ## option : use sampleNames from sdrf-fileNames
-        if("sdrf" %in% groupPref$sampleNames && length(groupPref$sampleNames)==1) {
-          colNa <- c("comment.data.file.", "comment.file.uri.")
-          chCol <- colNa %in% colnames(sdrfDat)
-          if(any(chCol)) { sampleNames <- sdrfDat[,which(chCol[1])]
-            ## try to simplify (remove redundant words, try adjusting varying units)
-            iniNa <- .trimRedWord(sampleNames, sep=c(" ","_","-","/"), strict=TRUE, silent=silent, callFrom=fxNa, debug=debug)
-            if(length(chUnit) >0 && !isFALSE(chUnit)) chUnit <- wrMisc::checkUnitPrefix(iniNa, unit=if(isTRUE(chUnit)) c("Mol","mol", "days","day","m","sec","s","h") else as.character(chUnit))
-            if(length(chUnit) >0) {
-              newNa <- try(wrMisc::adjustUnitPrefix(iniNa, unit=chUnit[1], returnType=c("NAifInvalid"), silent=silent, debug=debug, callFrom=fxNa), silent=TRUE)
-              if(inherits(newNa, "try-error")) {if(!silent) message(fxNa,"Failed to adjust unit-prefixes")} else groupPref$sampleNames <- newNa           
-            }
-            ## need adjust to summaryD ??
-          } else groupPref <- groupPref[-1*which(names(groupPref) ==sampleNames)] 
-        }
+      chLe <- names(setupSd) %in% "lev"
+      if(any(chLe)) setupSd <- setupSd[-which(chLe)]       # remove $lev - if existing
       
-        setupSd$sdrfDat <- sdrfDat   # useful here ?
+      if(length(sdrfDat) >0 && all(dim(sdrfDat) >0)) {
+
         ## check for custom-provided sampleNames  (priority)
         if(length(groupPref$sampleNames) ==nrow(sdrfDat)) { 
-          setupSd$sampleNames <- groupPref$sampleNames          # custom sampleNames => use
-        }     
-        ## check for custom-provided gr  (priority)
-        if(length(groupPref$gr) ==nrow(sdrfDat))  {
-          chLe <- names(setupSd) %in% "lev"
-          if(any(chLe)) setupSd <- setupSd[-which(chLe)]
-          setupSd$level <- .adjPat(groupPref$gr)                # custom gr => use
-          setupSd$gr <- groupPref$gr
-        }                   
-        ## otherwise determine gr
-        if(length(setupSd$gr) <1) {               #  && length(dim(sdrf)) >1
-          replStrOpt <- c("highest","lowest","min","max","median","combAll","combNonOrth")
-          if(debug) {message(fxNa,if(debug)"rSM6d  ","length setupSd ", length(setupSd)); rSM6d <- list(setupSd=setupSd,sdrf=sdrf,sdrfDat=sdrfDat,abund=abund,suplAnnotFile=suplAnnotFile,groupPref=groupPref,summaryD=summaryD,parametersD=parametersD,setupSdSoft=setupSdSoft,useSdrfCol=useSdrfCol,quantMeth=quantMeth) }
-          ## check for custom provided method for sdrf-mining : (is it risky to search in 2nd value of sdrf ?)
-          ## 'groupPref$useCol' design custom choice of column (priority over 'groupPref$combMeth')
-          ## 'groupPref$combMeth' designs method for choosing from automatic mining            
-          if("useCol" %in% names(groupPref) && nchar(groupPref$useCol) >0) {   ## custom choice for sdrf-column
-            chCol <- grep(paste0(groupPref$useCol,"$"), sub("\\.$","", colnames(sdrfDat)[useSdrfCol]))
-            if(length(chCol) >0) {
-              if(debug) message(fxNa,"Using column '",colnames(sdrfDat)[useSdrfCol][chCol[1]],"' for setupSd")
-              groupPref$useCol <- useSdrfCol[chCol[1]]
-              setupSd <- try(wrMisc::replicateStructure(sdrfDat[,useSdrfCol], method=if(length(sdrf) >1) sdrf[2], silent=silent, callFrom=fxNa, debug=debug), silent=TRUE)
-              if(inherits(setupSd, "try-error")) {message(fxNa,"Unable to figure out replicate Structure"); setupSd <- NULL; syncColumns["sdrfDat"] <- FALSE}
-            }
+          setupSd$sampleNames <- groupPref$sampleNames          # custom sampleNames => use later (instead of colnames/file-names)
+        }
+        newNa <- NULL  ## initialize 
+        if(length(groupPref$gr)==1 && grepl("^sdrf", groupPref$gr[1])) {     
+          ## check for custom-provided gr  (priority)   wr modif 25sep24
+          ## check for picking specific column of sdrf
+          if(grepl("^sdrf\\$[[:alpha:]]", groupPref$gr[1])) {                                         
+            chColNa <- sub("^sdrf\\$","", groupPref$gr[1])
+            if(chColNa %in% colnames(sdrfDat)) { 
+              ## groupPref$gr points to specific column of sdrf
+              
+              grp <- wrMisc::rmSharedWords(sdrfDat[,chColNa], sep=c("_"," ",".","=",";"))   # try making more compact
+              chUnit <- if(isTRUE(chUnit) && all(grepl("[[:punct:]]", grp), na.rm=TRUE)) wrMisc::checkUnitPrefix(grp, if(isTRUE(chUnit)) defUnits else as.character(chUnit), stringentSearch=TRUE) else NULL
+              newNa <- if(length(chUnit) ==1) try(wrMisc::adjustUnitPrefix(grp, unit=chUnit[1], returnType=c("NAifInvalid"), silent=TRUE, callFrom=fxNa), silent=TRUE) else grp
+              if(inherits(newNa, "try-error")) {if(!silent) message(fxNa,"Failed to adjust unit-prefixes")} else grp <- newNa
+              setupSd$gr <- grp
+              setupSd$level <- .adjPat(grp) 
+              setupSd$meth <- paste0("custom from sdrf-column '",chColNa,"'")
+              if(debug) { message(fxNa,"rSM6d1  dim sdrfDat ",nrow(sdrfDat)," ",ncol(sdrfDat)); rSM6d1 <- list(sdrf=sdrf,sdrfDat=sdrfDat,abund=abund,suplAnnotFile=suplAnnotFile,quantMeth=quantMeth,groupPref=groupPref,summaryD=summaryD,parametersD=parametersD,syncColumns=syncColumns,iniSdrfOrder=iniSdrfOrder,setupSd=setupSd, grp=grp,chUnit=chUnit,newNa=newNa,chColNa=chColNa) }
+            }          
           } else {
-            ## fully automatic mining of gr
-            combMeth <- if(length(groupPref$combMeth) ==1) groupPref$combMeth else "combNonOrth"
-            ## addl check on combMeth ?  (replaces sdrf[2])
-            
-            tmp <- list(combNonOrth=try(wrMisc::replicateStructure(sdrfDat[,useSdrfCol], method=combMeth, silent=silent, callFrom=fxNa, debug=debug)),
-              lowest=try(wrMisc::replicateStructure(sdrfDat[,useSdrfCol], method="lowest", silent=silent, callFrom=fxNa, debug=debug)))
-
-            ch1 <- sapply(tmp, inherits, "try-error")
-            if(all(ch1)) {message(fxNa,"UNABLE to understand replicate-structure from sdrf !!"); setupSd <- NULL; syncColumns["sdrfDat"] <- FALSE
-            } else if(any(ch1)) {tmp <- tmp[which(!ch1)]; message(fxNa,"REMOVING one attempt of understanding replicate-structure") }
-
-            ## choose among multiple options for grouping (number of groups)
-            ch1 <- sapply(tmp, function(x) length(x$lev[which(!duplicated(x$lev))]))
-            lowNumberOfGroups <- if(length(groupPref$lowNumberOfGroups)==1) isTRUE(groupPref$lowNumberOfGroups) else TRUE
-            useSe <- if(any(ch1 ==1, na.rm=TRUE)) which(ch1 !=1) else if(lowNumberOfGroups) which.min(ch1) else which.max(ch1)
-            if(!silent) message(fxNa,"Choosing model '",names(useSe),"' for evaluating replicate-structure (ie ",ch1[useSe[1]]," groups of samples)" )         
-            if(debug) {message(fxNa,if(debug)"rSM6d2  ","length setupSd ", length(setupSd)); rSM6d2 <- list(setupSd=setupSd,sdrf=sdrf,sdrfDat=sdrfDat,abund=abund,suplAnnotFile=suplAnnotFile,
-              groupPref=groupPref,summaryD=summaryD,parametersD=parametersD,setupSdSoft=setupSdSoft,quantMeth=quantMeth,useSe=useSe, tmp=tmp) }
-          
-            setupSd$level <- tmp[[useSe[1]]]$lev  
-            setupSd$col <- tmp[[useSe[1]]]$col  
-            setupSd$meth <- names(useSe[1])
+            ## regular minig of sdrf
+            groupPref$gr <- "sdrf"
           }
+        } else  {
+          if(length(abund) <1) message(fxNa,"Can't check if length of $gr is OK since 'abund' bot given ..")
+          setupSd$gr <- groupPref$gr
+          setupSd$level <- grp <- .adjPat(setupSd$gr) 
+          setupSd$meth <- paste0("custom from groupPref$gr ")        
+        }  
+        if(debug) { message(fxNa,"rSM6d2  dim sdrfDat ",nrow(sdrfDat)," ",ncol(sdrfDat)); rSM6d2 <- list(sdrf=sdrf,sdrfDat=sdrfDat,abund=abund,suplAnnotFile=suplAnnotFile,quantMeth=quantMeth,groupPref=groupPref,summaryD=summaryD,parametersD=parametersD,syncColumns=syncColumns,iniSdrfOrder=iniSdrfOrder,setupSd=setupSd,chUnit=chUnit) }
 
-          ## rename $lev (normally not expected any more)          
+        ## DEFAULT mining (if $levels and/or $sampleNames not yet set)
+        #if(length(setupSd$level) != ncol(abund) || length(setupSd$sampleNames) != ncol(abund)) {
+        if(length(setupSd$sampleNames) <1 || length(setupSd$level) <1) {
+          ## check for column 'comment.technical.replicate.' (to exclude from using)
+          ## look for and/or 'characteristics.spiked.compound.' ?
+          useSdrfCol <- 1:ncol(sdrfDat)  
+          chTechnReplCol <- colnames(sdrfDat) %in% "comment.technical.replicate."
+          if(any(chTechnReplCol, na.rm=TRUE)) useSdrfCol <- useSdrfCol[-which(chTechnReplCol)]    # exclude designation of technical replicates
+  
+          ## option : use sampleNames from sdrf-fileNames
+          if("sdrf" %in% groupPref$sampleNames && length(groupPref$sampleNames)==1) {
+            ## use 1st of 'comment.data.file.' and 'comment.file.uri.'
+            colNa <- c("comment.data.file.", "comment.file.uri.")
+            chCol <- colNa %in% colnames(sdrfDat)
+            if(any(chCol)) { sampleNames <- sdrfDat[,which(chCol[1])]
+              ## try to simplify (remove redundant words, try adjusting varying units)
+              iniNa <- wrMisc::rmSharedWords(sampleNames, sep=c(" ","_","-","/"), silent=silent, debug=debug, callFrom=fxNa)
+              if(!isFALSE(chUnit)) chUnit <- wrMisc::checkUnitPrefix(iniNa, unit=if(isTRUE(chUnit)) defUnits else as.character(chUnit))
+              if(length(chUnit) >0) {
+                newNa <- try(wrMisc::adjustUnitPrefix(iniNa, unit=chUnit[1], returnType=c("NAifInvalid"), silent=silent, debug=debug, callFrom=fxNa), silent=TRUE)
+                if(inherits(newNa, "try-error")) {if(!silent) message(fxNa,"Failed to adjust unit-prefixes")} else setupSd$sampleNames <- groupPref$sampleNames <- newNa           
+              }
+              ## need adjust to summaryD ??
+            } else groupPref <- groupPref[-1*which(names(groupPref) ==sampleNames)] 
+          } else {
+            ## sampleNamesnot yet set, need to pick sampleNames from other ressources !      
+          }         
+        }  
+        if(debug) { message(fxNa,"rSM6e  dim sdrfDat ",nrow(sdrfDat)," ",ncol(sdrfDat)); rSM6e <- list(sdrf=sdrf,sdrfDat=sdrfDat,abund=abund,suplAnnotFile=suplAnnotFile,quantMeth=quantMeth,groupPref=groupPref,summaryD=summaryD,parametersD=parametersD,syncColumns=syncColumns,iniSdrfOrder=iniSdrfOrder,setupSd=setupSd) }
+      
+        setupSd$sdrfDat <- sdrfDat   # useful here ?
+        
+          
+        ## now determine gr  (if not yet present)
+        if(length(setupSd$gr) < (if(length(abund) >1) ncol(abund) else 1)) {
+        #old# if(length(setupSd$gr) <1 || identical(groupPref$gr,"sdrf")) {               #  && length(dim(sdrf)) >1
+          replStrOpt <- c("highest","lowest","min","max","median","combAll","combNonOrth")
+          if(debug) {message(fxNa,if(debug)"rSM6g  ","length setupSd ", length(setupSd)); rSM6g <- list(setupSd=setupSd,sdrf=sdrf,sdrfDat=sdrfDat,abund=abund,suplAnnotFile=suplAnnotFile,groupPref=groupPref,summaryD=summaryD,parametersD=parametersD,setupSdSoft=setupSdSoft,quantMeth=quantMeth) }  #useSdrfCol=useSdrfCol,
+          ## check for custom provided method for sdrf-mining : (is it risky to search in 2nd value of sdrf ?)
+          ## 'groupPref$useCol' design custom choice of multiple columns 
+          ## 'groupPref$combMeth' designs method for choosing from automatic mining            
+          if("useCol" %in% names(groupPref) && all(nchar(groupPref$useCol) >0)) {   ## custom choice for sdrf-column
+            chCol <- which(colnames(sdrfDat) %in% groupPref$useCol)
+          } else chCol <- which(!colnames(sdrfDat) %in% c("comment.technical.replicate."))            
+          if(length(chCol) >0) {  # chCol <- sdrfDat[, useSdrfCol[which(chCol)]]
+            setupSdIni <- setupSd
+            replMeth <- "failed"   # initialize
+            ## check content of 'combMeth' ?
+            #old#if(!isTRUE(groupPref$lowNumberOfGroups) &&  isTRUE(groupPref$combMeth != "lowest")) {
+            if(length(chCol) >1 && isTRUE(groupPref$combMeth != "lowest")) {
+              ## test 2 methods
+              tmp <- list(combNonOrth=try(wrMisc::replicateStructure(sdrfDat[,chCol], method=groupPref$combMeth, silent=silent, callFrom=fxNa, debug=debug), silent=TRUE),
+                lowest=try(wrMisc::replicateStructure(sdrfDat[,chCol], method="lowest", silent=silent, callFrom=fxNa, debug=debug), silent=TRUE))  
+              ch1 <- sapply(tmp, inherits, "try-error")
+              if(all(ch1)) { message(fxNa,"UNABLE to understand replicate-structure from sdrf !!"); setupSd <- NULL; syncColumns["sdrfDat"] <- FALSE
+              } else {
+                ## choose among multiple options for grouping (number of groups)
+                ch1 <- sapply(tmp, function(x) length(x$lev[which(!duplicated(x$lev))]))
+                lowNumberOfGroups <- if(length(groupPref$lowNumberOfGroups)==1) isTRUE(groupPref$lowNumberOfGroups) else TRUE
+                useSe <- if(any(ch1 ==1, na.rm=TRUE)) which(ch1 !=1) else if(lowNumberOfGroups) which.min(ch1) else which.max(ch1)
+                replMeth <- useSe <- useSe[1]
+                if(!silent) message(fxNa,"Choosing model '",names(useSe),"' for evaluating replicate-structure (ie ",ch1[useSe[1]]," groups of samples)" )         
+                tmp <- tmp[[useSe]]
+              }   # {message(fxNa,"REMOVING one attempt of understanding replicate-structure") }
+            } else {  
+              ## either just one column to mine or single specific method (eg groupPref$combMeth=="lowest"))
+              if(length(groupPref$combMeth)==1 && nchar(groupPref$combMeth) <1) groupPref$combMeth <- NULL
+              replMeth <- if(isTRUE(groupPref$lowNumberOfGroups) || isTRUE(nchar(groupPref$combMeth) ==1)) "lowest" else groupPref$combMeth
+              tmp <- try(wrMisc::replicateStructure(sdrfDat[,chCol], method=replMeth, silent=TRUE, callFrom=fxNa), silent=TRUE)
+              if(inherits(tmp, "try-error")) {syncColumns["sdrfDat"] <- FALSE; if(!silent) message(fxNa,"UNABLE to understand replicate-structure from sdrf (based on method '",replMeth,"')")}
+            }
+            if(debug) {message(fxNa,if(debug)"rSM6g2  ","length setupSd ", length(setupSd)); rSM6g2 <- list(setupSd=setupSd,setupSdIni=setupSdIni,sdrf=sdrf,sdrfDat=sdrfDat,abund=abund,suplAnnotFile=suplAnnotFile,groupPref=groupPref,summaryD=summaryD,parametersD=parametersD,setupSdSoft=setupSdSoft,quantMeth=quantMeth,tmp=tmp) }  #useSdrfCol=useSdrfCol,
+               
+            if(!inherits(tmp, "try-error") && length(tmp) >0) {   # valid mining
+              if(isTRUE(tmp$col==1) && all(grepl("^Sample {0,1}[[:digit:]]+$", names(tmp$lev))) ) {  # the column with sample-numbers was picked, not very informative; try to find better one
+                ## Try finding better content/text for names of levels, ie tmp$lev
+                chPa <- apply(sdrfDat[,chCol], 2, .adjPat)
+                ch1 <- apply(chPa[,-1], 2, function(x) all(chPa[,1]==x, na.rm=TRUE))
+                if(any(ch1)) names(tmp$lev) <- wrMisc::rmSharedWords(sdrfDat[,chCol[which(ch1)[1] +1]], sep=c("_"," ",".","=",";"), silent=silent,callFrom=fxNa) else {
+                  ## otherwise try to find column/pattern fitting to prev hit after removing redundant text & removing enumerators
+                  ref2 <- apply(sdrfDat[,chCol[-1]], 2, wrMisc::rmSharedWords, sep=c("_"," ",".","=",";"), silent=silent,callFrom=fxNa)
+                  ref2 <- apply(ref2, 2, wrMisc::rmEnumeratorName, silent=TRUE)   
+                  chPa2 <- apply(ref2, 2, .adjPat)
+                  ch1 <- apply(chPa2, 2, function(x) all(chPa[,1]==x, na.rm=TRUE))
+                  if(any(ch1)) {names(tmp$lev) <- chPa2[,which(ch1)[1]] }  # also document column used ?
+                }                 
+              }
+
+              if(length(abund) >0 && length(setupSdIni$sampleNames) == ncol(abund)) setupSd$sampleNames <- setupSdIni$sampleNames     # priority to specified $sampleNames
+              setupSd$level <- tmp$lev                # grouping correct,   names may be not meaningful (if column picked contains 'Sample 1' etc)
+              if(debug) {message(fxNa,if(debug)"rSM6g3  ","length tmp$lev ", length(tmp$lev)); rSM6g3 <- list(setupSd=setupSd,sdrf=sdrf,sdrfDat=sdrfDat,abund=abund,suplAnnotFile=suplAnnotFile,
+                groupPref=groupPref,summaryD=summaryD,parametersD=parametersD,setupSdSoft=setupSdSoft,quantMeth=quantMeth,tmp=tmp,chUnit=chUnit) }
+
+              ## optional adjusting of units to readjust levels
+              grp <- wrMisc::rmSharedWords(tmp$lev, sep=c("_"," ",".","=",";"))            # try making more compact
+              if(!isFALSE(chUnit[1])) { 
+                if(all(grepl("[[:punct:]]", grp), na.rm=TRUE) && (length(chUnit) <1 || isTRUE(chUnit))) chUnit <- wrMisc::checkUnitPrefix(grp, if(isTRUE(chUnit)) defUnits else as.character(chUnit), stringentSearch=TRUE)
+                if(length(chUnit) ==1 && nchar(chUnit) >0) {newNa <- try(wrMisc::adjustUnitPrefix(grp, unit=chUnit[1], returnType=c("NAifInvalid"), silent=TRUE, callFrom=fxNa), silent=TRUE)
+                  if(inherits(newNa, "try-error")) {if(!silent) message(fxNa,"Failed to adjust unit-prefixes")} else setupSd$level <- grp <- .adjPat(newNa) }} 
+              setupSd$col <- tmp$col  
+              setupSd$meth <- replMeth
+            }
+          } 
+          if(debug) {message(fxNa,if(debug)"rSM6h  ","length setupSd ", length(setupSd)); rSM6h <- list(setupSd=setupSd,sdrf=sdrf,sdrfDat=sdrfDat,abund=abund,suplAnnotFile=suplAnnotFile,
+            groupPref=groupPref,summaryD=summaryD,parametersD=parametersD,setupSdSoft=setupSdSoft,quantMeth=quantMeth,tmp=tmp,chUnit=chUnit) }
+          
+
+          ## remove/rename $lev (normally not expected any more)          
           chLe <- names(setupSd) %in% "lev"
           if(any(chLe)) { 
             if(debug) message(fxNa,"Still found setupSd$lev !! Used to replace setupSd$level")
@@ -749,56 +848,37 @@ readSampleMetaData <- function(quantMeth, sdrf=NULL, suplAnnotFile=NULL, path=".
             setupSd$level <- setupSd$lev
             setupSd <- setupSd[-which(chLe)]
           }
-                      
-          if(debug) {message(fxNa,if(debug) "rSM6e  ","length setupSd ", length(setupSd)); rSM6e <- list() }
-        }          
-        if("setupSd" %in% names(setupSd)) {setupSd <- wrMisc::partUnlist(setupSd, callFrom=fxNa,debug=debug);
-          if(debug) message(fxNa,"rSM6f  - not expecting list of list(s) for setupSd ! .. correcting"); rSM6f <- list(setupSd=setupSd,sdrf=sdrf,sdrfDat=sdrfDat,abund=abund,suplAnnotFile=suplAnnotFile,groupPref=groupPref,summaryD=summaryD,parametersD=parametersD,setupSdSoft=setupSdSoft,quantMeth=quantMeth)}
+          if(debug) {message(fxNa,if(debug) "rSM6i  ","length setupSd ", length(setupSd)); rSM6i <- list() }
+        }   # finish determining setupSd$gr 
+                 
+        if(debug) {message(fxNa,"rSM6j"); rSM6j <- list(setupSd=setupSd,sdrf=sdrf,sdrfDat=sdrfDat,abund=abund,suplAnnotFile=suplAnnotFile,groupPref=groupPref,summaryD=summaryD,parametersD=parametersD,setupSdSoft=setupSdSoft,quantMeth=quantMeth)}
+        if("setupSd" %in% names(setupSd)) { setupSd <- wrMisc::partUnlist(setupSd, callFrom=fxNa,debug=debug);
+          if(debug) message(fxNa,"rSM6j2  - not expecting list of list(s) for setupSd ! .. correcting")}
           
-        ## try to find usable names for setupSd$level (if not custom provided )
-        if(length(setupSd$gr) <1) {
-          ## still need usable names for factor-levels
-          names(setupSd$level) <- gsub("[[:space:]]*[[:punct:]]*", "_",names(setupSd$level))
-          ## remove constant words ? (like 'Sample', 'Group' ?) 
-          ## trim redundant words ??
-          
-          if(debug) message(fxNa, if(debug)"rSM6f2  ","Using as names for groups of replicates/levels :  ",wrMisc::pasteC(utils::head(unique(names(setupSd$level)), 5)))
-        }   
-        ## NOTE : names of levels may not be very meaningful/optimal
-        ## option (future) : search in file-names for similar pattern
       
-        if(debug) {message(fxNa,"rSM6g   names setupSd : ", wrMisc::pasteC(names(setupSd))); rSM6g <- list() }
-        if(!is.list(setupSd)) {setupSd <- as.list(setupSd); if(debug) message(fxNa,"rSM6f  'setupSd' should be list, but was NOT !!")}
+        if(debug) {message(fxNa,"rSM6i   names setupSd : ", wrMisc::pasteC(names(setupSd))); rSM6g <- list() }
+        if(!is.list(setupSd)) {setupSd <- as.list(setupSd); if(debug) message(fxNa,"rSM6i  'setupSd' should be list, but was NOT !!")}
         if(!"sdrfDat" %in% names(setupSd)) setupSd$sdrfDat <- sdrfDat
-
-        ## (optional) re-adjust numbers of levels for unit-names
-        iniNa <- names(setupSd$level)
-        if(length(chUnit) >0 && !isFALSE(chUnit)) chUnit <- wrMisc::checkUnitPrefix(iniNa, unit=if(isTRUE(chUnit)) c("Mol","mol", "days","day","m","sec","s","h") else as.character(chUnit))
-        if(length(chUnit) >0) {
-          newNa <- try(wrMisc::adjustUnitPrefix(iniNa, unit=chUnit[1], returnType=c("NAifInvalid"), silent=silent, debug=debug, callFrom=fxNa), silent=TRUE)
-          if(inherits(newNa, "try-error")) {if(!silent) message(fxNa,"Failed to adjust unit-prefixes")} else names(setupSd$level) <- newNa           
-        } else newNa <- NULL
-        if(debug) {message(fxNa, "rSM6h  ")
-          rSM6h <- list(sdrf=sdrf,iniNa=iniNa,setupSd=setupSd,sdrfDat=sdrfDat,abund=abund,suplAnnotFile=suplAnnotFile,quantMeth=quantMeth,groupPref=groupPref,newNa=newNa,iniNa=iniNa,summaryD=summaryD,parametersD=parametersD,syncColumns=syncColumns,iniSdrfOrder=iniSdrfOrder)
+        if(debug) {message(fxNa, "rSM6k  ")
+          rSM6k <- list(sdrf=sdrf,setupSd=setupSd,sdrfDat=sdrfDat,abund=abund,suplAnnotFile=suplAnnotFile,quantMeth=quantMeth,groupPref=groupPref,newNa=newNa,summaryD=summaryD,parametersD=parametersD,syncColumns=syncColumns,iniSdrfOrder=iniSdrfOrder)
         }
 
         setupSd$annotBySoft <- as.data.frame(summaryD)
         setupSd$syncColumns <- syncColumns
 
       } else {      ## sdrf was given - but NOT conform : (no soft-generated sample annot available) try to match colnames of abund
-        if(debug) message(fxNa, if(debug) "rSM6j ","NO valid sdrf found")
+        if(debug) message(fxNa, if(debug) "rSM6l ","NO valid sdrf found")
         ## ie single source of info
         if(length(summaryD) <1) {                                              ## ie no  summaryD
-          if(debug) message(fxNa, if(debug) "rSM6k ","NO valid sdrf and NO valid information (summaryD) from quant-software found")
-
+          if(debug) message(fxNa, if(debug) "rSM6m ","NO valid sdrf and NO valid information (summaryD) from quant-software found")
         } else {                         # ie summaryD is available
           setupSd <- setupSdSoft
-          if(!silent) message(fxNa,"Reading of sdrf was NOT successful and no summaryD available => nothing can be done to mine experimental setup...")
+          if(!silent) message(fxNa, if(debug) "rSM6n ","Reading of sdrf was NOT successful and no summaryD available => nothing can be done to mine experimental setup...")
         }
-      }      
+      }
+            
       if(length(iniSdrfOrder) >0) setupSd$iniSdrfOrder <- iniSdrfOrder
       if(debug) { message(fxNa,"rSM7  head of setupSd$level : ",wrMisc::pasteC(utils::head(setupSd$level))); rSM7 <- list(setupSd=setupSd,sdrf=sdrf,sdrfDat=sdrfDat,suplAnnotFile=suplAnnotFile,quantMeth=quantMeth,abund=abund,summaryD=summaryD,nSamp0=nSamp0,iniSdrfOrder=iniSdrfOrder)}
-
       if(length(setupSd) >0) if(length(setupSd$level) != nSamp0 && length(abund) >0) {               ## keep this ? - redundant !
         if(!silent) warning(fxNa, if(debug) "rSM7  ","Invalid information from sample meta-data or wrong experiment ! Number of samples from sdrf ",
           " (",length(setupSd$level),") and from experimental data (",ncol(abund),") don't match !")
@@ -807,6 +887,7 @@ readSampleMetaData <- function(quantMeth, sdrf=NULL, suplAnnotFile=NULL, path=".
       }
 
     } else { setupSd <- setupSdSoft; setupSd$annotBySoft <- summaryD }
+    
     ## allow export of sdrf-draft
     if(length(parametersSd) >0 && length(setupSd$sdrfDat) <1) {
       setupSd$sdrfExport <- parametersSd
@@ -818,4 +899,4 @@ readSampleMetaData <- function(quantMeth, sdrf=NULL, suplAnnotFile=NULL, path=".
   }
   ## finished readSampleMetaData
   setupSd }
-     
+       

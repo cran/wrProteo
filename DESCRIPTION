@@ -1,5 +1,5 @@
 Package: wrProteo
-Version: 1.12.0
+Version: 1.13.0
 Title: Proteomics Data Analysis Functions
 Authors@R: person("Wolfgang", "Raffelsberger", email = "w.raffelsberger@gmail.com", role = c("aut", "cre"))
 Author: Wolfgang Raffelsberger [aut, cre]
@@ -26,7 +26,7 @@ Description: Data analysis of proteomics experiments by mass spectrometry is sup
     and Proline is provided with a detailed analysis of heterologous spike-in proteins.     
 Depends: R (>= 3.5.0)
 Imports: grDevices, graphics, knitr, limma, stats, utils, wrMisc (>=
-        1.15.0)
+        1.15.2)
 Suggests: data.table, fdrtool, kableExtra, MASS, RColorBrewer, readxl,
         ROTS, rmarkdown, R.utils, sm, wrGraph (>= 1.3.7)
 License: GPL-3
@@ -34,6 +34,6 @@ Encoding: UTF-8
 VignetteBuilder: knitr
 RoxygenNote: 7.3.2
 NeedsCompilation: no
-Packaged: 2024-07-26 11:58:46 UTC; wraff
+Packaged: 2024-11-18 09:43:20 UTC; wraff
 Repository: CRAN
-Date/Publication: 2024-07-26 13:00:02 UTC
+Date/Publication: 2024-11-18 12:50:03 UTC

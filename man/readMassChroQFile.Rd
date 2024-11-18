@@ -17,7 +17,7 @@ readMassChroQFile(
   gr = NULL,
   sdrf = NULL,
   suplAnnotFile = FALSE,
-  groupPref = list(lowNumberOfGroups = TRUE),
+  groupPref = list(lowNumberOfGroups = TRUE, chUnit = TRUE),
   plotGraph = TRUE,
   silent = FALSE,
   debug = FALSE,
@@ -58,7 +58,9 @@ if \code{TRUE} defaults to file '*InputFiles.txt' (needed to match information o
 if \code{character} the respective file-name (relative or absolute path)}
 
 \item{groupPref}{(list) additional parameters for interpreting meta-data to identify structure of groups (replicates), will be passed to \code{readSampleMetaData}.
-May contain \code{lowNumberOfGroups=FALSE} for automatically choosing a rather elevated number of groups if possible (defaults to low number of groups, ie higher number of samples per group)}
+May contain \code{lowNumberOfGroups=FALSE} for automatically choosing a rather elevated number of groups if possible (defaults to low number of groups, ie higher number of samples per group)
+May contain \code{chUnit} (logical or character) to be passed to \code{readSampleMetaData()} for (optional) adjustig of unit-prefixes in meta-data group labels, in case multiple different unit-prefixes 
+are used (eg '100pMol' and '1nMol').}
 
 \item{plotGraph}{(logical) optional plot of type vioplot of initial and normalized data (using \code{normalizeMeth}); if integer, it will be passed to \code{layout} when plotting}
 

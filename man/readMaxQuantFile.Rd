@@ -22,7 +22,7 @@ readMaxQuantFile(
   gr = NULL,
   sdrf = NULL,
   suplAnnotFile = NULL,
-  groupPref = list(lowNumberOfGroups = TRUE),
+  groupPref = list(lowNumberOfGroups = TRUE, chUnit = TRUE),
   titGraph = NULL,
   wex = 1.6,
   plotGraph = TRUE,
@@ -73,7 +73,14 @@ if \code{TRUE} default to files 'summary.txt' (needed to match information of \c
 if \code{character} the respective file-names (relative ro absolute path), 1st is expected to correspond to 'summary.txt' (tabulated text, the samples as given to MaxQuant) and 2nd to 'parameters.txt' (tabulated text, all parameters given to MaxQuant)}
 
 \item{groupPref}{(list) additional parameters for interpreting meta-data to identify structure of groups (replicates), will be passed to \code{readSampleMetaData}.
-May contain \code{lowNumberOfGroups=FALSE} for automatically choosing a rather elevated number of groups if possible (defaults to low number of groups, ie higher number of samples per group)}
+  May contain \code{(gr= )} vector or factor describing a custom-grouping (will get priority over other sdrf etc) like 
+    \code{(gr="sdrf")} (global mining of sdrf), 
+    \code{(gr="sdrf$thisColumn")} (specific column of sdrf, if notg present will fall back to global mining of sdrf),
+    or \code{(gr="colnames")} to force grouping based on colnames from main data (after stripping terminal nominators) 
+
+  May contain \code{lowNumberOfGroups=FALSE} for automatically choosing a rather elevated number of groups if possible (defaults to low number of groups, ie higher number of samples per group)
+  May contain \code{chUnit} (logical or character) to be passed to \code{readSampleMetaData()} for (optional) adjustig of unit-prefixes in meta-data group labels, in case multiple different unit-prefixes 
+  are used (eg '100pMol' and '1nMol').}
 
 \item{titGraph}{(character) custom title to plot of distribution of quantitation values}
 

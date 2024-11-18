@@ -87,13 +87,8 @@ grp9 <- rep(1:9,each=3)
 head(grp9)
 
 ## special group of proteins (we want to differentiate/ highlight lateron)
-UPS1ac <- c("P00915", "P00918", "P01031", "P69905", "P68871", "P41159", "P02768", "P62988",
-  "P04040", "P00167", "P01133", "P02144", "P15559", "P62937", "Q06830", "P63165", "P00709", "P06732",
-  "P12081", "P61626", "Q15843", "P02753", "P16083", "P63279", "P01008", "P61769", "P55957", "O76070",
-  "P08263", "P01344", "P01127", "P10599", "P99999", "P06396", "P09211", "P01112", "P01579", "P02787",
-  "O00762", "P51965", "P08758", "P02741", "P05413", "P10145", "P02788", "P10636-8", "P00441", "P01375")
-
-specPrefMQ <- list(conta="CON_|LYSC_CHICK", mainSpecies="OS=Saccharomyces cerevisiae", spike=UPS1ac)
+UPS1ac <- getUPS1acc()$ac
+specPrefMQ <- list(conta="CON_|LYSC_CHICK", mainSpecies="OS=Saccharomyces cerevisiae", spike=getUPS1acc()$ac)
 
 dataMQ <- readMaxQuantFile(path1, specPref=specPrefMQ, suplAnnotFile=TRUE, groupPref=list(lowNumberOfGroups=FALSE), gr=grp9, plotGraph=FALSE)
 
@@ -175,7 +170,7 @@ summary(dataWB$quant)
 
 ## ----readSampleMetaData2,  echo=TRUE------------------------------------------
 MQsdrf001819Setup <- readSampleMetaData(quantMeth="MQ", sdrf="PXD001819", path=path1, suplAnnotFile="summary.txt.gz", abund=dataMQ$quant)
-str(MQsdrf001819Setup)
+names(MQsdrf001819Setup)
 
 ## ----fuseProteomicsProjects1,  echo=TRUE--------------------------------------
 path1 <- system.file("extdata", package="wrProteo")

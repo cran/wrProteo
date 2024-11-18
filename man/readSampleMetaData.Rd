@@ -46,7 +46,7 @@ if \code{TRUE} the default set of unit-names ('Mol','mol', 'days','day','m','sec
 
 \item{debug}{(logical) additional messages for debugging}
 
-\item{callFrom}{(character) allow easier tracking of messages produced}
+\item{callFrom}{(character) allows easier tracking of messages produced}
 }
 \value{
 This function returns a list with \code{$level} (grouping of samples given as integer), and \code{$meth} (method by which grouping as determined).

@@ -54,7 +54,14 @@
 #'  if \code{TRUE} default to files 'summary.txt' (needed to match information of \code{sdrf}) and 'parameters.txt' which can be found in the same folder as the main quantitation results;
 #'  if \code{character} the respective file-names (relative ro absolute path), 1st is expected to correspond to 'summary.txt' (tabulated text, the samples as given to MaxQuant) and 2nd to 'parameters.txt' (tabulated text, all parameters given to MaxQuant)
 #' @param groupPref (list) additional parameters for interpreting meta-data to identify structure of groups (replicates), will be passed to \code{readSampleMetaData}.
+#'   May contain \code{(gr= )} vector or factor describing a custom-grouping (will get priority over other sdrf etc) like 
+#'     \code{(gr="sdrf")} (global mining of sdrf), 
+#'     \code{(gr="sdrf$thisColumn")} (specific column of sdrf, if notg present will fall back to global mining of sdrf),
+#'     or \code{(gr="colnames")} to force grouping based on colnames from main data (after stripping terminal nominators) 
+#' 
 #'   May contain \code{lowNumberOfGroups=FALSE} for automatically choosing a rather elevated number of groups if possible (defaults to low number of groups, ie higher number of samples per group)
+#'   May contain \code{chUnit} (logical or character) to be passed to \code{readSampleMetaData()} for (optional) adjustig of unit-prefixes in meta-data group labels, in case multiple different unit-prefixes 
+#'   are used (eg '100pMol' and '1nMol').
 #' @param plotGraph (logical) optional plot vioplot of initial and normalized data (using \code{normalizeMeth}); alternatively the argument may contain numeric details that will be passed to \code{layout} when plotting
 #' @param titGraph (character) custom title to plot of distribution of quantitation values
 #' @param wex (numeric)  relative expansion factor of the violin in plot
@@ -76,7 +83,7 @@
 readMaxQuantFile <- function(path, fileName="proteinGroups.txt", normalizeMeth="median", quantCol="LFQ.intensity", contamCol="Potential.contaminant",
   pepCountCol=c("Razor + unique peptides","Unique peptides","MS.MS.count"), read0asNA=TRUE, refLi=NULL, sampleNames=NULL,
   extrColNames=c("Majority.protein.IDs","Fasta.headers","Number.of.proteins"), specPref=c(conta="conta|CON_|LYSC_CHICK", mainSpecies="OS=Homo sapiens"),
-  remRev=TRUE, remConta=FALSE, separateAnnot=TRUE, gr=NULL, sdrf=NULL, suplAnnotFile=NULL, groupPref=list(lowNumberOfGroups=TRUE),
+  remRev=TRUE, remConta=FALSE, separateAnnot=TRUE, gr=NULL, sdrf=NULL, suplAnnotFile=NULL, groupPref=list(lowNumberOfGroups=TRUE, chUnit=TRUE),
   titGraph=NULL, wex=1.6, plotGraph=TRUE, silent=FALSE, debug=FALSE, callFrom=NULL) {
   ## prepare
   fxNa <- wrMisc::.composeCallName(callFrom, newNa="readMaxQuantFile")
@@ -182,7 +189,7 @@ readMaxQuantFile <- function(path, fileName="proteinGroups.txt", normalizeMeth="
     names(tm2) <- pepCountCol
     usePCol <- lapply(tm2, function(x) {ch1 <- lapply(x, grep, colnames(tmp)); if(length(ch1) >1) ch1[[which.max(sapply(ch1,length))]] else ch1[[1]]})
     usePCol <- lapply(usePCol, wrMisc::naOmit)
-    ch2 <- sapply(usePCol, length)  -ncol(abund)
+    ch2 <- sapply(usePCol, length) - ncol(abund)
     if(any(ch2 >0, na.rm=TRUE)) usePCol[which(ch2 >0)] <- lapply(usePCol[which(ch2 >0)], function(x) x[-1])
     ch2 <- sapply(usePCol, length) ==ncol(abund)
     if(!silent && any(!ch2, na.rm=TRUE)) message(fxNa,"Could not find peptide counts columns (argument 'pepCountCol') matching to '",pepCountCol[which(!ch2)],"'")
@@ -199,12 +206,13 @@ readMaxQuantFile <- function(path, fileName="proteinGroups.txt", normalizeMeth="
     annot <- as.matrix(tmp[,useACol$annC])
     if(debug) {message(fxNa,"rMQ4b"); rMQ4b <- list(path=path,chPa=chPa,tmp=tmp,extrColNames=extrColNames,chCol=chCol,chMajProCol=chMajProCol,counts=counts,
       chRev=chRev,quantCol=quantCol,abund=abund,chNum=chNum,ch2=ch2,annot=annot,remConta=remConta,specPref=specPref)}
+      
 
     ## look for tags from  specPref
-    if(length(specPref) >0) {
-      ## set annot[,"specPref"] according to specPref
-      annot <- .extrSpecPref(specPref, annot, useColumn=c("Majority.protein.IDs","Fasta.headers"), silent=silent, debug=debug, callFrom=fxNa)
-    } else if(debug) message(fxNa,"Note: Argument 'specPref' not specifed (empty)")
+#    if(length(specPref) >0) {
+#      ## set anno#t[,"specPref"] according to specPref
+#      annot <- .ex#trSpecPref(specPref, annot, useColumn=c("Majority.protein.IDs","Fasta.headers"), silent=silent, debug=debug, callFrom=fxNa)
+#    } else if(debug#) message(fxNa,"Note: Argument 'specPref' not specifed (empty)")
 
     if(debug) {message(fxNa,"rMQ5"); rMQ5 <- list(path=path,chPa=chPa,tmp=tmp,extrColNames=extrColNames,chCol=chCol,chMajProCol=chMajProCol,counts=counts,
       chRev=chRev,quantCol=quantCol,abund=abund,chNum=chNum,ch2=ch2,annot=annot,remConta=remConta,specPref=specPref)}
@@ -248,9 +256,6 @@ readMaxQuantFile <- function(path, fileName="proteinGroups.txt", normalizeMeth="
     if("Potential.contaminant" %in% colnames(annot)) { chCo <- grepl("\\+",annot[,"Potential.contaminant"])
       if(all(chCo)) { chCo <- FALSE ; warning(fxNa,"ALL proteins were marked as 'Potential.contaminant' !   Nothing would remain, thus ignoring..")}
       if(any(chCo, na.rm=TRUE)) contam[which(chCo)] <- TRUE }
-    chSpPref <- names(specPref) %in% "conta"
-    if(any(chSpPref)) { specPrCont <- annot[,"SpecType"] %in% "conta"
-      if(any(specPrCont))  annot[which(specPrCont),"Potential.contaminant"] <- TRUE }
     ## extract/add GN
     MQan3 <- cbind(MQan3,GN=NA)
     GNLi <- grep("\\ GN=[[:upper:]]{2,}", annot[,"Fasta.headers"])
@@ -310,14 +315,14 @@ readMaxQuantFile <- function(path, fileName="proteinGroups.txt", normalizeMeth="
 
       if(debug) {message(fxNa,"rMQ7c")}
     }
-    if(!silent) { chSp <- sum(is.na(annot[,"Species"]))
-    if(chSp >0) message(fxNa,"Note: ",chSp," proteins with unknown species")
+    chSp <- sum(is.na(annot[,"Species"]))
+    if(chSp >0 && !silent) { 
+       message(fxNa,"Note: ",chSp," proteins with unknown species")}
 
     tab <- table(annot[,"Species"])
     if(length(tab) >0) {
       tab <- rbind(names(tab), paste0(": ",tab,",  "))
-      if(!silent) message("     data by species : ", apply(tab, 2, paste)) } }              # all lines assigned
-
+      if(!silent) message("     data by species : ", apply(tab, 2, paste)) }               # all lines assigned
     if(debug) {message(fxNa,"rMQ8")}
 
     ## MaxQuant internal contaminants specific : remove non-protein DB parts - if possible, eg "CON__ENSEMBL:ENSBTAP00000007350;CON__P01030" -> "CON__P01030"
@@ -359,15 +364,29 @@ readMaxQuantFile <- function(path, fileName="proteinGroups.txt", normalizeMeth="
       ## keep 1st part after separator characters
       if(length(ch1) >0) annot[ch1,1] <- sub(paste(paste0(c(",", ";", "\\(", "\\|"), "[[:print:]]*"), collapse="|"), "", annot[ch1,1]) # keep 1st ID: remove all after separator ..
     }
-    if(debug) {message(fxNa,"rMQ8c")}
+    if(debug) {message(fxNa,"rMQ8c"); rMQ8c <- list(abind=abund,annot=annot,specPref=specPref) }
+      
 
     ## extract UniProtID as EntryName
     tmp <- sub("\\ [[:alnum:]][[:print:]]+", "", annot[,"Fasta.headers"])
     annot[,"EntryName"] <- sub("^[[:print:]]+\\|[[:alnum:]]+\\|","",tmp)  # also remove _UPS?
     colnames(annot)[which(colnames(annot)=="GN")] <- "GeneName"           # correct colname
     annot <- cbind(annot[,1:6], Description=sub("\\ $","",sub("[[:upper:]]{2}=[[:print:]]+","",substring(annot[,"Fasta.headers"], nchar(tmp) +2))), annot[,7:ncol(annot)])
+    if(debug) {message(fxNa,"rMQ8d"); rMQ8d <- list(abind=abund,annot=annot,specPref=specPref)}
 
-    if(debug) {message(fxNa,"rMQ8d")}
+    ## look for tags from  specPref
+    if(length(specPref) >0) {
+      ## set annot[,"specPref"] according to specPref
+      annot <- .extrSpecPref(specPref, annot, useColumn=c("Majority.protein.IDs","Fasta.headers"), silent=silent, debug=debug, callFrom=fxNa)
+    } else if(debug) message(fxNa,"Note: Argument 'specPref' not specifed (empty)")
+
+    ## still needed ??
+    chSpPref <- names(specPref) %in% "conta"
+    if(any(chSpPref)) { specPrCont <- annot[,"SpecType"] %in% "conta"
+      if(any(specPrCont))  annot[which(specPrCont),"Potential.contaminant"] <- TRUE }
+
+    if(debug) {message(fxNa,"rMQ8e"); rMQ8e <- list(abind=abund,annot=annot,specPref=specPref)}
+
 
     ## look for unique col from $annot to use as rownames
     chAn <- colSums(apply(annot[,c(1:min(ncol(annot),7))], 2, duplicated), na.rm=TRUE)          # look at first 6 cols : how many elements per column duplicated
@@ -391,34 +410,51 @@ readMaxQuantFile <- function(path, fileName="proteinGroups.txt", normalizeMeth="
     if(inherits(quant, "try-error")) { warning(fxNa,"PROBLEMS ahead : Unable to normalize as log2-data !!") }
 
     if(debug) {message(fxNa,"rMQ10"); rMQ10 <- list(path=path,chPa=chPa,tmp=tmp,extrColNames=extrColNames,chCol=chCol,chMajProCol=chMajProCol,chRev=chRev,quantCol=quantCol,abund=abund,chNum=chNum,ch2=ch2,
-      quant=quant,annot=annot,chLe=chLe,MQan2=MQan2,MQan3=MQan3,contam=contam,GNLi=GNLi,remConta=remConta)}
+      quant=quant,annot=annot,sampleNames=sampleNames,sdrf=sdrf,gr=gr,specPref=specPref,groupPref=groupPref,suplAnnotFile=suplAnnotFile,chLe=chLe,MQan2=MQan2,MQan3=MQan3,contam=contam,GNLi=GNLi,remConta=remConta)}
 
-    ### GROUPING OF REPLICATES AND SAMPLE META-DATA
-    if(identical("sdrf",sampleNames)) {specPref$sampleNames <- sampleNames; sampleNames <- NULL}
+
+    ### GROUPING OF REPLICATES AND SAMPLE META-DATA  (modif 25sep24)
+    if(identical("sdrf",sampleNames)) {specPref$sampleNames <- sampleNames; sampleNames <- NULL}  # transfer info to specPref
     if(length(suplAnnotFile) >0 || length(sdrf) >0) {
-      if(length(sampleNames) %in% c(1, ncol(abund))) groupPref$sampleNames <- sampleNames
-      if(length(gr) %in% c(1, ncol(abund))) groupPref$gr <- gr
-      if("sampleNames" %in% names(specPref)) groupPref$sampleNames <- specPref$sampleNames
-      setupSd <- readSampleMetaData(sdrf=sdrf, suplAnnotFile=suplAnnotFile, quantMeth="MQ", path=path, abund=utils::head(quant), groupPref=groupPref, silent=silent, debug=debug, callFrom=fxNa)
+      if(!is.list(groupPref)) groupPref <- as.list(groupPref)
+      if(length(sampleNames) %in% c(1, ncol(abund))) groupPref$sampleNames <- sampleNames     # custom sample names
+      if(length(gr)==0 && "gr" %in% names(specPref)) gr <- specPref$gr                    # transfer from  specPref to gr (if gr empty)
+      if(length(gr) %in% c(1, ncol(abund))) { 
+        if(!"gr" %in% names(groupPref)) groupPref$gr <- gr  else {                            # pipe content of gr to groupPref (if not already precified)
+          if(!silent) message(fxNa,"Note: Content of argument 'gr' NOT used since already/also set in argument 'groupPref' (which has priority)")}
+      }
+      if("sampleNames" %in% names(specPref) && length(specPref$sampleNames)==ncol(abund)) groupPref$sampleNames <- specPref$sampleNames    # pipe content of specPref$sampleNames  to groupPref
+      setupSd <- readSampleMetaData(sdrf=sdrf, suplAnnotFile=suplAnnotFile, quantMeth="MQ", path=path, abund=utils::head(quant), chUnit=isTRUE(groupPref$chUnit), groupPref=groupPref, silent=silent, debug=debug, callFrom=fxNa)
     }
-    if(debug) {message(fxNa,"rMQ13 .."); rMQ13 <- list(sdrf=sdrf,gr=gr,suplAnnotFile=suplAnnotFile,abund=abund, quant=quant,refLi=refLi,annot=annot,setupSd=setupSd,sampleNames=sampleNames)}
+    if(debug) {message(fxNa,"rMQ13 .."); rMQ13 <- list(sdrf=sdrf,gr=gr,suplAnnotFile=suplAnnotFile,abund=abund, quant=quant,specPref=specPref,refLi=refLi,annot=annot,setupSd=setupSd,sampleNames=sampleNames)}
 
     ## finish groups of replicates & annotation setupSd
     setupSd <- .checkSetupGroups(abund=abund, setupSd=setupSd, gr=gr, sampleNames=sampleNames, quantMeth="MQ", silent=silent, debug=debug, callFrom=fxNa)
+    if(debug) {message(fxNa,"rMQ13a .."); rMQ13a <- list(sdrf=sdrf,gr=gr,suplAnnotFile=suplAnnotFile,abund=abund, quant=quant,specPref=specPref,refLi=refLi,annot=annot,setupSd=setupSd,sampleNames=sampleNames)}
+    
 
     ## harmonize sample-names/1
     colNa <- if(length(setupSd$sampleNames)==ncol(abund)) setupSd$sampleNames else setupSd$groups
 
+    ### begin NEW
+    ## option : choose (re-)naming of levels & columns on most redundance
+    if(length(setupSd$sampleNames)==ncol(quant) && length(setupSd$sampleNaSdrf)==ncol(quant)) {
+      ## check if setupSd$sampleNaSdrf  or   setupSd$sampleNames contain better info (some info on replicates)
+      chRed1 <- sum(duplicated(sub("(_|\\.| )[[:digit:]]+.*","", setupSd$sampleNaSdrf)), na.rm=TRUE)
+      chRed2 <- sum(duplicated(sub("(_|\\.| )[[:digit:]]+.*","", setupSd$sampleNames)), na.rm=TRUE)
+      if(chRed2 < chRed1) {                                          # use info for levels depending on where more 
+        colNa <- colnames(abund) <- setupSd$sampleNames <- setupSd$sampleNaSdrf                     ## take sample names from sdrf via  setupSd$sampleNaSdrf
+      } else {
+        colNa <- colnames(abund) <- setupSd$sampleNames }          ## take sample names from sdrf via  setupSd$sampleNaSdrf
+      #setupSd$level  
+    }    
     ## option : set order of samples as sdrf
     if("sdrfOrder" %in% names(sdrf) && isTRUE(as.logical(sdrf["sdrfOrder"])) && length(setupSd$iniSdrfOrder)==ncol(abund) && ncol(abund) >1) {  # set order according to sdrf (only if >1 samples)
       nOrd <- order(setupSd$iniSdrfOrder)
-      ## rename columns according to sdrf and set order of quant and abund ..
       abund <- abund[,nOrd]
       if(length(quant) >0) quant <- quant[,nOrd]
-      if(length(setupSd$sampleNames)==ncol(quant)) {
-        colNa <- colnames(abund) <- setupSd$sampleNames <- setupSd$sampleNaSdrf[nOrd]  #old# setupSd$sampleNames[nOrd]         ## take sample names from sdrf via  setupSd$sampleNaSdrf
-        if(length(quant) >0) colnames(quant) <- setupSd$sampleNaSdrf[nOrd]  #old# setupSd$sampleNames[nOrd]
-      } else colNa <- colnames(abund)
+      #setupSd$level <- setupSd$level[nOrd]
+      ## rename columns according to sdrf and set order of quant and abund ..
       ## now adapt order of setupSd, incl init Sdrf
       if(length(setupSd) >0) { 
         is2dim <- sapply(setupSd, function(x,le) length(dim(x))==2 && nrow(x)==le, le=length(nOrd))    # look for matr or df to change order of lines
@@ -429,6 +465,9 @@ readMaxQuantFile <- function(path, fileName="proteinGroups.txt", normalizeMeth="
 
       if(length(counts) >0 && length(dim(counts))==3) counts <- array(counts[,nOrd,], dim=c(nrow(counts), length(nOrd), dim(counts)[3]), 
         dimnames=list(rownames(counts), colnames(counts)[nOrd], dimnames(counts)[[3]]))
+      if(debug) {message(fxNa,"rMQ13c .."); rMQ13c <- list(path=path,chPa=chPa,tmp=tmp,extrColNames=extrColNames,groupPref=groupPref,chCol=chCol,chRev=chRev,quantCol=quantCol,abund=abund,chNum=chNum,ch2=ch2,
+        sdrf=sdrf,quant=quant,annot=annot,contam=contam,remConta=remConta,setupSd=setupSd)}
+        
       ## try re-adjusting levels
       tm1 <- sub("^[[:alpha:]]+( |_|-|\\.)+[[:alpha:]]+","", colnames(abund))  # remove heading text
       if(all(grepl("^[[:digit:]]", tm1))) {
@@ -438,8 +477,10 @@ readMaxQuantFile <- function(path, fileName="proteinGroups.txt", normalizeMeth="
           names(setupSd$level) <- tm1
           if(!silent) message(fxNa,"Sucessfully re-adjusted levels after bringing in order of Sdrf")}
       }     
-    } else {
+    } else {     # no sdrf-info
 
+
+      ## begin old
       ## harmonize sample-names/2
       colNa <- colnames(abund)
       chGr <- grepl("^X[[:digit:]]", colNa)                                                # check & remove heading 'X' from initial column-names starting with digits
@@ -460,7 +501,7 @@ readMaxQuantFile <- function(path, fileName="proteinGroups.txt", normalizeMeth="
       refLi=refLi, refLiIni=refLiIni, tit=titGraph, silent=debug, callFrom=fxNa, debug=debug)
 ## meta-data
     notes <- c(inpFile=paFi, qmethod="MaxQuant", qMethVersion=if(length(infoDat) >0) unique(infoDat$Software.Revision) else NA,
-    	rawFilePath= if(length(infoDat) >0) infoDat$File.Name[1] else NA, normalizeMeth=normalizeMeth, call=deparse(match.call()),
+    	identType="protein", rawFilePath= if(length(infoDat) >0) infoDat$File.Name[1] else NA, normalizeMeth=normalizeMeth, call=deparse(match.call()),
       created=as.character(Sys.time()), wrProteo.version=paste(utils::packageVersion("wrProteo"), collapse="."), machine=Sys.info()["nodename"])
     ## final output
     if(isTRUE(separateAnnot)) list(raw=abund, quant=quant, annot=annot, counts=counts, sampleSetup=setupSd, quantNotes=parametersD, notes=notes) else data.frame(quant,annot) }

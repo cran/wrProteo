@@ -2,7 +2,7 @@
 % Please edit documentation in R/readProteomeDiscovererFile.R
 \name{.commonSpecies}
 \alias{.commonSpecies}
-\title{Get matrix with UniProt abbreviations for selected species as well as simple names}
+\title{Get Matrix With UniProt Abbreviations For Selected Species As Well As Simple Names}
 \usage{
 .commonSpecies()
 }

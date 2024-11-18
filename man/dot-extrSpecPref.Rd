@@ -2,7 +2,7 @@
 % Please edit documentation in R/readProteomeDiscovererFile.R
 \name{.extrSpecPref}
 \alias{.extrSpecPref}
-\title{Extract additional information to construct colum SpecType}
+\title{Extract Additional Information To Construct The Colum 'SpecType'}
 \usage{
 .extrSpecPref(
   specPref,
@@ -35,10 +35,21 @@ This function returns a matrix with additional column 'SpecType'
 \description{
 This (low-level) function creates the column annot[,'SpecType'] which may help distinguishing different lines/proteins.
 This information may, for example, be used to normalize only to all proteins of a common backgroud matrix (species).
+In order to compare \code{specPref} a species-column will be added to the annotation (\code{annot}) - if not already present
 If $mainSpecies or $conta: match to annot[,"Species"], annot[,"EntryName"], annot[,"GeneName"], if length==1 grep in  annot[,"Species"]
 }
+\details{
+Different to \code{readSampleMetaData} this function also considers the main annotation as axtracted with main quantification data.
+For example, this function can complement protein annotation data if columns 'Accession','EntryName' or 'SpecType' are missing
+}
 \examples{
-.commonSpecies()
+annot1 <- cbind( Leading.razor.protein=c("sp|P00925|ENO2_YEAST",
+  "sp|Q3E792|RS25A_YEAST", "sp|P09938|RIR2_YEAST", "sp|P09938|RIR2_YEAST",
+  "sp|Q99186|AP2M_YEAST", "sp|P00915|CAH1_HUMAN"), 
+  Species= rep(c("Saccharomyces cerevisiae","Homo sapiens"), c(5,1)))
+specPref1 <- list(conta="CON_|LYSC_CHICK", 
+  mainSpecies="OS=Saccharomyces cerevisiae", spike="P00915")   # MQ type
+.extrSpecPref(specPref1, annot1, useColumn=c("Species","Leading.razor.protein"))  
 }
 \seealso{
 used in \code{readProtDiscovererFile},  \code{\link{readMaxQuantFile}}, \code{\link{readProlineFile}}, \code{\link{readFragpipeFile}}
