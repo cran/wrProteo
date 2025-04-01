@@ -318,7 +318,7 @@ In sum, `r sum(UPS1$ac %in% dataPD$annot[,1])` UPS1 proteins were found, `r sum(
 (see also [proline-core on github](https://github.com/profiproteomics/proline-core)), published by [Bouyssie et al 2020](https://doi.org/10.1093/bioinformatics/btaa118).
 Later in this document data from Proline will by frequently abbreviated as **PL**.
 
-Protein identification in Proline gets performed by [SearchGUI](http://compomics.github.io/projects/searchgui), see also [Vaudel et al 2015](https://doi.org/10.1002/pmic.201000595).
+Protein identification in Proline gets performed by [SearchGUI](https://compomics.github.io/projects/searchgui), see also [Vaudel et al 2015](https://doi.org/10.1002/pmic.201000595).
 In this case [X!Tandem](https://www.thegpm.org/TANDEM/) (see also [Duncan et al 2005](https://doi.org/10.1021/pr050058i)) was used as search engine.
 
 Quantitation data at the level of consensus-proteins can be exported from [Proline](http://www.profiproteomics.fr/proline/)

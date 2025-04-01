@@ -2,15 +2,15 @@
 knitr::opts_chunk$set(collapse=TRUE, comment = "#>")
 
 ## ----install, echo=TRUE, eval=FALSE-------------------------------------------
-#  ## if you need to install the packages 'wrMisc','wrProteo' and 'wrGraph' from CRAN :
-#  install.packages("wrMisc")
-#  install.packages("wrProteo")
-#  ## The package 'wrGraph' is not obligatory, but it allows making better graphs
-#  install.packages("wrGraph")
-#  
-#  ## Installation of limma from Bioconductor
-#  if(!requireNamespace("BiocManager", quietly=TRUE)) install.packages("BiocManager")
-#  BiocManager::install("limma")
+# ## if you need to install the packages 'wrMisc','wrProteo' and 'wrGraph' from CRAN :
+# install.packages("wrMisc")
+# install.packages("wrProteo")
+# ## The package 'wrGraph' is not obligatory, but it allows making better graphs
+# install.packages("wrGraph")
+# 
+# ## Installation of limma from Bioconductor
+# if(!requireNamespace("BiocManager", quietly=TRUE)) install.packages("BiocManager")
+# BiocManager::install("limma")
 
 ## ----setup, echo=FALSE, messages=FALSE, warnings=FALSE------------------------
 suppressPackageStartupMessages({
@@ -32,7 +32,7 @@ library("wrGraph")
 packageVersion("wrProteo")
 
 ## ----Vigenttes1, echo=TRUE, eval=FALSE----------------------------------------
-#  browseVignettes("wrProteo")
+# browseVignettes("wrProteo")
 
 ## ----ChemFormMolMass1, echo=TRUE----------------------------------------------
 massDeFormula(c("12H12O", "HO", " 2H 1 Se, 6C 2N", "HSeCN", " ", "e"))
@@ -73,7 +73,7 @@ fasta3 <- fasta1[which(!dupEntry)]
 length(fasta3)
 
 ## ----writeFasta1, echo=TRUE, eval=FALSE---------------------------------------
-#  writeFasta2(fasta3, fileNa="testWrite.fasta")
+# writeFasta2(fasta3, fileNa="testWrite.fasta")
 
 ## ----readMaxQuant1, fig.height=8, fig.width=9.5, fig.align="center", echo=TRUE----
 path1 <- system.file("extdata", package="wrProteo")

@@ -384,7 +384,7 @@ readAlphaPeptFile <- function(fileName="results_proteins.csv", path=NULL, fasta=
     rownames(abund) <- rownames(annot) <- if(any(chAn==0)) annot[,which(chAn==0)[1]] else wrMisc::correctToUnique(annot[,which.min(chAn)], callFrom=fxNa)
     if(length(counts) >0) rownames(counts) <- rownames(annot)
     if(debug) {message(fxNa,"rAP9"); rAP9 <- list(path=path,chPa=chPa,tmp=tmp,chCol=chCol,quantCol=quantCol,abund=abund,chNum=chNum,
-      annot=annot,refLi=refLi,remConta=remConta)}
+      annot=annot,refLi=refLi,remConta=remConta,normalizeMeth=normalizeMeth)}
 
     ## check for reference for normalization
     refLiIni <- refLi
@@ -400,7 +400,7 @@ readAlphaPeptFile <- function(fileName="results_proteins.csv", path=NULL, fasta=
     if(inherits(quant, "try-error")) { warning(fxNa,"PROBLEMS ahead : Unable to normalize as log2-data !!") }
 
     if(debug) {message(fxNa,"rAP10"); rAP10 <- list(path=path,chPa=chPa,tmp=tmp,chCol=chCol,quantCol=quantCol,abund=abund,chNum=chNum,
-      quant=quant,annot=annot,remConta=remConta,groupPref=groupPref,suplAnnotFile=suplAnnotFile, sdrf=sdrf,paFi=paFi )}
+      quant=quant,annot=annot,remConta=remConta,groupPref=groupPref,suplAnnotFile=suplAnnotFile,normalizeMeth=normalizeMeth, sdrf=sdrf,paFi=paFi )}
 
     ### GROUPING OF REPLICATES AND SAMPLE META-DATA
     ## prepare for sdrf (search in directory above)
@@ -424,6 +424,7 @@ readAlphaPeptFile <- function(fileName="results_proteins.csv", path=NULL, fasta=
 
     ## finish groups of replicates & annotation setupSd
     setupSd <- .checkSetupGroups(abund=abund, setupSd=setupSd, gr=gr, sampleNames=sampleNames, quantMeth="AP", silent=silent, debug=debug, callFrom=fxNa)
+    if(debug) {message(fxNa,"rAP13a .."); rAP13a <- list(sdrf=sdrf,gr=gr,suplAnnotFile=suplAnnotFile,abund=abund, quant=quant,refLi=refLi,annot=annot,setupSd=setupSd,sampleNames=sampleNames)}
 
     ## harmonize sample-names/1
     colNa <- if(length(setupSd$sampleNames)==ncol(abund)) setupSd$sampleNames else setupSd$groups
@@ -463,8 +464,8 @@ readAlphaPeptFile <- function(fileName="results_proteins.csv", path=NULL, fasta=
       colNa <- colnames(abund)
       chGr <- grepl("^X[[:digit:]]", colNa)                                                # check & remove heading 'X' from initial column-names starting with digits
       if(any(chGr)) colNa[which(chGr)] <- sub("^X","", colNa[which(chGr)])                 #
-      colnames(quant) <- colNa
-      if(length(abund) >0) colnames(abund) <- colNa  
+      if(length(dim(abund)) >1) colnames(abund) <- colNa else if(debug) message(fxNa,"Note : No abundance data found rAP13b")
+      if(length(dim(quant)) >1) colnames(quant) <- colNa
     }  
     if(length(setupSd$sampleNames)==ncol(abund)) setupSd$sampleNames <- colNa #no#else setupSd$groups <- colNa
     if(length(dim(counts)) >1 && length(counts) >0) colnames(counts) <- colNa

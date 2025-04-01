@@ -2,22 +2,22 @@
 knitr::opts_chunk$set(collapse=TRUE, comment = "#>")
 
 ## ----install, echo=TRUE, eval=FALSE-------------------------------------------
-#  ## This is R code, you can run this to redo all analysis presented here.
-#  install.packages("wrMisc")
-#  ## These packages are used for the graphics
-#  install.packages("wrGraph")
-#  install.packages("RColorBrewer")
-#  if(!requireNamespace("knitr", quietly=TRUE)) install.packages("knitr")
-#  
-#  ## Installation of limma from Bioconductor
-#  if(!requireNamespace("BiocManager", quietly=TRUE)) install.packages("BiocManager")
-#  BiocManager::install("limma")
-#  
-#  ## now all dependecies are installed...
-#  install.packages("wrProteo")
-#  
-#  ## You cat also see all vignettes for this package by typing :
-#  browseVignettes("wrProteo")    #  ... and the select the html output
+# ## This is R code, you can run this to redo all analysis presented here.
+# install.packages("wrMisc")
+# ## These packages are used for the graphics
+# install.packages("wrGraph")
+# install.packages("RColorBrewer")
+# if(!requireNamespace("knitr", quietly=TRUE)) install.packages("knitr")
+# 
+# ## Installation of limma from Bioconductor
+# if(!requireNamespace("BiocManager", quietly=TRUE)) install.packages("BiocManager")
+# BiocManager::install("limma")
+# 
+# ## now all dependecies are installed...
+# install.packages("wrProteo")
+# 
+# ## You cat also see all vignettes for this package by typing :
+# browseVignettes("wrProteo")    #  ... and the select the html output
 
 ## ----setup, echo=TRUE, messages=FALSE, warnings=FALSE-------------------------
 ## Let's assume this is a fresh R-session

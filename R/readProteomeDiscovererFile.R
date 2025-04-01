@@ -88,7 +88,7 @@ readProteomeDiscovererFile <- function(fileName, path=NULL, normalizeMeth="media
   if(!grepl("\\.txt$|\\.txt\\.gz$", fileName)) message(fxNa,"Trouble ahead, expecting tabulated text file (the file'",fileName,"' might not be right format) !!")
   paFi <- wrMisc::checkFilePath(fileName, path, expectExt="txt", compressedOption=TRUE, stopIfNothing=TRUE, callFrom=fxNa, silent=silent, debug=debug)
 
-  ## note : reading sample-setup from 'suplAnnotFile' at this place won't allow comparing if number of  samples/columns corresponds to data; do after reading main data
+  ## note : reading sample-setup from 'suplAnnotFile' at this place won't allow comparing if number of samples/columns corresponds to data; do after reading main data
   if(debug) {message(fxNa,"rpd0 .. Ready to read", if(length(path) >0) c(" from path ",path[1])," the file  ",fileName[1]); 
     rpd0 <- list(fileName=fileName,path=path,paFi=paFi,chPa=chPa) }
 
@@ -270,6 +270,14 @@ readProteomeDiscovererFile <- function(fileName, path=NULL, normalizeMeth="media
       ## explicit columns (for abundance/quantitation data)
       ch1 <- match(quantCol, colnames(tmp))          # look for direct match (rarley ok)
       chNA <- is.na(ch1)
+          if(debug) {message(fxNa,"rpd7a ..  "); rpd7a <- list(annot=annot,specPref=specPref,chSp=chSp,tmp=tmp,quantCol=quantCol,ch1=ch1,chNA=chNA )}
+      if(any(chNA)) {
+        ch2 <- chNA & grepl("^[[:digit:]]", quantCol)
+        if(any(ch2)) { quantCol[which(ch2)] <- paste0("X", quantCol[which(ch2)])
+          ch1 <- match(quantCol, colnames(tmp))          # (update) look for direct match (rarley ok) x
+          chNA <- is.na(ch1)
+          if(debug) message(fxNa,"Trying to recuperate ",sum(ch2)," quantCol-names due to start with digits")}
+      }     
       if(all(chNA)) {                          # no direct match found
         ch1 <- match(paste0(quantCol,".F.Sample"), sub("\\.F[[:digit:]]+\\.Sample",".F.Sample",colnames(tmp)))    # match to simplified "Cancer01.F.Sample" instead of "Cancer01.F1.Sample"
         chNA <- is.na(ch1)
@@ -277,15 +285,16 @@ readProteomeDiscovererFile <- function(fileName, path=NULL, normalizeMeth="media
           ## run grep on each indiv quantCol
           message(fxNa,"grep on each indiv quantCol - Not yet developed")
           ## develop further ?
-
+          if(debug) {message(fxNa,"rpd7b ..  "); rpd7b <- list(annot=annot,specPref=specPref,chSp=chSp,tmp=tmp,quantCol=quantCol,ch1=ch1,chNA=chNA )}
           stop(fxNa,"None of samples found !!")
         }
       }
       if(any(chNA)) { message(fxNa,"Note : ",sum(chNA)," out of ",length(chNA)," samples NOT found !")
         ch1 <- ch1[which(!chNA)]
       }
+      quantColInd <- ch1
     } else {    ## single value => use as search pattern
-      if(debug) {message(fxNa,"rpd7b"); rpd7b <- list(annot=annot,specPref=specPref,chSp=chSp,tmp=tmp,quantCol=quantCol) }
+      if(debug) {message(fxNa,"rpd7c"); rpd7c <- list(annot=annot,specPref=specPref,chSp=chSp,tmp=tmp,quantCol=quantCol) }
       if(identical("allAfter_calc.pI", quantCol)) {
         calcPIcol <- c("calc.pI","calc..pI","calc pI","calc_pI")    # possible variations of 'calc.pI'
         chCol <- calcPIcol %in% colnames(tmp)
@@ -323,6 +332,7 @@ readProteomeDiscovererFile <- function(fileName, path=NULL, normalizeMeth="media
         quantColInd <- ch1
       }
     }
+    
     if(length(quantColInd) <1) stop(msg,"  ('",quantCol,"') NOT FOUND !")
         ## look for columns endig with 'intensity'  ?
     quantCol <- quantColInd
@@ -464,8 +474,9 @@ readProteomeDiscovererFile <- function(fileName, path=NULL, normalizeMeth="media
 
     ## take log2 & normalize
     quant <- try(wrMisc::normalizeThis(log2(abund), method=normalizeMeth, mode="additive", refLines=refLi, silent=silent, debug=debug, callFrom=fxNa), silent=TRUE)
+    if(inherits(quant, "try-error")) quant <- NULL 
     if(debug) { message(fxNa,"rPD13 .. dim quant: ", nrow(quant)," li and  ",ncol(quant)," cols; colnames : ",wrMisc::pasteC(colnames(quant))," ");
-      rPD13 <- list(annot=annot,tmp=tmp,abund=abund,quant=quant,sampleNames=sampleNames,specPref=specPref,annotCol=annotCol,Rfriendly=Rfriendly,contamCol=contamCol,PSMCol=PSMCol,PepCol=PepCol,counts=counts,infoDat=infoDat, refLi=refLi)}
+      rPD13 <- list(annot=annot,tmp=tmp,abund=abund,quant=quant,sampleNames=sampleNames,normalizeMeth=normalizeMeth,specPref=specPref,annotCol=annotCol,Rfriendly=Rfriendly,contamCol=contamCol,PSMCol=PSMCol,PepCol=PepCol,counts=counts,infoDat=infoDat, refLi=refLi,suplAnnotFile=suplAnnotFile,sdrf=sdrf)}
 
     ### GROUPING OF REPLICATES AND SAMPLE META-DATA
     if(length(suplAnnotFile) >0 || length(sdrf) >0) {
@@ -474,7 +485,7 @@ readProteomeDiscovererFile <- function(fileName, path=NULL, normalizeMeth="media
       if("sampleNames" %in% names(specPref)) groupPref$sampleNames <- specPref$sampleNames
       setupSd <- readSampleMetaData(sdrf=sdrf, suplAnnotFile=suplAnnotFile, quantMeth="PD", path=path, abund=utils::head(quant), chUnit=isTRUE(groupPref$chUnit), groupPref=groupPref, silent=silent, debug=debug, callFrom=fxNa)
    }
-    if(debug) {message(fxNa,"rPD13b ..");  rPD13b <- list()}
+    if(debug) {message(fxNa,"rPD13b ..");  rPD13b <- list(annot=annot,tmp=tmp,abund=abund,suplAnnotFile=suplAnnotFile,quant=quant,sampleNames=sampleNames,specPref=specPref,annotCol=annotCol,Rfriendly=Rfriendly,contamCol=contamCol,PSMCol=PSMCol,PepCol=PepCol,counts=counts,infoDat=infoDat, refLi=refLi,setupSd=setupSd, gr=gr)}
 
     ## finish groups of replicates & annotation setupSd
     setupSd <- .checkSetupGroups(abund=abund, setupSd=setupSd, gr=gr, sampleNames=sampleNames, quantMeth="PD", silent=silent, debug=debug, callFrom=fxNa)
@@ -501,7 +512,7 @@ readProteomeDiscovererFile <- function(fileName, path=NULL, normalizeMeth="media
     }    
     if(debug) {message(fxNa,"rPD13d .."); rPD13d <- list(annot=annot,tmp=tmp,abund=abund,quant=quant,gr=gr,sdrf=sdrf,setupSd=setupSd,sampleNames=sampleNames,specPref=specPref,annotCol=annotCol,Rfriendly=Rfriendly,contamCol=contamCol,PSMCol=PSMCol,PepCol=PepCol,counts=counts,infoDat=infoDat, refLi=refLi)}
     ## option : set order of samples as (init) sdrf
-    if("sdrfOrder" %in% names(sdrf) && isTRUE(as.logical(sdrf["sdrfOrder"])) && length(setupSd$iniSdrfOrder)==ncol(abund) && ncol(abund) >1) {  # set order according to sdrf (only if >1 samples)
+    if(length(quant) >0 && "sdrfOrder" %in% names(sdrf) && isTRUE(as.logical(sdrf["sdrfOrder"])) && length(setupSd$iniSdrfOrder)==ncol(abund) && ncol(abund) >1) {  # set order according to sdrf (only if >1 samples)
       nOrd <- order(setupSd$iniSdrfOrder)
       abund <- abund[,nOrd]
       if(length(quant) >0) quant <- quant[,nOrd]
@@ -753,7 +764,7 @@ readProteomeDiscovererFile <- function(fileName, path=NULL, normalizeMeth="media
       } }
     if(datOK && any(chNA)) {out <- x; out[-which(chNA)] <- x2; out} else x2 }
     
-
+  ## start main function
   if(!is.list(setupSd)) { if(length(setupSd) >0) warning(fxNa,"BIZZARE format of 'setupSd', it's content will be lost")
     setupSd <- list()}
   ## finish groups of replicates & annotation setupSd
@@ -790,8 +801,8 @@ readProteomeDiscovererFile <- function(fileName, path=NULL, normalizeMeth="media
       ## 4.0) from prev mined from setupSd (sampleNames)
       ##   special case PD : check if  setupSd$annotBySoft$File.Name  usable
       if("PD" %in% quantMeth && length(setupSd$annotBySoft$File.Name) ==ncol(abund)) {
-        chOr <- match(basename(setupSd$annotBySoft$File.Name), basename(setupSd$sdrfDat$comment.data.file.))
-        if(!any(is.na(chOr))) {
+        chOr <- try(match(basename(setupSd$annotBySoft$File.Name), basename(if("sdrfDat" %in% names(setupSd)) setupSd$sdrfDat$comment.data.file. else setupSd$annotBySoft$filePath)), silent=TRUE)
+        if(inherits(chOr, "try-error") || !any(is.na(chOr))) {
           if(all(chOr ==1:ncol(abund), na.rm=TRUE)) {
             setupSd$sampleNames <-  sub("\\.raw$|\\.RAW$","", setupSd$annotBySoft$File.Name)
           }
@@ -847,8 +858,18 @@ readProteomeDiscovererFile <- function(fileName, path=NULL, normalizeMeth="media
   ## sampleNames based on sdrf
   if("sdrfDat" %in% names(setupSd)) { 
     useSdrfCol <- "comment.data.file."
-    setupSd$sampleNaSdrf <- sub("(\\.RAW$)|(\\.Raw$)|(\\.raw$)", "", setupSd$sdrfDat[,useSdrfCol] )
-    setupSd$sampleNaSdrf <- wrMisc::rmSharedWords(setupSd$sampleNaSdrf, sep=c("_"," ",".","=",";"), silent=silent, callFrom=fxNa)
+    if(useSdrfCol %in% colnames(setupSd$sdrfDat)) {
+      setupSd$sampleNaSdrf <- sub("(\\.RAW$)|(\\.Raw$)|(\\.raw$)", "", setupSd$sdrfDat[,useSdrfCol] )
+      setupSd$sampleNaSdrf <- wrMisc::rmSharedWords(setupSd$sampleNaSdrf, sep=c("_"," ",".","=",";"), silent=silent, callFrom=fxNa)}
+  }
+
+  ## last effort to define groups (non-sdrf like info given) : accept 'lowest','min','highest','max','median','med'
+  if(length(setupSd$meth)==1 && length(setupSd$sdrfDat) >0 && ncol(setupSd$sdrfDat) >1) {  
+    gr2 <- apply(setupSd$sdrfDat, 2, .adjPat)
+    gr2un <- apply(gr2, 2, function(x) length(unique(x)))
+    grX <- if(setupSd$meth %in% c("lowest","min")) gr2[,which.min(gr2un)] else {if(setupSd$meth %in% c("highest","max")) gr2[,which.min(gr2un)]  else NULL}
+    if(setupSd$meth %in% c("med","median")) {chGr <- which(gr2un==stats::median(gr2un, na.rm=TRUE)); if(length(chGr) >1) grX <- gr2[,chGr[1]] }
+    if(debug) {message(fxNa,"Last effort to find replicate-structure: ",length(grX),"    cSG2b"); cSG2b <- list(sampleNames=sampleNames,gr=gr,grX=grX,abund=abund,iniSaNa=iniSaNa,iniGr=iniGr,setupSd=setupSd)}
   }
 
   if(length(grX) >0) {
@@ -857,7 +878,9 @@ readProteomeDiscovererFile <- function(fileName, path=NULL, normalizeMeth="media
     }
     setupSd$level <- match(grX, unique(grX))       # make pattern
     setupSd$groups <- names(setupSd$level) <- grX 
-  }  
+  } else {
+    
+  } 
   if(debug) {message(fxNa,"cSG3"); cSG3 <- list(sampleNames=sampleNames,gr=gr,grX=grX,abund=abund,iniSaNa=iniSaNa,iniGr=iniGr,setupSd=setupSd)}
 
   ## simplify terms ?
@@ -1253,5 +1276,6 @@ readProteomeDiscovererFile <- function(fileName, path=NULL, normalizeMeth="media
       "Chicken", "Celegans","Droso","Zebrafish",
       "Frog","Axolotl",  "Arabidopsis","Potato","Sugar beet",   "Yeast","Ecoli","Mtuberculosis")  )
 }
+
 
 

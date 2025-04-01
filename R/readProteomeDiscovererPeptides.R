@@ -75,7 +75,7 @@ readProteomeDiscovererPeptides <- function(fileName, path=NULL, normalizeMeth="m
 
   ## check if path & (tsv) file exist
   if(!grepl("\\.txt$|\\.txt\\.gz$", fileName)) message(fxNa,"Trouble ahead, expecting tabulated text file (the file'",fileName,"' might not be right format) !!")
-  paFi <- wrMisc::checkFilePath(fileName, path, expectExt="txt", compressedOption=TRUE, stopIfNothing=TRUE, callFrom=fxNa, silent=silent,debug=debug)
+  paFi <- wrMisc::checkFilePath(fileName, path, expectExt="txt", compressedOption=TRUE, stopIfNothing=TRUE, callFrom=fxNa, silent=silent, debug=debug)
   if(debug) message(fxNa,"rPDP2a ..")
 
   ## prepare for reading files
@@ -131,12 +131,10 @@ readProteomeDiscovererPeptides <- function(fileName, path=NULL, normalizeMeth="m
   mat }
 
   ## EXTRACT PEPTIDE SEQUENCES
-  ## extract peptide sequences
   if(debug) {message(fxNa,"rPDP4a .. Ready to start extracting pep seq ")
      rPDP4a <- list(fileName=fileName,path=path, paFi=paFi,normalizeMeth=normalizeMeth,sampleNames=sampleNames,suplAnnotFile=suplAnnotFile,read0asNA=read0asNA,quantCol=quantCol,seqCol=seqCol,cleanDescription=cleanDescription,tmp=tmp,seqCol=seqCol,maSeCo=maSeCo,modifSensible=modifSensible)}
-  if(is.na(maSeCo[1])) { if(is.na(maSeCo[2])) {if(!silent) message(fxNa,"Invalid type of data")#; pepSeq <- NULL
+  if(is.na(maSeCo[1])) { if(is.na(maSeCo[2])) {if(!silent) message(fxNa,"Invalid type of data")
     } else pepSeq <- tmp[,maSeCo[2]]
-    #else { pepSeq <- tmp[,maSeCo[2]] } #sub("\\.\\[A-Z\\]$", "", sub("^\\[A-Z\\]\\.", "", tmp[,maSeCo[2]])) }
   } else pepSeq <- tmp[,maSeCo[1]]
   fxPrecAA <- function(x) {   ## separate/extract note of preceeding & following AA; take char vector, returns 3-column matrix
     chPre <- grep("^\\[([[:upper:]]|\\-)\\]\\.", x)         # has note of preceeding AA
@@ -151,7 +149,6 @@ readProteomeDiscovererPeptides <- function(fileName, path=NULL, normalizeMeth="m
   if(modifSensible) { hasMod <- nchar(tmp[,maSeCo[3]]) >0
     if(any(hasMod, na.rm=TRUE)) annot1[which(hasMod),4] <- gsub(" ","", paste(annot1[which(hasMod),1], tmp[which(hasMod),maSeCo[3]], sep="_"))         # add separator & modification
   }
-    #old#if(any(hasMod, na.rm=TRUE)) pepSeq[which(hasMod)] <- paste(pepSeq[which(hasMod)],tmp[which(hasMod),maSeCo[3]],sep="_") }     # modification-separator
   if(debug) {message(fxNa,"Done extracting pep seq    rPDP4b"); rPDP4b <- list(fileName=fileName,path=path, paFi=paFi,normalizeMeth=normalizeMeth,sampleNames=sampleNames,suplAnnotFile=suplAnnotFile,read0asNA=read0asNA,quantCol=quantCol,seqCol=seqCol,pepSeq=pepSeq,annot1=annot1,cleanDescription=cleanDescription,tmp=tmp,seqCol=seqCol,maSeCo=maSeCo,modifSensible=modifSensible) }
   ## ANNOATION (peptide/protein oriented)
    usColAnn <- maSeCo[c(3,6:7,9:14)]

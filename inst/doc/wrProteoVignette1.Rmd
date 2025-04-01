@@ -552,11 +552,11 @@ Note, the function presented here does not re-normalize the combined data, the u
 for further [normalization](#Normalization).
 
 Data from different software may not contain exactely the same proteins or peptides, only the common identifiers are retained by this approach.
-The user should pay attention to which identifyer should be used and that they do not appear multiple times in the the same data-set. 
+The user should pay attention to which identifyer should be used and that these identifyer do not appear multiple times in the the same data-set. 
 If, however, some IDs appear multiple times (ie as separate lines) in the same data-set, the corresponding numeric data will be summarized to a single line.
-This may may have notocable effect on the following biological interpretation.
+This may may have noticable effect on the following biological interpretation.
 
-Thus, it is very important to know your data and to understand when lines that appear with the same identifyers should/may be fused/summarized without 
+Thus, it is very important to know your data and to understand that lines appearing with the same identifyers should/may be fused/summarized without 
 doing damage to the later biological interpretation ! The user may specify for each dataset the colum out of the protein/peptide-annotation to use
 via the argument _columnNa_. 
 Then, this content will be matched as identical match, so when combining data from different software special care shoud be taken !

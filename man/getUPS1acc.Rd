@@ -17,11 +17,11 @@ This function returns data.frame with accession-numbers as stated by the supplie
 }
 \description{
 UPS1 (see https://www.sigmaaldrich.com/FR/en/product/sigma/ups1) and UPS2 are commerical products consisting of a mix of 48 human (purified) proteins.
-They are frequently used as standard in spike-in experiments, available from \href{https://www.sigmaaldrich.com}{Sigma-Aldrich}.
+They are frequently used as standard in spike-in experiments, available from \href{https://www.sigmaaldrich.com/GB/en}{Sigma-Aldrich}.
 This function allows accessing their protein accession numbers and associated names on \href{https://www.uniprot.org/}{UniProt}
 }
 \details{
-Please note that the UniProt accession 'P62988' for 'UBIQ_HUMAN' (as originally cited by  \href{https://www.sigmaaldrich.com}{Sigma-Aldrich})
+Please note that the UniProt accession 'P62988' for 'UBIQ_HUMAN' (as originally cited by \href{https://www.sigmaaldrich.com/GB/en}{Sigma-Aldrich})
 has been withdrawn and replaced in 2010 by \href{https://www.uniprot.org/}{UniProt} by the accessions 'P0CG47', 'P0CG48', 'P62979', and 'P62987'.
 This initial accession is available via \code{getUPS1acc()$acOld}, now \code{getUPS1acc()$ac} contains 'P0CG47'.
 }

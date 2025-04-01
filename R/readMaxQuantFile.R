@@ -107,7 +107,7 @@ readMaxQuantFile <- function(path, fileName="proteinGroups.txt", normalizeMeth="
 
   ## check if path & file exist
   if(!grepl("\\.txt$|\\.txt\\.gz$", fileName)) message(fxNa,"Trouble ahead, expecting tabulated text file (the file'",fileName,"' might not be right format) !!")
-  paFi <- wrMisc::checkFilePath(fileName, path, expectExt="txt", compressedOption=TRUE, stopIfNothing=TRUE, callFrom=fxNa, silent=silent,debug=debug)
+  paFi <- wrMisc::checkFilePath(fileName, path, expectExt="txt", mode=c("compressedOption","stopIfNothing"), callFrom=fxNa, silent=silent,debug=debug)
   if(debug){ message(fxNa,"rMQ0b .. Ready to read", if(length(path) >0) c(" from path ",path[1])," the file  ",fileName[1])
     rMQ0b <- list(fileName=fileName,path=path,paFi=paFi,normalizeMeth=normalizeMeth,read0asNA=read0asNA,quantCol=quantCol,refLi=refLi,separateAnnot=separateAnnot)}  # annotCol=annotCol,FDRCol=FDRCol
 
