@@ -13,9 +13,9 @@ shortSoftwName(
 )
 }
 \arguments{
-\item{x}{(character) 'mono' or 'average'}
+\item{x}{(character) software (full) name}
 
-\item{tryAsLower}{(logical)}
+\item{tryAsLower}{(logical) include lower-caps writing to search}
 
 \item{silent}{(logical) suppress messages}
 
@@ -24,15 +24,19 @@ shortSoftwName(
 \item{callFrom}{(character) allow easier tracking of messages produced}
 }
 \value{
-This function returns a vector with masses for all amino-acids (argument 'massTy' to switch from mono-isotopic to average mass)
+This function returns a vector with 2-letter abbreviation for the software
 }
 \description{
-Get/convert short names of various proteomics quantitation software names.
+Get/convert short names of various proteomics quantitation software names for software results handeled by this package.
 A 2-letter abbreviation will be returned
+}
+\details{
+So far thuis function recognizes the following software names:
+"DIA-NN", "ProteomeDiscoverer", "Compomics", "MaxQuant", "Proline", "TPP", "FragPipe", "MassChroQ", "OpenMS", "Ionbot" and "Sage"
 }
 \examples{
 shortSoftwName(c("maxquant","DIANN"))
 }
 \seealso{
-\code{\link{massDeFormula}}, \code{\link[wrMisc]{convToNum}}
+\code{\link{readMaxQuantFile}}
 }

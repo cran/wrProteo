@@ -119,6 +119,11 @@ pep1 <- c(aa="AAAA",de="DEFDEF")
 convAASeq2mass(pep1, seqN=FALSE)
 ```
 
+&nbsp; 
+&nbsp; 
+
+***
+
 
 # Working With Fasta(Files)
 
@@ -250,9 +255,11 @@ head(grp9)
 
 ## special group of proteins (we want to differentiate/ highlight lateron)
 UPS1ac <- getUPS1acc()$ac
-specPrefMQ <- list(conta="CON_|LYSC_CHICK", mainSpecies="OS=Saccharomyces cerevisiae", spike=getUPS1acc()$ac)
+specPrefMQ <- list(conta="CON_|LYSC_CHICK", mainSpecies="OS=Saccharomyces cerevisiae", 
+  spike=getUPS1acc()$ac)
 
-dataMQ <- readMaxQuantFile(path1, specPref=specPrefMQ, suplAnnotFile=TRUE, groupPref=list(lowNumberOfGroups=FALSE), gr=grp9, plotGraph=FALSE)
+dataMQ <- readMaxQuantFile(path1, specPref=specPrefMQ, suplAnnotFile=TRUE, 
+  groupPref=list(lowNumberOfGroups=FALSE), gr=grp9, plotGraph=FALSE)
 
 ## the quantifiation data is the same as before
 dim(dataMQ$quant)
@@ -294,7 +301,8 @@ The argument _groupPref_ allows defining further adjustments/choices.
 The import-function will first check if this a local file, and if not try to download from Pride (if available) and further mine the information.
 
 ```{r readMaxQuant4,  echo=TRUE}
-dataMQ <- readMaxQuantFile(path1, specPref=specPrefMQ, sdrf="PXD001819", suplAnnotFile=TRUE, groupPref=list(lowNumberOfGroups=FALSE), plotGraph=FALSE)
+dataMQ <- readMaxQuantFile(path1, specPref=specPrefMQ, sdrf="PXD001819", suplAnnotFile=TRUE,
+  groupPref=list(lowNumberOfGroups=FALSE), plotGraph=FALSE)
 ```
 
 
@@ -357,7 +365,7 @@ When calling the import-function they can be replaced by more meaningful names e
 or from reading the default annotation in the file _'InputFiles.txt'_ (if exported) or, from sdrf-annotation (if available).
 In this case, supplemental information about experimental setup will be mined and added to the resulting object.
 
-As descibed with [MaxQuant](#ReadMaxQuant), additional meta-data as [sdrf](#ImportSdrf) can be imported in the same way.
+As described with [MaxQuant](#ReadMaxQuant), additional meta-data as [sdrf](#ImportSdrf) can be imported in the same way.
 For a more complex example of using _readProteomeDiscovererFile()_ please see the vignette _'UPS1 spike-in Experiments'_ of [this package](https://CRAN.R-project.org/package=wrProteo).
 
 
@@ -409,7 +417,7 @@ dataPL <- readProlineFile(file=fiNa, path=path1, plotGraph=FALSE)
 summary(dataPL$quant[,1:8])
 ```
 
-As descibed with [MaxQuant](#ReadMaxQuant), additional meta-data as [sdrf](#ImportSdrf) can be imported in the same way.
+As described with [MaxQuant](#ReadMaxQuant), additional meta-data as [sdrf](#ImportSdrf) can be imported in the same way.
 For a more complex example of using _readProlineFile()_ please see the vignette _'UPS1 spike-in Experiments'_ from [this package](https://CRAN.R-project.org/package=wrProteo).
 
 
@@ -430,7 +438,7 @@ dataFP <- readFragpipeFile(path1, file=FPproFi1, specPref=specPref1, tit="Tiny F
 summary(dataFP$quant)
 ```
 
-As descibed with [MaxQuant](#ReadMaxQuant), additional meta-data as [sdrf](#ImportSdrf) can be imported in the same way.
+As described with [MaxQuant](#ReadMaxQuant), additional meta-data as [sdrf](#ImportSdrf) can be imported in the same way.
 
 
 
@@ -450,7 +458,7 @@ dataMC <- readMassChroQFile(path1, file=MCproFi1, tit="Tiny MassChroq Example", 
 summary(dataMC$quant)
 ```
 
-As descibed with [MaxQuant](#ReadMaxQuant), additional meta-data as [sdrf](#ImportSdrf) can be imported in the same way.
+As described with [MaxQuant](#ReadMaxQuant), additional meta-data as [sdrf](#ImportSdrf) can be imported in the same way.
 
 
 ### AlphaPept : Import Protein Quantification Data       {#ReadAlphaPeptide}
@@ -469,15 +477,17 @@ dataAP <- readAlphaPeptFile(path1, file=APproFi1, specPref=specPref1, tit="Tiny 
 summary(dataAP$quant)
 ```
 
-As descibed with [MaxQuant](#ReadMaxQuant), additional meta-data as [sdrf](#ImportSdrf) can be imported in the same way.
+As described with [MaxQuant](#ReadMaxQuant), additional meta-data as [sdrf](#ImportSdrf) can be imported in the same way.
 
 
 
-### Ionbot : Import Protein Quantification Data       {#ReadIonbot}
+### Ionbot : Import Peptide Identification And  Quantification Data       {#ReadIonbot}
 
-[ionbot](https://ionbot.cloud/about) is a database search tool for protein and peptide identification, developed by the [ComPomics group headed by L Martens](https://www.compomics.com/),
+[ionbot](https://ionbot.cloud/about) is a database search tool for protein and peptide identification, developed by the [ComPomics group](https://www.compomics.com/) headed by L. Martens,
 see eg  [Kong et al 2017](https://doi.org/10.1101/2021.07.02.450686) or other related publications.
-Peptide identification and quantification data exported from [ionbot](https://ionbot.cloud/about)  (in tsv format) can get imported using `readIonbotPeptides()`.
+Peptide identification from [ionbot](https://ionbot.cloud/about) are typically complemeented by quantification using [FlashLFQ](https://doi.org/10.1021/acs.jproteome.7b00608). 
+The resulting output in tsv format can get imported using `readIonbotPeptides()`.  
+Since the output may not have complete protein annotation information, it is possible to complement annotations from the fasta-file (Uniprot-formatted) used for initial identifications (using the argument '_specPref_', not shown below).
 The example below is just a tiny toy data-set, normally one can identify and quantify many more proteins.
 
 
@@ -488,7 +498,7 @@ datIobPep <- readIonbotPeptides(fiIonbot, path=path1)
 summary(datIobPep$quant)
 ```
 
-As descibed with [MaxQuant](#ReadMaxQuant), additional meta-data as [sdrf](#ImportSdrf) can be imported in the same way.
+As described with [MaxQuant](#ReadMaxQuant), additional meta-data as [sdrf](#ImportSdrf) can be imported in the same way.
 
 
 
@@ -508,7 +518,7 @@ dataWB <- readWombatNormFile(path1, file=WBproFi1, specPref=specPref1, tit="Tiny
 summary(dataWB$quant)
 ```
 
-As descibed with [MaxQuant](#ReadMaxQuant), additional meta-data as [sdrf](#ImportSdrf) can be imported in the same way.
+As described with [MaxQuant](#ReadMaxQuant), additional meta-data as [sdrf](#ImportSdrf) can be imported in the same way.
 
 
 
@@ -563,7 +573,7 @@ Then, this content will be matched as identical match, so when combining data fr
 
 ```{r fuseProteomicsProjects1,  echo=TRUE}
 path1 <- system.file("extdata", package="wrProteo")
-dataMQ <- readMaxQuantFile(path1, specPref=NULL, normalizeMeth="median")
+dataMQ <- readMaxQuantFile(path1, specPref=NULL, normalizeMeth="median", plotGraph=FALSE)
 dataMC <- readMassChroQFile(path1, file="tinyMC.RData", tit="Tiny MassChroq Example", plotGraph=FALSE)
 dataFused <- fuseProteomicsProjects(dataMQ, dataMC)
 str(dataFused$quant)
@@ -727,7 +737,7 @@ Here we'll use the function `plotPCAw()` form the package [wrGraph](https://CRAN
 
 ```{r PCA1MQ, fig.height=12, fig.width=9.5, fig.align="center", echo=TRUE}
 # limit to UPS1
-plotPCAw(testMQ$datImp, sampleGrp=grp9, tit="PCA on Protein Abundances (MaxQuant,NAs imputed)", rowTyName="proteins", useSymb2=0)
+plotPCAw(testMQ$datImp, sampleGrp=grp9, tit="PCA on Protein Abundances (MaxQuant,NAs imputed)", rowTyName="proteins", useSymb2=0, silent=TRUE)
 ```
 
 Please note, the vignette dedicated to spike-in experiments ("UPS-1 spike-in Experiments") presents a slightly different way of making PCA-plots for this specific type of experiment/data-set.
@@ -907,6 +917,9 @@ The function _readUniProtExport()_ switches to a more flexible search mode strip
 Finally, it should be added, that of course several other ways of retrieving annotation do exist, too.
 For example, as mentioned above, [Bioconductor](https://www.bioconductor.org)) offers serval packages dedicated to gene- and protein-annotation.
 
+.
+
+***
 
 # Appendix
 
@@ -924,7 +937,7 @@ Thank you for you interest. This package is constantly evolving, new featues/fun
 
 ## Session-Info
 
-For completeness :
+For completeness : The output from \code{sessionInfo()}
 
 \small
 ```{r sessionInfo, echo=FALSE}

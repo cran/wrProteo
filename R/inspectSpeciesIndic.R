@@ -18,7 +18,7 @@ inspectSpeciesIndic <- function(x, silent=FALSE, debug=FALSE, callFrom=NULL) {
   ## inspect species indication and convert to scientific name, in case of UPS1 return all accessions
   fxNa <- wrMisc::.composeCallName(callFrom, newNa="inspectSpeciesIndic")
   out <- NULL
-  if(length(x) <1 || all(is.na(x))) warning("Invalid entry of 'x'") else {
+  if(length(x) <1 || all(is.na(x))) warning(fxNa,"Invalid entry of 'x'") else {
     if(length(x) >1) {x <- as.character(x[1]); warning(fxNa,"'x' may only be of length=1, truncating")}
     commSpec <- .commonSpecies()
     commSpec[,1] <- sub("^_","", commSpec[,1])

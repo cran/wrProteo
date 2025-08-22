@@ -54,7 +54,7 @@
 #' @export
 summarizeForROC <- function(test, useComp=1, tyThr="BH", thr=NULL, columnTest=NULL, FCthrs=NULL, spec=c("H","E","S"), annotCol="Species", filterMat="filter",
   batchMode=FALSE, tit=NULL, color=1, plotROC=TRUE, pch=1, bg=NULL, overlPlot=FALSE, silent=FALSE, debug=FALSE, callFrom=NULL) {
-  ## summarize esting result by species (3rd is supposed as reference)
+  ## summarize testing result by species (3rd is supposed as reference)
   argN <- deparse(substitute(test))
   fxNa <- wrMisc::.composeCallName(callFrom, newNa="summarizeForROC")
   inclFilter <- TRUE     # use $filtFin
@@ -84,13 +84,15 @@ summarizeForROC <- function(test, useComp=1, tyThr="BH", thr=NULL, columnTest=NU
   if(!any(chSpec, na.rm=TRUE)) stop("None of the elements of argument 'spec' found in column '",annotCol,"' !!")
   if(any(!chSpec, na.rm=TRUE)) message(fxNa,"Note : Species-types ",wrMisc::pasteC(unique(spec[which(!chSpec)]),quoteC="'")," will be ignored")  # check for species tags not specified, ie ignored
   if(debug) {message(fxNa,"sROC1"); sROC1 <- list(test=test,useComp=useComp,chLst=chLst,tyThr=tyThr,thr=thr,useComp=useComp,annotCol=annotCol,spec=spec)}
+  if(sum(test$annot[,annotCol]=="spike", na.rm=TRUE) <1) warning(fxNa,"Only ",sum(test$annot[,annotCol]=="spike")," annotated spike-elements found, TROUBLE AHEAD !!")
+
 
   if(is.null(thr)) thr <- signif(c(as.numeric(sapply((1:4)*2, function(x) x*c(1e-4,1e-5,1e-6,1e-7))),
     seq(0,1,length.out=50)^5, seq(0,1,length.out=50)^2, seq(0,1,length.out=61), 4^(-2:-10),1.01), 2)
   thr <- sort(unique(abs(wrMisc::naOmit(thr))))                                    # 151 -> 108 values for default
   pp <- matrix(nrow=length(thr), ncol=4, dimnames=list(NULL,c("TP","FP","FN","TN")))
   oriKeep <- matrix(rep(TRUE,nrow(test[[tyThr]])), nrow=nrow(test[[tyThr]]), ncol=2, dimnames=list(NULL,c("filtFin","passFC")))     # the lines passing various filtering (filtFin, FCthrs)
-  if(debug) {message(fxNa,"sROC1b")}
+  if(debug) {message(fxNa,"sROC1b"); rROC1b <- list(test=test,useComp=useComp,chLst=chLst,tyThr=tyThr,thr=thr,pp=pp,thr=thr,oriKeep=oriKeep,annotCol=annotCol,spec=spec)}
 
   ## look for (global) filtering (from test[[filterMat]])
   if(length(filterMat) ==1) if(filterMat %in% names(test) && inclFilter) {

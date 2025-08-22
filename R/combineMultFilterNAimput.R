@@ -51,10 +51,10 @@ combineMultFilterNAimput <- function(dat, imputed, grp, annDat=NULL, abundThr=NU
     }
   ## filter mostly low abundance (using imputed), see also .filterMinAv
   grpMeans <- wrMisc::rowGrpMeans(imputed$data,grp)
-  if(any(!(colnames(grpMeans) == colnames(imputed$nNA)))) message(fxNa," Problem with order of columns of imputed$nNA !?")
+  if(any(!(colnames(grpMeans) == colnames(imputed$nNA)))) message(fxNa,"Problem with order of columns of imputed$nNA !?")
   pwComb <- wrMisc::triCoord(ncol(grpMeans))
 
-  if(is.numeric(abundThr) & length(abundThr)==1) {
+  if(is.numeric(abundThr) && length(abundThr)==1) {
     for(i in 1:nrow(pwComb)) {                                                # loop along all pair-wise questions => (update filter) datFi
       chLi <- grpMeans[,pwComb[i,1]] < abundThr & grpMeans[,pwComb[i,2]] < abundThr
       if(any(chLi)) datFi[which(chLi),i] <- FALSE}
@@ -72,7 +72,7 @@ combineMultFilterNAimput <- function(dat, imputed, grp, annDat=NULL, abundThr=NU
       chLi2 <- cbind(chLi[,1] & grpMeans[,pwComb[i,1]] > grpMeans[,pwComb[i,2]], chLi[,2] & grpMeans[,pwComb[i,2]] > grpMeans[,pwComb[i,1]]) # is T if bad
       datFi[,i] <- datFi[,i] & !chLi[,1] & !chLi[,2] }
   }                
-  if(debug) message(fxNa,"   at NA> mean:   ",wrMisc::pasteC(colSums(datFi)))    
+  if(debug) message(fxNa,"   at NA > mean:   ",wrMisc::pasteC(colSums(datFi)))    
   imputed$filt <- datFi
   if(!is.null(annDat)) imputed$annot <- annDat    
   imputed }

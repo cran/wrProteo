@@ -2,7 +2,7 @@
 % Please edit documentation in R/readProteomeDiscovererPeptides.R
 \name{readProteomeDiscovererPeptides}
 \alias{readProteomeDiscovererPeptides}
-\title{Read Tabulated Files Exported by ProteomeDiscoverer At Peptide Level}
+\title{Read Tabulated Files Exported By ProteomeDiscoverer At Peptide Level}
 \usage{
 readProteomeDiscovererPeptides(
   fileName,

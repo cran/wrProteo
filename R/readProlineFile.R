@@ -329,19 +329,25 @@ readProlineFile <- function(fileName, path=NULL, normalizeMeth="median", logConv
     if(debug) {message(fxNa,"rpf16d2 .."); rpf16d2 <- list(sdrf=sdrf,gr=gr,suplAnnotFile=suplAnnotFile, quant=quant,abund=abund,refLi=refLi,annot=annot,setupSd=setupSd,sampleNames=sampleNames)}
 
     ## harmonize sample-names/1
-    colNa <- if(length(setupSd$sampleNames)==ncol(abund)) setupSd$sampleNames else setupSd$groups
+    #colNa <- if(length(setupSd$sampleNames)==ncol(abund)) setupSd$sampleNames else setupSd$groups
 
-    ## option : set order of samples as sdrf
-    if("sdrfOrder" %in% names(sdrf) && isTRUE(as.logical(sdrf["sdrfOrder"])) && length(setupSd$iniSdrfOrder)==ncol(abund) && ncol(abund) >1) {  # set order according to sdrf (only if >1 samples)
-      nOrd <- order(setupSd$iniSdrfOrder)
+    ## option : set order of samples as sdrf (and use sampleNames from sdrf)
+    if("sdrfOrder" %in% names(sdrf) && isTRUE(as.logical(sdrf["sdrfOrder"])) && length(setupSd$groups)==ncol(abund) && ncol(abund) >1) {  # set order according to sdrf (only if >1 samples)
+      ## first set -if possible- colnames according to sdrf
+      if(length(setupSd$sampleNames)==ncol(abund)) {
+        colNa <- setupSd$sampleNames 
+        colnames(quant) <- colNa
+        if(length(abund) >0 && length(dim(abund)) >1) colnames(abund) <- colNa
+        if(length(pepCount) >0 && length(dim(pepCount)) >1 ) colnames(pepCount) <- colNa
+      }
+      if(debug) {message(fxNa,"rpf16d3 .."); rpf16d3 <- list(sdrf=sdrf,gr=gr,suplAnnotFile=suplAnnotFile, quant=quant,abund=abund,refLi=refLi,annot=annot,setupSd=setupSd,sampleNames=sampleNames)}
+
+      ## adjust order of samples
+      nOrd <- setupSd$iniSdrfOrder
       ## rename columns according to sdrf and set order of quant and abund ..
       abund <- abund[,nOrd]
       if(length(quant) >0) quant <- quant[,nOrd]
-      if(length(setupSd$sampleNames)==ncol(quant)) {
-        colNa <- colnames(abund) <- setupSd$sampleNames <- setupSd$sampleNaSdrf[nOrd]  #old# setupSd$sampleNames[nOrd]         ## take sample names from sdrf via  setupSd$sampleNaSdrf
-        if(length(quant) >0) colnames(quant) <- setupSd$sampleNaSdrf[nOrd]  #old# setupSd$sampleNames[nOrd]
-      } else colNa <- colnames(abund)
-      ## now adapt order of setupSd, incl init Sdrf
+      ## continue adjusting order in setupSd, incl init Sdrf
       if(length(setupSd) >0) { 
         is2dim <- sapply(setupSd, function(x,le) length(dim(x))==2 && nrow(x)==le, le=length(nOrd))    # look for matr or df to change order of lines
         if(any(is2dim) >0) for(i in which(is2dim)) setupSd[[i]] <- setupSd[[i]][nOrd,]
@@ -349,28 +355,36 @@ readProlineFile <- function(fileName, path=NULL, normalizeMeth="median", logConv
         if(any(isVe) >0) for(i in which(isVe)) setupSd[[i]] <- setupSd[[i]][nOrd] }
       gr <- gr[nOrd]
 
-      if(length(counts) >0 && length(dim(counts))==3) counts <- array(counts[,nOrd,], dim=c(nrow(counts), length(nOrd), dim(counts)[3]), 
-        dimnames=list(rownames(counts), colnames(counts)[nOrd], dimnames(counts)[[3]]))
-      ## try re-adjusting levels
-      tm1 <- sub("^[[:alpha:]]+( |_|-|\\.)+[[:alpha:]]+","", colnames(abund))  # remove heading text
-      if(all(grepl("^[[:digit:]]", tm1))) {
-        tm1 <- try(as.numeric(sub("( |_|-|\\.)*[[:alpha:]].*","", tm1)), silent=TRUE)   # remove tailing text and try converting to numeric
-        if(!inherits(tm1, "try-error")) {
-          setupSd$level <- match(tm1, sort(unique(tm1)))
-          names(setupSd$level) <- tm1
-          if(!silent) message(fxNa,"Sucessfully re-adjusted levels after bringing in order of Sdrf")}
-      }     
-    } else {
+      if(length(pepCount) >0 && length(dim(pepCount)) ==3 ) pepCount <- pepCount[,nOrd,]
 
+      ## try re-adjusting levels
+      names(setupSd$groups) <- setupSd$level <- match(setupSd$level, unique(setupSd$level))
+      names(setupSd$level) <- setupSd$groups     
+
+      #tm1 <- sub("^[[:alpha:]]+( |_|-|\\.)+[[:alpha:]]+","", colnames(abund))  # remove heading text
+      #if(all(grepl("^[[:digit:]]", tm1))) {
+      #  tm1 <- try(as.numeric(sub("( |_|-|\\.)*[[:alpha:]].*","", tm1)), silent=TRUE)   # remove tailing text and try converting to numeric
+      #  if(!inherits(tm1, "try-error")) {
+      #    setupSd$level <- match(tm1, sort(unique(tm1)))
+      #    names(setupSd$level) <- tm1
+      #    if(!silent) message(fxNa,"Sucessfully re-adjusted levels after bringing in order of Sdrf")}
+      #}     
+    } else {
       ## harmonize sample-names/2
-      colNa <- colnames(abund)
+      if(length(setupSd) <1) setupSd <- list()
+      colNa <- wrMisc::trimRedundText(colnames(abund), spaceElim=TRUE, silent=debug, debug=debug, callFrom=fxNa)
       chGr <- grepl("^X[[:digit:]]", colNa)                                                # check & remove heading 'X' from initial column-names starting with digits
-      if(any(chGr)) colNa[which(chGr)] <- sub("^X","", colNa[which(chGr)])                 #
-      colnames(quant) <- colNa
-      if(length(abund) >0) colnames(abund) <- colNa  
-    }  
-    if(length(setupSd$sampleNames)==ncol(abund)) setupSd$sampleNames <- colNa #no#else setupSd$groups <- colNa
-    if(length(dim(counts)) >1 && length(counts) >0) colnames(counts) <- colNa
+      if(any(chGr)) colNa[which(chGr)] <- sub("^X","", colNa[which(chGr)]) 
+      ## now choose between colnames and èsampleNames from sdrf
+      if(length(setupSd$sampleNames)==ncol(quant) && sum(sum(duplicated(colNa)) >= duplicated(setupSd$sampleNames) ) && stats::median(nchar(colNa)) > stats::median(nchar(setupSd$sampleNames)) ) {
+        ## choose longer (more explicit)
+        setupSd$sampleNames <- colNa      }
+      colnames(quant) <- setupSd$sampleNames 
+      if(length(abund) >0) colnames(abund) <- setupSd$sampleNames  
+    }
+    if(length(setupSd$sampleNames) ==ncol(abund)) {                            # adjust colnames
+      colnames(abund) <- setupSd$sampleNames <- setupSd$sampleNames       
+      if(length(dim(counts)) >1 && length(counts) >0) colnames(counts) <- setupSd$sampleNames }
 
     if(debug) {message(fxNa,"Read sample-meta data, rpf17"); rpf17 <- list(sdrf=sdrf,suplAnnotFile=suplAnnotFile,abund=abund, quant=quant,refLi=refLi,annot=annot,setupSd=setupSd,sampleNames=sampleNames)}
 

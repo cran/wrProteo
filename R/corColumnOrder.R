@@ -130,17 +130,17 @@ corColumnOrder <- function(dat, sampNames, replNames=NULL, useListElem=c("quant"
         if(sum(is.na(newO) > sum(is.na(newO2)))) {newO <- newO2; iniColNa <- iniColNa2 }} }
     if(any(is.na(newO))) {       
       ## modify colnames of $abund to remove enumerator-names
-      colNa3 <- wrMisc::rmEnumeratorName(iniColNa, sepEnum=c(""," ","-","_"), newSep="_", incl=c("anyCase","trim1"))
+      colNa3 <- wrMisc::rmEnumeratorName(iniColNa, sepEnum=c(""," ","-","_"), newSep="_", incl=c("anyCase","trim1"), callFrom="fxNa", silent=silent)
        if(debug) cCO2b <- list(newO=newO,colNa3=colNa3,dat=dat,sampNames=sampNames,replNames=replNames,iniColNa=iniColNa, useListElem=useListElem,annotElem=annotElem,newNames=newNames,datOK=datOK)
       newO2 <- match(sampNames, colNa3)         # check
       if(sum(is.na(newO) > sum(is.na(newO2)))) {newO <- newO2} } # update
  
     if(any(is.na(newO))) {
-      sampNa2 <- wrMisc::rmEnumeratorName(sampNames, sepEnum=c(""," ","-","_"), newSep="_", incl=c("anyCase","trim1"))
+      sampNa2 <- wrMisc::rmEnumeratorName(sampNames, sepEnum=c(""," ","-","_"), newSep="_", incl=c("anyCase","trim1"), callFrom="fxNa", silent=silent)
       newO2 <- match(sampNa2, colNa3)           # check, use if improvement in no of matches           
       if(sum(is.na(newO2)) < sum(is.na(newO))) {newO <- newO2; sampNames <- sampNa2} # colnames(dat[[useListElem[1]]]) <- colNa3
     }
-    if(debug) { message(fxNa,"cCO2c"); cCO2c <- list(dat=dat,sampNames=sampNames,replNames=replNames,newO=newO, useListElem=useListElem,annotElem=annotElem,newNames=newNames,datOK=datOK) }
+    if(debug) { message(fxNa,"cCO2c"); cCO2c <- list() }
     if(sum(!is.na(newO)) >1) {
       ## apply newO
       if(any(is.na(newO)) && !silent) message(fxNa,"Note : ",sum(is.na(newO))," colnames NOT found - will be omitted")
@@ -164,9 +164,8 @@ corColumnOrder <- function(dat, sampNames, replNames=NULL, useListElem=c("quant"
           if(any(ch1[1,], na.rm=TRUE)) for(i in which(ch1[1,])) dat[[setupNa]][[i]] <- dat[[setupNa]][[i]][newO]
           if(any(ch1[2,], na.rm=TRUE)) for(i in which(ch1[2,])) dat[[setupNa]][[i]] <- dat[[setupNa]][[i]][newO,]
           if(any(ch1[3,], na.rm=TRUE)) for(i in which(ch1[3,])) dat[[setupNa]][[i]] <- dat[[setupNa]][[i]][,newO]
-          #if(debug)
         }
-        if(debug) message(fxNa,"Successfully adjusted quantitation data to new order")
+        if(debug) message(fxNa,"Successfully adjusted quantitation data to new order  cCO2d")
       }
       if(is2dim) dat <- dat$dat         # return to initial type/level of object    
     } else { datOK <- FALSE
@@ -174,6 +173,6 @@ corColumnOrder <- function(dat, sampNames, replNames=NULL, useListElem=c("quant"
    ## end corColumnOrder
   } else {
     if(!silent) message(fxNa,"Failed to adjust quantitative/count data")}
-  if(debug) {message(fxNa,"cCO3"); cCO3 <- list(dat=dat,sampNames=sampNames,useListElem=useListElem,annotElem=annotElem,newO=newO,alreadyOK=alreadyOK)}                
+  if(debug) {message(fxNa,"cCO3"); cCO3 <- list()}                
   dat } 
       

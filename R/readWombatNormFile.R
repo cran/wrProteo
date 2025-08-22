@@ -535,8 +535,8 @@ readWombatNormFile <- function(fileName, path=NULL, quantSoft="(quant software n
       abund <- abund[,nOrd]
       if(length(quant) >0) quant <- quant[,nOrd]
       if(length(setupSd$sampleNames)==ncol(quant)) {
-        colNa <- colnames(abund) <- setupSd$sampleNames <- setupSd$sampleNaSdrf[nOrd]  #old# setupSd$sampleNames[nOrd]         ## take sample names from sdrf via  setupSd$sampleNaSdrf
-        if(length(quant) >0) colnames(quant) <- setupSd$sampleNaSdrf[nOrd]  #old# setupSd$sampleNames[nOrd]
+        colNa <- colnames(abund) <- setupSd$sampleNames <- setupSd$sdrfSampleNames[nOrd]  #old# setupSd$sampleNames[nOrd]         ## take sample names from sdrf via  setupSd$sdrfSampleNames
+        if(length(quant) >0) colnames(quant) <- setupSd$sdrfSampleNames[nOrd]  #old# setupSd$sampleNames[nOrd]
       } else colNa <- colnames(abund)
       ## now adapt order of setupSd, incl init Sdrf
       if(length(setupSd) >0) { 

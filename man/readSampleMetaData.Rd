@@ -21,7 +21,10 @@ readSampleMetaData(
 \item{quantMeth}{(character, length=1) quantification method used; 2-letter abbreviations like 'MQ','PD','PL','FP' etc may be used}
 
 \item{sdrf}{(character, list or data.frame) optional extraction and adding of experimenal meta-data:
-if character, this may be the ID at ProteomeExchange or a similarly formatted local file. \code{sdrf} will get priority over \code{suplAnnotFile}, if provided.}
+This may be a matrix or data.frame with information respective to the experimental setup (to understand which lines=samples should be evaluated as replicates).
+If _\code{sdrf} is a character vector, the first entry will be interpreted as path to a local file or the ID/name at ProteomeExchange. 
+Here it possible to indicate if specific columns of the sdrf should be skipped (_sdrf=c(myFile, skipCol="abc")_)
+For mining the experimental setup/structure \code{sdrf} will get priority over \code{suplAnnotFile}.}
 
 \item{suplAnnotFile}{(logical or character) optional reading of supplemental files produced by MaxQuant; if \code{gr} is provided, it gets priority for grouping of replicates
 if \code{TRUE} in case of \code{method=='MQ'} (MaxQuant) default to files 'summary.txt' (needed to match information of \code{sdrf}) and 'parameters.txt' which can be found in the same folder as the main quantitation results;
@@ -49,7 +52,7 @@ if \code{TRUE} the default set of unit-names ('Mol','mol', 'days','day','m','sec
 \item{callFrom}{(character) allows easier tracking of messages produced}
 }
 \value{
-This function returns a list with \code{$level} (grouping of samples given as integer), and \code{$meth} (method by which grouping as determined).
+This function returns a list with \code{$groups} and \code{$level} (grouping of samples given as integer), and \code{$meth} (method by which grouping as determined).
  If valid \code{sdrf} was given, the resultant list contains in addition \code{$sdrfDat} (data.frame of annotation).
  Alternatively it may contain a \code{$sdrfExport} if sufficient information has been gathered (so far only for MaxQuant) for a draft sdrf for export (that should be revised and completed by the user).
  If software annotation has been found it will be shown in \code{$annotBySoft}.
@@ -79,5 +82,5 @@ str(sdrf001819Setup)
 
 }
 \seealso{
-this function is used internally by \code{\link{readMaxQuantFile}},\code{/link{readProteomeDiscovererFile}} etc; uses \code{\link{readSdrf}} for reading sdrf-files, \code{\link[wrMisc]{replicateStructure}} for mining annotation columns
+This function is used internally by \code{\link{readMaxQuantFile}},\code{/link{readProteomeDiscovererFile}} etc; uses \code{\link{readSdrf}} for reading sdrf-files, \code{\link[wrMisc]{replicateStructure}} for mining annotation columns
 }

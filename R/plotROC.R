@@ -94,10 +94,10 @@ plotROC <- function(dat,..., useColumn=2:3, methNames=NULL, col=NULL, pch=1, bg=
   if(length(txtLoc) !=3) { figDim <- signif(graphics::par("usr"),3)
     txtLoc <- c(x=figDim[1] +0.42*(figDim[2] -figDim[1]), y=figDim[3] + (0.3 +length(inpS))*(figDim[4] -figDim[3])/30, fac=0.037*(figDim[4] -figDim[3])) }
   if(debug) {message(fxNa,"plR2")}
-
+  
   AUC1 <- c( AucROC(inpS[[1]], silent=silent, callFrom=fxNa),
     if(length(inpS) >0) sapply(inpS, AucROC, silent=silent, callFrom=fxNa))
-  AUC1 <- sprintf(paste0("%.",nDigLeg[1],"f"),AUC1)           #  format to fixed no of digits
+  AUC1 <- sprintf(paste0("%.",nDigLeg[1],"f"), AUC1)           #  format to fixed no of digits
   if(debug) {message(fxNa,"plR3"); plR3 <- list(dat=dat,inpS=inpS,inpSu=inpSu,chAr=chAr,cutP=cutP,coColN=coColN, txtLoc=txtLoc,useColumn=useColumn,methNames=methNames,tit=tit,col=col,xLab=xLab,yLab=yLab,nDigLeg=nDigLeg)}
 
   if(addSuplT) {            # add legend-like method-name/descr
@@ -105,21 +105,22 @@ plotROC <- function(dat,..., useColumn=2:3, methNames=NULL, col=NULL, pch=1, bg=
     graphics::text(txtLoc[1] -txtLoc[3], txtLoc[2] +txtLoc[3], paste("Values at threshold of",point05,":"), cex=0.75, col=grDevices::grey(0.4), adj=0)
     graphics::text(txtLoc[1], txtLoc[2], txt, cex=legCex+0.02, col=col[1], adj=1)
     if(addSuplT) graphics::text(txtLoc[1] +0.02, txtLoc[2], paste(paste(paste(c("AUC=","prec=","accur=","FDR="),        #"n.E/S/H="
-      c(AUC1[1],round(cutP[c("prec","accur","FDR")],nDigLeg[-1]))),collapse="  "), coColN2 ,cutP[coColN[1]],cutP[coColN[2]],
+      c(AUC1[1], round(cutP[c("prec","accur","FDR")], nDigLeg[-1]))),collapse="  "), coColN2, cutP[coColN[1]], cutP[coColN[2]],
       if(length(coColN)>2) cutP[coColN[3]]), cex=legCex, col=col[1], adj=0) }
   if(debug) {message(fxNa,"plR4"); plR4 <- list(dat=dat,inpS=inpS,inpSu=inpSu,chAr=chAr,cutP=cutP,coColN=coColN, txtLoc=txtLoc,useColumn=useColumn,methNames=methNames,tit=tit,col=col,xLab=xLab,yLab=yLab,nDigLeg=nDigLeg)}
+
   if(length(inpS) >1) {
-    for(i in 2:length(inpS)) {                      ## additional ROC curves
+    for(i in 2:length(inpS)) {                      ## add additional ROC curves
       if(length(inpS[[i]]) >0) if(nrow(inpS[[i]]) >0) {
         cutP <- inpS[[i]][which(inpS[[i]][,1]==point05),]
         if(point05) graphics::points(1 -cutP[useColumn[1]], cutP[useColumn[2]], col=col2, pch=pch2[1], bg=col[i], cex=pointSi)      # new point at alpha
-        graphics::points(1-inpS[[i]][,useColumn[1]],inpS[[i]][,useColumn[2]], type="s",col=col[i+1], pch=pch, bg=bg[i])             # new ROC curve
+        graphics::points(1-inpS[[i]][,useColumn[1]], inpS[[i]][,useColumn[2]], type="s",col=col[i+1], pch=pch, bg=bg[i])             # new ROC curve
         if(addSuplT) {
           txt <- if(is.null(nByMeth)) methNames[i] else paste0(methNames[i]," (n.test=",nByMeth[i],") ")
-          graphics::text(txtLoc[1], txtLoc[2]-txtLoc[3]*i,txt, cex=legCex+0.02, col=col[i], adj=1)                     # first block
-          graphics::text(txtLoc[1] +0.02, txtLoc[2]-txtLoc[3]*i, paste(paste(paste(c("AUC=","prec=","accur=","FDR="),
-            c(AUC1[i],round(cutP[c("prec","accur","FDR")],nDigLeg[-1]))),collapse="  "),coColN2,cutP[coColN[1]],cutP[coColN[2]],          # first block (with counting data)
-            if(length(coColN)>2) cutP[coColN[3]]), cex=legCex, col=col[i], adj=0)
+          graphics::text(txtLoc[1], txtLoc[2] -txtLoc[3]*(i-1), txt, cex=legCex+0.02, col=col[i+1], adj=1)                     # first block
+          graphics::text(txtLoc[1] +0.02, txtLoc[2] -txtLoc[3]*(i-1), paste(paste(paste(c("AUC=","prec=","accur=","FDR="),
+            c(AUC1[i],round(cutP[c("prec","accur","FDR")], nDigLeg[-1]))), collapse="  "), coColN2, cutP[coColN[1]], cutP[coColN[2]],          # first block (with counting data)
+            if(length(coColN)>2) cutP[coColN[3]]), cex=legCex, col=col[i+1], adj=0)
         }
     } } }
 }

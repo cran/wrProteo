@@ -74,7 +74,7 @@ The easiest way to obtain samples consists in taking of advantage that proteins 
 
 The exeriment reanalyzed here used a base ('matrix') of yeast protein extract constant in all samples. 
 Then, varying amounts of a commerical collection of 48 purified human proteins were added in different well documented amounts to the constant yeast protein extract.
-For this purpose the UPS1 preparation, commerically available from [Sigma-Aldrich](https://www.sigmaaldrich.com/GB/en), is frequently used.
+For this purpose the UPS1 preparation, commerically available from Sigma-Aldrich (www.sigmaaldrich.com), is frequently used.
 
 
 In terms of ROC curves (see also [ROC on Wikipedia](https://en.wikipedia.org/wiki/Receiver_operating_characteristic)) the _spike-in_ proteins are expected to show up as true positives (TP).
@@ -135,22 +135,21 @@ methNa <- c("ProteomeDiscoverer","MaxQuant","Proline")
 names(methNa) <- c("PD","MQ","PL")
 ```
 
-In this project the old version for the accession-number of UBB (which has been withdrown by the database in the meantime) and protein-seuquence as originally cited by [Sigma-Aldrich](https://www.sigmaaldrich.com/GB/en) has been used.
+In this project the old version for the accession-number of UBB (which has been withdrown by the database in the meantime) and protein-sequence as originally cited by Sigma-Aldrich (www.sigmaaldrich.com/) has been used.
 Se we'll 'retrograde' the output from 'getUPS1acc()'.
 
 \small
 ```{r metaData3, echo=TRUE}
+spikeType <- "UPS1"            ## information about spike used 
+matrixType <- "Saccharomyces cerevisiae"   ## information about matrix used  (user-provided)
+matrixType2 <- wrProteo::inspectSpeciesIndic(matrixType)               # check & make uniform
+sdrfNa <- "PXD001819"                     # name of sdrf to use
+
 ## The accession numbers for the UPS1 proteins
 UPS1 <- getUPS1acc(updated=FALSE)
+## global information about what could be contaminants
+contaInf <- c("Bos tauris|Gallus", MQ="CON_|LYSC_CHICK")
   
-#UPS1 <- data.frame(ac=c("P00915", "P00918", "P01031", "P69905", "P68871", "P41159", "P02768", "P62988",
-#  "P04040", "P00167", "P01133", "P02144", "P15559", "P62937", "Q06830", "P63165",
-#  "P00709", "P06732", "P12081", "P61626", "Q15843", "P02753", "P16083", "P63279",
-#  "P01008", "P61769", "P55957", "O76070", "P08263", "P01344", "P01127", "P10599",
-#  "P99999", "P06396", "P09211", "P01112", "P01579", "P02787", "O00762", "P51965",
-#  "P08758", "P02741", "P05413", "P10145", "P02788", "P10636-8", "P00441", "P01375"),
-#  species=rep("Homo sapiens", 48),
-#  name=NA)
 ```
 
 
@@ -236,9 +235,10 @@ path1 <- system.file("extdata", package="wrProteo")
 fiNaMQ <- "proteinGroups.txt.gz"
 
 ## We need to define the setup of species
-specPrefMQ <- list(conta="CON_|LYSC_CHICK", mainSpecies="OS=Saccharomyces cerevisiae", spike=UPS1$ac, sampleNames="sdrf")
-dataMQ <- readMaxQuantFile(path1, file=fiNaMQ, specPref=specPrefMQ, refLi="mainSpe",
-  sdrf=c("PXD001819","max",sdrfOrder=TRUE), suplAnnotFile=TRUE, plotGraph=FALSE)
+specPrefMQ <- list(conta=contaInf[2], matrix=paste0("OS=",matrixType2), spike=spikeType, sampleNames="sdrf") #fasta=fastaFi, 
+dataMQ <- readMaxQuantFile(file=fiNaMQ, path=path1, refLi="mainSpe", specPref=specPrefMQ, 
+  sdrf=c(sdrfNa,"max",sdrfOrder=TRUE), suplAnnotFile=TRUE, plotGraph=FALSE, silent=TRUE)   # , refLi=useRefLi
+
 ```
 
 The data were imported, log2-transformed and median-normalized, the protein annotation was parsed to automatically extract IDs, protein-names and species information.
@@ -260,7 +260,7 @@ table(dataMQ$annot[,"Species"], useNA="always")
 ```
 
 Now we can summarize the presence of UPS1 proteins after treatment by MaxQuant :
-In sum, `r sum(UPS1$ac %in% dataMQ$annot[,1])` UPS1 proteins were found, `r sum(!UPS1$ac %in% dataMQ$annot[,1])` are missing.
+In sum, `r sum(UPS1$ac %in% dataMQ$annot[,1])` UPS1 proteins were found, `r sum(!UPS1$ac %in% dataMQ$annot[,1])` is/are missing.
 
 
 
@@ -274,14 +274,18 @@ Quantitation data at the level of consensus-proteins can be exported to tabulate
 The resultant data were export in tablulated format and the file automatically named '\_Proteins.txt_' by ProteomeDiscoverer (the option R-headers was checked, however this option is not mandatory).
 Files compressed as .gz can be read, too (like in the example below).
 
+Note, since ProteomeDiscoverer frequently does not provide customized column-names we'll use the information from the sdrf-file (see argument _sdrf=..._). 
+However, in this case the 1st suitable column of the sdrf doesn't allow either to extract useful names we'll tell the import-function to skip this 1st column of the sdrf 
+when looking for a column indicating a maximum number of groups. 
+Since the order of samples may appear different in various quantification-software we'll also ask the import-function to adjust the order of samples to the sdrf (see argument _sdrf=c(sdrfNa,"max",sdrfOrder=TRUE,skipCol=1)_).
+
 
 ```{r readProteomeDiscoverer1, fig.height=8, fig.width=9.5, fig.align="center", echo=TRUE}
 path1 <- system.file("extdata", package="wrProteo")
 fiNaPd <- "pxd001819_PD24_Proteins.txt.gz"
 ## Next, we define the setup of species
-specPrefPD <- list(conta="Bos tauris|Gallus", mainSpecies="Saccharomyces cerevisiae", spike=UPS1$ac, sampleNames="sdrf")
-dataPD <- readProteomeDiscovererFile(file=fiNaPd, path=path1, refLi="mainSpe", specPref=specPrefPD,
-  sdrf=c("PXD001819", "max", sdrfOrder=TRUE), plotGraph=FALSE)
+specPrefPD <- list(conta=contaInf[1], mainSpecies=matrixType2, spike=spikeType, sampleNames="sdrf", lowNumberOfGroups=FALSE)   # fasta=fastaFi,
+dataPD <- readProteomeDiscovererFile(file=fiNaPd, path=path1,  refLi="mainSpe", specPref=specPrefPD, sdrf=c(sdrfNa,"max",sdrfOrder=TRUE,skipCol=1), suplAnnotFile=TRUE, plotGraph=FALSE, silent=TRUE)   # refLi=useRefLi
 ```
 
 The data were imported, log2-transformed and median-normalized, the protein annotation was parsed to automatically extract IDs, protein-names and species information.
@@ -308,7 +312,7 @@ table(dataPD$annot[,"Species"], useNA="always")
 Confirming the presence of UPS1 proteins by ProteomeDiscoverer:
 
 Now we can summarize the presence of UPS1 proteins after treatment by ProteomeDiscoverer :
-In sum, `r sum(UPS1$ac %in% dataPD$annot[,1])` UPS1 proteins were found, `r sum(!UPS1$ac %in% dataPD$annot[,1])` are missing.
+In sum, `r sum(UPS1$ac %in% dataPD$annot[,1])` UPS1 proteins were found, `r sum(!UPS1$ac %in% dataPD$annot[,1])` is/are missing.
 
 
 
@@ -330,9 +334,9 @@ Here, Proline version 1.6.1 was used with addition of Percolator (via MS-Angel f
 path1 <- system.file("extdata", package="wrProteo")
 fiNaPl <- "pxd001819_PL.xlsx"
 
-specPrefPL <- list(conta="_conta", mainSpecies="Saccharomyces cerevisiae", spike=UPS1$ac, sampleNames="sdrf")
-dataPL <- readProlineFile(fiNaPl, path=path1, specPref=specPrefPL, normalizeMeth="median", refLi="mainSpe",
-  sdrf=c("PXD001819", "max", sdrfOrder=TRUE), plotGraph=FALSE)
+specPrefPL <- list(conta=contaInf[1], mainSpecies=matrixType2, spike=spikeType, sampleNames="sdrf")   # fasta=fastaFi,    # same as PL
+dataPL <- readProlineFile(file=fiNaPl, path=path1, specPref=specPrefPL, sdrf=c(sdrfNa,"max",sdrfOrder=TRUE), suplAnnotFile=TRUE, plotGraph=FALSE, silent=TRUE)   # refLi=useRefLi
+
 ```
 
 
@@ -356,62 +360,41 @@ table(dataPL$annot[,"Species"], useNA="always")
 ```
 
 Now we can summarize the presence of UPS1 proteins after treatment by Proline :
-In sum, `r sum(UPS1$ac %in% dataPL$annot[,1])` UPS1 proteins were found, `r sum(!UPS1$ac %in% dataPL$annot[,1])` are missing.
+In sum, `r sum(UPS1$ac %in% dataPL$annot[,1])` UPS1 proteins were found, `r sum(!UPS1$ac %in% dataPL$annot[,1])` is/are missing.
 
 ```{r saveCheck1, echo=FALSE}
 ## devel only ?
 if(any(c("PP3-0014-A", "PP1-1072-A", "SERV-SPECTRO2") %in% Sys.info()["nodename"])) {                   # message("++ This is a WR checking/testing session ! ++")
   wdirS <- "C:\\E\\projects\\TCAmethods\\wrProteoRamus" 
-  save.image(file=file.path(wdirS,"vignUPS1_atImport_22jul24.RData"))   # after correction : rescale after normalization
+  try(save.image(file=file.path(wdirS,"vignUPS1_atImport_22jul24.RData")))   # after correction : rescale after normalization
 }
+#tmp <- cbind(
+#  MQ=colnames(dataMQ$quant),
+#  PD=colnames(dataPD$quant),
+#  PL=colnames(dataPL$quant))
 ```
 
 
 
-### Uniform Re-Arranging Of Data
+### Further Preparation Of Data
 
 For easy and proper comparisons we need to make sure all columns are in the same order, since we have forced to use the initial order of the [Sdrf](#sdrf), this is already the case.
-However, this order does not correspond to the incrasing order of UPS1-doses.
-To facilitate later steps, we'll bring them in this increasing order of UPS1-doses.
 
-```{r rearrange1, echo=TRUE}
-## bring all results (MaxQuant,ProteomeDiscoverer, ...) in same ascending order
-## as reference will use the order from ProteomeDiscoverer, it's output is already in a convenient order
-sampNa <- colnames(dataMQ$quant)[order(dataPD$sampleSetup$level)]
-   dataMQ0=dataMQ
-   dataPL0=dataPL
-   dataPD0=dataPD
-   dataMQ$quant[1:4,1:6]
-
-## it is more convenient to re-order columns this way in each project
-dataMQ <- corColumnOrder(dataMQ, sampNames=sampNa)         
-dataPD <- corColumnOrder(dataPD, sampNames=sampNa)         
-dataPL <- corColumnOrder(dataPL, sampNames=sampNa)         
-
-```
-
-At import we made use of the argument _specPref_ (specifying '_mainSpecies_', '_conta_' and '_spike_') which allows to build categories based on searching keywords based on the initial annotation.
-In turn, we obtain the labels :
-'_main Spe_' for yeast (ie matrix), '_species2_' for the UPS1 (ie spike) 'conta' for contaminants.
-Let's replace the first two generic terms by more specific ones (ie '_Yeast_' and '_UPS1_') :
+Next, we'll replace some missing protein-names:
 
 ```{r postTreatm1, echo=TRUE}
-## Need to rename $annot[,"SpecType"]
-dataPD <- replSpecType(dataPD, replBy=cbind(old=c("mainSpe","species2"), new=c("Yeast","UPS1")))
-dataMQ <- replSpecType(dataMQ, replBy=cbind(old=c("mainSpe","species2"), new=c("Yeast","UPS1")))
-dataPL <- replSpecType(dataPL, replBy=cbind(old=c("mainSpe","species2"), new=c("Yeast","UPS1")))
-
 ## Need to address missing ProteinNames (UPS1) due to missing tags in Fasta
 dataPD <- replMissingProtNames(dataPD)
 dataMQ <- replMissingProtNames(dataMQ)
 dataPL <- replMissingProtNames(dataPL)
     table(dataMQ$annot[,"SpecType"])
     table(dataPD$annot[,"SpecType"])
+    table(dataPL$annot[,"SpecType"])
 
 ## synchronize order of groups
 (grp9 <- dataMQ$sampleSetup$level)
 names(grp9) <- paste0(names(grp9),"amol")
-dataPL$sampleSetup$groups <- dataMQ$sampleSetup$groups <- dataPD$sampleSetup$groups <- grp9  # synchronize order of groups
+#dataPL$sampleSetup$groups <- dataMQ$sampleSetup$groups <- dataPD$sampleSetup$groups <- grp9  # synchronize order of groups
 ```
 
 ```{r postTreatmCheck, echo=TRUE}
@@ -440,11 +423,12 @@ The initial fasta file also contained the yeast strain number, this has been str
 ### Structure of Experiment
 
 The global structure of experiments can be provided as [sdrf-file](#sdrf) and/or from meta-data stored with the experimental data read.
-For convenience, this information about the groups of replicates was already deduced and can be found (for example) in _dataMQ$sampleSetup$sdrf_.
+For convenience, this information about the groups of replicates was already deduced and can be found (for example) in _dataMQ $ sampleSetup $ sdrf_.
+Below, a few columns of the sdrf are shown.
 
 
 ```{r metaData4, echo=TRUE}
-kable(cbind(dataMQ$sampleSetup$sdrf[,c(23,7,19,22)], groups=dataMQ$sampleSetup$groups))
+kable(cbind(dataMQ$sampleSetup$sdrfDat[,c(23,7,19,22)], groups=dataMQ$sampleSetup$groups))
 ```
 
 
@@ -513,14 +497,14 @@ In addition, various formats of multiple testing correction can be added to the 
 
 
 We are ready to launch the NA-imputation and testing for data from ProteomeDiscoverer.
-Please note, that the procedure including repetive NA-imputations may take a few seconds.
+Please note, that the procedure including repetive NA-imputations may take a several seconds.
 
 
 
 ```{r testProteomeDiscoverer, echo=TRUE}
 testPD <- testRobustToNAimputation(dataPD, imputMethod="informed")     # ProteomeDiscoverer
 ```
-
+.
 
 Then for MaxQuant ...
 ```{r testMaxQuant, echo=TRUE}
@@ -540,6 +524,15 @@ Let's add the NA-imputed data to our main object :
 dataPD$datImp <- testPD$datImp       # recuperate imputeded data to main data-object
 dataMQ$datImp <- testMQ$datImp
 dataPL$datImp <- testPL$datImp
+```
+
+
+```{r saveCheck1b, echo=FALSE}
+## devel only ?
+if(any(c("PP3-0014-A", "PP1-1072-A", "SERV-SPECTRO2") %in% Sys.info()["nodename"])) {                   # message("++ This is a WR checking/testing session ! ++")
+  wdirS <- "C:\\E\\projects\\TCAmethods\\wrProteoRamus"                                  # C:\E\projects\TCAmethods\wrProteoRamus
+  try(save.image(file=file.path(wdirS,"vignUPS1_atTest_3jul25.RData")))   # after correction : rescale after normalization
+}
 ```
 
 ------
@@ -571,6 +564,8 @@ signCount <- cbind( sig.PD.BH=colSums(testPD$BH < 0.05, na.rm=TRUE), sig.PD.lfdr
   sig.MQ.BH=colSums(testMQ$BH < 0.05, na.rm=TRUE), sig.MQ.lfdr=if("lfdr" %in% names(testMQ)) colSums(testMQ$lfdr < 0.05, na.rm=TRUE),
   sig.PL.BH=colSums(testPL$BH < 0.05, na.rm=TRUE), sig.PL.lfdr=if("lfdr" %in% names(testPL)) colSums(testPL$lfdr < 0.05, na.rm=TRUE)  )
 
+  
+  
 table1 <- numPairDeColNames(testPD$BH, stripTxt="amol", sortByAbsRatio=TRUE)
 table1 <- cbind(table1, signCount[table1[,1],])
 rownames(table1) <- colnames(testMQ$BH)[table1[,1]]
@@ -612,7 +607,7 @@ In addition, we can mark the different protein-groups (or species) by different 
 Counting the number of proteins passing a classical threshold for differential expression combined with a filter for minimum log-fold-change is a good way to start.
 
 As mentioned, the dataset from [Ramus et al 2016](https://doi.org/10.1016/j.jprot.2015.11.011)
-contains `r length(UPSconc)` different levels of UPS1 concentrations ([Ramus Data Set](#RamusDataSet)),
+contains `r length(UPSconc)` different levels of UPS1 concentrations ([Ramus Data Set](#RamusDataSet)),                                                            
 in consequence `r ncol(testPD$BH)` pair-wise comparisons are possible.
 Again, plotting all possible Volcano plots would make way too crowded plots, instead we'll try to summarize (see ROC curves), cluster into groups and finally plot only a few representative ones.
 
@@ -637,9 +632,14 @@ Below, these calculations of _summarizeForROC()_ are run in batch.
 ```{r ROC_main1, echo=TRUE}
 ## calulate  AUC for each ROC
 layout(1)
-rocPD <- lapply(table1[,1], function(x) summarizeForROC(testPD, useComp=x, annotCol="SpecType", spec=c("mainSpecies","spike"), tyThr="BH", plotROC=FALSE,silent=TRUE))
-rocMQ <- lapply(table1[,1], function(x) summarizeForROC(testMQ, useComp=x, annotCol="SpecType", spec=c("mainSpecies","spike"), tyThr="BH", plotROC=FALSE,silent=TRUE))
-rocPL <- lapply(table1[,1], function(x) summarizeForROC(testPL, useComp=x, annotCol="SpecType", spec=c("mainSpecies","spike"), tyThr="BH", plotROC=FALSE,silent=TRUE))
+  #aaa <- summarizeForROC(testPD, useComp=table1[1,1], annotCol="SpecType", spec=c("mainSpecies","spike"), tyThr="BH", plotROC=FALSE,debug=TRUE)
+
+rocPD <- lapply(table1[,1], function(x) summarizeForROC(testPD, useComp=x, annotCol="SpecType", 
+  spec=c("mainSpecies","spike"), tyThr="BH", plotROC=FALSE,silent=TRUE))
+rocMQ <- lapply(table1[,1], function(x) summarizeForROC(testMQ, useComp=x, annotCol="SpecType", 
+  spec=c("mainSpecies","spike"), tyThr="BH", plotROC=FALSE,silent=TRUE))
+rocPL <- lapply(table1[,1], function(x) summarizeForROC(testPL, useComp=x, annotCol="SpecType", 
+  spec=c("mainSpecies","spike"), tyThr="BH", plotROC=FALSE,silent=TRUE))
 
 # we still need to add the names for the pair-wise groups:
 names(rocPD) <- names(rocMQ) <- names(rocPL) <- rownames(table1)
@@ -722,7 +722,8 @@ ratTab <- sapply(5:1, function(x) { y <- table1[match(rownames(AucAll),rownames(
   table(factor(signif(y[which(AucAll[,"cluNo"]==x),"log2rat"],1), levels=unique(signif(table1[,"log2rat"],1))) )})
 colnames(ratTab) <- paste0("\nclu",5:1,"\nn=",rev(table(kMAx)))
 layout(1)
-imageW(ratTab, tit="Frequency of rounded log2FC in the 5 clusters", xLab="log2FC (rounded)", col=c("grey95", RColorBrewer::brewer.pal(8,"YlOrRd")), las=1)
+imageW(ratTab, tit="Frequency of rounded log2FC in the 5 clusters", xLab="log2FC (rounded)", 
+  yLab="log2 Fold-Change", col=c("grey95", RColorBrewer::brewer.pal(8,"YlOrRd")), las=1)
 mtext("Dark red for enrichment of given pair-wise ratio", cex=0.7)
 ```
 
@@ -974,6 +975,7 @@ Thus, displaying the 3rd principal component (as done above) finally has no impo
 
 
 ### CV of Replicates
+
 In order to have more data available for linear regression modelling it was decided to use UPS1 abundance values after NA-Imputation for linear regressions.
 Previously it was shown that NA values originate predominantly from absent or very low abundance quantitations, which justified relplacing NA values by low abundance values in a shrinkage like fashion.
 
@@ -1122,13 +1124,19 @@ Thus, considering only one of these resultant values may not be sufficient.
 
 ### Summarize Linear Regression Results
 
-When judging results for indivual UPS1 proteins one may see that both the value of the slope as well as the p-value (for H0:slope=0) are important to consider.
-For example, there are some cases where the quantitations lign up well giving a good p-value but with slopes < 0.4.
+When judging results for individual spike-in proteins both the value of the *slope* as well as the *p-value* (for H0: slope=0) are important to consider.
+For example, there are some cases where the quantitations line up well giving a good p-value, however with slopes < 0.4, although a _slope=1.0_ is expected.
 This is definitely not the type of dose-response characteristics we are looking for.
-In consequence, let's construct a **combined score** for these components _slope_ and _p-value_ for easier consideration of both elements at once :
+
+In order to consider both characteristics (slope and p-value) at the same time, we'll introduce a *penalized objective score* using  _slope_ and _p-value_ for easier consideration of both elements at once :
+The overal model is :
+
+  score = sqrt ( | log_pValue | + lambda * | slope - 1 | )
+
+In our case _lambda_ is set to -5 .
 
 ```{r combRegrScore1, echo=TRUE}
-for(i in 1:(dim(datUPS1)[2])) datUPS1[,i,"sco"] <- -datUPS1[,i,"logp"] - (datUPS1[,i,"slope"] -1)^2    # cut at > 8
+for(i in 1:(dim(datUPS1)[2])) datUPS1[,i,"sco"] <- sqrt(abs(datUPS1[,i,"logp"])) - 5*abs(datUPS1[,i,"slope"] -1)    # 
 ```
 
 Next, let's bring together all linear-model scores, the number of peptides and meadian protein abundance for each of UPS1 proteins in one object to facilite further steps.
@@ -1137,15 +1145,25 @@ Next, let's bring together all linear-model scores, the number of peptides and m
 ## devel only ?
 if(any(c("PP3-0014-A", "PP1-1072-A", "SERV-SPECTRO2") %in% Sys.info()["nodename"])) {                   # message("++ This is a WR checking/testing session ! ++")
   wdirS <- "C:\\E\\projects\\TCAmethods\\wrProteoRamus" 
-  save.image(file=file.path(wdirS,"vignUPS1_atSumRegr_22jul24.RData"))   # after correction : rescale after normalization
+  save.image(file=file.path(wdirS,"vignUPS1_atSumRegr_20jun25.RData"))   # after correction : rescale after normalization
 }
 ```
 
 
-```{r combRegrScore2, echo=TRUE}
+```{r combRegrScore2, fig.height=6, fig.width=9.5, fig.align="center", echo=TRUE}
 datUPS1[,1,2] <- rowSums(dataPD$counts[match(UPS1$ac,dataPD$annot[,1]),,1], na.rm=TRUE)
 datUPS1[,2,2] <- rowSums(dataMQ$counts[match(UPS1$ac,dataMQ$annot[,1]),,1], na.rm=TRUE)
-datUPS1[,3,2] <- rowSums(dataPL$counts[match(UPS1$ac,dataPL$annot[,1]),,"NoOfPeptides"], na.rm=TRUE)
+datUPS1[,3,2] <- rowSums(dataPL$counts[match(UPS1$ac,dataPL$annot[,1]),], na.rm=TRUE)
+
+
+nNApGrp <- array(dim=c(length(UPS1$ac), length(methNa), length(unique(grp9))), dimnames=list(UPS1$ac, names(methNa), unique(names(grp9)[order(grp9)])))
+nNApGrp[,1,] <- wrMisc::rowGrpNA(dataPD$raw[match(UPS1$ac,dataPD$annot[,1]),], grp9)
+nNApGrp[,2,] <- wrMisc::rowGrpNA(dataMQ$raw[match(UPS1$ac,dataMQ$annot[,1]),], grp9)
+nNApGrp[,3,] <- wrMisc::rowGrpNA(dataPL$raw[match(UPS1$ac,dataPL$annot[,1]),], grp9)
+
+layout(matrix(1:length(methNa), nrow=1))
+for(i in 1:length(methNa )) { wrGraph::imageW(nNApGrp[,i,], tit=paste(names(methNa)[i],": Number Of NAs /Group"))
+  mtext("Blue for low, dark red for high number of NAs", cex=0.75, adj=0)  }
 ```
 
 Now we can explore the regression score and its context to other parameters, below it's done graphically.
@@ -1155,18 +1173,18 @@ layout(matrix(1:4, ncol=2))
 par(mar=c(5.5, 2.2, 4, 0.4))
 col1 <- RColorBrewer::brewer.pal(9,"YlOrRd")
 imageW(datUPS1[,,1], col=col1, tit="Linear regression score", xLab="",yLab="",transp=FALSE)
-mtext("red for bad score", cex=0.75)
+mtext("Drak red for elevated", cex=0.75)
 
 imageW(log(datUPS1[,,2]), tit="Number of peptides", xLab="",yLab="", col=col1, transp=FALSE)
-mtext("dark red for high number of peptides", cex=0.75)
+mtext("Dark red for high number of peptides", cex=0.75)
 
 ## ratio : regression score vs no of peptides
 imageW(datUPS1[,,1]/log(datUPS1[,,2]), col=rev(col1), tit="Regression score / Number of peptides", xLab="",yLab="", transp=FALSE)
-mtext("dark red for high (good) lmScore/peptide ratio)", cex=0.75)
+mtext("Dark red for high lmScore/peptide ratio)", cex=0.75)
 
 ## score vs abundance
 imageW(datUPS1[,,1]/datUPS1[,,3], col=rev(col1), tit="Regression score / median Abundance", xLab="",yLab="", transp=FALSE)
-mtext("dark red for high (good) lmScore/abundance ratio)", cex=0.75)
+mtext("Dark red for high lmScore/abundance ratio)", cex=0.75)
 ```
 
 From the heatmap-like plots we can see that some proteins are rather consistently quantified by any of the methods.
@@ -1224,7 +1242,7 @@ Now we can use the median position within each cluster as representative example
 ####  Representative UPS1-protein of the Best Group  (the '+++++')
 
 ```{r regr5star, echo=TRUE}
-gr <- 1
+gr <- 5
 useLi <- which(datUPS1[,1,"cluNo"]==gr)
 colNa <- c("Protein",paste(colnames(datUPS1), rep(c("slope","logp"), each=ncol(datUPS1)), sep=" "))
 try(kable(cbind(annUPS1[useLi,2], signif(datUPS1[useLi,,"slope"],3), signif(datUPS1[useLi,,"logp"],3)),
@@ -1244,7 +1262,7 @@ if(packageVersion("wrGraph")  >= "1.2.5"){
 ####  Representative UPS1-protein of the 2nd Best Group  (the '++++')
 
 ```{r regr4star, echo=TRUE}
-gr <- 2
+gr <- 4
 useLi <- which(datUPS1[,1,"cluNo"]==gr)
 try(kable(cbind(annUPS1[useLi,2], signif(datUPS1[useLi,,"slope"],3), signif(datUPS1[useLi,,"logp"],3)),
   caption=paste("Regression details for cluster of the",length(useLi),"2nd best UPS1 proteins "), col.names=colNa, align="l"),silent=TRUE)
@@ -1280,7 +1298,7 @@ if(packageVersion("wrGraph")  >= "1.2.5"){
 ####  Representative UPS1-protein of the 4th Group  (the '++')
 
 ```{r regrPlot2star, fig.height=9, fig.width=9.5, fig.align="center", echo=TRUE}
-gr <- 4
+gr <- 2
 useLi <- which(datUPS1[,1,"cluNo"]==gr)
 try(kable(cbind(annUPS1[useLi,2], signif(datUPS1[useLi,,"slope"],3), signif(datUPS1[useLi,,"logp"],3)),
   caption="Regression details for 3rd cluster UPS1 proteins ", col.names=colNa, align="l"),silent=TRUE)
@@ -1296,7 +1314,7 @@ if(packageVersion("wrGraph")  >= "1.2.5"){
 ####  Representative UPS1-protein of the 5th (And Last) Group  (the '+')
 
 ```{r regrPlot1star, fig.height=9, fig.width=9.5, fig.align="center", echo=TRUE}
-gr <- 5
+gr <- 1
 useLi <- which(datUPS1[,1,"cluNo"]==gr)
 try(kable(cbind(annUPS1[useLi,2], signif(datUPS1[useLi,,"slope"],3), signif(datUPS1[useLi,,"logp"],3)),
   caption="Regression details for 5th cluster UPS1 proteins ", col.names=colNa, align="l"),silent=TRUE)
@@ -1309,7 +1327,8 @@ if(packageVersion("wrGraph")  >= "1.2.5"){
 ```
 
 In some (less frequent) cases on can recognize unexpected characteristics of regression lines. 
-This illustrates that not all proteins are quantified as perfectly as obtention of initial quantitation data may suggest.
+This illustrates that not all proteins are quantified as perfectly as obtention of initial quantitation data may suggest.   
+
 
 ## Additional Comments
 

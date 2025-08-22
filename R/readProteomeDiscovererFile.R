@@ -476,44 +476,43 @@ readProteomeDiscovererFile <- function(fileName, path=NULL, normalizeMeth="media
     quant <- try(wrMisc::normalizeThis(log2(abund), method=normalizeMeth, mode="additive", refLines=refLi, silent=silent, debug=debug, callFrom=fxNa), silent=TRUE)
     if(inherits(quant, "try-error")) quant <- NULL 
     if(debug) { message(fxNa,"rPD13 .. dim quant: ", nrow(quant)," li and  ",ncol(quant)," cols; colnames : ",wrMisc::pasteC(colnames(quant))," ");
-      rPD13 <- list(annot=annot,tmp=tmp,abund=abund,quant=quant,sampleNames=sampleNames,normalizeMeth=normalizeMeth,specPref=specPref,annotCol=annotCol,Rfriendly=Rfriendly,contamCol=contamCol,PSMCol=PSMCol,PepCol=PepCol,counts=counts,infoDat=infoDat, refLi=refLi,suplAnnotFile=suplAnnotFile,sdrf=sdrf)}
+      rPD13 <- list(annot=annot,tmp=tmp,abund=abund,quant=quant,sampleNames=sampleNames,normalizeMeth=normalizeMeth,specPref=specPref,groupPref=groupPref,annotCol=annotCol,Rfriendly=Rfriendly,contamCol=contamCol,PSMCol=PSMCol,PepCol=PepCol,counts=counts,infoDat=infoDat, refLi=refLi,suplAnnotFile=suplAnnotFile,sdrf=sdrf, gr=gr)}
 
     ### GROUPING OF REPLICATES AND SAMPLE META-DATA
+    if(length(specPref) >0 && "sampleNames" %in% names(specPref)) groupPref$sampleNames <- specPref$sampleNames
     if(length(suplAnnotFile) >0 || length(sdrf) >0) {
       if(length(sampleNames) %in% c(1, ncol(abund))) groupPref$sampleNames <- sampleNames
       if(length(gr) %in% c(1, ncol(abund))) groupPref$gr <- gr
-      if("sampleNames" %in% names(specPref)) groupPref$sampleNames <- specPref$sampleNames
       setupSd <- readSampleMetaData(sdrf=sdrf, suplAnnotFile=suplAnnotFile, quantMeth="PD", path=path, abund=utils::head(quant), chUnit=isTRUE(groupPref$chUnit), groupPref=groupPref, silent=silent, debug=debug, callFrom=fxNa)
-   }
-    if(debug) {message(fxNa,"rPD13b ..");  rPD13b <- list(annot=annot,tmp=tmp,abund=abund,suplAnnotFile=suplAnnotFile,quant=quant,sampleNames=sampleNames,specPref=specPref,annotCol=annotCol,Rfriendly=Rfriendly,contamCol=contamCol,PSMCol=PSMCol,PepCol=PepCol,counts=counts,infoDat=infoDat, refLi=refLi,setupSd=setupSd, gr=gr)}
+    }
+    if(debug) {message(fxNa,"rPD13b ..");  rPD13b <- list(annot=annot,tmp=tmp,abund=abund,suplAnnotFile=suplAnnotFile,quant=quant,sampleNames=sampleNames,specPref=specPref,groupPref=groupPref,annotCol=annotCol,Rfriendly=Rfriendly,contamCol=contamCol,PSMCol=PSMCol,PepCol=PepCol,counts=counts,infoDat=infoDat, refLi=refLi,setupSd=setupSd,gr=gr)}
 
     ## finish groups of replicates & annotation setupSd
     setupSd <- .checkSetupGroups(abund=abund, setupSd=setupSd, gr=gr, sampleNames=sampleNames, quantMeth="PD", silent=silent, debug=debug, callFrom=fxNa)
     if(debug) {message(fxNa,"rPD13c .."); rPD13c <- list(annot=annot,tmp=tmp,abund=abund,quant=quant,gr=gr,sdrf=sdrf,setupSd=setupSd,sampleNames=sampleNames,specPref=specPref,annotCol=annotCol,Rfriendly=Rfriendly,contamCol=contamCol,PSMCol=PSMCol,PepCol=PepCol,counts=counts,infoDat=infoDat, refLi=refLi)}
 
     ## harmonize sample-names/1
-    colNa <- if(length(setupSd$sampleNames)==ncol(abund)) setupSd$sampleNames else setupSd$groups
+    colNa <- if(length(setupSd$sampleNames)==ncol(abund)) setupSd$sampleNames else setupSd$groups     # initialize
 
-    ### begin new
     ## option : choose (re-)naming of levels & columns on most redundance
-    if(length(setupSd$sampleNames)==ncol(quant) && length(setupSd$sampleNaSdrf)==ncol(quant) && any(duplicated(setupSd$level))) {
-      ## check if setupSd$sampleNaSdrf  or   setupSd$sampleNames contain better info (some info on replicates)
-      chRed1 <- sum(duplicated(sub("(_|\\.| )[[:digit:]]+.*","", setupSd$sampleNaSdrf)), na.rm=TRUE)
+    if(length(setupSd$sampleNames)==ncol(quant) && length(setupSd$sdrfSampleNames)==ncol(quant) && any(duplicated(setupSd$level))) {
+      ## check if setupSd$sdrfSampleNames  or   setupSd$sampleNames contain better info (some info on replicates)
+      chRed1 <- sum(duplicated(sub("(_|\\.| )[[:digit:]]+.*","", setupSd$sdrfSampleNames)), na.rm=TRUE)
       chRed2 <- sum(duplicated(sub("(_|\\.| )[[:digit:]]+.*","", setupSd$sampleNames)), na.rm=TRUE)
-      if(chRed1 <1) chRed1 <- sum(duplicated(sub("[[:digit:]]+$","", setupSd$sampleNaSdrf)), na.rm=TRUE)   # remove terminal digits
+      if(chRed1 <1) chRed1 <- sum(duplicated(sub("[[:digit:]]+$","", setupSd$sdrfSampleNames)), na.rm=TRUE)   # remove terminal digits
       if(chRed2 <1) chRed2 <- sum(duplicated(sub("[[:digit:]]+$","", setupSd$sampleNames)), na.rm=TRUE)    # remove terminal digits
       if(any(c(chRed1,chRed2) >0)) {
-        if(chRed2 < chRed1) {                                          # use info for levels depending on where more 
-          colNa <- colnames(abund) <- setupSd$sampleNames <- setupSd$sampleNaSdrf                     ## take sample names from sdrf via  setupSd$sampleNaSdrf
+        if(chRed2 < chRed1) {                                          # use info for levels depending on where more replicates found 
+          colNa <- colnames(abund) <- setupSd$sampleNames                                  ## take sample names from sdrf via  setupSd$sampleNames
         } else {
-          colNa <- colnames(abund) <- setupSd$sampleNames }         ## take sample names from sdrf via  setupSd$sampleNaSdrf
+          colNa <- colnames(abund) <- setupSd$sdrfSampleNames <- setupSd$sampleNames }        ## take sample names from sdrf via  setupSd$sdrfSampleNames
         if(length(quant) >0) colnames(quant) <- colNa  }
       #setupSd$level  
     }    
-    if(debug) {message(fxNa,"rPD13d .."); rPD13d <- list(annot=annot,tmp=tmp,abund=abund,quant=quant,gr=gr,sdrf=sdrf,setupSd=setupSd,sampleNames=sampleNames,specPref=specPref,annotCol=annotCol,Rfriendly=Rfriendly,contamCol=contamCol,PSMCol=PSMCol,PepCol=PepCol,counts=counts,infoDat=infoDat, refLi=refLi)}
+    if(debug) {message(fxNa,"rPD13d .."); rPD13d <- list(annot=annot,tmp=tmp,abund=abund,quant=quant,gr=gr,sdrf=sdrf,setupSd=setupSd,sampleNames=sampleNames,specPref=specPref,annotCol=annotCol,Rfriendly=Rfriendly,contamCol=contamCol,PSMCol=PSMCol,PepCol=PepCol,counts=counts,infoDat=infoDat, refLi=refLi, colNa=colNa)}
     ## option : set order of samples as (init) sdrf
     if(length(quant) >0 && "sdrfOrder" %in% names(sdrf) && isTRUE(as.logical(sdrf["sdrfOrder"])) && length(setupSd$iniSdrfOrder)==ncol(abund) && ncol(abund) >1) {  # set order according to sdrf (only if >1 samples)
-      nOrd <- order(setupSd$iniSdrfOrder)
+      nOrd <- (setupSd$iniSdrfOrder)
       abund <- abund[,nOrd]
       if(length(quant) >0) quant <- quant[,nOrd]
       #setupSd$level <- setupSd$level[nOrd]
@@ -577,11 +576,11 @@ readProteomeDiscovererFile <- function(fileName, path=NULL, normalizeMeth="media
 
 #' Additional/final Check And Adjustments To Sample-order After readSampleMetaData()
 #'
-#' This (low-level) function performs an additional/final chek & adjustments to sample-names after readSampleMetaData()
+#' This (low-level) function performs an additional/final check & adjustments to sample-names after readSampleMetaData()
 #'
 #' @param abund (matrix or data.frame) abundance data, only the colnames will be used
-#' @param setupSd (list) describing sammple-setup, typically produced by   from package wrMisc
-#' @param gr (factor) optional custom information about replicate-layout, has priority over setuoSd
+#' @param setupSd (list) describing sammple-setup, typically produced by \code{readSampleMetaData()} (from this package)
+#' @param gr (factor) optional custom information about replicate-layout, has priority over setupSd
 #' @param sampleNames (character) custom sample-names, has priority over abund and setuoSd
 #' @param quantMeth (character) 2-letter abbreviation of name of quantitation-software (eg 'MQ')
 #' @param silent (logical) suppress messages
@@ -590,13 +589,20 @@ readProteomeDiscovererFile <- function(fileName, path=NULL, normalizeMeth="media
 #' @return This function returns an enlaged/updated list 'setupSd' (set setupSd$sampleNames,  setupSd$groups)
 #' @seealso used in \code{readProtDiscovererFile},  \code{\link{readMaxQuantFile}}, \code{\link{readProlineFile}}, \code{\link{readFragpipeFile}}
 #' @examples
-#' set.seed(2021)
+#' abun1 <- matrix(1:16, ncol=8, dimnames=list(NULL,paste("samp", LETTERS[8:1], sep="_")))
+#' sdrf1 <- data.frame(source.name=paste(rep(LETTERS[1:4],each=2), 1:2, sep="_"), 
+#'   assay.name=paste0("run", 1:8), comment.data.file.=paste0("MSrun", 8:1))
+#' setU1 <- list(level=gl(4,2), meth="lowest", sampleNames=paste("samp", LETTERS[1:8], sep="_"), 
+#'   sdrfDat=sdrf1, annotBySoft=NULL)
+#' .checkSetupGroups(abun1, setU1)
 #' @export
 .checkSetupGroups <- function(abund, setupSd, gr=NULL, sampleNames=NULL, quantMeth=NULL, silent=FALSE, callFrom=NULL, debug=FALSE) {
   ## additional/final check & adjustments to sample-names after readSampleMetaData()
-  ## examine
   ## returns enlaged/updated list 'setupSd' (set setupSd$sampleNames,  setupSd$groups)
-
+  ## 
+  ## NOTE : 
+  ## $level should be ordered integer (based on $groups)
+  ## $groups should be group-names with $level as names
   ## assume 'abund' to be valid matrix of data.frame !!
   ## 'setupSd' as list produced by readSampleMetaData()
   ## 'gr' .. (char vector or factor) designating who should be considered as replicate/same level, as optional custom entry (has prior over automatic groups/levels)
@@ -604,165 +610,10 @@ readProteomeDiscovererFile <- function(fileName, path=NULL, normalizeMeth="media
   ## 'quantMeth' .. (char vect, length=1) design method via abbreviation like 'PD' for ProteomeDiscoverer, 'MQ' for MaxQuant, 'PL' for Proline, etc (used for automatic trimming of default column/sample-names)
   fxNa <- wrMisc::.composeCallName(callFrom, newNa=".checkSetupGroups")
   delPat <- "_[[:digit:]]+$|\\ [[:digit:]]+$|\\-[[:digit:]]+$"             # remove enumerators, ie tailing numbers after separator
-  rawExt <- "\\.raw$|\\.Raw$|\\.RAW$"     # paste(paste0("\\.",c("Raw","raw","RAW"),"$"), collapse="|")
+  rawExt <- "(\\.RAW$)|(\\.Raw$)|(\\.raw$)"
+  
   .corPathW <- function(x) gsub("\\\\", "/", x)
-  .adjPat <- function(x) { out <- match(x, unique(x)); names(out) <- names(x); out}  # needed ??
-
-  extrSamNaSetup <- function(setS, meth) {
-    ## extract (use-given) sampleNames out of setupSd$annotBySoft (colnames may depend on quant-method)
-    if(!any(c("PD","MQ","PL","FP","IB") %in% meth, na.rm=TRUE)) meth <- "other"
-    switch(meth, PD = NULL,
-      MQ=setupSd$annotBySoft$Experiment , PL=setupSd$annotBySoft$Experiment, FP=setupSd$annotBySoft$Experiment, IB=NULL, other=NULL)}
-
-  defColNa <- function(colN, meth) {                     # check if colN may represent default colnames (ie not useful since wo any indication about samples)
-    ## note MQ : requires setExperiment to be defined by user, set each sample as different for getting quant by sample !
-    ## note FP : requires setExperiment to be defined by user (defining different bioreplictates sufficient for getting quant by sample)
-    if(!any(c("PD","MQ","PL","FP","IB") %in% meth, na.rm=TRUE)) meth <- "other"
-    switch(meth, PD = all(grepl("F[[:digit:]]+\\.Sample$", colN), na.rm=TRUE),
-      MQ=FALSE , PL=FALSE, FP=FALSE, IB=FALSE, other=FALSE)}
-
-  .extrColNames <- function(abun, meth, silent=FALSE, callFrom=NULL, debug=FALSE) {   ## get sampleNames  from file-names/colnames of abund & clean
-    fxNa <- wrMisc::.composeCallName(callFrom, newNa=".extrColNames")
-      # abun=abund; meth=quantMeth
-    grou <- grou2 <- NULL
-    colNa2 <- sub(rawExt,"", .corPathW(colnames(abun)))
-    colNa <- basename(colNa2)                   # trim to filename
-    chDu <- duplicated(colNa)
-    if(debug) {message(fxNa,"eCN1"); eCN1 <- list(abun=abun,meth=meth,colNa2=colNa2,colNa=colNa,chDu=chDu)}
-    if(any(chDu)) {
-     if(debug) message(fxNa,"Some stripped filenames appear duplicated, need to keep with path ...")
-       colNa <- colNa2
-       chDu <- duplicated(colNa) }
-    if(any(chDu) && !silent) message(fxNa,"Some filenames appear duplicated !!   (eg  ",wrMisc::pasteC(utils::head(unique(colNa[which(chDu)]), 3))," )")
-    if(debug) {message(fxNa,"eCN2"); eCN2 <- list(abun=abun,meth=meth,colNa2=colNa2,colNa=colNa,chDu=chDu)}
-
-    if(is.null(colNa) || sum(duplicated(colNa)) ==length(colNa) -1) {  sampleNames <- NULL
-      if(debug) message(fxNa,"All colnames of abund are empty or identical ! (can't use to figure out pattern of replicates/levels)")
-    } else {
-      ## colNa seem usable
-      if(any(c("FP") %in% meth)) colNa <- sub("MaxLFQ Intensity$|Intensity$","", colNa)
-      if(any(c("MQ") %in% meth)) colNa <- sub("^LFQ Intensity","", colNa)
-      if("PL" %in% meth) colNa <- sub("^abundance|^Abundance","", colNa)
-      if(any(c("IB") %in% meth)) colNa <- sub("^Intensity_{0,1}","", colNa)
-      colNa <- gsub(" +$|\\.+$|_+$|\\-+$","", colNa)         # remove tailing separators (' ','.','_','-')
-      colNa <- gsub("^ +|^\\.+|^_+|^\\-+","", colNa)         # heading tailing separators
-      chDu <- duplicated(colNa)
-      if(!silent && any(chDu)) message(fxNa,"NOTE : ",sum(chDu)," DUPLICATED colnames for abund !!   (eg  ",wrMisc::pasteC(utils::head(unique(colNa[which(chDu)]), 3))," )")
-      if(debug) {message(fxNa,"eCN3"); eCN3 <- list()}
-
-      ## now address group names/levels
-      if("PD" %in% meth) {
-        grou2 <- sub("rep[[:digit:]]+$","", colnames(abun))
-        grou2 <- sub(" +$|\\.+$|_+$|\\-+$","", grou2)       # remove tailing separators (' ','.','_','-')
-        if(all(grepl("^\\.F[[:digit:]]+\\.Sample$", colnames(abun)))) grou2 <- NULL        #  PD default names like   '.F1.Sample', '.F2.Sample' etc
-      } else {
-        if("PL" %in% meth) colNa <- sub("\\.mzDB\\.t\\.xml$","", colNa)
-        colNa <- sub("\\.raw$|\\.RAW$","", colNa)
-        sep <- c("_","\\-","\\.")
-         #sub("\\.mzDB|\\.t\\.xml","",colNa)
-        rmTx <- paste0(c("Sample","Samp","Replicate","Repl","Rep"),"$")
-        rmTx <- paste(paste0(rep(sep, each=length(rmTx)), rep(rmTx, length(sep))), collapse="|")
-        grou2 <- sub(rmTx,"",sub(delPat,"", colNa))                               # remove tailing enumerators..
-      }
-      if(debug) message(fxNa,"Based on colnames(abund) : ",length(unique(grou2))," levels for ",ncol(abun)," samples")
-    }
-    if(debug) {message(fxNa,"eCN4 done"); eCN4 <- list()}
-    list(sampleNames=colNa, grou=grou2) }
-
-  .replSingleWord <- function(ii, tx, se, replBy="") {   ## for single word in all tx; moove to wrMisc?
-    ## ii .. word to remove
-    ## tx .. ini char-vector
-    ## se .. possible separators                           
-    if(length(se) >1) se <- paste0("(",paste(se,collapse="|"),")")
-    i2 <- grepl(paste0("^",ii), tx)      # heading
-    out <- rep(NA, length(tx))
-    ## need to protect special characters in ii
-    ii <- wrMisc::protectSpecChar(ii)
-    if(any(i2)) out[which(i2)] <- sub(paste0("^",ii,se), replBy, tx[which(i2)])       # heading : remove with following sep (if avail)
-    if(any(!i2)) out[which(!i2)] <- sub(paste0("(",se,ii,")|(^",ii,")"), replBy, tx[which(!i2)])   # not heading (may be heding now..): remove preceeding sep
-    out }
-
- .trimRedWord <- function(txt, sep=c(" ","_","-","/"), minLe=3, strict=TRUE, silent=TRUE, callFrom=NULL, debug=FALSE) {
-    ## moove to wrMisc?
-    ## function to trim redundant words (@separator) similar to wrMisc::trimRedundText()
-    ## strict .. (logical) requires separator to occur in each single character-string to be considered
-    ## minLe .. min length for words to be considered (otherwise frequently problem with '1')
-    ##
-    datOK <- length(txt) >0
-    if(datOK) { chNA <- is.na(txt)
-      if(all(chNA)) datOK <- FALSE else tx1 <- txt[which(!chNA)] 
-    }     
-    if(datOK) {
-      #strict=TRUE
-      chSe <- sapply(sep, function(x) nchar(tx1) > nchar(gsub(x,"",tx1)))
-      chS2 <- if(strict) colSums(chSe) ==length(tx1) else colSums(chSe) >0       # if strict require at least instace of 'sep' in each element      
-      if(debug) {message(fxNa,"tRW1"); tRW1 <- list(txt=txt,sep=sep,chSe=chSe,chS2=chS2,strit=strict,tx1=tx1)}
-      if(any(chS2)) sep <- sep[which(chS2)] else datOK <- FALSE           # reduce to sep found
-    }
-    if(datOK) {
-      allW <- unique(unlist(strsplit(tx1, paste(sep, collapse="|")), use.names=FALSE))
-      ## keep only >2 char words
-      chLe <- nchar(allW) >= minLe
-      if(any(!chLe)) allW <- allW[which(chLe)]       
-      ## check all 'words' for recurring in each char-string
-      if(length(allW) >0) { 
-        chW <- colSums(sapply(allW, grepl, tx1)) ==length(tx1)
-        if(any(chW)) {          
-          rmWo <- names(chW[which(chW)])
-          #chLe <- nchar(rmWo) >0
-          if(debug) {message(fxNa,"tRW2"); tRW2 <- list(txt=txt,sep=sep,chS2=chS2,strit=strict,tx1=tx1,chW=chW,allW=allW,rmWo=rmWo,chLe=chLe)}
-          if(length(rmWo) >0) {
-            for(wo in rmWo) tx1 <- .replSingleWord(wo, tx1, sep) 
-            txt[which(!chNA)] <- tx1 
-          }
-          
-          if(any(chLe)) {
-            rmWo <- rmWo[which(chLe)]
-            for(wo in rmWo) tx1 <- .replSingleWord(wo, tx1, sep) 
-            txt[which(!chNA)] <- tx1 }
-      } }
-    }
-    txt }
-
-  rmSharedWords <- function(x, sep=c("_"," ","."), anySep=TRUE, newSep=NULL, fixed=TRUE, minLe=2) {
-    ## function to trim redundant words (@separator) similar to wrMisc::trimRedundText()
-    ## remove common/repeated words as occuring in each instance of x; words are separarated by sep (ignoring NAs); separators must be consistent (no mixing of separators allowed)
-    ## special characters will be automatically protected, order does NOT matter, multiple repeats will be removed, too
-    ## note : anySep=TRUE will consider all separators at one time (), thus combinations with different separators won't be distinguished
-    ## note : heading separators will be removed in any case
-    ## move to wrMisc ??
-    #example#   x1 <- c("aa_A1 yy_zz.txt", NA, "B2 yy_aa_aa_zz.txt"); rmSharedWords(x1)
-    datOK <- length(x) >0 && length(sep) >0
-    if(datOK) {
-      chNA <- is.na(x)
-      x2 <- if(any(chNA)) x[-which(chNA)] else x
-      redSep <- which(colSums(sapply(wrMisc::protectSpecChar(sep), function(y) nchar(x2) > nchar(sub(y,"", x2))))==length(x2))
-    } else x2 <- x
-    if(datOK && length(redSep) >0) {
-      se2 <- sep[redSep]                                  # reduce to separators appearing in all cases
-      if(length(newSep) >1) newSep <- newSep[redSep]
-      if(isTRUE(anySep)) {    # combine all separators
-        iP <- paste(wrMisc::protectSpecChar(sep), collapse="|")
-        se2 <- paste(sep, collapse="|")
-        fixed <- FALSE
-      } else  { se2 <- sep
-        iP <- wrMisc::protectSpecChar(sep) }
-      for(i in 1:length(se2)) {
-        i2 <- iP[i]
-        chSep <- if(i==1) TRUE else all(nchar(x2) > nchar(sub(i2,"", x2)))            # check current separator 'se2' if occuring in each instance
-        if(chSep) {
-          spl <- strsplit(x2, split=if(isTRUE(fixed)) se2[i] else iP[i], fixed=fixed)        
-          rmW <- Reduce(intersect, spl)                              # get words common in all instances
-          if(length(rmW) >0) { 
-            nCh <- nchar(rmW)
-            chL <- nCh >= minLe | nCh ==0
-            if(any(chL)) {
-              spl <- lapply(spl, function(y) y[-which(y %in% unique(c(rmW[which(chL)], if(TRUE) "")))])       # remove repeated/common 'words'
-              newSe <- if(length(newSep) >0) {if(length(newSep) < length(sep)) rep(newSep,i)[i] else newSep[i]} else sep[1]
-              x2 <- sapply(spl, paste, collapse=newSe) } }                      # paste collapse
-        }
-      } }
-    if(datOK && any(chNA)) {out <- x; out[-which(chNA)] <- x2; out} else x2 }
+  .adjPat <- function(x) { out <- match(x, unique(x)); names(out) <- names(x); out}  # used
     
   ## start main function
   if(!is.list(setupSd)) { if(length(setupSd) >0) warning(fxNa,"BIZZARE format of 'setupSd', it's content will be lost")
@@ -770,13 +621,16 @@ readProteomeDiscovererFile <- function(fileName, path=NULL, normalizeMeth="media
   ## finish groups of replicates & annotation setupSd
   if(debug) { message(fxNa,"cSG0"); cSG0 <- list(gr=gr,abund=abund,sampleNames=sampleNames, setupSd=setupSd, quantMeth=quantMeth) }          # sampleNames=sampleNames
 
-  ## grX .. (new) pattern, setupSd$groups .. as index, + names (level names)
-
+  ## grX .. (new) pattern
+  ## $level should be ordered integer (based on $groups)
+  ## $groups should be group-names with $level as names
   ## special case : fractionated samples : need to change assignment of sample-names here ???
 
   colNa <- grou <- grou2 <- saNa <- grX <- NULL
   iniSaNa <- iniGr <- FALSE
   iniSetupSd <- length(setupSd) >0   # check if init 'setupSd' given
+  if(!is.list(setupSd)) { if(iniSetupSd) as.list(setupSd) else setupSd <- list()}
+    
 
   ## OPTIONS : 
   ## 1) use custom -values (if avail)
@@ -784,114 +638,118 @@ readProteomeDiscovererFile <- function(fileName, path=NULL, normalizeMeth="media
   ## 3) from prev mined from setupSd (groups & levels, not for sampleNames)
   ## 4) pick/mine from colnames of 'abund'
 
-  ## sampleNames/colnames  : if valid user-defied sampleNames is given => use
+  ## sampleNames/colnames  : if valid user-defied sampleNames are given => use (and define groups based on stripping enumerators)
+  if(length(gr)==ncol(abund)) setupSd$groups <- gr
   if(length(sampleNames) == ncol(abund)) {
     ##  1) use externally given sampleName ...
-    iniSaNa <- TRUE
-    setupSd$sampleNames <- sampleNames 
+    iniSaNa <- TRUE                                                                                   
+    setupSd$sampleNames <- sampleNames
+    if(length(gr) !=ncol(abund)) { 
+      grpNa <- wrMisc::rmEnumeratorName(sampleNames, nameEnum=c("","Number","No","no","number", "#", "Replicate","Rep","Re","R","replicate","rep","re", "Sample","Samp","Sa","S"), sepEnum=c(" ","-","_","/"), incl="rmEnum")  # remove enum
+      setupSd$groups <- grpNa }
   } else {
-    if(length(sampleNames) ==1 && any(grepl("^sdrf\\.",sampleNames)) && "sdrfDat" %in% setupSd$sdrfDat) {
-      ## 2) arguments orients towards sdrf  => check for sdrf column to use
-      chSd <- colnames(setupSd$sdrfDat) %in% sub("^sdrf\\.", "", sampleNames)
-      if(any(chSd, na.rm=TRUE)) {                   ##  OK to use
-        iniSaNa <- TRUE
-        if(debug) message(fxNa,"Setting 'sampleNames' based on sdrf-column ")
-        setupSd$sampleNames <- setupSd$sdrfDat[,which(chSd)[1]] }
-    } else {
-      ## 4.0) from prev mined from setupSd (sampleNames)
-      ##   special case PD : check if  setupSd$annotBySoft$File.Name  usable
-      if("PD" %in% quantMeth && length(setupSd$annotBySoft$File.Name) ==ncol(abund)) {
-        chOr <- try(match(basename(setupSd$annotBySoft$File.Name), basename(if("sdrfDat" %in% names(setupSd)) setupSd$sdrfDat$comment.data.file. else setupSd$annotBySoft$filePath)), silent=TRUE)
-        if(inherits(chOr, "try-error") || !any(is.na(chOr))) {
-          if(all(chOr ==1:ncol(abund), na.rm=TRUE)) {
-            setupSd$sampleNames <-  sub("\\.raw$|\\.RAW$","", setupSd$annotBySoft$File.Name)
+    ## check if colnames(abund) or sdrf more useful
+    ## basic strategy : try picking series of names where some group-names appear when removing enumerators; avoid single specimen groups (no duplication of group-names)
+    ## check colnames of abund
+    colNaA <- wrMisc::rmSharedWords(colnames(abund), sep=c("_", " ", ".", "-", ";"), callFrom=fxNa, silent=!debug)  # simplify
+    ## check for enumerators    
+    colNaA2 <- wrMisc::rmEnumeratorName(colNaA, nameEnum=c("","Number","No","no","number", "#", "Replicate","Rep","Re","R","replicate","rep","re", "Sample","Samp","Sa","S"), sepEnum=c(" ","-","_","/"), incl="rmEnum")  # remove enum
+    chDuA2 <- duplicated(colNaA2)
+
+    ## initialize
+    if(length(setupSd$sampleNames) !=ncol(abund)) setupSd$sampleNames <- colNaA else {
+      ## may choose from prev sampleNames or based on colnames
+      if(sum(chDuA2, na.rm=TRUE) >= sum(duplicated(setupSd$level), na.rm=TRUE)) {setupSd$sampleNames <- colNaA} # use colnames(abund) only if at least same number of duplicates (for groups) 
+    }
+    if(length(setupSd$groups) !=ncol(abund)) setupSd$groups <- colNaA2 else {
+      if(sum(duplicated(colNaA2), na.rm=TRUE) >= sum(duplicated(setupSd$groups), na.rm=TRUE)) {setupSd$groups <- colNaA2} # use colnames(abund) only if at least same number of duplicates (for groups) 
+    }    
+    if(debug) { message(fxNa,"cSG1a"); cSG1a <- list(gr=gr,abund=abund,sampleNames=sampleNames, setupSd=setupSd, quantMeth=quantMeth) }          # sampleNames=sampleNames
+    
+    ## check sdrf
+    colNaS <- repNaS <- NULL
+    if(length(setupSd$sdrfDat) >0) {   
+      ## rather try to find sampleNames in sdrf
+      chSdrfCol <- c("source.name", "characteristics.organism.part.","characteristics.cell.type.","characteristics.disease.","assay.name","comment.label.","comment.file.uri.","comment.data.file.","characteristics.spiked.compound." )  
+      sdrfT <- setupSd$sdrfDat[,wrMisc::naOmit(match(chSdrfCol, colnames(setupSd$sdrfDat))), drop=FALSE]
+      ## check for all different names (potential sample-names)
+      chSd1 <- colSums(apply(sdrfT, 2, duplicated))
+      if(any(chSd1 ==0)) { 
+        sdrfT <- sdrfT[,which(chSd1==0), drop=FALSE]}    # retain only cols with some duplicated names (wo enumerators)
+      if(length(sdrfT) >0) {  
+        ## now check if containing enumerators
+        sdrfT <- apply(sdrfT, 2, wrMisc::rmSharedWords, sep=c("_", " ", ".", "-", ";"), callFrom=fxNa, silent=!debug)
+        sdrfT2 <- apply(sdrfT, 2, wrMisc::rmEnumeratorName, nameEnum=c("","Number","No","N","no","number", "#", "Replicate","Rep","Re","R","replicate","rep","re", "Sample","Samp","Sa","S"), sepEnum=c(" ","-","_","/"), incl="rmEnum")  # remove enum
+        ## choose likely columns
+        if(length(dim(sdrfT2)) >1 && ncol(sdrfT2) >1) {
+          chDu <- colSums(apply(sdrfT2, 2, duplicated))
+          ## check for containing text
+          chTe <- colSums(apply(sdrfT2, 2, function(x) grepl("[[:alpha:]]", x))) ==nrow(setupSd$sdrfDat)
+          if(any(!chTe)) chDu[which(!chTe)] <- 0
+          if(any(chDu >0)) { 
+            useColS <- chDu[which(chDu >0 & chDu < nrow(sdrfT) -1)]
+            useColS <- which(chDu==  if(length(useColS) >1) sort(useColS)[ceiling(length(useColS)/2)] else useColS)[1]   # so far : choose median number of replicates
+            colNaS <- sdrfT[,useColS]
+            repNaS <- sdrfT2[,useColS]
+            ## integrate sampleNames & replicateNames from sdrf to setupSd
+            setupSd$sdrfSampleNames <- colNaS
+            setupSd$sdrfReplicateNames <- repNaS
+          }       
+        } else { colNaS <- sdrfT; repNaS <- sdrfT2 }         
+      }                                                   
+      ## now compare to colnames of abund & choose between colnames(abund) or sdrf : choose from sdrf if at least same number of grouops/levels
+      if(length(repNaS) >0 && sum(duplicated(repNaS)) < length(repNaS) -1 && length(unique(repNaS)) >= length(unique(colNaA2)) ) { 
+        if(!silent) message(fxNa,"Setting setupSd$sampleNames based on sdrf    cSG1a2")
+        setupSd$sampleNames <- colNaS 
+        if(length(gr) !=ncol(abund)) { setupSd$groups <- repNaS }         
+      }
+    }
+    if(debug) { message(fxNa,"cSG1b"); cSG1b <- list(gr=gr,abund=abund,sampleNames=sampleNames, setupSd=setupSd, quantMeth=quantMeth) }          # sampleNames=sampleNames
+
+    ## PD : mine suplData
+    if("PD" %in% quantMeth && length(setupSd$annotBySoft$File.Name) ==ncol(abund)) {
+      chOr <- try(match(basename(setupSd$annotBySoft$File.Name), basename(if("sdrfDat" %in% names(setupSd)) setupSd$sdrfDat$comment.data.file. else setupSd$annotBySoft$filePath)), silent=TRUE)
+      if(inherits(chOr, "try-error") || !any(is.na(chOr))) {
+        if(all(chOr ==1:ncol(abund), na.rm=TRUE)) {
+          colNaP <-  sub("\\.raw$|\\.RAW$","", setupSd$annotBySoft$File.Name)
+          colNaP <- wrMisc::rmSharedWords(colNaP, sep=c("_", " ", ".", "-", ";"), callFrom=fxNa, silent=!debug)  # simplify
+          repNaP <- wrMisc::rmEnumeratorName(colNaP, nameEnum=c("","Number","No","no","number", "#", "Replicate","Rep","Re","R","replicate","rep","re", "Sample","Samp","Sa","S"), sepEnum=c(" ","-","_","/"), incl="rmEnum")  # remove enum
+          ## now compare to colnames of abund & choose between colnames(abund) or sdrf : choose where more levels/groups
+          chDu <- sum(duplicated(repNaP))
+          if(chDu < length(colNaP) -1 && chDu > sum(duplicated(setupSd$groups))) { 
+            setupSd$sampleNames <- colNaP 
+            if(length(gr) !=ncol(abund)) { setupSd$groups <- repNaP }
           }
         }
-      } else {
-        ## 4.1)  default names based on colnames 
-        saNa <- .extrColNames(abund, meth=quantMeth, silent=silent,callFrom=fxNa,debug=debug)  
-        setupSd$sampleNames <- if(length(saNa$sampleNames) ==ncol(abund)) saNa$sampleNames else if(length(setupSd$sdrfDat$comment.data.file.)==ncol(abund)) sub(rawExt,"", setupSd$sdrfDat$comment.data.file.)
-    } }
-  }
-  if(debug) {message(fxNa,"cSG1"); cSG1 <- list(abund=abund,setupSd=setupSd,gr=gr,quantMeth=quantMeth,saNa=saNa)}
+      }
+    }   ## finish PD specific check
 
-  if(length(gr) == ncol(abund)) {  
-    ## 1) if valid user-defied grouping is given => use
-    iniGr <- TRUE
-    grX <- gr
-  } else {  
-    if(debug && length(gr) >1) message(fxNa,"Invalid entry of 'gr' (length= ",length(gr),"  but  ",ncol(abund)," expected)  ...ignoring")    
-    if(length(gr) <1  && "sdrfDat" %in% names(setupSd)) {   # && any(grepl("^sdrf\\.",gr))
-      ##  2) argument orients towards sdrf  => check for sdrf column to use
-      chSd <- colnames(setupSd$sdrfDat) %in% sub("^sdrf\\.", "", gr)
-      if(any(chSd, na.rm=TRUE)) { grX <- setupSd$sdrfDat[,which(chSd)[1]]
-        iniGr <- TRUE } 
-      if(debug) {message(fxNa,"cSG1a1"); cSG1a1 <- list(sampleNames=sampleNames,gr=gr,grX=grX,abund=abund,iniSaNa=iniSaNa,iniGr=iniGr,setupSd=setupSd)}
-  
-    } else {
-      if(length(setupSd) >0) {
-        if(debug) {message(fxNa,"cSG1a2"); cSG1a2 <- list(sampleNames=sampleNames,gr=gr,grX=grX,abund=abund,iniSaNa=iniSaNa,iniGr=iniGr,setupSd=setupSd,quantMeth=quantMeth)}
-        ## 3) use from setupSd -if avail 
-        if("PD" %in% quantMeth && length(setupSd$annotBySoft$File.Name) ==ncol(abund)) {
-          ##   special case PD : check if  setupSd$annotBySoft$File.Name  usable
-          colNa <- setupSd$sampleNames #basename(setupSd$annotBySoft$File.Name)  #sub("\\.raw$|\\.RAW$","", basename(sub(rawExt,"", .corPathW(colnames(sampleNames)))))
-          sep <- c("_","\\-","\\.")
-          rmTx <- paste0(c("Samples","Sample","Samp","Replicates","Replicate","Rep"),"$")
-          rmTx <- paste(paste0(rep(sep, each=length(rmTx)), rep(rmTx, length(sep))), collapse="|")
-          grX <- sub(rmTx,"", sub(delPat,"", setupSd$sampleNames))                               # remove tailing enumerators..
-          
-          if(debug) {message(fxNa,"cSG1a   Method ",quantMeth," : Extracted ",length(unique(grX)), " groups of replicates based on meta-data"); cSG1a <- list(grX=grX)}
-        } else grX <- setupSd$level
-      } else {
-        ## 4) use/mine sdrf colnames
-        if(length(saNa) <1) saNa <- .extrColNames(abund, meth=quantMeth, silent=silent,callFrom=fxNa,debug=debug)       # extrSamNaSetup(setupSd, quantMeth) 
-        if(length(saNa$grou) ==ncol(abund)) { grX <- saNa$grou
-        } else {
-          if(!silent) message(fxNa,"Having TROUBLE finding where sample-groups are defined !!")
-      } }
-    if(debug) {message(fxNa,"cSG1b"); cSG1b <- list(sampleNames=sampleNames,gr=gr,grX=grX,abund=abund,iniSaNa=iniSaNa,iniGr=iniGr,setupSd=setupSd)}
-
+    ## potentially need to adjust units for groups (only groups !)
+    chUnit <- wrMisc::checkUnitPrefix(setupSd$groups, stringentSearch=TRUE, callFrom=fxNa, silent=!debug)
+    if(length(chUnit) ==1) {
+      setupSd$groups <- wrMisc::adjustUnitPrefix(setupSd$groups, unit=chUnit)
     }
-  }
-  if(debug) {message(fxNa,"cSG2"); cSG2 <- list(sampleNames=sampleNames,gr=gr,grX=grX,abund=abund,iniSaNa=iniSaNa,iniGr=iniGr,setupSd=setupSd)}
-
-  ## sampleNames based on sdrf
-  if("sdrfDat" %in% names(setupSd)) { 
-    useSdrfCol <- "comment.data.file."
-    if(useSdrfCol %in% colnames(setupSd$sdrfDat)) {
-      setupSd$sampleNaSdrf <- sub("(\\.RAW$)|(\\.Raw$)|(\\.raw$)", "", setupSd$sdrfDat[,useSdrfCol] )
-      setupSd$sampleNaSdrf <- wrMisc::rmSharedWords(setupSd$sampleNaSdrf, sep=c("_"," ",".","=",";"), silent=silent, callFrom=fxNa)}
-  }
-
-  ## last effort to define groups (non-sdrf like info given) : accept 'lowest','min','highest','max','median','med'
-  if(length(setupSd$meth)==1 && length(setupSd$sdrfDat) >0 && ncol(setupSd$sdrfDat) >1) {  
-    gr2 <- apply(setupSd$sdrfDat, 2, .adjPat)
-    gr2un <- apply(gr2, 2, function(x) length(unique(x)))
-    grX <- if(setupSd$meth %in% c("lowest","min")) gr2[,which.min(gr2un)] else {if(setupSd$meth %in% c("highest","max")) gr2[,which.min(gr2un)]  else NULL}
-    if(setupSd$meth %in% c("med","median")) {chGr <- which(gr2un==stats::median(gr2un, na.rm=TRUE)); if(length(chGr) >1) grX <- gr2[,chGr[1]] }
-    if(debug) {message(fxNa,"Last effort to find replicate-structure: ",length(grX),"    cSG2b"); cSG2b <- list(sampleNames=sampleNames,gr=gr,grX=grX,abund=abund,iniSaNa=iniSaNa,iniGr=iniGr,setupSd=setupSd)}
-  }
-
-  if(length(grX) >0) {
-    if(sum(duplicated(grX)) +1 ==ncol(abund) && ncol(abund) >1) {
-      if(!silent) message(fxNa,"NO clear distinction of groups found, all samples were put in single group/class")           
-    }
-    setupSd$level <- match(grX, unique(grX))       # make pattern
-    setupSd$groups <- names(setupSd$level) <- grX 
-  } else {
+     
+  }     
+  setupSd$level <- match(setupSd$groups, unique(setupSd$groups))
+  names(setupSd$level) <- setupSd$groups
+  names(setupSd$groups) <- setupSd$level       
+  ## done setting sample-names and groups of replicates    
     
-  } 
-  if(debug) {message(fxNa,"cSG3"); cSG3 <- list(sampleNames=sampleNames,gr=gr,grX=grX,abund=abund,iniSaNa=iniSaNa,iniGr=iniGr,setupSd=setupSd)}
+
+  if(debug) {message(fxNa,"cSG2"); cSG2 <- list(abund=abund,setupSd=setupSd,gr=gr,quantMeth=quantMeth,saNa=saNa)}
+
+  #if(debug) {message(fxNa,"cSG2"); cSG2 <- list(sampleNames=sampleNames,gr=gr,grX=grX,abund=abund,iniSaNa=iniSaNa,saNa=saNa,iniGr=iniGr,setupSd=setupSd)}
+
+  #if(debug) {message(fxNa,"cSG3"); cSG3 <- list(sampleNames=sampleNames,gr=gr,grX=grX,abund=abund,iniSaNa=iniSaNa,saNa=saNa,iniGr=iniGr,setupSd=setupSd)}
 
   ## simplify terms ?
-  if(TRUE) {
-    #old#setupSd$sampleNames <- .trimRedWord(setupSd$sampleNames, sep=c(" ","_","-","/"), strict=TRUE, silent=silent, callFrom=fxNa, debug=debug)
-    setupSd$sampleNames <- rmSharedWords(setupSd$sampleNames, sep=c("_"," ","-","/"))
-    #old#setupSd$groups <-  names(setupSd$level) <- .trimRedWord(setupSd$groups, sep=c(" ","_","-","/"), strict=TRUE, silent=silent, callFrom=fxNa, debug=debug)
-    setupSd$groups <-  names(setupSd$level) <- rmSharedWords(setupSd$groups, sep=c("_"," ","-","/"))
-  }
-  if(debug) {message(fxNa,"cSG4"); cSG4 <- list(sampleNames=sampleNames,gr=gr,grX=grX,abund=abund,iniSaNa=iniSaNa,iniGr=iniGr,setupSd=setupSd)}
-  ## set result to object
+  #if(TRUE) {
+  #  setupSd$sampleNames <- wrMisc::rmSharedWords(setupSd$sampleNames, sep=c("_"," ","-","/"))
+  #  setupSd$groups <-  names(setupSd$level) <- wrMisc::rmSharedWords(setupSd$groups, sep=c("_"," ","-","/"))
+  #}
+  if(debug) {message(fxNa,"cSG4"); cSG4 <- list(abund=abund,setupSd=setupSd,gr=gr,quantMeth=quantMeth,saNa=saNa)}
+  ## return results-object (finish .checkSetupGroups() )
   setupSd
   }
 
@@ -949,7 +807,7 @@ readProteomeDiscovererFile <- function(fileName, path=NULL, normalizeMeth="media
   }
       
   if(length(custLay) >0) graphics::layout(custLay) else {
-    if(!identical(normalizeMeth,"none") && length(quant) >0 && !abundQuantRed) { ch1 <- try(graphics::layout(1:2), silent=TRUE)
+    if(!identical(normalizeMeth,"none") && (length(abund) >0 && length(quant) >0) && !abundQuantRed) { ch1 <- try(graphics::layout(1:2), silent=TRUE)
       if(inherits(ch1, "try-error")) message(fxNa,"Problem with figure, Need to restore layout ..") else if(debug) message(fxNa,"Setting layout to 1:2") }}
   if(debug) { message(fxNa,"pQD1"); pQD1 <- list(abund=abund,quant=quant,custLay=custLay,normalizeMeth=normalizeMeth,softNa=softNa,refLi=refLi)}
 
@@ -1043,7 +901,7 @@ readProteomeDiscovererFile <- function(fileName, path=NULL, normalizeMeth="media
    
 
 
-#' Extract Additional Information To Construct The Colum 'SpecType'
+#' Extract Additional Information To Construct The Colum 'SpecType', Allows Adding Information From Fasta
 #'
 #' This (low-level) function creates the column annot[,'SpecType'] which may help distinguishing different lines/proteins.
 #' This information may, for example, be used to normalize only to all proteins of a common backgroud matrix (species).
@@ -1059,6 +917,7 @@ readProteomeDiscovererFile <- function(fileName, path=NULL, normalizeMeth="media
 #' @param annot (matrix) main protein annotation
 #' @param useColumn (factor) columns from annot to use/mine
 #' @param suplInp (matrix) additional custom annotation
+#' @param soft (character, length=1) additional info which software was initially used (so far only special treatmentr for IB)
 #' @param silent (logical) suppress messages
 #' @param debug (logical) display additional messages for debugging (starting with 'mainSpecies','conta' and others - later may overwrite prev settings)
 #' @param callFrom (character) allow easier tracking of messages produced
@@ -1073,7 +932,7 @@ readProteomeDiscovererFile <- function(fileName, path=NULL, normalizeMeth="media
 #'   mainSpecies="OS=Saccharomyces cerevisiae", spike="P00915")   # MQ type
 #' .extrSpecPref(specPref1, annot1, useColumn=c("Species","Leading.razor.protein"))  
 #' @export
-.extrSpecPref <- function(specPref, annot, useColumn=c("Species","EntryName","GeneName","Accession"), suplInp=NULL, silent=FALSE, debug=FALSE, callFrom=NULL) {
+.extrSpecPref <- function(specPref, annot, useColumn=c("Species","EntryName","GeneName","Accession"), suplInp=NULL, soft=NA, silent=FALSE, debug=FALSE, callFrom=NULL) {
   ## create column annot[,'SpecType']
   ## if $mainSpecies or $conta: match to annot[,"Species"], annot[,"EntryName"], annot[,"GeneName"], if length==1 grep in  annot[,"Species"]
   ## if other : match to annot[,"Species"], annot[,"Accession"], annot[,"EntryName"], annot[,"GeneName"], if length==1 grep in   annot[,"EntryName"], annot[,"GeneName"], annot[,"Species"]
@@ -1099,113 +958,200 @@ readProteomeDiscovererFile <- function(fileName, path=NULL, normalizeMeth="media
   ## check useColumn
   chAnn <- useColumn[1:min(length(useColumn), 4)] %in% colnames(annot)   # check for length useCol=0  ?? # nolint
   if(all(!chAnn)) stop("Unknown/Non-standard 'annot' (missing colnames ",wrMisc::pasteC(useColumn[which(!chAnn)], quoteC="'"),")")
-  if(debug) {message(fxNa,"eSP1"); eSP1 <- list(specPref=specPref,annot=annot,useColumn=useColumn,suplInp=suplInp,chAnn=chAnn)}
+  if(debug) {message(fxNa,"eSP1"); eSP1 <- list(specPref=specPref,annot=annot,useColumn=useColumn,suplInp=suplInp,chAnn=chAnn, soft=soft)}
 
   if(!"SpecType" %in% colnames(annot)) {annot <- cbind(annot, SpecType=rep(NA, nrow(annot))); if(debug) message(fxNa,"Adding column 'SpecType' to 'annot'")}
   if(length(specPref) > 0) specPref <- specPref[which(sapply(specPref, length) >0)]     # remove empty .
   
   ## split Leading.razor.protein  if "Accession","EntryName" NOT in annot
   if(!all(c("Accession","EntryName") %in% colnames(annot))) {
-    chSplCol <- c("Leading.razor.protein","Proteins","Protein.Groups")
+    chSplCol <- c("Leading.razor.protein","Proteins","Protein.Groups")    # columns for choice to use ..
     chSplCol <- which(colnames(annot) %in% chSplCol)
     if(length(chSplCol) >0) {
       chSplCol <- chSplCol[1]
-      ## note : init column may contain multiple annot
-      tmpA <- sub("^[[:lower:]]+\\|","", annot[,chSplCol])                              # remove DB ID
-      Accession <- sub("\\|.+","", tmpA)      
-      annot <- cbind(annot[,1:(min(2, ncol(annot)))], Accession, EntryName =sub("(\\|.+)|(;.+)","", substring(tmpA, nchar(sub("\\|.+","", Accession)) +2)), 
-        if(ncol(annot) >2) {if(ncol(annot) >3) annot[,3:ncol(annot)] else matrix(annot[,3:ncol(annot)], ncol=1, dimnames=list(NULL, colnames(annot)[3]))})          #
-      rm(Accession, tmpA) }
+      if(isTRUE("IB" %in% soft) && "EntryName" %in% colnames(annot)) {
+        ## IB : rather use last protein
+        nc1 <- nchar(annot[,"EntryName"])
+        tmpA <- sub(".+_{2,4}","", sub(".+\\|","", annot[,chSplCol]))    #  last EntryName from eg  "sp|P0C0T4|RS25B_YEAST__sp|Q3E792|RS25A_YEAST", "sp|P09938|RIR2_YEAST"
+        Accession <- sub(".+_{1,3}","", gsub("[[:alpha:]]+\\|","", sub("\\|CON_$","", substr(annot[,chSplCol], 1,nchar(annot[,chSplCol]) - nc1 -1))  ))
+        newEntryNa <- annot[,"EntryName"]
+      } else {
+        ## note : init column may contain multiple annot
+        tmpA <- sub("^[[:lower:]]+\\|","", annot[,chSplCol])                              # remove (init) DB ID
+        paMult <- "_{2,}[[:lower:]]{2,}\\|[A-Z,0-9]+\\|[[:upper:]].+"
+        chMult <- grep(paMult, tmpA)
+        if(length(chMult) >0) tmpA[chMult] <- sub(paMult,"", tmpA[chMult])   # use 1st of combined multiple entries: contains Accession + EntryName
+        Accession <- sub("(\\|.+)|(;.+)","", tmpA) 
+        newEntryNa <- sub("(\\|.+)|(;.+)","", substring(tmpA, nchar(sub("\\|.+","", Accession)) +2))
+      }
+      chCol <- match("entryName", colnames(annot))
+      if(!is.na(chCol)) colnames(annot)[chCol] <- "EntryName" 
+
+      chCol <- colnames(annot) %in% c("EntryName")
+      if(any(chCol)) { useLi <- which(is.na(annot[,which(chCol)]) | nchar(annot[,which(chCol)]) <1)
+        if(length(useLi) >0) annot[useLi,which(chCol)] <- newEntryNa[useLi]     # add new to incomplete EntryName
+        newEntryNa <- annot[,which(chCol)]                                      # update
+      } else annot <- cbind(annot, EntryName =newEntryNa)
+
+      #why#chCol <- which(colnames(annot) %in% c("EntryName","entryName"))
+      #why#annot <- annot[,-chCol, drop=FALSE]      
+      annotTail <- if(ncol(annot) <3) NULL else annot[,3:ncol(annot)]
+      if(length(annotTail) >0) {
+        chCol <- which(colnames(annotTail) %in% c("Accession","EntryName"))
+        if(length(chCol) > 0) annotTail <- annotTail[,-chCol, drop=FALSE]   # avoid duplicating columns (with old content)
+      }      
+      annot <- cbind(annot[,1:min(2, ncol(annot))], Accession=Accession, EntryName=annot[,"EntryName"])
+      if(length(annotTail) >0) annot <- cbind(annot, annotTail)
+      
+      rm(Accession, tmpA, newEntryNa) }
   }   
+  if(!"Species" %in% colnames(annot)) annot <- cbind(annot, Species=NA)
+  
   if(debug) {message(fxNa,"eSP1a"); eSP1a <- list(specPref=specPref,annot=annot,useColumn=useColumn,suplInp=suplInp,chAnn=chAnn)}
 
   ## inspect specPref
-  matrixNa <- c("matrix","Matrix", "mainSpecies")                           # equivalent names for treating as $matrix
+  matrixNa <- c("matrix","Matrix", "mainSpecies","MainSpecies")                           # equivalent names for treating as $matrix
   if(is.character(specPref)) specPref <- as.list(specPref)
   if(any(matrixNa %in% names(specPref))) {
     chOthNames <- matrixNa[-1] %in% names(specPref)
     if(any(chOthNames))  specPref$matrix <- specPref[which(chOthNames)]     # copy content of similar names into specPref$matrix  
-    if(length(specPref$matrix) ==1) {                                       # if length=1 this must design a name for a group/collection of proteins
+    if(length(specPref$matrix) ==1) {           # if length=1 this must be a name for a species or group/collection of proteins
       specPref$IniMatrix <- specPref$matrix
-      if(grepl("^UPS", specPref$matrix[1])) { specPref$SpeciesMatrix <- "Homo sapiens"   
+      ## check for known collections (so far only UPSx) to extract specific IDs
+      if(grepl("^UPS", specPref$matrix[1])) {         # realistic that UPS1 used as matrix ??
+        specPref$SpeciesMatrix <- "Homo sapiens"   
         specPref$EntryNameMatrix <- getUPS1acc()$EntryName
-        specPref$matrix <- getUPS1acc()$ac
-        names(specPref$matrix)  <- getUPS1acc()$UniProt
+        specPref$matrix <- getUPS1acc()$acOld
+        names(specPref$matrix) <- names(specPref$EntryNumberMatrix) <- getUPS1acc()$EntryName      # eg 'CAH1'
       }                                                                     # add similar to UPS1 if available ...
     } else if(length(specPref$matrix) <6) specPref$matrix <- sapply(specPref$matrix, inspectSpeciesIndic, silent=TRUE, debug=debug)
   }
   if("spike" %in% names(specPref)) {
     if(length(specPref$spike) ==1) {
       specPref$IniSpike <- specPref$spike
-      if(grepl("^UPS", specPref$spike[1])) { specPref$SpeciesSpike <- "Homo sapiens"       # add more if available ...
+      if(grepl("^UPS", specPref$spike[1])) { 
+        if(debug) {message(fxNa,"Found instance of UPS as spike ..")}
+        specPref$SpeciesSpike <- "Homo sapiens"       # add more if available ...
         specPref$EntryNameSpike <- getUPS1acc()$EntryName   # eg 'CAH1_HUMAN'
-        specPref$spike <- getUPS1acc()$ac
-        names(specPref$spike)  <- getUPS1acc()$UniProt      # eg 'CAH1'  
+        specPref$EntryNumberSpike <- getUPS1acc()$acNew     # eg 'CAH1_HUMAN'
+        specPref$spike <- getUPS1acc()$acOld
+        names(specPref$spike) <- names(specPref$EntryNumberSpike) <- getUPS1acc()$EntryName      # eg 'CAH1'
+        ## note: single Gene name  may correspond to multiple UniProt EntryName or accession number
       }
     } else if(length(specPref$spike) <6) specPref$spike <- sapply(specPref$spike, inspectSpeciesIndic, silent=TRUE, debug=debug)
   }
   if(debug) {message(fxNa,"eSP1c"); eSP1c <- list(specPref=specPref,annot=annot,useColumn=useColumn,suplInp=suplInp,chAnn=chAnn)}
 
 
-  
   ## add fasta & integrate to annot as Species
   chFasta <- length(specPref) > 0 && "fasta" %in% names(specPref)
-  if(chFasta) { fasta <- NULL
+  fasta <- NULL     # initialize (for debuging)
+  eqiCol <- matrix(c("Accession","EntryName","Description","Species","Modif","GN",  "uniqueIdentifier","entryName","proteinName","OS","Modif","GN"), ncol=2, dimnames=list(NULL, c("annot","fasta")))
+
+  if(chFasta) {
     if(is.list(specPref) && length(dim(specPref$fasta)==2)) fasta <- specPref$fasta
-    if(file.exists(specPref$fasta)) fasta <- readFasta2(specPref$fasta, delim="|", databaseSign=c("sp","tr","generic","gi"), removeEntries=NULL, tableOut=TRUE, UniprSep=c("OS=","OX=","GN=","PE=","SV="), callFrom=fxNa,silent=silent,debug=debug)  
+    if(file.exists(specPref$fasta)) fasta <- readFasta2(specPref$fasta, delim="|", databaseSign=c("sp","tr","generic","gi","syn"), removeEntries=NULL, tableOut=TRUE, 
+      UniprSep=c("OS=","OX=","GN=","PE=","SV="), callFrom=fxNa,silent=silent,debug=debug)  
     if(length(fasta) >0 && !inherits(fasta,"try-error")) {
-      if(debug) {message(fxNa,"eSP2"); eSP2 <- list(specPref=specPref,annot=annot,useColumn=useColumn,suplInp=suplInp,chAnn=chAnn,fasta=fasta)}
-        fasta0= fasta
+      if(debug) {message(fxNa,"eSP2"); eSP2 <- list(specPref=specPref,annot=annot,useColumn=useColumn,suplInp=suplInp,chAnn=chAnn,fasta=fasta, debug=debug)}
+        #fasta0= fasta
        ## "O76070" is in annot$Accession, thus it should be ok to mark as spike
        ##
-       ## NEED TO ADD UPS1 proteins (option) to fasta ("O76070" not part of fasta !!)
+       ## (option) NEED TO ADD spike-proteins like UPS1 to fasta ("O76070" not part of fasta !!)
        ## check if specPref$spike contains Accessions not in fasta AND neither in ; how to know we're in UPS1 ?
-      if(length(fasta) >1 && all(c("spike", "IniSpike") %in% names(specPref))) { 
-        if(grepl("^UPS", specPref$IniSpike)) {
-          chSp <- specPref$spike %in% fasta[,"uniqueIdentifier"]        # check if already in spike
-          if(any(!chSp, na.rm=TRUE)) {             ## add to fasta
-            faNew <- matrix(NA, nrow=sum(!chSp), ncol=ncol(fasta))
-            ## problem  : 'O76070'  : 'entryName' SYUG_HUMAN; 'GN'=SNCG  : entryName frequently same as GN but NOT always
-            faNew[,match(c("database","uniqueIdentifier","entryName","OS","GN"), colnames(fasta))] <- cbind(database=rep("sp", sum(!chSp)), 
-              uniqueIdentifier=specPref$spike[which(!chSp)], entryName=names(specPref$spike[which(!chSp)]),      #  'proteinName' & 'sequence' not available
-              OS=if(length(specPref$SpeciesSpike) >0) specPref$SpeciesSpike else NA, GN=names(specPref$spike[which(!chSp)]))
-            fasta <- rbind(fasta, faNew)
-            if(debug) message(fxNa,sum(!chSp)," Additional ",specPref$IniSpike," proteins were added to Fasta information") 
-          }  
-        }     
-        ## add here other collections like UPS1 if available ..        
-      
-      }
-      eqiCol <- matrix(c("Accession","EntryName","Description","Species","Modif",  "uniqueIdentifier","entryName","proteinName","OS","Modif"), ncol=2, dimnames=list(NULL, c("annot","fasta")))
-      ## (future) what is the best way to add protein/peptide modifications ? 
-      useLi <- cbind(match(annot[,"Accession"], fasta[,"uniqueIdentifier"]), match(annot[,"EntryName"], fasta[,"entryName"]))
-      chNA <- colSums(!is.na(useLi))
-      fasta <- fasta[useLi[,which.max(chNA)], wrMisc::naOmit(match(eqiCol[1:4,2], colnames(fasta)))]         # now in order of main data
-      if("OS" %in% colnames(fasta)) { fasta[,"OS"] <- sub(" \\(.+","", fasta[,"OS"]) }   ## strip strain info
-      chCol <- !eqiCol[,1] %in% colnames(annot) & eqiCol[,2] %in% colnames(fasta)        
-      if(any(chCol)) annot <- cbind(annot, matrix(NA, ncol=sum(chCol), nrow=nrow(annot), dimnames=list(NULL, eqiCol[which(chCol),1])))  ## add annotation columns to annot if not already present
+      if(length(fasta) >1 && all(c("spike", "IniSpike") %in% names(specPref))) {
+        #chSp <- markLi[which(!annot[markLi,"Accession"] %in% getUPS1acc()$acFull)] 
 
-      for(i in 1:nrow(eqiCol)) {      # complete annotation (by integrating from fasta) separately for each column
-        isNA <- is.na(annot[,which(colnames(annot)==eqiCol[i,1])])
-        if(any(isNA)) { isNA <- which(isNA)
-          annot[isNA, which(colnames(annot)==eqiCol[i,1])] <- fasta[useLi[isNA], which(colnames(fasta)==eqiCol[i,2])]        
-        }        
-      }      
-      if(debug) {message(fxNa,"eSP2c"); eSP2c <- list(specPref=specPref,annot=annot,useColumn=useColumn,suplInp=suplInp,chAnn=chAnn,fasta=fasta)}
+
+        faNew <- matrix(NA, nrow=length(specPref$spike), ncol=ncol(fasta), dimnames=list(NULL,colnames(fasta)))
+        faNew[,"database"] <- rep("sp", nrow(faNew))             
+        faNew[,"OS"] <- rep(specPref$SpeciesSpike, nrow(faNew))             
+
+        if(all(c("EntryNameSpike","EntryNumberSpike") %in% names(specPref))) {
+          faNew <- cbind(database=rep("sp",length(specPref$spike)), uniqueIdentifier=as.character(specPref$EntryNumberSpike), entryName=specPref$EntryNameSpike,
+            proteinName=rep(NA,length(specPref$spike)), sequence=rep(NA,length(specPref$spike)), OS=rep(specPref$SpeciesSpike, length(specPref$spike)), OX=NA,GN=NA,PE=NA,SV=NA)
+        } else {
+          if(length(names(specPref$spike)) >0) {
+            faNew["uniqueIdentifier"] <- as.character(specPref$spike)
+            faNew["entryName"] <- names(specPref$spike)
+          } else {
+            if(debug) message(fxNa,"Note : Very poorly documented spike-in !  (Trouble ahead ?)")
+            faNew["uniqueIdentifier"] <- specPref$spike
+          }
+        }
+        ## check if new lines for spike not already present in fasta
+        chLi <- !faNew[,"uniqueIdentifier"] %in% fasta[,"uniqueIdentifier"]      ## need to correct faNew[,"uniqueIdentifier"] to old writing ?      
+        if(any(chLi)) fasta <- rbind(fasta, faNew[which(chLi),])
+        if(debug) {message(fxNa,length(specPref$spike)," Additional ",specPref$IniSpike," proteins were added to Fasta information","  eSP2aa");
+          eSP2aa <- list(specPref=specPref,annot=annot,useColumn=useColumn,suplInp=suplInp,chAnn=chAnn,fasta=fasta, debug=debug)}
+
+        ## complete annot / EntryName (if absent, like with PD)
+        chLi <- is.na(annot[,"EntryName"]) | nchar(annot[,"EntryName"]) <1
+        if(any(chLi)) {
+          chID <- annot[which(chLi),"Accession"]
+          chLi2 <- match(annot[which(chLi),"Accession"], fasta[,"uniqueIdentifier"])
+          if(length(wrMisc::naOmit(chLi2)) >0) annot[which(chLi),"EntryName"] <- fasta[chLi2,"entryName"] 
+        }
+
+        ## complete annot / Description/proteinName (if absent...)
+        if(!"Description" %in% colnames(annot)) { annot <- cbind(annot, Description=NA)
+          chLi <- 1:nrow(annot)
+        } else { chLi <- which(is.na(annot[,"Description"]) | nchar(annot[,"Description"]) <1)}
+        if(length(chLi) >0) {
+          chID <- annot[chLi,"Description"]
+          chLi2 <- match(annot[chLi,"Accession"], fasta[,"uniqueIdentifier"])
+          if(length(wrMisc::naOmit(chLi2)) >0) annot[chLi,"Description"] <- fasta[chLi2,"proteinName"] 
+        }
+
+        ## complete annot / GeneName/GN (if absent...)
+        if(!"GeneName" %in% colnames(annot)) { annot <- cbind(annot, GeneName=NA)
+          chLi <- 1:nrow(annot)
+        } else { chLi <- which(is.na(annot[,"GeneName"]) | nchar(annot[,"GeneName"]) <1)}
+        if(length(chLi) >0) {
+          chID <- annot[chLi,"GeneName"]
+          chLi2 <- match(annot[chLi,"Accession"], fasta[,"uniqueIdentifier"])
+          if(length(wrMisc::naOmit(chLi2)) >0) annot[chLi,"GeneName"] <- fasta[chLi2,"GN"] 
+        }
+
+        if(debug) {message(fxNa,"eSP2ab"); eSP2ab <- list(specPref=specPref,annot=annot,useColumn=useColumn,suplInp=suplInp,chAnn=chAnn,fasta=fasta,eqiCol=eqiCol, debug=debug)}
+
+
+        ## complete annot / species (if absent, like with PD)
+        ## add species to annot (if not already present)
+        chSpNA <- is.na(annot[,"Species"]) 
+        if(any(chSpNA) && "OS" %in% colnames(fasta) && !all(is.na(fasta[,"OS"]))) {
+          ## complete Species annot from fasta  
+          spec <- spc2 <- rep(NA, nrow(annot))
+          if(eqiCol[2,1] %in% colnames(annot)) { 
+            hasSep <- grep("_[[:alpha:]]",annot[,eqiCol[2,1]])      # "EntryName"
+            if(length(hasSep) >0) {    # extract species from col "EntryName" eg "ENO2_YEAST"
+              spc2[hasSep] <- sub(".+_","", annot[hasSep,"EntryName"])
+              spe2 <- unique(sub("^_","", wrMisc::naOmit(spc2)))
+              spe3 <- sapply(spe2, inspectSpeciesIndic, silent=TRUE)
+              for(i in 1:length(spe2)) spec[which(spc2 %in% spe2[i])] <- spe3[i]
+              if("Species" %in% colnames(annot)) {isNA <- is.na(spec) | length(nchar(spec)) <1 ; if(any(!isNA)) annot[which(!isNA),"Species"] <- spec[which(!isNA)] 
+                } else annot <-  cbind(annot, Species=spec) }}
+        }
+
+        ## adjust fasta to annot for special case of UPS1
+        if("P10636-8" %in% annot[,"Accession"] && "P10636" %in% fasta[,"uniqueIdentifier"]) fasta[grep("P10636",fasta[,"uniqueIdentifier"]),"uniqueIdentifier"] <- "P10636-8"
+      }     
+      if(debug) {message(fxNa,"eSP2b"); eSP2b <- list(specPref=specPref,annot=annot,useColumn=useColumn,suplInp=suplInp,chAnn=chAnn,fasta=fasta)}
+
     }     
-  } else {if(debug) fasta <- NULL}         ## finish adding fasta
-  
+  } else {if(debug) fasta <- NULL}         ## finish adding fasta  
  
   ## main use of specPref to assign info to column 'SpecType'
-  if(length(specPref) > 0) if(is.list(specPref)) {    # remove NA from specPref
+  if(length(specPref) > 0) { if(is.list(specPref)) {    # remove NA from specPref
     chNA <- sapply(specPref, is.na)
     if(any(unlist(chNA))) specPref <- sapply(specPref, wrMisc::naOmit)
   } else { chNA  <- is.na(specPref)
-    if(all(chNA)) specPref <- NULL else { spNames <- names(specPref[which(!chNA)]); specPref <- as.list(specPref[which(!chNA)]); names(specPref) <- spNames}}
+    if(all(chNA)) specPref <- NULL else { spNames <- names(specPref[which(!chNA)]); specPref <- as.list(specPref[which(!chNA)]); names(specPref) <- spNames}}}
+
   if(length(specPref) > 0) {
     if(debug) {message(fxNa,"eSP3"); eSP3 <- list(specPref=specPref,annot=annot,useColumn=useColumn)}
     ## convert  "OS=Saccharomyces cerevisiae" to  "Saccharomyces cerevisiae"
-    chPr <- sapply(specPref, function(x) grep("^OS=[[:upper:]][[:lower:]]+", x))
+    chPr <- sapply(specPref, function(x) grep("^OS=[[:upper:]][[:lower:]]+", x))          #   look for species indication of type 'OS=Ho...' , need to remove 'OS='
     chPr2 <- sapply(chPr, length) > 0
     if(any(chPr2)) {for(i in which(chPr2)) specPref[[i]] <- sub("^OS=", "", specPref[[i]]) }
     
@@ -1213,39 +1159,77 @@ readProteomeDiscovererFile <- function(fileName, path=NULL, normalizeMeth="media
     if("matrix" %in% names(specPref) && !"mainSpecies" %in% names(specPref)) specPref$mainSpecies <- specPref$matrix
     chNa <- c("mainSpecies","conta") %in% names(specPref)
     if(any(!chNa) && !silent) message(fxNa," ",wrMisc::pasteC(c("mainSpecies","conta")[which(!chNa)], quoteC="'")," Seem absent from 'specPref' !")
-    if(debug) {message(fxNa,"eSP3a"); eSP3a <- list(specPref=specPref,annot=annot,useColumn=useColumn,suplInp=suplInp)}
+    if(debug) {message(fxNa,"eSP3a"); eSP3a <- list(specPref=specPref,annot=annot,eqiCol=eqiCol,useColumn=useColumn,suplInp=suplInp,fasta=fasta)}
     
     ## add species to annot (if not already present)
-    if(!"Species" %in% tolower(colnames(annot))) { 
-      spec <- spc2 <- rep(NA, nrow(annot))
-      if("EntryName" %in% colnames(annot)) { hasSep <- grep("_",annot[,"EntryName"])
-        if(length(hasSep) >0) {
-          spc2[hasSep] <- sub(".+_","", annot[hasSep,"EntryName"])
-          spe2 <- unique(wrMisc::naOmit(spc2))
-          spe3 <- sapply(spe2, inspectSpeciesIndic, silent=TRUE)
-          for(i in 1:length(spe2)) spec[which(spc2 %in% spe2[i])] <- spe3[i]
-          annot <- cbind(annot, species=spec) }}
-    }   
+    if(!"Species" %in% colnames(annot)) annot <- cbind(annot, Species=NA)
+    chSpNA <- is.na(annot[,"Species"]) 
+    
         
+    ## need to distinguish spike-protein collections from full species mix
+    spikeTy <- NA
+    if("IniSpike" %in% names(specPref)) {
+      if(length(specPref$IniSpike)==1 && grepl("^UPS", specPref$IniSpike)) spikeTy <- "collection" else {
+        if(length(specPref$IniSpike) >=1 && all(grepl("^[[:upper:]][[:lower:]]+ [[:upper:]]+$", specPref$IniSpike))) spikeTy <- "entireSpecies"
+      }
+    } else if("spike" %in% names(specPref)) {
+      if(length(specPref$spike)==1 && grepl("^UPS", specPref$spike)) spikeTy <- "collection" else {
+        if(length(specPref$spike) >=1 && all(grepl("^[[:upper:]][[:lower:]]+ [[:upper:]]+$", specPref$spike))) spikeTy <- "entireSpecies"
+      }
+    }
+
     ## final assigning content of annot[,"SpecType"] 
     #old# multGrepFields <- c("mainSpecies","spike","conta")   # fields from specPref to consider (now has redundant & other ...)
-    rmSpecPrefFi <- c("matrix","sampleNames","IniMatrix","IniSpike","SpeciesSpike","EntryNameSpike")    # rather define fields which are technical copies (to exclude some terms)
+    rmSpecPrefFi <- c("matrix","sampleNames","IniMatrix","IniSpike","SpeciesSpike","EntryNameSpike")    # rather define fields which are technical copies (to exclude some terms)    
+     
     multGrepFields <- -1*which(names(specPref) %in% rmSpecPrefFi)
     if(length(multGrepFields) <1) multGrepFields <- 1:length(specPref)
-    ##
-    .MultGrep2 <- function(pat, y) {y <- as.matrix(y); z <- if(length(pat)==1) grepl(pat, y) else rowSums(sapply(pat, grepl, y)) >0
+    if(debug) {message(fxNa,"eSP3aa"); eSP3aa <- list(specPref=specPref,annot=annot,eqiCol=eqiCol,useColumn=useColumn,suplInp=suplInp,fasta=fasta,rmSpecPrefFi=rmSpecPrefFi,multGrepFields=multGrepFields)}
+        ##
+    .MultGrep2 <- function(pat, y) { y <- as.matrix(y); z <- if(length(pat)==1) grepl(pat, y) else rowSums(sapply(pat, grepl, y)) >0
       if(length(dim(y)) >1) rowSums(matrix(z, ncol=ncol(y))) >0 else z }  # (multiple) grepl() when length of pattern 'pat' >0
-    mulP <- lapply(specPref[multGrepFields], .MultGrep2, annot)
-    chLe <- sapply(mulP, length)
-    ## assign to annot
-    for(i in which(chLe >0)) { markLi <- which(as.logical(mulP[[i]]))
-      if(length(markLi) >0)  annot[markLi,"SpecType"] <- names(mulP)[i] }
+    mulP <- lapply(specPref[multGrepFields], .MultGrep2, if("collection" %in% spikeTy) annot[,which(colnames(annot) %in% c("Accession","Master.Protein.Accessions")), drop=FALSE] else annot)
+
+    combMulP <- function(rmWord, mul) {   # combine elements of 'mul' with 'spike'
+      if(all(c("spike",rmWord) %in% names(mul))) {
+        mul[["spike"]] <- mul[["spike"]] | mul[[rmWord]]   # combine
+        mul <- mul[-which(names(mulP)==rmWord)]             # remove this part
+      }
+      mul }
+    mulP <- combMulP("EntryNameSpike", mulP)  
+    mulP <- combMulP("EntryNumberSpike", mulP)  
+
+   chLe <- sapply(mulP, length)
+    ## assign to annot   
+    if(debug) {message(fxNa,"eSP3ab"); eSP3ab <- list(specPref=specPref,annot=annot,eqiCol=eqiCol,useColumn=useColumn,suplInp=suplInp,fasta=fasta,mulP=mulP,chLe=chLe,multGrepFields=multGrepFields)}
+    ## check  which(mulP$spike) if correct    18may25
+    
+    if(!"SpecType" %in% colnames(annot)) annot <- cbind(annot, SpecType=NA)      # check & ajdust
+    
+    ## finally fill column 'SpecType'
+    for(i in which(chLe >0)) { 
+      markLi <- which(as.logical(mulP[[i]]))   # which lines should get new/corrected label
+      if(length(markLi) >0) { 
+        if("collection" %in% spikeTy) {
+          if(names(mulP)[i] !="mainSpecies") annot[markLi,"SpecType"] <- names(mulP)[i] 
+        } else if("collection" %in% spikeTy) {  # entire Species collections
+          annot[markLi,"SpecType"] <- names(mulP)[i] 
+        }        
+        ## old
+        #if("spike" %in% names(chLe)[i] && grepl("^UPS",specPref$IniSpike) && "Master.Protein.Accessions" %in% colnames(annot)) {   # all are so far NA
+        #  ##  Accession doesn't fit to value from getUPS1acc : split annot[,"Master.Protein.Accessions"] and replace Accession by one fitting
+        #  chSp <- markLi[which(!annot[markLi,"Accession"] %in% getUPS1acc()$acFull)]   #
+        #  if(length(chSp) >0) for(j in chSp) annot[j,"Accession"] <- names(wrMisc::naOmit(sapply(gsub(" ","", unlist(strsplit(annot[j,"Master.Protein.Accessions"],";"))), match, getUPS1acc()$acFull )))
+        #}
+        #annot[markLi,"SpecType"] <- names(mulP)[i] 
+      }
+    }  
     ## fix problem with specPref$mainSpecies not found    
     if(length(specPref$mainSpecies) >0 && !any("mainSpecies" %in% annot[,"SpecType"], na.rm=TRUE)) {
       isMain <- which(annot[,"Species"] %in% specPref$mainSpecies)
       if(length(isMain) >0)  annot[isMain,"SpecType"] <- "mainSpecies"
     }  
-    if(debug) {message(fxNa,"eSP4"); eSP4 <- list(specPref=specPref,annot=annot,useColumn=useColumn,suplInp=suplInp,mulP=mulP)}
+    if(debug) {message(fxNa,"eSP4"); eSP4 <- list(specPref=specPref,annot=annot,useColumn=useColumn,suplInp=suplInp,mulP=mulP, fasta=fasta)}
     rm(mulP)
   }
   annot
@@ -1276,6 +1260,6 @@ readProteomeDiscovererFile <- function(fileName, path=NULL, normalizeMeth="media
       "Chicken", "Celegans","Droso","Zebrafish",
       "Frog","Axolotl",  "Arabidopsis","Potato","Sugar beet",   "Yeast","Ecoli","Mtuberculosis")  )
 }
-
+    
 
 

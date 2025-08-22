@@ -91,8 +91,8 @@ readIonbotPeptides <- function(fileName, path=NULL, normalizeMeth="median", samp
   ## future: look for fast reading of files
   tmp <- try(utils::read.delim(file.path(paFi), stringsAsFactors=FALSE, header=TRUE), silent=TRUE)
   if(inherits(tmp, "try-error")) stop("Unable to read input file ('",paFi,"')!")
-  if(debug) { message(fxNa,"rIBP3b .. dims of initial data : ", nrow(tmp)," li and ",ncol(tmp)," col ")}
-  if(debug) { message(fxNa,"rIBP3b .. Ready to start extracting pep seq"); rIBP3b <- list(tmp=tmp,paFi=paFi,fileName=fileName, path=path, normalizeMeth=normalizeMeth, sampleNames=sampleNames,suplAnnotFile=suplAnnotFile, gr=gr, 
+  if(debug) { message(fxNa,"rIBP3b .. dims of initial data : ", nrow(tmp)," li and ",ncol(tmp)," col ");
+    rIBP3b <- list(tmp=tmp,paFi=paFi,fileName=fileName, path=path, normalizeMeth=normalizeMeth, sampleNames=sampleNames,suplAnnotFile=suplAnnotFile, gr=gr, 
     sdrf=sdrf,quantCol=quantCol,annotCol=annotCol,contamCol=contamCol,refLi=refLi,separateAnnot=separateAnnot,FDRCol=FDRCol )}
   
   ## EXTRACT PEPTIDE SEQUENCES
@@ -118,29 +118,7 @@ readIonbotPeptides <- function(fileName, path=NULL, normalizeMeth="median", samp
   ## need other example for extracting quantifications ?
   if(debug) {message(fxNa,"rIBP4 ")
      rIBP4 <- list(fileName=fileName,path=path, paFi=paFi,normalizeMeth=normalizeMeth,sampleNames=sampleNames,suplAnnotFile=suplAnnotFile,read0asNA=read0asNA,quantCol=quantCol,seqCol=seqCol,cleanDescription=cleanDescription,tmp=tmp,seqCol=seqCol,maSeCo=maSeCo,modifSensible=modifSensible)}
-
-  .chColNa <- function(x, mat, renameTo=NULL, silent=FALSE, fxNa=NULL){
-    ## check in 'matr' for column-name 'x', if required rename best hit (if no direct hit look using grep, then grep wo case); return corrected mat
-    chX <- x %in% colnames(mat)
-    if(all(chX)) {
-      if(is.character(renameTo) && length(renameTo) ==1) colnames(mat)[match(x, colnames(mat))] <- renameTo   # juste simple rename
-    } else {     # try to localize column to use
-      chX <- grep(x, colnames(mat))
-      if(length(chX) >0) {
-        if(is.character(renameTo) && length(renameTo) ==1) colnames(mat)[chX[1]] <- renameTo else x
-        if(!silent && length(chX) >1) message(fxNa,"Found multiple columns containing '",x,"' : ",wrMisc::pasteC(colnames(mat)[chX], quoteC="'"),", using 1st")
-      } else {
-        chX <- grep(tolower(x), tolower(colnames(mat)))
-        if(length(chX) >0) {
-          if(is.character(renameTo) && length(renameTo) ==1) colnames(mat)[chX[1]] <- renameTo else x
-          if(!silent && length(chX) >1) message(fxNa,"Found multiple columns containing '",tolower(x),"' : ",wrMisc::pasteC(colnames(mat)[chX], quoteC="'"),", using 1st")
-        } else stop("Could NOT find column '",x,"' !!/n  (available columns ",wrMisc::pasteC(colnames(mat), quoteC="'"),")") }
-    }
-  mat }
-
-  if(debug) {message(fxNa,"rIBP4a  ")
-     rIBP4a <- list(fileName=fileName,path=path, paFi=paFi,normalizeMeth=normalizeMeth,sampleNames=sampleNames,suplAnnotFile=suplAnnotFile,read0asNA=read0asNA,quantCol=quantCol,seqCol=seqCol,cleanDescription=cleanDescription,tmp=tmp,seqCol=seqCol,maSeCo=maSeCo,modifSensible=modifSensible)}
-     
+    
   ## extract peptide sequences ????
   if(is.na(maSeCo[1])) { if(is.na(maSeCo[2])) {if(!silent) message(fxNa,"Invalid type of data")
     } else pepSeq <- tmp[,maSeCo[2]]
@@ -157,48 +135,104 @@ readIonbotPeptides <- function(fileName, path=NULL, normalizeMeth="median", samp
   }
   if(debug) {message(fxNa,"Done extracting pep seq    rIBP4b"); rIBP4b <- list(fileName=fileName,path=path, paFi=paFi,normalizeMeth=normalizeMeth,sampleNames=sampleNames,suplAnnotFile=suplAnnotFile,read0asNA=read0asNA,quantCol=quantCol,seqCol=seqCol,pepSeq=pepSeq,annot1=annot1,cleanDescription=cleanDescription,tmp=tmp,seqCol=seqCol,maSeCo=maSeCo,modifSensible=modifSensible,specPref=specPref) }
 
-    ## Ionbot : Organism & Gene.Nameq are all NA !!
+    ## Ionbot : Organism & Gene.Name are all NA !!
     ## annot$Protein.Groups) :  "sp|P00925|ENO2_YEAST" , "sp|P0C0T4|RS25B_YEAST__sp|Q3E792|RS25A_YEAST",  
     ## UniProt : db|UniqueIdentifier|EntryName ProteinName OS=OrganismName OX=OrganismIdentifier [GN=GeneName ]PE=ProteinExistence SV=SequenceVersion 
-  annot <- cbind(annot1, uniqueIdentifier=NA, entryName=NA, proteinName=NA, Species=NA, Contam=NA) 
+  annot <- cbind(annot1, uniqueIdentifier=NA, EntryName=NA, proteinName=NA, Species=NA, Contam=NA) 
   ## extract UniqueIdentifier & EntryName  (note ProteinName only avail from fasta)
   chAnn <- nchar(annot1[,"Protein.Groups"])
   if(any(chAnn) >0) {
     strictSpecPattern <- TRUE
     paUI <- "^[[:upper:]]+[[:digit:]]+([[:upper:]]|[[:digit:]])*"
     paEN <- if(isTRUE(strictSpecPattern)) "^[[:upper:]]+[[:digit:]]([[:upper:]]|[[:digit:]])*_[[:upper:]]+$" else "^[[:upper:]]+[[:digit:]]([[:upper:]]|[[:digit:]])*(_[[:upper:]]+){0,1}$"
-    annX <- sub("([[:lower:]]+)|([[:upper:]]+[[:lower:]]+)\\|","",annot1[,"Protein.Groups"])    # remove heading db-sign
-    
-    annot[,"entryName"] <- sub("\\|.+","", sub(paste0(paUI,"\\|"),"", annX))   # first remove heading UniqueIdent and than reomve info from mult prot
+    paMulPrGr <-  "[[:upper:]]{2,}__[[:lower:]]{2,}\\|[[:upper:]]"
+    annX <- sub("([[:lower:]]+\\|)|([[:upper:]]+[[:lower:]]+\\|)","", annot1[,"Protein.Groups"])    # remove heading db-sign    
+    chMuPrGr <- grep(paMulPrGr,  annot1[,"Protein.Groups"])
+    if(length(chMuPrGr) >0) annX[chMuPrGr] <- sub("(decoy_decoy_[[:lower:]]+\\|)|([[:lower:]]+\\|)","", sub("__[[:lower:]]{2,}\\|[[:upper:]].+","", annot1[chMuPrGr,"Protein.Groups"]) ) # cor for double annot
+        annot[,"EntryName"] <- sub("\\|.+","", sub(paste0(paUI,"\\|"),"", annX))   # first remove heading UniqueIdent and than reomve info from mult prot
+    chEN0 <- grep("_{2,}[[:lower:]]{2,4}$", annot[,"EntryName"])
+    if(length(chEN0) >0) annot[,"EntryName"] <- sub("_{2,}[[:lower:]]{2,4}$","", annot[,"EntryName"])    
     annot[,"uniqueIdentifier"] <- sub(paste0(paEN,"\\|*.+"),"", annX)         # remove EntryName (2nd pos) and all thereafter (info from mult prot)
     chUI <- grepl(paUI, annot[,"uniqueIdentifier"])
-    if(any(!chUI)) annot[which(!chUI),"uniqueIdentifier"] <- NA   # double-check  (& set NA if not fitting)
-    chEN <- grepl(paEN, annot[,"entryName"])
-    if(any(!chEN)) annot[which(!chEN),"entryName"] <- NA          # double-check  (& set NA if not fitting
-    rm(annX)
-    ## add info from fasta
+    if(any(!chUI)) annot[which(!chUI),"uniqueIdentifier"] <- NA   # double-check  (& set NA if not fitting) : remove 'decoy_decoy_Q12465|RAX2_YEAST__sp|P53270|YG32_YEAST'
+    chUI2 <- "[[:upper:]]{2,}__[[:lower:]]{2,4}\\|[[:upper:]]"
+    chUI2 <- grep(chUI2,  annot[,"uniqueIdentifier"])
+    if(length(chUI2) >0)  annot[chUI2,"uniqueIdentifier"] <- sub("__[[:lower:]]{2,4}\\|[[:upper:]].+","", annot[chUI2,"uniqueIdentifier"])   # use 1st of multiple Identifyers
+
+    ## correct UPS entries (init 'P02768ups|ALBU_HUMAN_UPS__sp|P02768|CON__ALBU_HUMAN' -> 'P02768ALBU_HUMAN_UPS')
+    chUPS <- grep("_UPS$", annot[,"uniqueIdentifier"])
+    if(length(chUPS) >0) {
+      annot[chUPS,"uniqueIdentifier"] <- sub("_+UPS.+","", sub("ups","",annot[chUPS,"Protein.Groups"] ))
+      annot[chUPS,"EntryName"] <- sub("[[:upper:]]+[[:digit:]]+\\|","", annot[chUPS,"uniqueIdentifier"] )
+      chEN <- grep("[[:alnum:]]\\|[[:alnum:]]", annot[,"EntryName"])   # correct bad mining giving eg  'P10636-8|TAU_HUMAN_UPS'
+      if(length(chEN) >0) annot[chEN,"EntryName"] <- sub(".*[[:alnum:]]\\|","", annot[chEN,"EntryName"])  
+      annot[chUPS,"Species"] <- "Homo sapiens"
+    }
+    
+    ## add info from fasta ?
         
   }
+  if(debug) {message(fxNa,"rIBP4b3 .. Done extracting peptide annotation ")
+     rIBP4b3 <- list(fileName=fileName,path=path, paFi=paFi,normalizeMeth=normalizeMeth,sampleNames=sampleNames,suplAnnotFile=suplAnnotFile,read0asNA=read0asNA,quantCol=quantCol,cleanDescription=cleanDescription,tmp=tmp,seqCol=seqCol,pepSeq=pepSeq,annot=annot,maSeCo=maSeCo,modifSensible=modifSensible, pepSeq=pepSeq,hasMod=hasMod, annot=annot,specPref=specPref)}
   ## extract Species from col Protein.Groups
+  
   .annSpecies <- function(spe=c("_HUMAN","Homo sapiens"), anno, exCoNa) {
-    ## extract species tags out of annot[,"Majority.protein.IDs"], place as convert to regular name in anno, return matrix anno
-    ch1 <- grep(spe[1], anno[,exCoNa[1]])
-    if(length(ch1) >0) anno[ch1,exCoNa[2]] <- spe[2]  # eg "Homo sapiens"
+    ## use "EntryName" for species (Accession will be extracted/defined later)
+    if(TRUE) {
+      ch1 <- grep(spe[1], anno[,exCoNa[1]])     # check "EntryName" for extensions
+      if(length(ch1) >0) {                                                                                    
+        anno[ch1,exCoNa[3]] <- spe[2]           # reset "Species" eg "Homo sapiens"
+      }
+    } else {  
+      ## correct for multi-proteins (use last, seems to work better in case of UPS) - don't use any more as'"EntryName' gives all info needed
+      chM <- grep("__[[:alnum:]]+\\|[[:upper:]]", anno[,exCoNa[2]])
+      if(length(chM) >0) {
+        anno[chM,exCoNa[1]] <- sub(".+__","", anno[chM, exCoNa[2]])    # re-set "EntryName" (to last)
+      }
+      ## extract species tags out of annot[,"Majority.protein.IDs"], place as convert to regular name in anno, return matrix anno
+      ch1 <- grep(spe[1], anno[,exCoNa[2]])     # check "EntryName" for extensions
+      if(length(ch1) >0) {                                                                                    
+        anno[ch1,exCoNa[3]] <- spe[2]           # reset "Species" eg "Homo sapiens"
+      }
+    }
     anno }
   commonSpec <- .commonSpecies()
-  for(i in 1:nrow(commonSpec)) annot[,c("Protein.Groups","Species")] <- .annSpecies(commonSpec[i,], anno=annot[,c("Protein.Groups","Species")], exCoNa=1:2) 
-  
+  useCol <- which(colnames(annot) %in% c("EntryName","Protein.Groups","Species"))
+  for(i in 1:nrow(commonSpec)) annot[,useCol] <- .annSpecies(commonSpec[i,], anno=annot[,useCol], exCoNa=1:3) 
+  if(debug) {message(fxNa,"rIBP4b4 ..  ")
+     rIBP4b4 <- list(fileName=fileName,path=path, paFi=paFi,normalizeMeth=normalizeMeth,sampleNames=sampleNames,suplAnnotFile=suplAnnotFile,read0asNA=read0asNA,quantCol=quantCol,cleanDescription=cleanDescription,tmp=tmp,seqCol=seqCol,pepSeq=pepSeq,annot=annot,maSeCo=maSeCo,modifSensible=modifSensible, pepSeq=pepSeq,hasMod=hasMod, annot=annot,specPref=specPref)}
+    
   ## look for tags from  specPref & create col SpecType
   if(length(specPref) >0) {
-    ## look if available, for specif tags 
-    annot <- .extrSpecPref(specPref, annot, useColumn=c("Protein.Groups","Species"), silent=silent, debug=debug, callFrom=fxNa)   # set annot[,"specPref"] according to specPref
+    chCol <- colnames(annot) %in% "EntryName"
+    if(any(chCol)) colnames(annot)[which(chCol)] <- "EntryName"   # correct to align with other software
+    ## look if available, for specif tags  , add cols 'Accession' & 'EntryName' 
+    annot <- .extrSpecPref(specPref, annot, useColumn=c("Protein.Groups","Species"), soft="IB", silent=silent, debug=debug, callFrom=fxNa)   # set annot[,"specPref"] according to specPref
   } else if(debug) message(fxNa,"Note: Argument 'specPref' not specifed (empty)")
+  ## note : duplic  columns 'EntryName' and 'EntryName'
+  ## remove 'ups' extension on Accession
+  if("Accession" %in% colnames(annot)) {chUps <- grep("([[:upper:]]|[[:digit:]])ups$", annot[,"Accession"]); if(length(chUps) >0) annot[chUps,"Accession"] <- sub("ups$","", annot[chUps,"Accession"])}
+  
+  if(debug) {message(fxNa,"rIBP4b5 ..  ")
+     rIBP4b5 <- list(fileName=fileName,path=path, paFi=paFi,normalizeMeth=normalizeMeth,sampleNames=sampleNames,suplAnnotFile=suplAnnotFile,read0asNA=read0asNA,quantCol=quantCol,cleanDescription=cleanDescription,tmp=tmp,seqCol=seqCol,pepSeq=pepSeq,annot=annot,maSeCo=maSeCo,modifSensible=modifSensible, pepSeq=pepSeq,hasMod=hasMod, annot=annot,specPref=specPref)}
   
   ## mine info to add 'EntryName' and 'Accession' 
   if("Protein.Groups" %in% colnames(annot)) {
     ## problem : may contain multiple ids from mult prot (separated by '__') - use last 
     entNa <- sub(".+\\|","", annot[,"Protein.Groups"])    # get last (assuming as 'EntryName')
-    annot <- cbind(Accession=sub(".+\\|","", substr(annot[,"Protein.Groups"], 1, nchar(annot[,"Protein.Groups"]) - nchar(entNa) -1)), EntryName=entNa, annot )  # get entry before last, assuming as 'Accession'
+    if("Accession" %in% colnames(annot)) {
+      ## clean terms : remove terminal lower caps (like P02768ups)
+      cleanTerminalLower <- TRUE
+      if(cleanTerminalLower) {  ch1 <- grep("[[:upper:]][[:lower:]]+$",annot[,"Accession"])
+        if(length(ch1) >0) annot[ch1,"Accession"] <- sub("[[:lower:]]+$","",annot[ch1,"Accession"]) }
+      ## complete if empty
+      isNA <- is.na(annot[,"Accession"]) | nchar(annot[,"Accession"]) <1
+      if(any(isNA)) annot[which(isNA),"Accession"] <- entNa[which(isNA)]
+    } else { 
+      annot <- cbind(Accession=sub(".+\\|","", substr(annot[,"Protein.Groups"], 1, nchar(annot[,"Protein.Groups"]) - nchar(entNa) -1)), annot)}
+    if(!"EntryName" %in% colnames(annot)) annot <- cbind(annot, EntryName=entNa)
+    colPos <- match(c("Accession","EntryName"), colnames(annot))
+    annot <- cbind(annot[,colPos], annot[,-colPos])
   }
   ## 
     
@@ -224,7 +258,7 @@ readIonbotPeptides <- function(fileName, path=NULL, normalizeMeth="median", samp
     if(length(quantCol) <1) quantCol <- grep("Intensity$", colnames(tmp))
     if(length(quantCol) <1) quantCol <- grep("intensity$", tolower(colnames(tmp)))
     quantColIni <- quantCol
-    if(length(quantCol) <1) stop(msg," specified in argument 'quantCol' !") }
+    if(length(quantCol) <1) stop(msg,"Specified in argument 'quantCol' !") }
   ## check for columns to exclude (like 'Abundances.Count.')
   if(length(excluCol) >1) {
     excCo <- unique(unlist(lapply(excluCol, grep, colnames(tmp))))
@@ -235,9 +269,8 @@ readIonbotPeptides <- function(fileName, path=NULL, normalizeMeth="median", samp
     }
   }
 
-  if(length(quantCol) >0) { abund <- if(length(quantCol) >1)  tmp[,quantCol] else {
-      matrix(tmp[,quantCol], ncol=1, dimnames=list(rownames(tmp),NULL))}   # how to know column-name if single sample ?
-    rownames(abund) <-  rownames(annot) #wrMisc::correctToUnique(pepSeq, silent=silent, callFrom=fxNa)
+  if(length(quantCol) >0) { abund <- tmp[, quantCol, drop=FALSE]    
+    rownames(abund) <- rownames(annot) #wrMisc::correctToUnique(pepSeq, silent=silent, callFrom=fxNa)
     ## check for columns to exclude (like 'Abundances.Count.')
     if(length(excluCol)==1) {
       excCo <- grep(excluCol, colnames(tmp))
@@ -252,6 +285,10 @@ readIonbotPeptides <- function(fileName, path=NULL, normalizeMeth="median", samp
     if(debug) {message(fxNa,"rIBP8 ..  "); rIBP8 <- list(tmp=tmp,annot=annot,specPref=specPref,abund=abund,quantCol=quantCol)}
 
     ## check & clean abudances
+    ch0 <- which(abund==0)
+    if(length(ch0) >0) abund[ch0] <- NA
+    if(!silent) message(fxNa,"Note: ",length(ch0)," values are '0', setting as NA")  
+
     chNorm <- grep("//.Normalized//.", colnames(abund))
     if(length(chNorm)*2 == ncol(abund)) {              # in case Normalized makes 1/2 of columns use non-normalized
       abund <- abund[,-chNorm]
@@ -307,67 +344,113 @@ readIonbotPeptides <- function(fileName, path=NULL, normalizeMeth="median", samp
   if(length(sampleNames)==ncol(abund) && all(!is.na(sampleNames)) ) {   # custom sample names given
     colnames(abund) <- colnames(abund) <- sampleNames
     if(length(counts) >0) colnames(counts) <- sampleNames }
-  if(debug) {message(fxNa,"  rIBP12b"); rIBP12b <- list(sdrf=sdrf,suplAnnotFile=suplAnnotFile,abund=abund, quant=quant,refLi=refLi,annot=annot,sampleNames=sampleNames)}
+  if(debug) {message(fxNa,"  rIBP12b"); rIBP12b <- list(sdrf=sdrf,suplAnnotFile=suplAnnotFile,abund=abund, quant=quant,specPref=specPref,refLi=refLi,annot=annot,gr=gr,sampleNames=sampleNames)}
+
 
   ### GROUPING OF REPLICATES AND SAMPLE META-DATA
   ## META-DATA : read additional annotation & documentation files produced by IB
-    #sdrfFi <- wrMisc::checkFilePath(fileName, path, expectExt="tsv", compressedOption=TRUE, stopIfNothing=TRUE, callFrom=fxNa, silent=silent,debug=debug)
-
-  if(length(suplAnnotFile) >0 || length(sdrf) >0) {
-    if(length(sampleNames) %in% c(1, ncol(abund))) groupPref$sampleNames <- sampleNames
+  if(length(specPref) >0 && "sampleNames" %in% names(specPref)) groupPref$sampleNames <- specPref$sampleNames
+  if(length(suplAnnotFile) >0 || length(sdrf) >0) {        # use 'sampleNames', if given by user
+    if(length(sampleNames) %in% c( ncol(abund))) groupPref$sampleNames <- sampleNames
     if(length(gr) %in% c(1, ncol(abund))) groupPref$gr <- gr
-    setupSd <- readSampleMetaData(sdrf=sdrf, suplAnnotFile=suplAnnotFile, quantMeth="IB", path=path, abund=utils::head(quant), chUnit=isTRUE(groupPref$chUnit), groupPref=groupPref, silent=silent, debug=debug, callFrom=fxNa)
+    abunX <- utils::head(quant)
+    colnames(abunX) <- sub("^Intensity_","", colnames(abunX))
+    setupSd <- readSampleMetaData(sdrf=sdrf, suplAnnotFile=suplAnnotFile, quantMeth="IB", path=path, abund=abunX, chUnit=isTRUE(groupPref$chUnit), groupPref=groupPref, silent=silent, debug=debug, callFrom=fxNa)
   }
-  if(debug) {message(fxNa,"  rIBP13"); rIBP13 <- list(sdrf=sdrf,suplAnnotFile=suplAnnotFile,abund=abund, quant=quant,refLi=refLi,annot=annot,sampleNames=sampleNames,setupSd=setupSd)}
+  if(debug) {message(fxNa,"  rIBP13"); rIBP13 <- list(sdrf=sdrf,suplAnnotFile=suplAnnotFile,abund=abund, quant=quant,gr=gr,refLi=refLi,annot=annot,sampleNames=sampleNames,setupSd=setupSd)}
 
     ## finish groups of replicates & annotation setupSd
     setupSd <- .checkSetupGroups(abund=utils::head(abund), setupSd=setupSd, gr=gr, sampleNames=sampleNames, quantMeth="IB", silent=silent, debug=debug, callFrom=fxNa)
-    if(debug) {message(fxNa,"  rIBP13b"); rIBP13b <- list(sdrf=sdrf,suplAnnotFile=suplAnnotFile,abund=abund, quant=quant,refLi=refLi,annot=annot,sampleNames=sampleNames,setupSd=setupSd)}
+    if(debug) {message(fxNa,"  rIBP13b"); rIBP13b <- list(sdrf=sdrf,suplAnnotFile=suplAnnotFile,abund=abund, quant=quant,counts=counts,refLi=refLi,annot=annot,gr=gr,sampleNames=sampleNames,setupSd=setupSd)}
 
     ## harmonize sample-names/1
-    colNa <- if(length(setupSd$sampleNames)==ncol(abund)) setupSd$sampleNames else setupSd$groups
+    colNa <- if(length(setupSd$sdrfSampleNames)==ncol(abund)) setupSd$sdrfSampleNames else {if(length(setupSd$sampleNames)==ncol(abund)) setupSd$sampleNames else setupSd$groups}
 
 
     ## option : choose (re-)naming of levels & columns on most redundance
-    if(length(setupSd$sampleNames)==ncol(quant) && length(setupSd$sampleNaSdrf)==ncol(quant)) {
-      ## check if setupSd$sampleNaSdrf  or   setupSd$sampleNames contain better info (some info on replicates)
-      chRed1 <- sum(duplicated(sub("(_|\\.| )[[:digit:]]+.*","", setupSd$sampleNaSdrf)), na.rm=TRUE)
-      chRed2 <- sum(duplicated(sub("(_|\\.| )[[:digit:]]+.*","", setupSd$sampleNames)), na.rm=TRUE)
+    if(length(setupSd$sampleNames)==ncol(quant) && length(setupSd$sdrfSampleNames)==ncol(quant)) {
+      ## check if setupSd$sdrfSampleNames  or   setupSd$sampleNames contain better info (some info on replicates)
+      chRed1 <- sum(duplicated(sub("(_|\\.| |-)[[:digit:]]+.*","", setupSd$sdrfSampleNames)), na.rm=TRUE)
+      chRed2 <- sum(duplicated(sub("(_|\\.| |-)[[:digit:]]+.*","", setupSd$sampleNames)), na.rm=TRUE)
+      ## choose most likely names for samples/columns as colNa
       if(chRed2 < chRed1) {                                          # use info for levels depending on where more 
-        colNa <- colnames(abund) <- setupSd$sampleNames <- setupSd$sampleNaSdrf                     ## take sample names from sdrf via  setupSd$sampleNaSdrf
+        colNa <- colnames(abund) <- setupSd$sampleNames <- setupSd$sdrfSampleNames                     ## take sample names from sdrf via  setupSd$sdrfSampleNames
       } else {
-        colNa <- colnames(abund) <- setupSd$sampleNames }          ## take sample names from sdrf via  setupSd$sampleNaSdrf
-      #setupSd$level  
-    }    
+        colNa <- colnames(abund) <- setupSd$sampleNames }          ## take sample names from sdrf via  setupSd$sdrfSampleNames      #setupSd$level  
+    }
+        
     ## option : set order of samples as sdrf
-    if("sdrfOrder" %in% names(sdrf) && isTRUE(as.logical(sdrf["sdrfOrder"])) && length(setupSd$iniSdrfOrder)==ncol(abund) && ncol(abund) >1) {  # set order according to sdrf (only if >1 samples)
-      nOrd <- order(setupSd$iniSdrfOrder)
+    if("sdrfOrder" %in% names(sdrf) && isTRUE(as.logical(sdrf["sdrfOrder"])) && length(setupSd$sdrfDat$iniSdrfOrd)==ncol(abund) && ncol(abund) >1) {  # set order according to sdrf (only if >1 samples)
+      nOrd <- order(as.integer(setupSd$sdrfDat$iniSdrfOrd))
       abund <- abund[,nOrd]
+      colNa <- colNa[nOrd]
       if(length(quant) >0) quant <- quant[,nOrd]
+      if(debug) {message(fxNa,"  rIBP13b2"); rIBP13b2 <- list(sdrf=sdrf,suplAnnotFile=suplAnnotFile,abund=abund, quant=quant,counts=counts,refLi=refLi,annot=annot,gr=gr,sampleNames=sampleNames,setupSd=setupSd, nOrd=nOrd,colNa=colNa)}
+
       #setupSd$level <- setupSd$level[nOrd]
       ## rename columns according to sdrf and set order of quant and abund ..
       ## now adapt order of setupSd, incl init Sdrf
       if(length(setupSd) >0) { 
         is2dim <- sapply(setupSd, function(x,le) length(dim(x))==2 && nrow(x)==le, le=length(nOrd))    # look for matr or df to change order of lines
-        if(any(is2dim) >0) for(i in which(is2dim)) setupSd[[i]] <- setupSd[[i]][nOrd,]
+        if(any(is2dim, na.rm=TRUE)) for(i in which(is2dim)) setupSd[[i]] <- setupSd[[i]][nOrd,]
         isVe <- sapply(setupSd, function(x,le) length(x)==le && length(dim(x)) <1, le=length(nOrd))    # look for vector to change order in setupSd
-        if(any(isVe) >0) for(i in which(isVe)) setupSd[[i]] <- setupSd[[i]][nOrd] }
-      gr <- gr[nOrd]
+        if(any(isVe, na.rm=TRUE)) for(i in which(isVe)) setupSd[[i]] <- setupSd[[i]][nOrd] }
+      if(length(gr) >1) gr <- gr[nOrd]
 
       if(length(counts) >0 && length(dim(counts))==3) counts <- array(counts[,nOrd,], dim=c(nrow(counts), length(nOrd), dim(counts)[3]), 
-        dimnames=list(rownames(counts), colnames(counts)[nOrd], dimnames(counts)[[3]]))
-      if(debug) {message(fxNa,"rIBP13c .."); rIBP13c <- list(path=path,chPa=chPa,tmp=tmp,groupPref=groupPref,quantCol=quantCol,abund=abund,chNum=chNum,
-        sdrf=sdrf,quant=quant,annot=annot,setupSd=setupSd)}
+        dimnames=list(rownames(counts), colnames(counts)[nOrd], dimnames(counts)[[3]]))   
+      ##  need to re-adjust iorder of setupSd$level
+     .adjPat <- function(x) { out <- match(x, unique(x)); names(out) <- names(x); out}  # used
+      setupSd$level <- .adjPat(setupSd$level)
+      names(setupSd$groups) <- setupSd$level      
         
-      ## try re-adjusting levels
-      tm1 <- sub("^[[:alpha:]]+( |_|-|\\.)+[[:alpha:]]+","", colnames(abund))  # remove heading text
-      if(all(grepl("^[[:digit:]]", tm1))) {
-        tm1 <- try(as.numeric(sub("( |_|-|\\.)*[[:alpha:]].*","", tm1)), silent=TRUE)   # remove tailing text and try converting to numeric
-        if(!inherits(tm1, "try-error")) {
-          setupSd$level <- match(tm1, sort(unique(tm1)))
-          names(setupSd$level) <- tm1
-          if(!silent) message(fxNa,"Sucessfully re-adjusted levels after bringing in order of Sdrf")}
-      }     
+      if(debug) {message(fxNa,"  rIBP13b3"); rIBP13b3 <- list(sdrf=sdrf,suplAnnotFile=suplAnnotFile,abund=abund, quant=quant,counts=counts,refLi=refLi,annot=annot,gr=gr,sampleNames=sampleNames,setupSd=setupSd)}
+        ## 27may25       
+        ## $level should be ordered integer (based on $groups)
+        ## $groups should be group-names with $level as names
+
+
+
+
+
+#      ## all OK but levels of setupSd$groups not based on numeric
+#      redoGroups <- length(setupSd$level) != ncol(abund) || length(setupSd$groups) != ncol(abund)
+#      if(!redoGroups) redoGroups <- length(names(setupSd$level)) != ncol(abund) || length(names(setupSd$groups)) != ncol(abund)
+#      if(redoGroups) {
+#        chNum <- grepl("^[[:digit:]]+$", setupSd$groups)  
+#        if(all(chNum)) {
+#          tm1 <- try(as.numeric(setupSd$groups))                                                                   
+#          if(!inherits(tm1, "try-error")) {
+#            tm2 <- match(tm1, sort(unique(tm1)))   # pattern
+#            names(setupSd$level) <- setupSd$groups <- match(tm1, sort(unique(tm1)))
+#            names(setupSd$groups) <- setupSd$level
+#            #old#names(setupSd$groups) <- setupSd$level <- match(tm1, sort(unique(tm1)))
+#            #old#names(setupSd$level) <- setupSd$groups
+#            if(!silent) message(fxNa,"Successfully re-adjusted levels to numeric content after bringing in order of Sdrf") }
+#      }
+#
+#      } else {
+#        ## check if level numbers should be re-adjusted
+#        redoLev <- any(unique(setupSd$level) != 1:length(unique(setupSd$level)), na.rm=TRUE)
+#        naAsNum <- try(as.numeric(names(setupSd$level)))
+#        naAsNum <- !inherits(naAsNum, "try-error")   # if names can be used directoy as numeric content for defining levels
+#        if(redoLev) {
+#          levNa <- names(setupSd$level)
+#          setupSd$level <- if(naAsNum) match(names(setupSd$level), unique(as.numeric(names(setupSd$level))) ) else match(setupSd$level, unique(as.numeric(setupSd$level )) )
+#          setupSd$groups <- names(setupSd$level) }  
+#      }   
+
+
+
+      if(debug) {message(fxNa,"rIBP13c .."); rIBP13c <- list(path=path,chPa=chPa,tmp=tmp,groupPref=groupPref,quantCol=quantCol,abund=abund,chNum=chNum,
+        sdrf=sdrf,quant=quant,annot=annot,setupSd=setupSd,colNa=colNa,sampleNames=sampleNames)}
+        
+      ## adjust final colnames according to sdrf (unless 'sampleNames' explicitly given)..
+      if(length(sampleNames) <1 && length(setupSd$sdrfDat$source.name)==ncol(abund)) {  # no 'sampleNames' imposed, sdrf present
+        colnames(abund) <- colNa <- if(length(setupSd$sdrfSampleNames) ==ncol(abund))  setupSd$sdrfSampleNames else setupSd$sdrfDat$source.name
+        if(length(quant) >0) colnames(quant) <- colNa
+      }
+
     } else {     # no sdrf-info
 
       ## harmonize sample-names/2
@@ -397,3 +480,4 @@ readIonbotPeptides <- function(fileName, path=NULL, normalizeMeth="median", samp
     ## final output
     if(isTRUE(separateAnnot)) list(raw=abund, quant=quant, annot=annot, counts=counts, sampleSetup=setupSd, quantNotes=parametersD, notes=notes) else data.frame(quant,annot)
 }
+   

@@ -69,12 +69,20 @@ testRobustToNAimputation <- function(dat, gr=NULL, annot=NULL, retnNA=TRUE, avSd
   ## start testing input
   if(is.list(dat)) { if(all(c("quant","annot") %in% names(dat))) {
     if(length(dim(dat$annot)) ==2 && length(annot) <1) annot <- dat$annot else if(!silent) message(fxNa,"Invalid '$annot'") # recover$annot if not given separately
+    if(debug) {message(fxNa,"  tRN1"); tRN1 <- list(dat=dat,gr=gr,annot=annot,retnNA=retnNA,avSd=avSd )}
     if("sampleSetup" %in% names(dat) && length(gr) <1) {
-      gr <- if("groups" %in% names(dat$sampleSetup)) dat$sampleSetup$groups else dat$sampleSetup$lev
-      if(all(match(gr, unique(gr)) ==match(names(gr), unique(names(gr))))) gr <- names(gr)              # rather use name instead of index
-      if(length(gr) >1 && length(dat$sampleSetup$col) <2 && length(names(gr)) <1) names(gr) <- dat$sampleSetup$sdrf[,dat$sampleSetup$col]       # in case not names provided
+      gr <- if("groups" %in% names(dat$sampleSetup)) dat$sampleSetup$groups else dat$sampleSetup$level
+      ## rather use names instead of index
+      if(all(is.integer(gr)) && all(nchar(names(gr)) > 0)) { grIni <- gr
+        gr <- names(gr)
+        names(gr) <- as.character(grIni)
+      }
+      if("quant" %in% names(dat) && length(gr) != ncol(dat$quant) && all(c("sdrfDat","col") %in% names(dat$sampleSetup))) gr <- dat$sampleSetup$sdrfDat[,dat$sampleSetup$col] 
+      if(length(names(gr)) <1) names(gr) <-  match(gr, unique(gr))
     } else grIni <- gr
-    dat <- dat$quant } else { datOK <- FALSE; msg <- "Invalid 'dat' : does NOT contain both '$quant' and '$annot !"} } 
+    dat <- dat$quant 
+  } else { datOK <- FALSE; msg <- "Invalid 'dat' : does NOT contain both '$quant' and '$annot !"} } 
+  
   if(datOK) { if(length(unique(gr))==length(gr)) { datOK <- FALSE
     msg <- "Argument 'gr' is empty or does NOT design any replicates !  (nothing to do)"} } 
   if(datOK) if(any(length(dim(dat)) !=2, dim(dat) < 1:2, na.rm=TRUE)) { datOK <- FALSE
@@ -126,7 +134,7 @@ testRobustToNAimputation <- function(dat, gr=NULL, annot=NULL, retnNA=TRUE, avSd
       datFi <- combineMultFilterNAimput(dat=dat, imputed=datI, grp=gr, annDat=annot, abundThr=stats::quantile(if(is.list(dat)) dat$quant else dat, 0.02,na.rm=TRUE), silent=silent, callFrom=fxNa)  # number of unique peptides unknown !
        
     } else {
-      datI <- matrixNAneighbourImpute(dat, gr, imputMethod=imputMethod, retnNA=retnNA ,avSd=avSd, plotHist=plotHist, xLab=xLab, tit=tit, seedNo=seedNo, silent=silent, callFrom=fxNa,debug=debug)
+      datI <- matrixNAneighbourImpute(dat, gr, imputMethod=imputMethod, retnNA=retnNA ,avSd=avSd, plotHist=plotHist, xLab=xLab, tit=tit, seedNo=seedNo, silent=!debug, callFrom=fxNa,debug=debug)
       if(debug) {message(fxNa,"Start combineMultFilterNAimput   tt2a")}
       datFi <- combineMultFilterNAimput(dat=dat, imputed=datI, grp=gr, annDat=annot, abundThr=stats::quantile(if(is.list(dat)) dat$quant else dat, 0.02,na.rm=TRUE), silent=silent, callFrom=fxNa)  # number of unique peptides unknown !
       if(debug) {message(fxNa,"Done combineMultFilterNAimput   tt2b")}     # done combineMultFilterNAimput
@@ -218,7 +226,7 @@ testRobustToNAimputation <- function(dat, gr=NULL, annot=NULL, retnNA=TRUE, avSd
     } else out$datImp <- datFi$data
     out$annot <- annot
     out$filter <- datFi$filt
-    if(debug) message("tRN7")     
+    if(debug) {message("tRN7"); tRN7 <- list(out=out,annot=annot,dat=dat,gr=gr,retnNA=retnNA, avSd=avSd,datI=datI,multCorMeth=multCorMeth, pValTab=pValTab,datIm=datIm )    }
   
     ## update dimnames of out$datImp
     dimnames(out$datImp) <- list(if(is.null(rownames(out$lods))) rownames(out$annot) else rownames(out$lods), colnames(dat))
@@ -242,7 +250,8 @@ testRobustToNAimputation <- function(dat, gr=NULL, annot=NULL, retnNA=TRUE, avSd
       dimnames(out$ROTS.BH) <- list(rownames(out$lods), colnames(out$contrasts) )
       if(lfdrInclude) {out$ROTS.lfdr <- as.matrix(as.matrix(apply(out$ROTS.p, 2, wrMisc::pVal2lfdr)))
         dimnames(out$ROTS.lfdr) <- list(rownames(out$lods), colnames(out$contrasts))} }
-      out 
+      if(debug) {message("tRN8"); tRN8 <- list(out=out,annot=annot,dat=dat,gr=gr,retnNA=retnNA, avSd=avSd,datI=datI,multCorMeth=multCorMeth, pValTab=pValTab,datIm=datIm )    }
+      out
   } else { warning(fxNa, msg)
     return(NULL) }
   }

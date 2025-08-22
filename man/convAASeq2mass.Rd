@@ -9,6 +9,7 @@ convAASeq2mass(
   massTy = "mono",
   seqName = TRUE,
   silent = FALSE,
+  debug = FALSE,
   callFrom = NULL
 )
 }
@@ -21,7 +22,9 @@ convAASeq2mass(
 
 \item{silent}{(logical) suppress messages}
 
-\item{callFrom}{(character) allow easier tracking of message(s) produced}
+\item{debug}{(logical) additional messages for debugging}
+
+\item{callFrom}{(character) allows easier tracking of messages produced}
 }
 \value{
 This functions returns a vector with masses for all amino-acids (argument 'massTy' to switch form mono-isotopic to average mass)

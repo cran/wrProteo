@@ -6,7 +6,8 @@
 #' @param massTy (character) default 'mono' for mono-isotopic masses (alternative 'average')
 #' @param seqName (logical) optional (alternative) names for the content of 'x' (ie aa seq) as name (always if 'x' has no names)
 #' @param silent (logical) suppress messages
-#' @param callFrom (character) allow easier tracking of message(s) produced
+#' @param debug (logical) additional messages for debugging
+#' @param callFrom (character) allows easier tracking of messages produced
 #' @return This functions returns a vector with masses for all amino-acids (argument 'massTy' to switch form mono-isotopic to average mass)
 #' @seealso \code{\link{massDeFormula}}, \code{\link{AAmass}}, \code{\link[wrMisc]{convToNum}}
 #' @examples
@@ -14,10 +15,10 @@
 #' pep1 <- c(aa="AAAA", de="DEFDEF")
 #' convAASeq2mass(pep1, seqN=FALSE)
 #' @export
-convAASeq2mass <- function(x, massTy="mono", seqName=TRUE, silent=FALSE, callFrom=NULL) {
+convAASeq2mass <- function(x, massTy="mono", seqName=TRUE, silent=FALSE, debug=FALSE, callFrom=NULL) {
   ## convert (character) aminoacid sequence vector (ie AA seq in single upper case letters) to mass with corresp modif
   ## 'seqName'  .. to use 'x' (aa seq) as name (always if 'x' has no names)
-  fxNa <- wrMisc::.composeCallName(callFrom,newNa="convAASeq2mass")
+  fxNa <- wrMisc::.composeCallName(callFrom, newNa="convAASeq2mass")
   AAmass1 <- AAmass(massTy=massTy ,inPept=TRUE)
   mH20 <- massDeFormula("2HO", massTy=massTy)
   if(length(names(x)) <1) seqName <- TRUE

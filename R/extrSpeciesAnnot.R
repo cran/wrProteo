@@ -16,7 +16,7 @@
 #' spec <- c("keratin_CONT","AB_HUMAN","CD_YEAST","EF_G_HUMAN","HI_HUMAN_ECOLI","_YEAST_012")
 #' extrSpeciesAnnot(spec) 
 #' @export
-extrSpeciesAnnot <- function(annot,spec=c("_CONT","_HUMAN","_YEAST","_ECOLI"),shortNa=c("cont","H","S","E"), silent=FALSE, debug=FALSE, callFrom=NULL){
+extrSpeciesAnnot <- function(annot, spec=c("_CONT","_HUMAN","_YEAST","_ECOLI"), shortNa=c("cont","H","S","E"), silent=FALSE, debug=FALSE, callFrom=NULL){
   ## extract species information for element of 'annot'
   ## return character vector with single (last of) term if found in 'annot'
   ## 'annot' .. character vector

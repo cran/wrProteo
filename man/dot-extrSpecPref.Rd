@@ -2,13 +2,14 @@
 % Please edit documentation in R/readProteomeDiscovererFile.R
 \name{.extrSpecPref}
 \alias{.extrSpecPref}
-\title{Extract Additional Information To Construct The Colum 'SpecType'}
+\title{Extract Additional Information To Construct The Colum 'SpecType', Allows Adding Information From Fasta}
 \usage{
 .extrSpecPref(
   specPref,
   annot,
   useColumn = c("Species", "EntryName", "GeneName", "Accession"),
   suplInp = NULL,
+  soft = NA,
   silent = FALSE,
   debug = FALSE,
   callFrom = NULL
@@ -22,6 +23,8 @@
 \item{useColumn}{(factor) columns from annot to use/mine}
 
 \item{suplInp}{(matrix) additional custom annotation}
+
+\item{soft}{(character, length=1) additional info which software was initially used (so far only special treatmentr for IB)}
 
 \item{silent}{(logical) suppress messages}
 

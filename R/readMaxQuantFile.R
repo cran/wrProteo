@@ -227,6 +227,8 @@ readMaxQuantFile <- function(path, fileName="proteinGroups.txt", normalizeMeth="
         #specMQ <- specMQ[-conLi]
         counts <- if(length(dim(counts))==3) counts[-conLi,,] else counts[-conLi,,]
         if(debug) message(fxNa,"Removing ",length(conLi)," instances of MaxQuant-contaminants to final ",nrow(annot)," lines/IDs")} }
+    if(debug) {message(fxNa,"rMQ5a"); rMQ5a <- list(path=path,chPa=chPa,tmp=tmp,extrColNames=extrColNames,chCol=chCol,chMajProCol=chMajProCol,counts=counts,
+      chRev=chRev,quantCol=quantCol,abund=abund,chNum=chNum,ch2=ch2,annot=annot,remConta=remConta,specPref=specPref)}
 
     ## split Annotation
     remHeader <- c("^conta\\|","^sp\\|")
@@ -323,7 +325,7 @@ readMaxQuantFile <- function(path, fileName="proteinGroups.txt", normalizeMeth="
     if(length(tab) >0) {
       tab <- rbind(names(tab), paste0(": ",tab,",  "))
       if(!silent) message("     data by species : ", apply(tab, 2, paste)) }               # all lines assigned
-    if(debug) {message(fxNa,"rMQ8")}
+    if(debug) {message(fxNa,"rMQ8"); rMQ8 <- list(abind=abund,annot=annot,specPref=specPref,tab=tab) }
 
     ## MaxQuant internal contaminants specific : remove non-protein DB parts - if possible, eg "CON__ENSEMBL:ENSBTAP00000007350;CON__P01030" -> "CON__P01030"
     conID <- paste0("CON__",c("ENSEMBL","REFSEQ","H-INV"),":")
@@ -345,7 +347,7 @@ readMaxQuantFile <- function(path, fileName="proteinGroups.txt", normalizeMeth="
     if(length(ch2) >0) acc1[ch2] <- sub("CON__{0,1}","", acc1[ch2])
     annot[,1] <- acc1
 
-    if(debug) {message(fxNa,"rMQ8b")}
+    if(debug) {message(fxNa,"rMQ8b"); rMQ8b <- list(abind=abund,annot=annot,specPref=specPref,tab=tab) }
 
     ## check for composite Accession names, keep only part
     #ch1 <- grep(",|;|_|\\(|\\|", annot[,1])    # note: need to not exclude/mark '-'
@@ -434,23 +436,23 @@ readMaxQuantFile <- function(path, fileName="proteinGroups.txt", normalizeMeth="
     
 
     ## harmonize sample-names/1
-    colNa <- if(length(setupSd$sampleNames)==ncol(abund)) setupSd$sampleNames else setupSd$groups
+    colNa <- if(length(setupSd$sdrfSampleNames)==ncol(abund)) setupSd$sdrfSampleNames else {if(length(setupSd$sampleNames)==ncol(abund)) setupSd$sampleNames else setupSd$groups}
 
     ### begin NEW
     ## option : choose (re-)naming of levels & columns on most redundance
-    if(length(setupSd$sampleNames)==ncol(quant) && length(setupSd$sampleNaSdrf)==ncol(quant)) {
-      ## check if setupSd$sampleNaSdrf  or   setupSd$sampleNames contain better info (some info on replicates)
-      chRed1 <- sum(duplicated(sub("(_|\\.| )[[:digit:]]+.*","", setupSd$sampleNaSdrf)), na.rm=TRUE)
+    if(length(setupSd$sampleNames)==ncol(quant) && length(setupSd$sdrfSampleNames)==ncol(quant)) {
+      ## check if setupSd$sdrfSampleNames  or   setupSd$sampleNames contain better info (some info on replicates)
+      chRed1 <- sum(duplicated(sub("(_|\\.| )[[:digit:]]+.*","", setupSd$sdrfSampleNames)), na.rm=TRUE)
       chRed2 <- sum(duplicated(sub("(_|\\.| )[[:digit:]]+.*","", setupSd$sampleNames)), na.rm=TRUE)
       if(chRed2 < chRed1) {                                          # use info for levels depending on where more 
-        colNa <- colnames(abund) <- setupSd$sampleNames <- setupSd$sampleNaSdrf                     ## take sample names from sdrf via  setupSd$sampleNaSdrf
+        colNa <- colnames(abund) <- setupSd$sampleNames <- setupSd$sdrfSampleNames                     ## take sample names from sdrf via  setupSd$sdrfSampleNames
       } else {
-        colNa <- colnames(abund) <- setupSd$sampleNames }          ## take sample names from sdrf via  setupSd$sampleNaSdrf
+        colNa <- colnames(abund) <- setupSd$sampleNames }          ## take sample names from sdrf via  setupSd$sdrfSampleNames
       #setupSd$level  
     }    
     ## option : set order of samples as sdrf
     if("sdrfOrder" %in% names(sdrf) && isTRUE(as.logical(sdrf["sdrfOrder"])) && length(setupSd$iniSdrfOrder)==ncol(abund) && ncol(abund) >1) {  # set order according to sdrf (only if >1 samples)
-      nOrd <- order(setupSd$iniSdrfOrder)
+      nOrd <- (setupSd$iniSdrfOrder)
       abund <- abund[,nOrd]
       if(length(quant) >0) quant <- quant[,nOrd]
       #setupSd$level <- setupSd$level[nOrd]

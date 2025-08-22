@@ -42,25 +42,25 @@ extractTestingResults <- function(stat, compNo=1, statTy="BH",thrsh=0.05, FCthrs
 
   argNa <- deparse(substitute(stat))
   if(!isTRUE(silent)) silent <- FALSE
-  if(!"list" %in% mode(stat) || length(stat) <1) stop("'stat' must be a list or 'MArrayLM'-object from limma")
+  if(!"list" %in% mode(stat) || length(stat) <1) stop("Argument 'stat' must be a list or 'MArrayLM'-object from limma")
   if(!("MArrayLM" %in% class(stat)) & !silent) message(fxNa," Caution, '",argNa,"' is not 'MArrayLM'-object as expected")
   if(length(statTy) <1) { statTy <- "BH"
-    if(!silent) message(fxNa," argument 'statTy' empty, setting to default 'BH'")}
+    if(!silent) message(fxNa,"Argument 'statTy' empty, setting to default 'BH'")}
   useFdrTy <- if(identical(statTy,"BH") & "FDR" %in% names(stat)) "FDR" else statTy    # maybe not needed to force to FDR
   chLstEl <- c(useFdrTy,"annot") %in% names(stat) 
-  if(!chLstEl[1]) stop("Cannot find list-element '",useFdrTy,"' in 'stat'")
+  if(!chLstEl[1]) stop(fxNa,"Cannot find list-element '",useFdrTy,"' in 'stat'")
   if(!chLstEl[2]) {
     if(!silent && length(annotCol) >0) message(fxNa,"Cannot find list-element 'annot' in ",argNa)
     annotCol <- NULL }
-  if(length(compNo) != 1) stop("'compNo' must be numeric and of length=1")
+  if(length(compNo) != 1) stop("Argument 'compNo' must be numeric and of length=1")
   if(compNo > ncol(stat[[useFdrTy]])) { compNo <- 1
-    message(fxNa," Invalid entry of 'compNo', setting to defaul compNo=1")}   
+    message(fxNa,"Invalid entry of argument 'compNo', setting to defaul compNo=1")}   
   if(is.na(FCthrs) || !is.numeric(FCthrs)) FCthrs <- NULL
   if(length(FCthrs) >0 && is.numeric(FCthrs)) FCthrs <- log2(FCthrs) else FCthrs <- NULL
   groupSep <- "-"                                    # used to separate comparison groups  
   ## main extracting
   ## redo sample-pair assoc
-  avCol <- wrMisc::sampNoDeMArrayLM(stat, compNo, lstP=useFdrTy)          # ultimately switch to function in wrMisc
+  avCol <- wrMisc::sampNoDeMArrayLM(stat, compNo, lstP=useFdrTy)          # 
 
   ## filtering ?  normally already taken care of during testing
   
@@ -101,10 +101,10 @@ extractTestingResults <- function(stat, compNo=1, statTy="BH",thrsh=0.05, FCthrs
     if(length(filename)==1) {
       digits <- min(nSign, 12)
       tmp <- if(identical(fileTy,"csvEur")) {
-        try(utils::write.csv2(as.matrix(format(out, digits=digits)), filename, row.names=FALSE,quote=FALSE),silent=silent)
-      } else try(utils::write.csv(as.matrix(format(out, digits=digits)), filename, row.names=FALSE,quote=FALSE),silent=silent)
-      if(inherits(tmp, "try-error")) message(fxNa," Note: Did not manage to write results to file '",filename,"', check for rights to write  ...") else {
-        if(!silent) message(fxNa," Wrote results successfully to file '",filename,"'")}
+        try(utils::write.csv2(as.matrix(format(out, digits=digits)), filename, row.names=FALSE, quote=FALSE), silent=silent)
+      } else try(utils::write.csv(as.matrix(format(out, digits=digits)), filename, row.names=FALSE, quote=FALSE), silent=silent)
+      if(inherits(tmp, "try-error")) message(fxNa,"Note: Did not manage to write results to file '",filename,"', check for rights to write  ...") else {
+        if(!silent) message(fxNa,"Wrote results successfully to file '",filename,"'")}
     }
     out
   } else {if(!silent) message(fxNa,"No results pass thresholds"); return(NULL)} }

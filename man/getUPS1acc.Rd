@@ -2,26 +2,34 @@
 % Please edit documentation in R/getUPS1acc.R
 \name{getUPS1acc}
 \alias{getUPS1acc}
-\title{Accession-Numbers And Names Of UPS1 Proteins}
+\title{UniProt Accession-Numbers And Names Of UPS1 Proteins}
 \usage{
-getUPS1acc(updated = TRUE)
+getUPS1acc(updated = TRUE, silent = FALSE, debug = FALSE, callFrom = NULL)
 }
 \arguments{
 \item{updated}{(logical) return updated accession number (of UBB)}
+
+\item{silent}{(logical) suppress messages}
+
+\item{debug}{(logical) additional messages for debugging}
+
+\item{callFrom}{(character) allows easier tracking of messages produced}
 }
 \value{
 This function returns data.frame with accession-numbers as stated by the supplier (\code{$acFull}),
  trimmed accession-numbers, ie without version numbers (\code{$ac}), 
  and associated (\code{UniProt}) entry-names  (\code{$EntryName}) from \href{https://www.uniprot.org/}{UniProt} 
  as well as the species designation for the collection of 48 human UPS1 or UPS2 proteins.
+
+This function returns a matrix including imputed values or list of final and matrix with number of imputed by group (plus optional plot)
 }
 \description{
 UPS1 (see https://www.sigmaaldrich.com/FR/en/product/sigma/ups1) and UPS2 are commerical products consisting of a mix of 48 human (purified) proteins.
-They are frequently used as standard in spike-in experiments, available from \href{https://www.sigmaaldrich.com/GB/en}{Sigma-Aldrich}.
+They are frequently used as standard in spike-in experiments, available from Sigma-Aldrich (\code{https://www.sigmaaldrich.com/GB/en}).
 This function allows accessing their protein accession numbers and associated names on \href{https://www.uniprot.org/}{UniProt}
 }
 \details{
-Please note that the UniProt accession 'P62988' for 'UBIQ_HUMAN' (as originally cited by \href{https://www.sigmaaldrich.com/GB/en}{Sigma-Aldrich})
+Please note that the UniProt accession 'P62988' for 'UBIQ_HUMAN' (as originally cited by Sigma-Aldrich)
 has been withdrawn and replaced in 2010 by \href{https://www.uniprot.org/}{UniProt} by the accessions 'P0CG47', 'P0CG48', 'P62979', and 'P62987'.
 This initial accession is available via \code{getUPS1acc()$acOld}, now \code{getUPS1acc()$ac} contains 'P0CG47'.
 }

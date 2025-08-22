@@ -18,9 +18,9 @@
 \arguments{
 \item{abund}{(matrix or data.frame) abundance data, only the colnames will be used}
 
-\item{setupSd}{(list) describing sammple-setup, typically produced by   from package wrMisc}
+\item{setupSd}{(list) describing sammple-setup, typically produced by \code{readSampleMetaData()} (from this package)}
 
-\item{gr}{(factor) optional custom information about replicate-layout, has priority over setuoSd}
+\item{gr}{(factor) optional custom information about replicate-layout, has priority over setupSd}
 
 \item{sampleNames}{(character) custom sample-names, has priority over abund and setuoSd}
 
@@ -36,10 +36,15 @@
 This function returns an enlaged/updated list 'setupSd' (set setupSd$sampleNames,  setupSd$groups)
 }
 \description{
-This (low-level) function performs an additional/final chek & adjustments to sample-names after readSampleMetaData()
+This (low-level) function performs an additional/final check & adjustments to sample-names after readSampleMetaData()
 }
 \examples{
-set.seed(2021)
+abun1 <- matrix(1:16, ncol=8, dimnames=list(NULL,paste("samp", LETTERS[8:1], sep="_")))
+sdrf1 <- data.frame(source.name=paste(rep(LETTERS[1:4],each=2), 1:2, sep="_"), 
+  assay.name=paste0("run", 1:8), comment.data.file.=paste0("MSrun", 8:1))
+setU1 <- list(level=gl(4,2), meth="lowest", sampleNames=paste("samp", LETTERS[1:8], sep="_"), 
+  sdrfDat=sdrf1, annotBySoft=NULL)
+.checkSetupGroups(abun1, setU1)
 }
 \seealso{
 used in \code{readProtDiscovererFile},  \code{\link{readMaxQuantFile}}, \code{\link{readProlineFile}}, \code{\link{readFragpipeFile}}

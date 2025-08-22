@@ -1,15 +1,19 @@
 #' Get Short Names of Proteomics Quantitation Software
 #'
-#' Get/convert short names of various proteomics quantitation software names.
+#' Get/convert short names of various proteomics quantitation software names for software results handeled by this package.
 #' A 2-letter abbreviation will be returned
 #' 
-#' @param x (character) 'mono' or 'average'
-#' @param tryAsLower (logical) 
+#' @details 
+#' So far thuis function recognizes the following software names:
+#' "DIA-NN", "ProteomeDiscoverer", "Compomics", "MaxQuant", "Proline", "TPP", "FragPipe", "MassChroQ", "OpenMS", "Ionbot" and "Sage"
+#' 
+#' @param x (character) software (full) name
+#' @param tryAsLower (logical) include lower-caps writing to search 
 #' @param silent (logical) suppress messages
 #' @param debug (logical) additional messages for debugging
 #' @param callFrom (character) allow easier tracking of messages produced
-#' @return This function returns a vector with masses for all amino-acids (argument 'massTy' to switch from mono-isotopic to average mass)
-#' @seealso \code{\link{massDeFormula}}, \code{\link[wrMisc]{convToNum}}
+#' @return This function returns a vector with 2-letter abbreviation for the software
+#' @seealso \code{\link{readMaxQuantFile}}
 #' @examples
 #' shortSoftwName(c("maxquant","DIANN"))
 #' @export
@@ -18,8 +22,8 @@ shortSoftwName <- function(x, tryAsLower=TRUE, silent=FALSE, debug=FALSE, callFr
   fxNa <- wrMisc::.composeCallName(callFrom, newNa="shortwSoftName")
   if(isTRUE(debug)) silent <- FALSE
   if(!isTRUE(silent)) silent <- FALSE
-  y <- cbind(softna=c("DIA-NN","ProteomeDiscoverer","Compomics","MaxQuant","Proline","TPP","FragPipe","MassChroQ","OpenMS","Ionbot"),
-    shortna= c("DN","PD","CP","MQ","PL","TP","FP","MC","OM","IB")  )
+  y <- cbind(softna=c("DIA-NN","ProteomeDiscoverer","Compomics","MaxQuant","Proline","TPP","FragPipe","MassChroQ","OpenMS","Ionbot","Sage"),
+    shortna= c("DN","PD","CP","MQ","PL","TP","FP","MC","OM","IB","SA")  )
   out <- y[match(x, y[,1]), 2]
   chNa <- is.na(out)
   if(any(chNa) && tryAsLower) out[which(chNa)] <- y[match(tolower(sub("\\-","",x[which(chNa)])), tolower(y[,1])), 2]

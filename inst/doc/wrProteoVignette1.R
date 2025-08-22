@@ -88,9 +88,11 @@ head(grp9)
 
 ## special group of proteins (we want to differentiate/ highlight lateron)
 UPS1ac <- getUPS1acc()$ac
-specPrefMQ <- list(conta="CON_|LYSC_CHICK", mainSpecies="OS=Saccharomyces cerevisiae", spike=getUPS1acc()$ac)
+specPrefMQ <- list(conta="CON_|LYSC_CHICK", mainSpecies="OS=Saccharomyces cerevisiae", 
+  spike=getUPS1acc()$ac)
 
-dataMQ <- readMaxQuantFile(path1, specPref=specPrefMQ, suplAnnotFile=TRUE, groupPref=list(lowNumberOfGroups=FALSE), gr=grp9, plotGraph=FALSE)
+dataMQ <- readMaxQuantFile(path1, specPref=specPrefMQ, suplAnnotFile=TRUE, 
+  groupPref=list(lowNumberOfGroups=FALSE), gr=grp9, plotGraph=FALSE)
 
 ## the quantifiation data is the same as before
 dim(dataMQ$quant)
@@ -100,7 +102,8 @@ dim(dataMQ$quant)
 table(dataMQ$annot[,"SpecType"])
 
 ## ----readMaxQuant4,  echo=TRUE------------------------------------------------
-dataMQ <- readMaxQuantFile(path1, specPref=specPrefMQ, sdrf="PXD001819", suplAnnotFile=TRUE, groupPref=list(lowNumberOfGroups=FALSE), plotGraph=FALSE)
+dataMQ <- readMaxQuantFile(path1, specPref=specPrefMQ, sdrf="PXD001819", suplAnnotFile=TRUE,
+  groupPref=list(lowNumberOfGroups=FALSE), plotGraph=FALSE)
 
 ## ----exportSdrfDraftMaxQuant5,  echo=TRUE-------------------------------------
 path1 <- system.file("extdata", package="wrProteo")
@@ -174,7 +177,7 @@ names(MQsdrf001819Setup)
 
 ## ----fuseProteomicsProjects1,  echo=TRUE--------------------------------------
 path1 <- system.file("extdata", package="wrProteo")
-dataMQ <- readMaxQuantFile(path1, specPref=NULL, normalizeMeth="median")
+dataMQ <- readMaxQuantFile(path1, specPref=NULL, normalizeMeth="median", plotGraph=FALSE)
 dataMC <- readMassChroQFile(path1, file="tinyMC.RData", tit="Tiny MassChroq Example", plotGraph=FALSE)
 dataFused <- fuseProteomicsProjects(dataMQ, dataMC)
 str(dataFused$quant)
@@ -196,7 +199,7 @@ head(testMQ$datImp[,1:6])
 
 ## ----PCA1MQ, fig.height=12, fig.width=9.5, fig.align="center", echo=TRUE------
 # limit to UPS1
-plotPCAw(testMQ$datImp, sampleGrp=grp9, tit="PCA on Protein Abundances (MaxQuant,NAs imputed)", rowTyName="proteins", useSymb2=0)
+plotPCAw(testMQ$datImp, sampleGrp=grp9, tit="PCA on Protein Abundances (MaxQuant,NAs imputed)", rowTyName="proteins", useSymb2=0, silent=TRUE)
 
 ## ----MAplot1, fig.height=6.5, fig.width=9.5, fig.align="center", echo=TRUE----
 # By default this plots at the first of all pairwise questions
