@@ -19,7 +19,7 @@ matrixNAinspect(
 \arguments{
 \item{dat}{(matrix or data.frame) main numeric data}
 
-\item{gr}{(charcter or factor) grouping of columns of dat indicating who is a replicate of whom (ie the length of 'gr' must be equivalent to the number of columns in 'dat')}
+\item{gr}{(character or factor) grouping of columns of dat indicating who is a replicate of whom (ie the length of 'gr' must be equivalent to the number of columns in 'dat')}
 
 \item{retnNA}{(logical) report number of NAs in graphic}
 

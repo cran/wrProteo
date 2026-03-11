@@ -2,19 +2,22 @@
 % Please edit documentation in R/writeFasta2.R
 \name{writeFasta2}
 \alias{writeFasta2}
-\title{Write sequences in fasta format to file
+\title{Write Sequences In Fasta Format To File
   
-This function writes sequences from character vector as fasta formatted file (from \href{https://www.uniprot.org}{UniProt}) 
-Line-headers are based on names of elements of input vector \code{prot}.
+This function writes sequences from character vector or parsed matrix to file as fasta formatted file (close to \href{https://www.uniprot.org}{UniProt}) 
 This function also allows comparing the main vector of sequences with a reference vector \code{ref} to check if any of the sequences therein are truncated.}
 \usage{
 writeFasta2(
   prot,
   fileNa = NULL,
+  sep = "|",
+  suplSep = " ",
+  suplColumns = c("ProteinName", "OS=", "OX=", "GN=", "PE=", "SV="),
   ref = NULL,
   lineLength = 60,
   eol = "\\n",
   truSuf = "_tru",
+  substName = "protein",
   silent = FALSE,
   debug = FALSE,
   callFrom = NULL
@@ -25,6 +28,12 @@ writeFasta2(
 
 \item{fileNa}{(character) name (and path) for file to be written}
 
+\item{sep}{(character) primary separator for fasta-header  (when \code{prot} is matrix)}
+
+\item{suplSep}{(character) supplemental saparator for additional UniProt fields}
+
+\item{suplColumns}{(character) column names to be used for supplemental saparator (for additional UniProt fields)}
+
 \item{ref}{(character) optional/additional set of (reference-) sequences (only for comparison to \code{prot}), length of proteins from \code{prot} will be checked to mark truncated proteins by '_tru'}
 
 \item{lineLength}{(integer, length=1) number of sequence characters per line (default 60, should be >1 and <10000)}
@@ -32,6 +41,8 @@ writeFasta2(
 \item{eol}{(character) the character(s) to print at the end of each line (row); for example, eol = "\\r\\n" will produce Windows' line endings on a Unix-alike OS}
 
 \item{truSuf}{(character) suffix to be added for sequences found truncated when comparing with \code{ref}}
+
+\item{substName}{(character, length=1) in case no names/elements are given to be used as fasta-headers this term will be enumerated}
 
 \item{silent}{(logical) suppress messages}
 
@@ -43,14 +54,17 @@ writeFasta2(
 This function writes the sequences from \code{prot} as fasta formatted-file
 }
 \description{
-Write sequences in fasta format to file
+Write Sequences In Fasta Format To File
   
-This function writes sequences from character vector as fasta formatted file (from \href{https://www.uniprot.org}{UniProt}) 
-Line-headers are based on names of elements of input vector \code{prot}.
+This function writes sequences from character vector or parsed matrix to file as fasta formatted file (close to \href{https://www.uniprot.org}{UniProt}) 
 This function also allows comparing the main vector of sequences with a reference vector \code{ref} to check if any of the sequences therein are truncated.
 }
 \details{
+If a named character vector is entered as \code{prot}, names will be used as annotatin of the sequence entries
 Sequences without any names will be given generic headers like protein01 ... etc.
+
+If \code{prot} is a matrix the column named 'sequence' or 'seq' will be considered as sequence and the rest will get concatenated 
+to form theb fasta-header using the separator given by argument \code{sep}
 }
 \examples{
 prots <- c(SEQU1="ABCDEFGHIJKL", SEQU2="CDEFGHIJKLMNOP")

@@ -59,7 +59,7 @@ This function returns a list with \code{$groups} and \code{$level} (grouping of 
  If all entries are invalid or entries do not pass the tests, this functions returns an empty \code{list}.
 }
 \description{
-Sample/experimental annotation meta-data form \href{https://www.maxquant.org/}{MaxQuant}, ProteomeDiscoverer, FragPipe, Proline or similar, can be read using this function and relevant information extracted.
+Sample/experimental annotation meta-data form \href{https://maxquant.org/}{MaxQuant}, ProteomeDiscoverer, FragPipe, Proline or similar, can be read using this function and relevant information extracted.
 Furthermore, annotation in \href{https://github.com/bigbio/proteomics-sample-metadata}{sdrf-format} can be added (the order of sdrf will be adjated automatically, if possible).
 This functions returns a list with grouping of samples into replicates and additional information gathered.
 Input files compressed as .gz can be read as well.

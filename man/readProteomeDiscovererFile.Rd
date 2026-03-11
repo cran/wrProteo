@@ -107,7 +107,7 @@ If a column named \code{contamCol} is found, the data will be lateron filtered t
 The final output is a list containing as (main) elements: \code{$annot}, \code{$raw} and optional \code{$quant},
 or returns data.frame with entire content of file if \code{separateAnnot=FALSE}.
 
-This function replaces the depreciated function \code{readProtDiscovFile} which will soon be retracted from this package.
+This function replaces the deprecated function \code{readProtDiscovFile} which will soon be retracted from this package.
 }
 \examples{
 path1 <- system.file("extdata", package="wrProteo")

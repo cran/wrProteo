@@ -2,7 +2,7 @@
 % Please edit documentation in R/readProteomeDiscovererPeptides.R
 \name{readProtDiscovererPeptides}
 \alias{readProtDiscovererPeptides}
-\title{readProtDiscovererPeptides, depreciated}
+\title{readProtDiscovererPeptides, deprecated}
 \usage{
 readProtDiscovererPeptides(...)
 }
@@ -13,7 +13,7 @@ readProtDiscovererPeptides(...)
 This function returns \code{NULL}
 }
 \description{
-This function has been depreciated and replaced by \code{\link{readProteomeDiscovererPeptides}} (from this package).
+This function has been deprecated and replaced by \code{\link{readProteomeDiscovererPeptides}} (from this package).
 }
 \seealso{
 \code{\link{readProteomeDiscovererFile}}, \code{\link{readProteomeDiscovererPeptides}}

@@ -1,7 +1,7 @@
-#' Remove Samples/Columns From list of matrixes
+#' Remove Samples/Columns From List Of Matrixes 
 #'
 #' @description
-#' Remove samples (ie columns) from every instance of list of matrixes.
+#' Remove samples (ie columns) from every instance of list of matrixes, like from objects created with proteomics import-functions from this package.
 #' Note: This function assumes same order of columns in list-elements 'listElem' !
 #'
 #' @param dat (list) main input to be filtered
@@ -25,77 +25,66 @@ removeSampleInList <- function(dat, remSamp, listElem=c("raw","quant","counts","
   msg <- c("'dat' should be list or S3-object with $raw, $quant, $annot","; invalid entry - can't do anything ...","'remSamp' should be index of columns to remove")
   if(!isTRUE(silent)) silent <- FALSE
   if(isTRUE(debug)) silent <- FALSE else debug <- FALSE
-  out <-  transpEl <- NULL
+  nSamp <- transpEl <- NULL  #out
   datOK <- TRUE
   if(length(dat) <1 || !is.list(dat)) { datOK <- FALSE
     if(!silent) message(fxNa, msg[1:2])}
-  if(length(remSamp) <1) {datOK <- FALSE
+  if(length(remSamp) <1) { datOK <- FALSE
     if(!silent) message(fxNa, msg[3:2])}
   ## main
   if(datOK) {
-    chLst <- listElem %in% names(dat)
-    if(sum(chLst) <1) {
-      warning("Can't find any of the list-elements defined via 'listElem' - nothing to do")
+    if(any(is.na(listElem))) listElem <- wrMisc::naOmit(listElem)
+    chLst <- if(length(listElem) ==0) FALSE else listElem %in% names(dat)
+    if(debug) {message(fxNa, "rSIL1"); rSIL1 <- list(dat=dat,remSamp=remSamp,listElem=listElem,chLst=chLst)}
+    if(all(!chLst)) {
+      warning(fxNa,"Can't find any of the list-elements defined via 'listElem' - nothing to do")
       datOK <- chRm <- FALSE
-    } else {                # (some) list-elements fit dat
+    } else {                # (some) list-elements to consider for removing samples
       listElemI <- wrMisc::naOmit(match(listElem, names(dat)))    # remove non-existing list-elements
-      if(debug) { message(fxNa," rSIL1"); rSIL1 <- list(dat=dat,remSamp=remSamp,listElem=listElem,listElemI=listElemI)}
-      if(length(listElemI) >1) {
-        liDim <- lapply(dat[listElemI], dim)
+      if(debug) { message(fxNa," rSIL2"); rSIL2 <- list(dat=dat,remSamp=remSamp,listElem=listElem,listElemI=listElemI)}
+      ## check for list-elements eligible
+      if(length(listElemI) >1) {    ## special vase : $sampleSetup may be list
+        liDim <- lapply(listElemI, function(x) dim(dat[[x]]) )
         chLiDim <- sapply(liDim, length)
-        if(any(chLiDim <1)) {    # remove linear (or lists like $sampleSetup)
-          if(debug) message(fxNa,"Don't treat list-elements ",wrMisc::pasteC(names(dat)[which(chLiDim <2)], quoteC="'")," (not matrix, data.frame or array)")
-          listElemI <- listElemI[-which(chLiDim <2)]
-          liDim <- liDim[-which(chLiDim <2)]
-      } }
-      if(debug) { message(fxNa," rSIL2"); rSIL2 <- list()}
-      if(length(listElemI) >1) {
-        nCol <- sapply(liDim, function(x) x[2])
-        chDupNC <- duplicated(nCol, fromLast=FALSE)
-        if(any(!chDupNC[-1])) {
-          useNCol <- names(which.max(table(nCol)))   # assume most frequent is good one !
-          if(debug) message(fxNa,"Variable number of columns, using most frequent : ",useNCol," columns in ",wrMisc::pasteC(names(dat)[listElemI[which(nCol==useNCol)]], quoteC="'"))
-          nRow <- sapply(liDim, function(x) x[1])
-          chTra <- nCol == nRow & nCol != useNCol
-          if(any(chTra)) {  # transpose case
-            transpEl <- which(chTra)
-            listElemI <- listElemI[-which(chTra)]
-            if(debug) message(fxNa,"Matrix(es) ",wrMisc::pasteC(names(dat)[which(chTra)], quoteC="'"," to be trated as transposed ") )
-          } else listElemI <- listElemI[which(nCol==useNCol)]
+        if(debug) { message(fxNa," rSIL3"); rSIL3 <- list(dat=dat,remSamp=remSamp,listElem=listElem,listElemI=listElemI,liDim=liDim,chLiDim=chLiDim)}
+        if(any(chLiDim >1)) {
+          ## check list-elements matching names more in detail (for same number of cols/rows to qualify) ; uses 1st listElemI ie (dat[[listElemI[1]]]) as reference number of columns to consider !
+          nSamp <- ncol(dat[[listElemI[1]]])
+          byDim <- list(byCol=sapply(liDim, function(x) which(x[2]==ncol(dat[[listElemI[1]]]))),
+            byRow=sapply(liDim, function(x) which(x[1]==ncol(dat[[listElemI[1]]]))))
+          byDim <- lapply(byDim, function(x) unlist(listElemI[which(sapply(x, length) >0)]))  
+          if(debug) { message(fxNa," rSIL4"); rSIL4 <- list(dat=dat,remSamp=remSamp,listElem=listElem,listElemI=listElemI, nSamp=nSamp,byDim=byDim,liDim=liDim )}
+          if(length(byDim$byCol) >0) {
+            for(i in unlist(byDim$byCol)) {
+              if(all(grepl("^[[:digit:]]+$", remSamp))) { remSamp <- try(as.numeric(remSamp), silent=TRUE)       # check removing colmns
+                if(debug) message(fxNa,"Removing  col(s) ",wrMisc::pasteC(remSamp)," from ",i) 
+                remSamp <- remSamp[which(remSamp >0 & remSamp <= ncol(dat[[i]]))]
+              } else { remSamp <- wrMisc::naOmit(match(remSamp, colnames(dat[[i]])))}         
+              if(length(remSamp) >0)  dat[[i]] <- if(length(dim(dat[[i]]))==2) dat[[i]][,-remSamp, drop=FALSE] else dat[[i]][,-remSamp, , drop=FALSE]}
+          }
+          if(debug) { message(fxNa," rSIL5"); rSIL5 <- list()}
+          if(length(byDim$byRow) >0) {
+            for(i in unlist(byDim$byRow)) {                                                         # check removing rows
+              if(all(grepl("^[[:digit:]]+$", remSamp))) { remSamp <- try(as.numeric(remSamp)); 
+                remSamp <- remSamp[which(remSamp >0 & remSamp <= nrow(dat[[i]]))]
+              } else { remSamp <- wrMisc::naOmit(match(remSamp, colnames(dat[[i]])))}
+              if(length(remSamp) >0)  dat[[i]] <- dat[[i]][-remSamp,, drop=FALSE] }
+          }
+          chVect <- sapply(liDim, length) ==1
+          if(any(chVect) && length(nSamp) >0) for(i in which(chVect)) {if(length(dat[[listElemI[i]]])==nSamp) dat[[listElemI[i]]] <- dat[[listElemI[i]]][-remSamp] }    
+          
         }
-      }
-      if(debug) { message(fxNa," rSIL3"); rSIL3 <- list(dat=dat,remSamp=remSamp,listElem=listElem,listElemI=listElemI,transpEl=transpEl)}
-      if(length(listElemI) >1) {      ## remove columns
-        ## convert text-entries to index ?
-
-        if(!is.integer(remSamp)) remSamp <- try(as.integer(remSamp), silent=TRUE)
-        if(inherits(remSamp, "try-error")) stop("Invalid argument 'remSamp' (must be integer to design column(s) to be removed) !")
-        chRm <- remSamp %in% 1:ncol(dat[[listElemI[1]]])
-        if(all(!chRm)) stop("Invalid columns selected !")
-        if(any(!chRm)) {
-          if(!silent) message(fxNa,"Removing column(s) ",wrMisc::pasteC(remSamp[which(!chRm)], quoteC="'"," from 'remSamp' (not existing in data !)"))
-          remSamp <- remSamp[which(chRm)]
-        }
-        if(debug) { message(fxNa," rSIL4"); rSIL4 <- list()}
-        ## main removing of columns
-        for(i in listElemI) { dat[[i]] <- if(length(dim(dat[[i]])) ==2) {if(length(remSamp) < ncol(dat[[i]]) -1) dat[[i]][,-remSamp] else {
-            matrix(dat[[i]][,-remSamp], ncol=1, dimnames=list(rownames(dat[[i]]), colnames(dat[[i]])[-remSamp])) }
-          } else if(length(remSamp) < ncol(dat[[i]]) -1) dat[[i]][,-remSamp,] else array(dat[[i]][,-remSamp,], dim=c(nrow(dat[[i]]),1, dim(dat[[i]])[3]))   # not fully tested ?          }
-        }
-        if(debug) message(fxNa,"Removed column(s) number ",wrMisc::pasteC(remSamp)," from matrix content")
-        if(length(transpEl) >0) for(i in transpEl) dat[[i]] <- dat[[i]][-remSamp,]
-        if(debug) { message(fxNa," rSIL5"); rSIL5 <- list(dat=dat,remSamp=remSamp,listElem=listElem,listElemI=listElemI,transpEl=transpEl,chRm=chRm)}
-
-        if("sampleSetup" %in% listElem) {     # special case...
-          if(debug) message(fxNa,"list-element $sampleSetup found, treat ..")
-          for(i in c("lev","level","groups","sampleNames")) if(i %in% names(dat$sampleSetup)) dat$sampleSetup[[i]] <- dat$sampleSetup[[i]][-remSamp]
-          if(length(dat$sampleSetup$sdrfDat) >0) dat$sampleSetup$sdrfDat <- if(length(remSamp) < nrow(dat$sampleSetup$sdrfDat) -1) dat$sampleSetup$sdrfDat[-remSamp,] else {
-            matrix(dat$sampleSetup$sdrfDat[-remSamp,], nrow=1, dimnames=list(rownames(dat$sampleSetup$sdrfDat)[-remSamp], colnames(dat$sampleSetup$sdrfDat))) }
-          if(length(dat$sampleSetup$annotBySoft) >0) dat$sampleSetup$annotBySoft <- if(length(remSamp) < nrow(dat$sampleSetup$annotBySoft) -1) dat$sampleSetup$annotBySoft[-remSamp,] else {
-            matrix(dat$sampleSetup$annotBySoft[-remSamp,], nrow=1, dimnames=list(rownames(dat$sampleSetup$annotBySoft)[-remSamp], colnames(dat$sampleSetup$annotBySoft))) }
+        if(debug) { message(fxNa," rSIL6"); rSIL6 <- list(dat=dat,remSamp=remSamp,listElem=listElem,listElemI=listElemI, nSamp=nSamp,byDim=byDim,liDim=liDim)} #,chSamAn=chSamAn
+        if("sampleSetup" %in% names(dat) && "sampleSetup" %in% listElem) {
+          for(i in 1 :length(dat$sampleSetup)) { chDim <- dim(dat$sampleSetup[[i]])
+            if(length(chDim) ==2 && nrow(dat$sampleSetup[[i]]) >= remSamp) dat$sampleSetup[[i]] <- dat$sampleSetup[[i]][-1*remSamp,,drop=FALSE]
+            if(length(chDim) ==3 && nrow(dat$sampleSetup[[i]]) >= remSamp) dat$sampleSetup[[i]] <- dat$sampleSetup[[i]][-1*remSamp,,,drop=FALSE]
+            if(length(chDim) ==0 && length(dat$sampleSetup[[i]]) >=remSamp) dat$sampleSetup[[i]] <- dat$sampleSetup[[i]][-1*remSamp]            
+          }   
         }
       }
     }
-  }
-  if(datOK) dat else NULL }
-   
+    dat
+  } else NULL  
+}        
+          

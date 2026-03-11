@@ -2,11 +2,12 @@
 % Please edit documentation in R/testRobustToNAimputation.R
 \name{testRobustToNAimputation}
 \alias{testRobustToNAimputation}
-\title{Pair-wise testing robust to NA-imputation}
+\title{Pairwise Testing Robust To NA-Imputation}
 \usage{
 testRobustToNAimputation(
   dat,
   gr = NULL,
+  useComparison = NULL,
   annot = NULL,
   retnNA = TRUE,
   avSd = c(0.15, 0.5),
@@ -16,7 +17,7 @@ testRobustToNAimputation(
   tit = NULL,
   imputMethod = "mode2",
   seedNo = NULL,
-  multCorMeth = NULL,
+  multCorMeth = c("lfdr", "FDR"),
   nLoop = 100,
   lfdrInclude = NULL,
   ROTSn = NULL,
@@ -30,13 +31,19 @@ testRobustToNAimputation(
 
 \item{gr}{(character or factor) replicate association; if \code{dat} contains a list-element \code{$sampleSetup$groups} or \code{$sampleSetup$lev} this may be used in case \code{gr=NULL}}
 
+\item{useComparison}{(list, character or matrix) optional argument allowing to specify which pairwise comparions sould be performed, 
+default \code{useComparison=NULL} will run all pairwise comparisons;
+may be character combining two group-names (from argument \code{grp}) separated by a '-' (eg 'A-B') or matrix where the rownames design the elements to be compared as pairwise;
+It is also possible to give a list with $sep (separator to be used when combining) and $useComparison (regular comparisons)
+Note : the names of the groups may not contain any '-' to avoid confucing them with pairwise separators !}
+
 \item{annot}{(matrix or data.frame) annotation (lines must match lines of data !), if \code{annot} is \code{NULL} and argument \code{dat} is a list containing both $quant and $annot, the element $annot will be used}
 
 \item{retnNA}{(logical) retain and report number of \code{NA}}
 
 \item{avSd}{(numerical,length=2) population characteristics (mean and sd) for >1 \code{NA}-neighbours (per line)}
 
-\item{avSdH}{depreciated, please use \code{avSd} inestad; (numerical,length=2) population characteristics 'high' (mean and sd) for >1 \code{NA}-neighbours (per line)}
+\item{avSdH}{deprecated, please use \code{avSd} inestad; (numerical,length=2) population characteristics 'high' (mean and sd) for >1 \code{NA}-neighbours (per line)}
 
 \item{plotHist}{(logical) additional histogram of original, imputed and resultant distribution (made using \code{\link{matrixNAneighbourImpute}} )}
 
@@ -52,9 +59,9 @@ testRobustToNAimputation(
 
 \item{nLoop}{(integer) number of runs of independent \code{NA}-imputation}
 
-\item{lfdrInclude}{(logical) depreciated, please used \code{multCorMeth} instead (include lfdr estimations, may cause warning message(s) concerning convergence if few too lines/proteins in dataset tested).}
+\item{lfdrInclude}{(logical) deprecated, please used \code{multCorMeth} instead (include lfdr estimations, may cause warning message(s) concerning convergence if few too lines/proteins in dataset tested).}
 
-\item{ROTSn}{(integer) depreciated, please used \code{multCorMeth} instead (number of repeats by \code{ROTS}, if \code{NULL} \code{ROTS} will not be called)}
+\item{ROTSn}{(integer) deprecated, please used \code{multCorMeth} instead (number of repeats by \code{ROTS}, if \code{NULL} \code{ROTS} will not be called)}
 
 \item{silent}{(logical) suppress messages}
 
@@ -63,22 +70,26 @@ testRobustToNAimputation(
 \item{callFrom}{(character) This function allows easier tracking of messages produced}
 }
 \value{
+This function returns a limma-type MA-object ('MArrayLM', can be handeled like a list).
+For details 'on choice of NA-impuation procedures with arguments 'imputMethod' and 'avSd' please see  \code{\link{matrixNAneighbourImpute}}.
+
 This function returns a limma-type S3 object of class 'MArrayLM' (which can be accessed lika a list); multiple results of testing or multiple testing correction types may get included ('p.value','FDR','BY','lfdr' or 'ROTS.BH')
 }
 \description{
 This function replaces \code{NA} values based on group neighbours (based on grouping of columns in argument \code{gr}), following overall assumption of close to Gaussian distribution.
 Furthermore, it is assumed that \code{NA}-values originate from experimental settings where measurements at or below detection limit are recoreded as \code{NA}.
-In  such cases (eg in proteomics) it is current practice to replace \code{NA}-values by very low (random) values in order to be able to perform t-tests.
+In such cases (eg in proteomics) it is current practice to replace \code{NA}-values by very low (random) values in order to be able to perform t-tests.
 However, random normal values used for replacing may in rare cases deviate from the average (the 'assumed' value) and in particular, if multiple \code{NA} replacements are above the average, 
-may look like induced biological data and be misinterpreted as so.      
+may look like induced biological data and be misinterpreted as so.
+}
+\details{
 The statistical testing uses \code{eBayes} from Bioconductor package \href{https://bioconductor.org/packages/release/bioc/html/limma.html}{limma} for robust testing in the context of small numbers of replicates. 
 By repeating multiple times the process of replacing \code{NA}-values and subsequent testing the results can be sumarized afterwards by median over all repeated runs to remmove the stochastic effect of individual NA-imputation.
 Thus, one may gain stability towards random-character of \code{NA} imputations by repeating imputation & test 'nLoop' times and summarize p-values by median (results stabilized at 50-100 rounds).
 It is necessary to define all groups of replicates in \code{gr} to obtain all possible pair-wise testing (multiple columns in $BH, $lfdr etc). 
 The modified testing-procedure of Bioconductor package \href{https://bioconductor.org/packages/release/bioc/html/ROTS.html}{ROTS} may optionaly be included, if desired.
 This function returns a \href{https://bioconductor.org/packages/release/bioc/html/limma.html}{limma}-like S3 list-object further enriched by additional fields/elements.
-}
-\details{
+
 The argument \code{multCorMeth} allows to choose which multiple correction algorimths will be used and included to the final results.
 Possible options are 'lfdr','BH','BY','tValTab', ROTSn='100' (name to element necessary) or 'noLimma' (to add initial p.values and BH to limma-results). By default 'lfdr' (local false discovery rate from package 'fdrtools') and 'BH' (Benjamini-Hochberg FDR) are chosen.
 The option 'BY' referrs to Benjamini-Yakuteli FDR, 'tValTab' allows exporting all individual t-values from the repeated NA-substitution and subsequent testing.
@@ -86,7 +97,12 @@ The option 'BY' referrs to Benjamini-Yakuteli FDR, 'tValTab' allows exporting al
 This function is compatible with automatic extraction of experimental setup based on sdrf or other quantitation-specific sample annotation.
 In this case, the results of automated importing and mining of sample annotation should be stored as \code{$sampleSetup$groups} or \code{$sampleSetup$lev}  
 
-For details 'on choice of NA-impuation procedures with arguments 'imputMethod' and 'avSd' please see  \code{\link{matrixNAneighbourImpute}}.
+It is possible to limit the pairwise combinations to a custom designed set using the argument \code{useComparison}.
+This may be a matrix where very line designs a new pairwise comparison and the first column is refers to 'sample' while the second column assigns the 'reference'.
+Otheriwse, one may provide a character vector as \code{useComparison} where each entry referes to a new pairwise comparison. 
+In this case it is recommended to use '--' as separator for combining the group-names to be used as 'sample' and 'reference'.
+In case the names of groups (argument \code{grp}) do not contain any '-' the single character separator '-' may also be used in compatibility with use in bioconductor packae limma.
+However, if \code{grp}) does contain any '-', results will be presented using '--' as separator to prevent any confusion.
 }
 \examples{
 set.seed(2015); rand1 <- round(runif(600) +rnorm(600,1,2),3)
@@ -96,13 +112,25 @@ dat1[19:20,1:3] <- dat1[19:20,1:3] +3      # augment lines 19:20
 dat1[15:18,4:6] <- dat1[15:18,4:6] +1.4    # augment lines 15:18 
 dat1[dat1 <1] <- NA                        # mimick some NAs for low abundance
 ## normalize data
-boxplot(dat1, main="data before normalization")
+boxplot(dat1, main="Data Before Normalization", las=1)
 dat1 <- wrMisc::normalizeThis(as.matrix(dat1), meth="median")
 ## designate replicate relationships in samples ...  
 grp1 <- gl(2, 3, labels=LETTERS[1:2])                   
-## moderated t-test with repeated inputations (may take >10 sec,  >60 sec if ROTSn >0 !) 
-PLtestR1 <- testRobustToNAimputation(dat=dat1, gr=grp1, retnNA=TRUE, nLoop=70)
+## moderated t-test with repeated imputations (may take >10 sec, >60 sec if ROTSn >0 !) 
+PLtestR1 <- testRobustToNAimputation(dat=dat1, gr=grp1, retnNA=TRUE, nLoop=20)
 names(PLtestR1)
+head(PLtestR1$p.value)
+head(PLtestR1$BH)
+head(PLtestR1$means)
+boxplot(PLtestR1$datImp, main="Data At Normalization & Imputation", las=1)
+
+## custom selection of comparisons (incl custom orientation)
+useComp <- c("A-B", "B-A")      # You can choose orientation sample/reference
+PLtestR2 <- testRobustToNAimputation(dat=dat1, gr=grp1, useComparison=useComp, 
+  retnNA=TRUE, nLoop=20)
+head(PLtestR2$BH)
+head(PLtestR2$means)
+
 }
 \seealso{
 NA-imputation via \code{\link{matrixNAneighbourImpute}}, modereated t-test without NA-imputation \code{\link[wrMisc]{moderTest2grp}}, calculating lfdr \code{\link[wrMisc]{pVal2lfdr}}, \code{eBayes} in Bioconductor package \href{https://bioconductor.org/packages/release/bioc/html/limma.html}{limma}, \code{\link[stats]{t.test}},\code{ROTS} of Bioconductor package \href{https://bioconductor.org/packages/release/bioc/html/ROTS.html}{ROTS}

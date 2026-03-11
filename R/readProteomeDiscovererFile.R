@@ -13,7 +13,7 @@
 #' The final output is a list containing as (main) elements: \code{$annot}, \code{$raw} and optional \code{$quant},
 #' or returns data.frame with entire content of file if \code{separateAnnot=FALSE}.
 #'
-#' This function replaces the depreciated function \code{readProtDiscovFile} which will soon be retracted from this package.
+#' This function replaces the deprecated function \code{readProtDiscovFile} which will soon be retracted from this package.
 #'
 #' @param fileName (character) name of file to be read
 #' @param path (character) path of file to be read
@@ -89,7 +89,7 @@ readProteomeDiscovererFile <- function(fileName, path=NULL, normalizeMeth="media
   paFi <- wrMisc::checkFilePath(fileName, path, expectExt="txt", compressedOption=TRUE, stopIfNothing=TRUE, callFrom=fxNa, silent=silent, debug=debug)
 
   ## note : reading sample-setup from 'suplAnnotFile' at this place won't allow comparing if number of samples/columns corresponds to data; do after reading main data
-  if(debug) {message(fxNa,"rpd0 .. Ready to read", if(length(path) >0) c(" from path ",path[1])," the file  ",fileName[1]); 
+  if(debug) {message(fxNa,"rpd0 .. This is wrProteo version ",utils::packageVersion("wrProteo")," ... Ready to read", if(length(path) >0) c(" from path ",path[1])," the file  ",fileName[1]); 
     rpd0 <- list(fileName=fileName,path=path,paFi=paFi,chPa=chPa) }
 
   ## read (main) file
@@ -97,10 +97,15 @@ readProteomeDiscovererFile <- function(fileName, path=NULL, normalizeMeth="media
   tmp <- try(utils::read.delim(paFi, stringsAsFactors=FALSE), silent=TRUE)
 
   if(length(tmp) <1 || inherits(tmp, "try-error") || length(dim(tmp)) <2) {
-    if(inherits(tmp, "try-error")) warning("Unable to read input file ('",paFi,"')!  (check if rights to read)") else {
+    if(inherits(tmp, "try-error")) warning(fxNa,"UNABLE to READ input file ('",paFi,"')!  (check if rights to read)") else {
       if(!silent) message(fxNa,"Content of  file '",paFi,"' seeps empty or non-conform !  Returning NULL; check if this is really a ProteomeDiscoverer-file") }
     NULL
   } else {
+    if(length(dim(tmp))==2 && ncol(tmp)==1) { tmp <- try(utils::read.csv2(paFi, stringsAsFactors=FALSE), silent=TRUE)
+      if(inherits(tmp, "try-error")) warning(fxNa,"Tried as European csv, nut UNABLE to READ input file ('",paFi,"')!  (check if rights to read)") else {
+        if(length(dim(tmp))==2 && ncol(tmp) <3) warning(fxNa,"Tried as European csv, final reults contains very FEW COLUMNS ! trouble ahead ?") 
+      }
+    }      
     if(debug) { message(fxNa,"rpd1 ... dims of initial data : ", nrow(tmp)," li and ",ncol(tmp)," col ")
       rpd1 <- list(tmp=tmp,paFi=paFi,annotCol=annotCol,fileName=fileName) }
 
@@ -108,7 +113,7 @@ readProteomeDiscovererFile <- function(fileName, path=NULL, normalizeMeth="media
     ## default as R-friendly (convert standard cols later to this format)
     if(length(annotCol) <1) annotCol <- c("Accession","Description","Gene","GeneName","Gene.Name","Marked.as", "Number.of.Peptides","Number.of.PSMs","Number.of.Unique.Peptides","Number.of.AAs","Coverage.in.Percent")
     ## also  ??    "Exp.q.value.Combined","Sum.PEP.Score"
-    if(debug) message(fxNa,"rpd1a")
+    if(debug) {message(fxNa,"rpd1a"); rpd1a <- list(tmp=tmp,paFi=paFi,annotCol=annotCol,fileName=fileName)}
 
     ## option for future: also extract column "MarkedAs"
     PSMCol <- "^Number\\.of\\.PSMs."             # pattern searching tag for PSM-data  (was previously .. .by.Search.Engine)
@@ -121,25 +126,35 @@ readProteomeDiscovererFile <- function(fileName, path=NULL, normalizeMeth="media
       ## look for column 'x' in matrix, extract index or content of column
       if(length(x) >1) x <- x[1]
       isNum <- grepl("^[[:digit:]]+$", x)
+      if(!silent) cat("1..\n")
       if(isTRUE(isNum)) {
         x <- as.integer(x)
         if(x > ncol(mat)) stop(fxNa,"Invalid column number chosen (",x," but only ",ncol(mat)," available)")
         out <- if(isTRUE(asIndex)) x else matrix(mat[,x], ncol=1, dimnames=list(rownames(mat),colnames(mat)[x]))
+        if(!silent) cat("2..\n")
       } else {
         ch1 <- colnames(mat) %in% x        # direct match
+        if(!silent) cat("3..\n")
         if(any(ch1)) { if(sum(ch1) >1 && !silent) message(fxNa,"Note: ",sum(ch1)," columns at direct match, using 1st")
           out <- if(isTRUE(asIndex)) which(ch1)[1] else matrix(mat[,which(ch1)[1]], ncol=1, dimnames=list(rownames(mat),colnames(mat)[which(ch1)[1]]))
+          if(!silent) cat("4..\n")
         } else {
           ch1 <- grep(x, mat)              # partial match (grep)
+          if(!silent) cat("5..\n")
           if(length(ch1) >0) {  if(length(ch1) >1  && !silent)  message(fxNa,"Note: ",length(ch1)," columns found by grep, using 1st")
             out <- if(isTRUE(asIndex)) which(ch1)[1] else matrix(mat[,ch1[1]], ncol=1, dimnames=list(rownames(mat),colnames(mat)[ch1[1]]))
+            if(!silent) cat("6..\n")           
           } else {
             ch1 <- grep(tolower(x), tolower(mat))   # case-tolerant grep
+            if(!silent) cat("7..\n")               # ERROR/PROBLEM after this !!  ..length of 'dimnames' [1] not equal to array extent
+            
             if(length(ch1) >0) {  if(length(ch1) >1  && !silent)  message(fxNa,"Note: ",length(ch1)," columns found by grep (case-independent), using 1st")
               out <- if(isTRUE(asIndex)) which(ch1)[1] else  matrix(mat[,ch1[1]], ncol=1, dimnames=list(rownames(mat),colnames(mat)[ch1[1]]))
+              if(!silent) cat("8..\n")              
             } else {
               if(grepl("^error|^stop", notFound)) {
                 msg <- c(fxNa,"Could NOT find column '",x,"' !!\n  (available columns ",wrMisc::pasteC(colnames(mat), quoteC="'"),")")
+                if(!silent) cat("9..\n")                
                 stop(msg)
               } else { if(is.null(notFound)) out <- NULL else {
                 out <- if(isTRUE(asIndex)) NA else matrix(NA, ncol=1, dimnames=list(rownames(mat),x))
@@ -152,24 +167,27 @@ readProteomeDiscovererFile <- function(fileName, path=NULL, normalizeMeth="media
 
      
     ## check for essential colnames !
-    annot <- cbind(Accession=.extrCol(annotCol[1], tmp, silent=silent, fxNa=fxNa),    # 1st typically 'Accession'
-      EntryName=NA, GeneName=NA, Description=.extrCol(annotCol[2], tmp, silent=silent, fxNa=fxNa), Species=NA, Contam=NA)  #, iniDescription=NA)
+    annot <- cbind(Accession=if(annotCol[1] %in% colnames(tmp)) tmp[,annotCol[1]] else NA, EntryName=NA, GeneName=NA, 
+      Description=if(annotCol[2] %in% colnames(tmp)) tmp[,annotCol[2]] else NA, Species=NA, Contam=NA)
+    #annot <- cbind(Accession=.extrCol(annotCol[1], tmp, silent=silent, fxNa=fxNa),    # 1st typically 'Accession'
+    #  EntryName=NA, GeneName=NA, Description=.extrCol(annotCol[2], tmp, silent=silent, fxNa=fxNa), Species=NA, Contam=NA)  #, iniDescription=NA)
     
+    ## definition of fasta header  https://www.uniprot.org/help/fasta-headers
     ## address different naming/writing of GeneName
-    GNco <- colnames(tmp) %in% c("Gene.Name","GeneName")
-    if(any(GNco)) { annot[,"GeneName"] <- sub(" +$","",tmp[,GNco])       # also remove tailing space
-      annotCol <- annotCol[-which(annotCol %in% c("Gene.Name","GeneName"))]
+    GNco <- colnames(tmp) %in% c("Gene.Name","GeneName","Gene")
+    if(any(GNco)) { annot[,"GeneName"] <- sub(" +$","",tmp[,which(GNco)[1]])       # also remove tailing space (could result from truncation)
+      annotCol <- annotCol[-which(annotCol %in% c("Gene.Name","GeneName","Gene"))]
     }
     ## add other cols form annotCol
-    if(debug) { message(fxNa,"rpd1b "); rpd1b <- list(tmp=tmp,annot=annot,paFi=paFi,annotCol=annotCol,fileName=fileName) }
+    if(debug) { message(fxNa,"rpd1b "); rpd1b <- list(tmp=tmp,annot=annot,paFi=paFi,annotCol=annotCol,fileName=fileName,GNco=GNco) }
     #notAnnCol <- c( "Accession","Description","Gene","Number.of.Peptides","Number.of.PSMs","Number.of.Unique.Peptides")
     if(length(annotCol) >2) { chSupCol <- match(annotCol[-(1:2)], colnames(tmp))
       if(sum(is.na(chSupCol)) < length(annotCol) -2) annot <- cbind(annot, tmp[,wrMisc::naOmit(chSupCol)])
       if(!silent) message(fxNa,"Adding supl annotation-columns ",wrMisc::pasteC(annotCol[wrMisc::naOmit(chSupCol)], quoteC="'")) }
-    ## note 'EntryName' (eg 'UBE2C_HUMAN' not avail in PD)
+    ## note 'EntryName' (eg 'UBE2C_HUMAN' not avail in PD !!)
     ## note 'GeneName' (eg 'UBE2C' can be extracted out of 'Description' after GN=
     ## extract GN
-    if(debug) { message(fxNa,"rpd1c "); rpd1c <- list()  }
+    if(debug) { message(fxNa,"rpd1c "); rpd1c <- list(tmp=tmp,paFi=paFi,annotCol=annotCol,fileName=fileName, annot=annot,GNco=GNco)  }
 
     ##  add more annot cols
     ## check for R-friendly
@@ -254,6 +272,10 @@ readProteomeDiscovererFile <- function(fileName, path=NULL, normalizeMeth="media
         tab <- rbind(names(tab),": ",tab," ;  ")
         tab[length(tab)] <- ""       # no separator at last position
         message(fxNa,"Count by 'Species' : ",apply(tab, 2, paste)) }}             # all lines assigned
+        
+    ## rename column 'Description' to 'ProteinName'  (fit better to UniProt description see  https://www.uniprot.org/help/fasta-headers)  wr10feb26
+    chDes <- colnames(annot) =="Description"
+    if(any(chDes, na.rm=TRUE)) colnames(annot)[which(chDes)[1]] <- "ProteinName"     
 
     if(debug) {message(fxNa,"rpd7 ..  "); rpd7 <- list(annot=annot,specPref=specPref,chSp=chSp,tmp=tmp,quantCol=quantCol )}
 
@@ -464,10 +486,10 @@ readProteomeDiscovererFile <- function(fileName, path=NULL, normalizeMeth="media
 
     ## check for reference for normalization
     refLiIni <- refLi
-    if(is.character(refLi) && length(refLi)==1) {
+    if(is.character(refLi) && length(refLi)==1) {  # try search content of refLi in SpecType
       refLi <- which(annot[,"SpecType"]==refLi)
-      if(length(refLi) <1 && identical(refLiIni, "mainSpe")) refLi <- which(annot[,"SpecType"] =="mainSpecies")              # fix compatibility problem  'mainSpe' to 'mainSpecies'
-      if(length(refLi) <1 ) { refLi <- 1:nrow(abund)
+      if(length(refLi) ==0 && refLiIni=="mainSpe") refLi <- which(annot[,"SpecType"]=="mainSpecies")   # also allow 'mainSpecies'
+      if(length(refLi) ==0) { refLi <- 1:nrow(abund)
         if(!silent) message(fxNa,"Could not find any proteins matching argument 'refLi=",refLiIni,"', ignoring ...")
       } else {
         if(!silent) message(fxNa,"Normalize using (custom) subset of ",length(refLi)," lines specified as '",refLiIni,"'")}}    # may be "mainSpe"
@@ -476,16 +498,19 @@ readProteomeDiscovererFile <- function(fileName, path=NULL, normalizeMeth="media
     quant <- try(wrMisc::normalizeThis(log2(abund), method=normalizeMeth, mode="additive", refLines=refLi, silent=silent, debug=debug, callFrom=fxNa), silent=TRUE)
     if(inherits(quant, "try-error")) quant <- NULL 
     if(debug) { message(fxNa,"rPD13 .. dim quant: ", nrow(quant)," li and  ",ncol(quant)," cols; colnames : ",wrMisc::pasteC(colnames(quant))," ");
-      rPD13 <- list(annot=annot,tmp=tmp,abund=abund,quant=quant,sampleNames=sampleNames,normalizeMeth=normalizeMeth,specPref=specPref,groupPref=groupPref,annotCol=annotCol,Rfriendly=Rfriendly,contamCol=contamCol,PSMCol=PSMCol,PepCol=PepCol,counts=counts,infoDat=infoDat, refLi=refLi,suplAnnotFile=suplAnnotFile,sdrf=sdrf, gr=gr)}
+      rPD13 <- list(annot=annot,tmp=tmp,abund=abund,quant=quant,sampleNames=sampleNames,normalizeMeth=normalizeMeth,specPref=specPref,groupPref=groupPref,annotCol=annotCol,Rfriendly=Rfriendly,contamCol=contamCol,PSMCol=PSMCol,PepCol=PepCol,counts=counts,infoDat=infoDat, refLi=refLi,suplAnnotFile=suplAnnotFile,sdrf=sdrf, gr=gr,fileName=fileName,path=path,paFi=paFi)}
 
     ### GROUPING OF REPLICATES AND SAMPLE META-DATA
     if(length(specPref) >0 && "sampleNames" %in% names(specPref)) groupPref$sampleNames <- specPref$sampleNames
     if(length(suplAnnotFile) >0 || length(sdrf) >0) {
       if(length(sampleNames) %in% c(1, ncol(abund))) groupPref$sampleNames <- sampleNames
       if(length(gr) %in% c(1, ncol(abund))) groupPref$gr <- gr
+      if(isTRUE(suplAnnotFile)) {path <- dirname(paFi); if(!dir.exists(path)) {path <- NULL; if(!silent) message(fxNa,"Unable to locate valid path for suplAnnotFile")}}
+       ## won't work with shiny (upload in "C:/Users/wraff/AppData/Local/Temp/Rtmp00nHlk/0df0c7d85695876e5fed9db4" etc)
+
       setupSd <- readSampleMetaData(sdrf=sdrf, suplAnnotFile=suplAnnotFile, quantMeth="PD", path=path, abund=utils::head(quant), chUnit=isTRUE(groupPref$chUnit), groupPref=groupPref, silent=silent, debug=debug, callFrom=fxNa)
     }
-    if(debug) {message(fxNa,"rPD13b ..");  rPD13b <- list(annot=annot,tmp=tmp,abund=abund,suplAnnotFile=suplAnnotFile,quant=quant,sampleNames=sampleNames,specPref=specPref,groupPref=groupPref,annotCol=annotCol,Rfriendly=Rfriendly,contamCol=contamCol,PSMCol=PSMCol,PepCol=PepCol,counts=counts,infoDat=infoDat, refLi=refLi,setupSd=setupSd,gr=gr)}
+    if(debug) {message(fxNa,"rPD13b .."); rPD13b <- list(annot=annot,tmp=tmp,abund=abund,quant=quant,gr=gr,sdrf=sdrf,setupSd=setupSd,sampleNames=sampleNames,suplAnnotFile=suplAnnotFile,specPref=specPref,groupPref=groupPref,annotCol=annotCol,Rfriendly=Rfriendly,contamCol=contamCol,PSMCol=PSMCol,PepCol=PepCol,counts=counts,infoDat=infoDat, refLi=refLi)}
 
     ## finish groups of replicates & annotation setupSd
     setupSd <- .checkSetupGroups(abund=abund, setupSd=setupSd, gr=gr, sampleNames=sampleNames, quantMeth="PD", silent=silent, debug=debug, callFrom=fxNa)
@@ -531,27 +556,32 @@ readProteomeDiscovererFile <- function(fileName, path=NULL, normalizeMeth="media
       if(debug) {message(fxNa,"rPD13e .."); rPD13e <- list(path=path,chPa=chPa,tmp=tmp,groupPref=groupPref,quantCol=quantCol,abund=abund,chNum=chNum,
         sdrf=sdrf,quant=quant,annot=annot,setupSd=setupSd)}  #
         
-      ## try re-adjusting levels
-      tm1 <- sub("^[[:alpha:]]+( |_|-|\\.)+[[:alpha:]]+","", colnames(abund))  # remove heading text
-      if(all(grepl("^[[:digit:]]", tm1))) {
-        tm1 <- try(as.numeric(sub("( |_|-|\\.)*[[:alpha:]].*","", tm1)), silent=TRUE)   # remove tailing text and try converting to numeric
-        if(!inherits(tm1, "try-error")) {
-          setupSd$level <- match(tm1, sort(unique(tm1)))
-          names(setupSd$level) <- tm1
-          if(!silent) message(fxNa,"Sucessfully re-adjusted levels after bringing in order of Sdrf")}
-      }     
+      ## try re-adjusting levels (already taken care of by readSampleMetaData())
+      #tm1 <- sub("^[[:alpha:]]+( |_|-|\\.)+[[:alpha:]]+","", colnames(abund))  # remove heading text (to keep tailing digits)
+      #if(all(grepl("^[[:digit:]]", tm1))) {
+      #  tm1 <- try(as.numeric(sub("( |_|-|\\.)*[[:alpha:]].*","", tm1)), silent=TRUE)   # remove tailing text and try converting to numeric
+      #  if(!inherits(tm1, "try-error")) {
+      #    setupSd$level <- match(tm1, sort(unique(tm1)))
+      #    names(setupSd$level) <- tm1
+      #    if(!silent) message(fxNa,"Sucessfully re-adjusted levels after bringing in order of Sdrf")
+      #}     
     } else {     # no sdrf-info
       ### begin old
       ## harmonize sample-names/2
       colNa <- colnames(abund)
       chGr <- grepl("^X[[:digit:]]", colNa)                                                # check & remove heading 'X' from initial column-names starting with digits
       if(any(chGr)) colNa[which(chGr)] <- sub("^X","", colNa[which(chGr)])                 #
-    }  
-    if(length(colNa)==ncol(abund)) { colnames(abund) <- colNa   
-      if(length(setupSd$sampleNames)==length(colNa)) setupSd$sampleNames <- colNa
-      if(length(quant) >0 && ncol(quant)==length(colNa)) colnames(quant) <- colNa }
-    if(length(dim(counts)) >1 && length(counts) >0) colnames(counts) <- colNa
+    }
+    if(debug) {message(fxNa,"rPD13f"); rPD13f <- list(sdrf=sdrf,suplAnnotFile=suplAnnotFile,abund=abund, quant=quant,refLi=refLi,annot=annot,setupSd=setupSd,counts=counts,sampleNames=sampleNames,colNa=colNa)}
 
+    ## final adjustment of sample-names to remove default text from PD
+    if(length(colNa) !=ncol(quant)) colNa <- colnames(quant)
+    ch1 <- grepl("^(Abundances\\.Normalized\\.).+(\\.Sample)$", colNa)   # eg Abundances.Normalized.F1.Sample
+    if(all(ch1)) colNa <- sub("^Abundances\\.Normalized\\.","", sub("\\.Sample$","", colNa))
+    colnames(quant) <- colNa
+    if(length(abund) >0 && all(dim(abund) >0)) colnames(abund) <- colNa 
+    if(length(counts) >0 && all(dim(counts) >0)) colnames(counts) <- colNa 
+    setupSd$sampleNames <- colNa 
     if(debug) {message(fxNa,"Read sample-meta data, rPD14"); rPD14 <- list(sdrf=sdrf,suplAnnotFile=suplAnnotFile,abund=abund, quant=quant,refLi=refLi,annot=annot,setupSd=setupSd,counts=counts,sampleNames=sampleNames)}
 
     ## main plotting of distribution of intensities
@@ -577,7 +607,10 @@ readProteomeDiscovererFile <- function(fileName, path=NULL, normalizeMeth="media
 #' Additional/final Check And Adjustments To Sample-order After readSampleMetaData()
 #'
 #' This (low-level) function performs an additional/final check & adjustments to sample-names after readSampleMetaData()
-#'
+#' 
+#' @details
+#' In particular, when no meta-data or expriental setup was found this function tries to get a min of information
+#' 
 #' @param abund (matrix or data.frame) abundance data, only the colnames will be used
 #' @param setupSd (list) describing sammple-setup, typically produced by \code{readSampleMetaData()} (from this package)
 #' @param gr (factor) optional custom information about replicate-layout, has priority over setupSd
@@ -628,8 +661,8 @@ readProteomeDiscovererFile <- function(fileName, path=NULL, normalizeMeth="media
 
   colNa <- grou <- grou2 <- saNa <- grX <- NULL
   iniSaNa <- iniGr <- FALSE
-  iniSetupSd <- length(setupSd) >0   # check if init 'setupSd' given
-  if(!is.list(setupSd)) { if(iniSetupSd) as.list(setupSd) else setupSd <- list()}
+  hasSetupSd <- if(is.list(setupSd)) length(unlist(setupSd)) >0 else length(setupSd) >0   # check if init 'setupSd' given or empty
+  if(!is.list(setupSd)) { if(hasSetupSd) as.list(setupSd) else setupSd <- list()}
     
 
   ## OPTIONS : 
@@ -650,25 +683,37 @@ readProteomeDiscovererFile <- function(fileName, path=NULL, normalizeMeth="media
   } else {
     ## check if colnames(abund) or sdrf more useful
     ## basic strategy : try picking series of names where some group-names appear when removing enumerators; avoid single specimen groups (no duplication of group-names)
+    if(ncol(abund) <1) warning(fxNa,"Content of 'abund' seems empty, nothing to compare with")
     ## check colnames of abund
     colNaA <- wrMisc::rmSharedWords(colnames(abund), sep=c("_", " ", ".", "-", ";"), callFrom=fxNa, silent=!debug)  # simplify
     ## check for enumerators    
-    colNaA2 <- wrMisc::rmEnumeratorName(colNaA, nameEnum=c("","Number","No","no","number", "#", "Replicate","Rep","Re","R","replicate","rep","re", "Sample","Samp","Sa","S"), sepEnum=c(" ","-","_","/"), incl="rmEnum")  # remove enum
+    colNaA2 <- wrMisc::rmEnumeratorName(colNaA, nameEnum=c("","Number","No","no","number", "#", "Replicate","Rep","Re","R","replicate","rep","re", "Sample","Samp","Sa","S"), sepEnum=c(" ","-","_","/"), incl="rmEnum", callFrom=fxNa, silent=!debug)  # remove enum
     chDuA2 <- duplicated(colNaA2)
-
+    iniSetupSd <- setupSd 
     ## initialize
-    if(length(setupSd$sampleNames) !=ncol(abund)) setupSd$sampleNames <- colNaA else {
+    if(length(setupSd$sampleNames) !=ncol(abund) && ncol(abund) >0) setupSd$sampleNames <- colNaA else {
       ## may choose from prev sampleNames or based on colnames
-      if(sum(chDuA2, na.rm=TRUE) >= sum(duplicated(setupSd$level), na.rm=TRUE)) {setupSd$sampleNames <- colNaA} # use colnames(abund) only if at least same number of duplicates (for groups) 
+      if(sum(chDuA2, na.rm=TRUE) >= sum(duplicated(setupSd$level), na.rm=TRUE)) {setupSd$sampleNames <- colNaA}              # use colnames(abund) only if at least same number of duplicates (for groups) 
     }
-    if(length(setupSd$groups) !=ncol(abund)) setupSd$groups <- colNaA2 else {
-      if(sum(duplicated(colNaA2), na.rm=TRUE) >= sum(duplicated(setupSd$groups), na.rm=TRUE)) {setupSd$groups <- colNaA2} # use colnames(abund) only if at least same number of duplicates (for groups) 
+    if(length(setupSd$groups) !=ncol(abund) && ncol(abund) >0) setupSd$groups <- colNaA2      # use colnames(abund) only if at least same number of duplicates (for groups)
+
+    chDu <- sum(duplicated(setupSd$groups)) <1 
+    if(chDu) {         ##  no duplicated group - (/col)names found so far : investigate further
+      ## no replicates found .. maybe need to remove enumerators
+      gr2 <- wrMisc::rmEnumeratorName(setupSd$groups, nameEnum=c("","Number","No","no","number", "#", "Replicate","Rep","Re","R","replicate","rep","re", "Sample","Samp","Sa","S"), sepEnum=c(" ","-","_","/"), incl="rmEnum", callFrom=fxNa)  # remove enum
+      chDu <- sum(duplicated(gr2)) <1   # update
+
+      if(chDu && length(iniSetupSd) <1 && all(grepl("\\.[[:digit:]]+$", gr2))) {  # repeat including dot as separator if no duplicates so far (if not pure digit & '.' combinations)
+        ch1 <- all(grepl("^[[:digit:]]+\\.[[:digit:]]+$", gr2))
+        if(!ch1) gr2 <- sub("\\.[[:digit:]]+$","", gr2)   # remove terminal digit after point UNLESS all seems numeric (digits befor point)
+      }
+      setupSd$groups <- gr2
     }    
     if(debug) { message(fxNa,"cSG1a"); cSG1a <- list(gr=gr,abund=abund,sampleNames=sampleNames, setupSd=setupSd, quantMeth=quantMeth) }          # sampleNames=sampleNames
     
     ## check sdrf
     colNaS <- repNaS <- NULL
-    if(length(setupSd$sdrfDat) >0) {   
+    if(length(setupSd$sdrfDat) >0 && nrow(setupSd$sdrfDat) >0 && length(setupSd$sdrfSampleNames) != nrow(setupSd$sdrfDat)) {   
       ## rather try to find sampleNames in sdrf
       chSdrfCol <- c("source.name", "characteristics.organism.part.","characteristics.cell.type.","characteristics.disease.","assay.name","comment.label.","comment.file.uri.","comment.data.file.","characteristics.spiked.compound." )  
       sdrfT <- setupSd$sdrfDat[,wrMisc::naOmit(match(chSdrfCol, colnames(setupSd$sdrfDat))), drop=FALSE]
@@ -738,8 +783,6 @@ readProteomeDiscovererFile <- function(fileName, path=NULL, normalizeMeth="media
     
 
   if(debug) {message(fxNa,"cSG2"); cSG2 <- list(abund=abund,setupSd=setupSd,gr=gr,quantMeth=quantMeth,saNa=saNa)}
-
-  #if(debug) {message(fxNa,"cSG2"); cSG2 <- list(sampleNames=sampleNames,gr=gr,grX=grX,abund=abund,iniSaNa=iniSaNa,saNa=saNa,iniGr=iniGr,setupSd=setupSd)}
 
   #if(debug) {message(fxNa,"cSG3"); cSG3 <- list(sampleNames=sampleNames,gr=gr,grX=grX,abund=abund,iniSaNa=iniSaNa,saNa=saNa,iniGr=iniGr,setupSd=setupSd)}
 
@@ -874,7 +917,7 @@ readProteomeDiscovererFile <- function(fileName, path=NULL, normalizeMeth="media
     if(length(quant) >0 && !abundQuantRed) {      
       if(identical(normalizeMeth,"none") || length(quant) <0) {
         if(debug) {message(fxNa,"pQD3 .. dim quant: ", nrow(quant)," li and  ",ncol(quant)," cols; colnames : ",wrMisc::pasteC(colnames(quant))," ")}
-        ch1 <- try(graphics::boxplot(quant, main=paste(tit," (",normalizeMeth,"-normalized",titSu,")"), las=1, outline=FALSE), silent=TRUE)
+        ch1 <- try(graphics::boxplot(quant, main=paste0(tit,"  ( ",normalizeMeth,"-normalized",titSu,")"), las=1, outline=FALSE), silent=TRUE)
         if(inherits(ch1, "try-error")) if(!silent) message(fxNa,"UNABLE to draw boxplot of normalized distribution !!  ", sub("^Error in",":",ch1)) else {
           graphics::abline(h=suplLineQ, lty=2, col=grDevices::grey(0.6)) } } }
 
@@ -1242,24 +1285,38 @@ readProteomeDiscovererFile <- function(fileName, path=NULL, normalizeMeth="media
 #' This (low-level) function allows accessing matrix with UniProt abbreviations for species frequently used in research.
 #' This information may be used to harmonize species descriptions or extract species information out of protein-names.
 #'
-#' @return This function returns a 2-column matrix with species names
-#' @seealso used eg in \code{readProtDiscovererFile},  \code{\link{readMaxQuantFile}}, \code{\link{readProlineFile}}, \code{\link{readFragpipeFile}}
+#' @return This function returns a 3-column matrix with species names and UniProt-extensions
+#' @seealso used eg in \code{readFasta2}, \code{readProtDiscovererFile},  \code{\link{readMaxQuantFile}}, \code{\link{readProlineFile}}, \code{\link{readFragpipeFile}}
 #' @examples
 #' .commonSpecies()
 #' @export
 .commonSpecies <- function() {
   ## matrix with UniProt abbreviations for common species
-  cbind(ext=c("_HUMAN","_MOUSE","_RAT","_CAVPO","_PIG","_BOVIN","_RABIT", "_SHEEP",
-      "_CHICK", "_CAEEL", "_DROME","_DANRE",
-      "_XENLA","_AMBME", "_ARATH","_SOLTU","_BETVV",  "_YEAST", "_ECOLI","_MYCTU"),
-    name=c("Homo sapiens","Mus muscullus","Rattus norvegicus","Cavia porcellus","Sus scrofa","Bos taurus","Oryctolagus cuniculus","Ovis aries",
-      "Gallus gallus", "Caenorhabditis elegans","Drosophila melanogaster","Danio rerio", 
+  ## also https://www.ncbi.nlm.nih.gov/gdv 
+  cbind(ext=c("_HUMAN","_CHIMP","_MOUSE","_RAT","_PIG","_CAVPO",
+      "_BOVIN","_RABIT", "_SHEEP", "_HORSE","_CANLF","_FELCA",
+      "_CHICK", 
+      "_CAEEL", "_DROME","_AEDAL", "_DANRE",
+      "_XENLA","_AMBME", 
+      "_ARATH","_SOLTU","_BETVV", "_CANEN",  
+      "_YEAST", "_ECOLI","_MYCTU", 
+      "_9HIV1","_HBV","_HCV1","_9INFA","_9INFB"),
+    name=c("Homo sapiens","Pan troglodytes", "Mus muscullus","Rattus norvegicus","Sus scrofa","Cavia porcellus",
+      "Bos taurus","Oryctolagus cuniculus","Ovis aries", "Equus caballus","Canis lupus familiaris","Felis catus",
+      "Gallus gallus", 
+      "Caenorhabditis elegans","Drosophila melanogaster","Aedes albopictus","Danio rerio", 
       "Xenopus laevis","Ambystoma mexicanum",
-      "Arabidopsis thaliana","Solanum tuberosum","Beta vulgaris",  "Saccharomyces cerevisiae",  "Escherichia coli", "Mycobacterium tuberculosis"),
-    simple=c("Human","Mouse","Rat","Pig","Guinea pigs", "Cow","Rabit", "Sheep",
-      "Chicken", "Celegans","Droso","Zebrafish",
-      "Frog","Axolotl",  "Arabidopsis","Potato","Sugar beet",   "Yeast","Ecoli","Mtuberculosis")  )
+      "Arabidopsis thaliana","Solanum tuberosum","Beta vulgaris", "Canavalia ensiformis",  
+      "Saccharomyces cerevisiae",  "Escherichia coli", "Mycobacterium tuberculosis",
+      "Human immunodeficiency virus 1","Hepatitis B virus","Hepatitis C virus genotype 1a (isolate 1)","Influenza A virus","Influenza B virus"),
+    simple=c("Human","Chimpanzee", "Mouse","Rat","Pig","Guinea pigs", 
+      "Cow","Rabit", "Sheep","Horse","Dog","Cat",
+      "Chicken", 
+      "CElegans","Droso","Asian tiger mosquito","Zebrafish",
+      "Frog","Axolotl",  
+      "Arabidopsis","Potato","Sugar beet", "Jackbean",
+      "Yeast","Ecoli","Mtuberculosis",
+      "HIV-1","HBV","HCV","IAV","IBV")  )
 }
-    
-
+      
 

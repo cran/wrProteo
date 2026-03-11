@@ -221,6 +221,9 @@ readFragpipeFile <- function(fileName, path=NULL, normalizeMeth="median", sample
       rownames(tmp) <- rownames(annot) <- wrMisc::correctToUnique(annot[,"Accession"], sep="_", atEnd=TRUE, callFrom=fxNa)
     } else { rownames(annot) <- rownames(tmp) <- annot[,"Accession"] }
 
+    ## rename column 'Description' to 'ProteinName'  (fit better to UniProt description see  https://www.uniprot.org/help/fasta-headers)  wr10feb26
+    chDes <- colnames(annot) =="Description"
+    if(any(chDes, na.rm=TRUE)) colnames(annot)[which(chDes)[1]] <- "ProteinName"     
     if(debug) { message(fxNa,"rfp7 .. dim annot ",nrow(annot)," and ",ncol(annot)); rfp7 <- list() }
 
 
@@ -302,9 +305,10 @@ readFragpipeFile <- function(fileName, path=NULL, normalizeMeth="median", sample
 
     ## check for reference for normalization
     refLiIni <- refLi
-    if(is.character(refLi) && length(refLi)==1) {
+    if(is.character(refLi) && length(refLi)==1) {  # try search content of refLi in SpecType
       refLi <- which(annot[,"SpecType"]==refLi)
-      if(length(refLi) <1 ) { refLi <- 1:nrow(abund)
+      if(length(refLi) ==0 && refLiIni=="mainSpe") refLi <- which(annot[,"SpecType"]=="mainSpecies")   # also allow 'mainSpecies'
+      if(length(refLi) ==0) { refLi <- 1:nrow(abund)
         if(!silent) message(fxNa,"Could not find any proteins matching argument 'refLi=",refLiIni,"', ignoring ...")
       } else {
         if(!silent) message(fxNa,"Normalize using (custom) subset of ",length(refLi)," lines specified as '",refLiIni,"'")}}    # may be "mainSpe"

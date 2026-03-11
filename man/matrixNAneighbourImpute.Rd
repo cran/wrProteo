@@ -36,7 +36,7 @@ matrixNAneighbourImpute(
 
 \item{avSd}{(numerical,length=2) population characteristics 'high' (mean and sd) for >1 \code{NA}-neighbours (per line)}
 
-\item{avSdH}{depreciated, please use \code{avSd} inestad; (numerical,length=2) population characteristics 'high' (mean and sd) for >1 \code{NA}-neighbours (per line)}
+\item{avSdH}{deprecated, please use \code{avSd} inestad; (numerical,length=2) population characteristics 'high' (mean and sd) for >1 \code{NA}-neighbours (per line)}
 
 \item{NAneigLst}{(list) option for repeated rounds of imputations: list of \code{NA}-neighbour values can be furnished for slightly faster processing}
 

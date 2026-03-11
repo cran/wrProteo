@@ -26,10 +26,10 @@ column where empty fields are searched and the 2nd and (optional) 3rd will be us
 \item{callFrom}{(character) allow easier tracking of message(s) produced}
 }
 \value{
-This function returns a list (like as input), but with missing elments of $annot completed (if available in other columns)
+This function returns a list (like as input), but with missing elments of $annot filled by information from the columns specified in \code{annCol} using fileds 2 (and 3)
 }
 \description{
-This function helps replacing missing EntryNames (in $annot) after reading quantification results. 
+This function helps replacing missing EntryNames (in x$annot) after reading quantification results. 
 To do so the comumn-names of \code{annCol} will be used : 
 The content of 2nd element (and optional 3rd element) will be used to replace missing content in column defined by 1st element.
 }

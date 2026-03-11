@@ -372,6 +372,9 @@ readAlphaPeptFile <- function(fileName="results_proteins.csv", path=NULL, fasta=
       tab <- rbind(names(tab), paste0(": ",tab,",  "))
       if(!silent) message("     data by species : ", apply(tab, 2, paste)) } }              # all lines assigned
 
+    ## rename column 'Description' to 'ProteinName'  (fit better to UniProt description see  https://www.uniprot.org/help/fasta-headers)  wr10feb26
+    chDes <- colnames(annot) =="Description"
+    if(any(chDes, na.rm=TRUE)) colnames(annot)[which(chDes)[1]] <- "ProteinName"     
     if(debug) {message(fxNa,"rAP8"); rAP8 <- list(path=path,chPa=chPa,tmp=tmp,chCol=chCol,quantCol=quantCol,remStrainNo=remStrainNo,
       abund=abund,chNum=chNum, annot=annot,remConta=remConta,counts=counts) }
 
@@ -383,14 +386,16 @@ readAlphaPeptFile <- function(fileName="results_proteins.csv", path=NULL, fasta=
     if(!silent) message(fxNa,"Use column '",colnames(annot)[which.min(chAn)],"' as identifyer (has fewest, ie ",chAn[which.min(chAn)]," duplicated entries) as rownames")
     rownames(abund) <- rownames(annot) <- if(any(chAn==0)) annot[,which(chAn==0)[1]] else wrMisc::correctToUnique(annot[,which.min(chAn)], callFrom=fxNa)
     if(length(counts) >0) rownames(counts) <- rownames(annot)
+
     if(debug) {message(fxNa,"rAP9"); rAP9 <- list(path=path,chPa=chPa,tmp=tmp,chCol=chCol,quantCol=quantCol,abund=abund,chNum=chNum,
       annot=annot,refLi=refLi,remConta=remConta,normalizeMeth=normalizeMeth)}
 
     ## check for reference for normalization
     refLiIni <- refLi
-    if(is.character(refLi) && length(refLi)==1) {
-       refLi <- which(annot[,"SpecType"]==refLi)
-      if(length(refLi) <1 ) { refLi <- 1:nrow(abund)
+    if(is.character(refLi) && length(refLi)==1) {  # try search content of refLi in SpecType
+      refLi <- which(annot[,"SpecType"]==refLi)
+      if(length(refLi) ==0 && refLiIni=="mainSpe") refLi <- which(annot[,"SpecType"]=="mainSpecies")   # also allow 'mainSpecies'
+      if(length(refLi) ==0) { refLi <- 1:nrow(abund)
         if(!silent) message(fxNa,"Could not find any proteins matching argument 'refLi=",refLiIni,"', ignoring ...")
       } else {
         if(!silent) message(fxNa,"Normalize using (custom) subset of ",length(refLi)," lines specified as '",refLiIni,"'")}}    # may be "mainSpe"

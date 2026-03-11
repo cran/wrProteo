@@ -99,7 +99,7 @@ This function returns a list with  \code{$raw} (initial/raw abundance values), \
   \code{$quantNotes}, \code{$notes} and optional \code{setup} for meta-data from \code{sdrf}; or a data.frame with quantitation and annotation if \code{separateAnnot=FALSE}
 }
 \description{
-Protein quantification results from \href{https://www.maxquant.org}{MaxQuant} can be read using this function and relevant information extracted.
+Protein quantification results from \href{https://maxquant.org/}{MaxQuant} can be read using this function and relevant information extracted.
 Input files compressed as .gz can be read as well.
 The protein abundance values (XIC), peptide counting information like number of unique razor-peptides or PSM values and sample-annotation (if available) can be extracted, too.
 The protein abundance values may be normalized using multiple methods (median normalization as default), the determination of normalization factors can be restricted to specific proteins
@@ -108,7 +108,7 @@ The protein annotation data gets parsed to extract specific fields (ID, name, de
 Besides, a graphical display of the distribution of protein abundance values may be generated before and after normalization.
 }
 \details{
-\href{https://www.maxquant.org}{MaxQuant} is proteomics quantification software provided by the MaxPlanck institute.
+\href{https://maxquant.org/}{MaxQuant} is proteomics quantification software provided by the MaxPlanck institute.
 By default MaxQuant writes the results of each run to the path \code{combined/txt}, from there (only) the files
  'proteinGroups.txt' (main quantitation at protein level), 'summary.txt' and 'parameters.txt' will be used.
 

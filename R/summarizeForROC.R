@@ -29,7 +29,7 @@
 #' @param useComp (character or integer) in case multiple comparisons (ie multiple columns 'test$tyThr'); which pairwise comparison to used
 #' @param tyThr (character,length=1) type of statistical test-result to be used for sensitivity and specificity calculations (eg 'BH','lfdr' or 'p.value'), must be list-element of 'test'
 #' @param thr (numeric) stat test (FDR/p-value) threshold, if \code{NULL} a panel of 108 p-value threshold-levels values will be used for calculating specifcity and sensitivity
-#' @param columnTest depreciated, please use 'useComp' instead
+#' @param columnTest deprecated, please use 'useComp' instead
 #' @param FCthrs (numeric) Fold-Change threshold (display as line) give as Fold-change and NOT as log2(FC), default at 1.5, set to \code{NA} for omitting
 #' @param spec (character) labels for those species which should be matched to column \code{annotCol} ('spec') of test$annot and used for sensitivity and specificity calculations. Important : 1st entry for species designed as constant (ie matrix) and subsequent labels for spike-ins (expected variable)
 #' @param annotCol (character, length=1) column name of \code{test$annot} to use to separate species

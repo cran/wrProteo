@@ -35,7 +35,7 @@ summarizeForROC(
 
 \item{thr}{(numeric) stat test (FDR/p-value) threshold, if \code{NULL} a panel of 108 p-value threshold-levels values will be used for calculating specifcity and sensitivity}
 
-\item{columnTest}{depreciated, please use 'useComp' instead}
+\item{columnTest}{deprecated, please use 'useComp' instead}
 
 \item{FCthrs}{(numeric) Fold-Change threshold (display as line) give as Fold-change and NOT as log2(FC), default at 1.5, set to \code{NA} for omitting}
 

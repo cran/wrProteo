@@ -145,10 +145,10 @@ fuseProteomicsProjects <- function(x, y, z=NULL, columnNa="Accession", NA.rm=TRU
       if("sampleSetup" %in% names(out)) out$sampleSetup <- list(out$sampleSetup$groups)           # very minimal fusion ... ($groups ONLY !!)
       if("quantNotes" %in% names(out)) out$quantNotes <- list(out$quantNotes) }
       ## prepare for fusing quantitative data (columns)
-      if(j==1) { tmp <- matrix(NA, nrow=length(allID), ncol=sum(sapply(colNa, length)), dimnames=list(allID, paste0(rep(namesXY,sapply(colNa, length)),".",unlist(colNa))))  ## initialize
+      if(j==1) { tmp <- matrix(NA_real_, nrow=length(allID), ncol=sum(sapply(colNa, length)), dimnames=list(allID, paste0(rep(namesXY,sapply(colNa, length)),".",unlist(colNa))))  ## initialize
         if(sum(mat2dim) >1) for(k in which(mat2dim))  out[[k]] <- tmp
         if(sum(arr3dim) >0) {
-          for(k in which(arr3dim)) tmp <- array(NA, dim=c(length(allID), sum(sapply(colNa, length)), arr3dim[[k]]), 
+          for(k in which(arr3dim)) tmp <- array(NA_real_, dim=c(length(allID), sum(sapply(colNa, length)), arr3dim[[k]]), 
             dimnames=list(allID, paste0(rep(namesXY,sapply(colNa, length)),".",unlist(colNa)), dimnames(dim2[[k]])[[3]]))  ## initialize
         }       
       }      

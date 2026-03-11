@@ -113,19 +113,24 @@ readMassChroQFile <- function(fileName, path=NULL, normalizeMeth="median", sampl
   ## checke for unique rownames
   ch1 <- duplicated(annot[,1])
   if(all(!ch1)) rownames(annot) <- annot[,1]
+
+  ## rename column 'Description' to 'ProteinName'  (fit better to UniProt description see  https://www.uniprot.org/help/fasta-headers)  wr10feb26
+  chDes <- colnames(annot) =="Description"
+  if(any(chDes, na.rm=TRUE)) colnames(annot)[which(chDes)[1]] <- "ProteinName"     
   if(debug) {message(fxNa,"mc3")}  
 
   ## colnames for quantitative data
   if(length(sampleNames) >0) if(length(sampleNames)==ncol(tmp)) colnames(tmp) <- sampleNames else message(fxNa,"invalid entry of 'sampleNames' (incorrect length)")
   
   ## check for reference for normalization
-  refLiIni <- refLi
-  if(is.character(refLi) && length(refLi)==1) { 
-    refLi <- which(annot[,"SpecType"]==refLi)
-    if(length(refLi) <1 ) { refLi <- 1:nrow(tmp)
-      if(!silent) message(fxNa,"Could not find any proteins matching argument 'refLi=",refLiIni,"', ignoring ...")
-    } else {
-      if(!silent) message(fxNa,"Normalize using (custom) subset of ",length(refLi)," lines specified as '",refLiIni,"'")}}    # may be "mainSpe"
+    refLiIni <- refLi
+    if(is.character(refLi) && length(refLi)==1) {  # try search content of refLi in SpecType
+      refLi <- which(annot[,"SpecType"]==refLi)
+      if(length(refLi) ==0 && refLiIni=="mainSpe") refLi <- which(annot[,"SpecType"]=="mainSpecies")   # also allow 'mainSpecies'
+      if(length(refLi) ==0) { refLi <- 1:nrow(abund)
+        if(!silent) message(fxNa,"Could not find any proteins matching argument 'refLi=",refLiIni,"', ignoring ...")
+      } else {
+        if(!silent) message(fxNa,"Normalize using (custom) subset of ",length(refLi)," lines specified as '",refLiIni,"'")}}    # may be "mainSpe"
 
   ## normalize
   abund <- if(!is.matrix(tmp)) as.matrix(tmp) else tmp

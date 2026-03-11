@@ -27,7 +27,7 @@ corColumnOrder(
 
 \item{annotElem}{(character) name of list-element of \code{dat} with annotation data to get in new order}
 
-\item{newNames}{depreciated, pleqse use \code{replNames} instead}
+\item{newNames}{deprecated, pleqse use \code{replNames} instead}
 
 \item{silent}{(logical) suppress messages}
 

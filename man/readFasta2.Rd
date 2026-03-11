@@ -7,7 +7,7 @@
 readFasta2(
   filename,
   delim = "|",
-  databaseSign = c("sp", "tr", "generic", "gi"),
+  databaseSign = c("sp", "tr", "generic", "conta", "synt", "gi"),
   removeEntries = NULL,
   tableOut = FALSE,
   UniprSep = c("OS=", "OX=", "GN=", "PE=", "SV="),
@@ -19,23 +19,24 @@ readFasta2(
 )
 }
 \arguments{
-\item{filename}{(character) names fasta-file to be read}
+\item{filename}{(character) names fasta-file to be read; .gz compressed files can be read, too (see examples)}
 
 \item{delim}{(character) delimeter at header-line}
 
 \item{databaseSign}{(character) characters at beginning right after the '>' (typically specifying the data-base-origin), they will be excluded from the sequance-header}
 
-\item{removeEntries}{(character) if \code{'empty'} allows removing entries without any sequence entries; set to \code{'duplicated'} to remove duplicate entries (same sequence and same header)}
+\item{removeEntries}{(character) if \code{removeEntries='empty'} allows removing entries without any sequence entries; 
+set to \code{removeEntries='duplicated'} to remove duplicate entries (same sequence and same header)  
+\code{removeEntries='allNA'} remove columns with all entries NA (if \code{tableOut=TRUE})}
 
 \item{tableOut}{(logical) toggle to return named character-vector or matrix with enhaced parsing of fasta-header. 
 The resulting matrix will contain the comumns 'database','uniqueIdentifier','entryName','proteinName','sequence' and further columns depending on argument \code{UniprSep}}
 
 \item{UniprSep}{(character) separators for further separating entry-fields if \code{tableOut=TRUE}, see also \href{https://www.uniprot.org/help/fasta-headers}{UniProt-FASTA-headers}}
 
-\item{strictSpecPattern}{(logical or character) pattern for recognizing EntryName which is typically preceeding ProteinName (separated by ' '); if \code{TRUE} the 
-name (capital letters and digits) must contain in the second part '_' plus capital letters, if \code{FALSE} the second part may be absent; if not matching pattern the text will be at the beggining of the ProteinName}
+\item{strictSpecPattern}{(logical or character) deprecated, this argument is not used any more}
 
-\item{cleanCols}{(logical) remove columns with all entries NA, if \code{tableOut=TRUE}}
+\item{cleanCols}{(logical) deprecated, please use argument \code{removeEntries="allNA"}}
 
 \item{silent}{(logical) suppress messages}
 
@@ -49,7 +50,11 @@ This function returns (depending on argument \code{tableOut}) a simple character
 }
 \description{
 Read fasta formatted file (from \href{https://www.uniprot.org}{UniProt}) to extract (protein) sequences and name.
-If \code{tableOut=TRUE} output may be organized as matrix for separating meta-annotation (eg uniqueIdentifier, entryName, proteinName, GN) in separate columns.
+}
+\details{
+Read fasta-header -as is (ie without any parsing) : Set argument \code{tableOut=FALSE}.
+If \code{tableOut=TRUE} the output will be organized as matrix for separating meta-annotation (eg uniqueIdentifier, entryName, proteinName, GN) in separate columns.
+Please keep in mind that parsers wer primarily designed for the UniProt format.
 }
 \examples{
 ## Tiny example with common contaminants
@@ -61,5 +66,5 @@ fasta2 <- readFasta2(file.path(path1, fiNa), tableOut=TRUE)
 str(fasta1)
 }
 \seealso{
-\code{\link{writeFasta2}} for writing as fasta; for reading \code{\link[base]{scan}} or  \code{read.fasta} from the package \href{https://CRAN.R-project.org/package=seqinr}{seqinr}
+\code{\link{writeFasta2}} for writing as fasta; for reading \code{\link[base]{readLines}} or  \code{read.fasta} from the package \href{https://CRAN.R-project.org/package=seqinr}{seqinr}
 }

@@ -97,7 +97,7 @@ This function returns a list with  \code{$raw} (initial/raw abundance values), \
   \code{$quantNotes}, \code{$notes} and optional \code{setup} for meta-data from \code{sdrf}; or a data.frame with quantitation and annotation if \code{separateAnnot=FALSE}
 }
 \description{
-Peptide level identification and quantification data produced by \href{https://www.maxquant.org/}{MaxQuant} can be read using
+Peptide level identification and quantification data produced by \href{https://maxquant.org/}{MaxQuant} can be read using
 this function and relevant information extracted.
 Input files compressed as .gz can be read as well.
 The peptide abundance values (XIC), peptide counting information and sample-annotation (if available) can be extracted, too.
@@ -107,7 +107,7 @@ The peptide annotation data gets parsed to extract specific fields (ID, name, de
 Besides, a graphical display of the distribution of peptide abundance values may be generated before and after normalization.
 
 
-\href{https://www.maxquant.org/}{MaxQuant} is proteomics quantification software provided by the MaxPlanck institute.
+\href{https://maxquant.org/}{MaxQuant} is proteomics quantification software provided by the MaxPlanck institute.
 By default MaxQuant write the results of each run to the path \code{combined/txt}, from there (only) the files
  'peptides.txt' (main quantitation at peptide level), 'summary.txt' and 'parameters.txt' will be used for this function.
 

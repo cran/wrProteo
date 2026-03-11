@@ -38,6 +38,9 @@ This function returns an enlaged/updated list 'setupSd' (set setupSd$sampleNames
 \description{
 This (low-level) function performs an additional/final check & adjustments to sample-names after readSampleMetaData()
 }
+\details{
+In particular, when no meta-data or expriental setup was found this function tries to get a min of information
+}
 \examples{
 abun1 <- matrix(1:16, ncol=8, dimnames=list(NULL,paste("samp", LETTERS[8:1], sep="_")))
 sdrf1 <- data.frame(source.name=paste(rep(LETTERS[1:4],each=2), 1:2, sep="_"), 

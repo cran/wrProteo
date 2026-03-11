@@ -7,7 +7,7 @@
 .commonSpecies()
 }
 \value{
-This function returns a 2-column matrix with species names
+This function returns a 3-column matrix with species names and UniProt-extensions
 }
 \description{
 This (low-level) function allows accessing matrix with UniProt abbreviations for species frequently used in research.
@@ -17,5 +17,5 @@ This information may be used to harmonize species descriptions or extract specie
 .commonSpecies()
 }
 \seealso{
-used eg in \code{readProtDiscovererFile},  \code{\link{readMaxQuantFile}}, \code{\link{readProlineFile}}, \code{\link{readFragpipeFile}}
+used eg in \code{readFasta2}, \code{readProtDiscovererFile},  \code{\link{readMaxQuantFile}}, \code{\link{readProlineFile}}, \code{\link{readFragpipeFile}}
 }

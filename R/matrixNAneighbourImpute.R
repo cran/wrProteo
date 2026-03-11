@@ -37,7 +37,7 @@
 #' @param imputMethod (character) choose the imputation method (may be 'mode2'(default), 'mode1', 'datQuant', 'modeAdopt' or 'informed')
 #' @param retnNA (logical) decide (if =\code{TRUE}) only NA-substuted data should be returned, or if list with $data, $nNA, $NAneighbour and $randParam should be returned
 #' @param avSd (numerical,length=2) population characteristics 'high' (mean and sd) for >1 \code{NA}-neighbours (per line)
-#' @param avSdH depreciated, please use \code{avSd} inestad; (numerical,length=2) population characteristics 'high' (mean and sd) for >1 \code{NA}-neighbours (per line)
+#' @param avSdH deprecated, please use \code{avSd} inestad; (numerical,length=2) population characteristics 'high' (mean and sd) for >1 \code{NA}-neighbours (per line)
 #' @param NAneigLst (list) option for repeated rounds of imputations: list of \code{NA}-neighbour values can be furnished for slightly faster processing
 #' @param plotHist (character or logical) decide if supplemental figure with histogram shoud be drawn, the details 'Hist','quant' (display quantile of originak data), 'mode' (display mode of original data) can be chosen explicitely
 #' @param xLab (character) label on x-axis on plot
@@ -79,12 +79,12 @@ matrixNAneighbourImpute <- function(dat, gr, imputMethod="mode2", retnNA=TRUE, a
     msg <- "Argument 'gr' does not designate any replicates !  .. ie NA-neighbours can't be determined - nothing to do"} }
   if(length(dat) <1) { datOK <- FALSE
     msg <- c("'dat' must be list, S3-object, matrix or data.frame with min 2 rows and min 2 cols",tx1)}
-  if(datOK) if(is.list(dat)) {
-    if("quant" %in% names(dat)) {dat <- dat$quant
+  if(datOK) if(is.list(dat) && !is.data.frame(dat)) {
+    if("quant" %in% names(dat)) { dat <- dat$quant
       if(debug) message(fxNa,"'dat' is list, using element 'quant' as 'dat'")
     } else { datOK <- FALSE
       msg <- c("'dat' is list but does NOT contain element named 'quant'",tx1)}
-  } else { if(any(dim(dat) < c(2,1), na.rm=TRUE)) { datOK <- FALSE
+  } else { if(length(dat) ==0 || length(dim(dat)) !=2 || any(dim(dat) < c(2,1), na.rm=TRUE)) { datOK <- FALSE
     msg <- c("'dat' matrix or data.frame with min 2 rows and min 2 cols",tx1)}}
   if(datOK) { if(length(gr) != ncol(dat)) { datOK <- FALSE
     msg <- c("Number of columns of 'dat' must match length of 'gr'",tx1)}}
@@ -117,10 +117,10 @@ matrixNAneighbourImpute <- function(dat, gr, imputMethod="mode2", retnNA=TRUE, a
     ## main
     isNA <- is.na(dat)
     chNA <- any(isNA)
-    if(debug) { message(fxNa,"Starting main,  mn1");  mn1 <- list(dat=dat,gr=gr,isNA=isNA,chNA=chNA,imputMethod=imputMethod,NAneigLst=NAneigLst,NAneighbour=NAneighbour)}
+    if(debug) { message(fxNa,"Starting main,  mn1");  mn1 <- list(dat=dat,gr=gr,isNA=isNA,chNA=chNA,imputMethod=imputMethod,NAneigLst=NAneigLst,NAneighbour=NAneighbour,avSdH=avSdH,avSd=avSd)}
     if(length(avSdH) >1 && identical(c(0.15,0.5), avSd))  { avSd <- avSdH
-      if(!silent) message(fxNa,"Using depreciated 'avSdH' as substitute of (default) 'avSd', please change your code to rather use 'avSd' instead of 'avSdH' !!")
-    } else if(length(avSdH) >0 && !silent) message(fxNa,"Argument 'avSdH' has been depreciated, 'avSd' is used instead")
+      if(!silent) message(fxNa,"Using deprecated 'avSdH' as substitute of (default) 'avSd', please change your code to rather use 'avSd' instead of 'avSdH' !!")
+    } else if(length(avSdH) >0 && !silent) message(fxNa,"Argument 'avSdH' has been deprecated, 'avSd' is used instead")
 
     if(!chNA) {
       ## no NAs, nothing to impute ...
@@ -133,44 +133,44 @@ matrixNAneighbourImpute <- function(dat, gr, imputMethod="mode2", retnNA=TRUE, a
       modNa <- NULL
       leNAneigh <- if(!is.null(NAneighbour)) sum(sapply(NAneighbour, length)) else 0
       if(leNAneigh <1 && (length(grep("mode", imputMethod)) >0 || any(c("informed","datQuant") %in% imputMethod, na.rm=TRUE))) {   ## all methods using mode need NA-neighbours ...
-        if(debug) message(fxNa," mn1b")
+        if(debug) { message(fxNa," mn1b");  mn1b <- list(dat=dat,gr=gr,isNA=isNA,chNA=chNA,imputMethod=imputMethod,NAneigLst=NAneigLst,NAneighbour=NAneighbour,avSdH=avSdH,avSd=avSd)}
         if(length(NAneighbour) <1) NAneighbour <- isolNAneighb(dat, gr, silent=silent, debug=debug, callFrom=fxNa)     #
         leNAneigh <- sum(sapply(NAneighbour, length))
 
-        if(debug) {message(fxNa," mn2"); mn2 <- list(NAneighbour=NAneighbour)}
+        if(debug) {message(fxNa," mn2"); mn2 <- list(NAneighbour=NAneighbour,dat=dat,gr=gr,isNA=isNA,chNA=chNA,imputMethod=imputMethod,NAneigLst=NAneigLst,leNAneigh=leNAneigh)}
         if(leNAneigh >0) {
           chLast <- length(NAneighbour[[length(NAneighbour)]])
           if(chLast==0) NAneighbour <- NAneighbour[-1*length(NAneighbour)]}     # remove last field if empty (as usual)
       } else { nNA <- sum(isNA)}
 
-      if(debug) {message(fxNa," mn3"); mn3 <- list()}
       nNaNei <- sapply(NAneighbour, length)
+      if(debug) {message(fxNa," mn3"); mn3 <- list(NAneighbour=NAneighbour,dat=dat,gr=gr,isNA=isNA,chNA=chNA,imputMethod=imputMethod,nNaNei=nNaNei)}
 
       ## check if sufficient NAs for mode-based methods
       if(debug) message(fxNa,"Checking if sufficient NAs for mode-based methods")
       if(sum(nNaNei) <10 && length(grep("mode", imputMethod)) >0) {
-        ##number of NA neighb not yet known#
+        ## number of NA neighb not yet known#
         if(!silent) message(fxNa,"Only ",sum(nNaNei)," NA-neighbour values available, ie insufficient to calculate representative mode, using instead 10%ile of global distribution")
         imputMethod <- "datQuant"
         avSd[1] <- 0.1
       }
-      if(debug) {message(fxNa," mn4") }
 
       ## IMPUTATIONS
       randVa <- NULL                  # initialize for 'none'
       datIni <- dat
       if(debug) {message(fxNa," mn4");  mn4 <- list(dat=dat,gr=gr,randVa=randVa,medMod=medMod, isNA=isNA,chNA=chNA,imputMethod=imputMethod,NAneigLst=NAneigLst,NAneighbour=NAneighbour)}
       ## use 'medMod' as summary of random data generated
-      ## choose method
+      ## choose method; always produce vector  'randVa' and 'msg'
          #save(dat,gr,imputMethod, randVa,medMod,NAneighbour,seedNo,isNA,chNA,NAneigLst, file="mn4a.RData")
       if("datQuant" %in% imputMethod) {   # quantile of data
         if(debug) message(fxNa,"Starting method 'datQuant'")
         if(length(avSd) >2 && !is.na(avSd[3])) {useQu <- avSd[3]} else {   # 3rd value (if specified) may be used as custom mean for normal distrib (instead of determining as xth quantile)
           if(is.na(avSd[1])) { avSd[1] <- 0.1           # check quantile value (ie where to check full data)
             if(!silent) message(fxNa," avSd not valid, using 10%quantile instead")}
-          useQu <- stats::quantile(dat, avSd[1], na.rm=TRUE) }
+          useQu <- if(avSd[1] <1 && avSd[1] >0) stats::quantile(dat, avSd[1], na.rm=TRUE) else avSd[1]  
+        }
         if(length(seedNo) ==1) set.seed(seedNo)
-        randVa <- signif(stats::rnorm(sum(isNA), useQu, avSd[2]),5)
+        randVa <- signif(stats::rnorm(sum(isNA), useQu, avSd[2]), 5)
         plotHist <- unique(c(plotHist,"quantile"))     # for ploting quantile-guides
         msg <- paste(signif(avSd[1],3),"quantile, ie mean=",signif(useQu,4),"and sd=", signif(avSd[2],4))
       }
@@ -263,7 +263,7 @@ matrixNAneighbourImpute <- function(dat, gr, imputMethod="mode2", retnNA=TRUE, a
       }
 
       ## replace NAs
-      if(debug) {message(fxNa," mn6") }
+      if(debug) {message(fxNa," mn6"); mn6 <- list(dat=dat,datIni=datIni,gr=gr,randVa=randVa,medMod=medMod, isNA=isNA,chNA=chNA,imputMethod=imputMethod,NAneigLst=NAneigLst,NAneighbour=NAneighbour) }
       if(!"none" %in% tolower(imputMethod)) dat[which(isNA)] <- randVa
       chImp <- stats::quantile(datIni, c(0.05,0.15), na.rm=TRUE)
       chImp <- c(mean(randVa, na.rm=TRUE) < chImp[1], mean(randVa, na.rm=TRUE) > chImp[2])

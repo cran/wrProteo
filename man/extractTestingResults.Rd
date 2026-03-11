@@ -35,7 +35,8 @@ extractTestingResults(
 
 \item{nSign}{(integer) number of significant digits whe returning results}
 
-\item{addTy}{(character) additional groups to add (so far only "allMeans" available) in addition to the means used in the pairwise comparison}
+\item{addTy}{(character) additional groups of columns to add ("allMeans", "all" or "slim") in addition;
+if \code{addTy="slim"} only the FDR- and FC-columns directly concerned will be extracted/displayed}
 
 \item{filename}{(character) optional (path and) file-name for exporting results to csv-file}
 
@@ -48,15 +49,20 @@ extractTestingResults(
 \item{callFrom}{(character) allow easier tracking of messages produced}
 }
 \value{
-This function returns a limma-type MA-object (which can be handeled just like a list)
+This function returns a data.frame or matrix (if no annotation added) with values (and annotation) conform to fiter criteria
 }
 \description{
 This function allows convenient access to results produced using the functions \code{\link[wrMisc]{moderTest2grp}} or \code{moderTestXgrp}.
 The user can define the threshold which type of multiple testing correction should be used
  (as long as the  multiple testing correction method was actually performed as part of testing).
 }
+\details{
+The number of columns returned can be modulated using the argument \code{addTy}. 
+\code{addTy='slim'} gives the fewest columns, only FDR and FC of current comparison specified in argument \code{compNo} will be returned.
+\code{addTy='all'} results in a rather exaustive collection of columns (incluing annotation data, if present), while default 'allMeans' gives a compromise
+}
 \examples{
-grp <- factor(rep(LETTERS[c(3,1,4)],c(2,3,3)))
+grp <- factor(rep(LETTERS[4:2],c(2,3,3)))
 set.seed(2017); t8 <- matrix(round(rnorm(208*8,10,0.4),2), ncol=8,
   dimnames=list(paste(letters[],rep(1:8,each=26),sep=""), paste(grp,c(1:2,1:3,1:3),sep="")))
 t8[3:6,1:2] <- t8[3:6,1:2] +3                    # augment lines 3:6 (c-f) 
@@ -68,6 +74,10 @@ t8[6:7,3:5] <- t8[6:7,3:5] +2.2                  # augment lines
 library(wrMisc)     # for testing we'll use this package
 test8 <- moderTestXgrp(t8, grp) 
 extractTestingResults(test8)
+extractTestingResults(test8, compNo=c("B-C"))
+
+extractTestingResults(test8, addTy="all")
+extractTestingResults(test8, addTy="slim")
 }
 \seealso{
 \code{\link{testRobustToNAimputation}}, \code{\link[wrMisc]{moderTestXgrp}} or \code{\link[wrMisc]{moderTest2grp}}

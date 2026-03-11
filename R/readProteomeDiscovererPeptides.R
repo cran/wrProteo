@@ -10,7 +10,7 @@
 #' Using the argument \code{suplAnnotFile} it is possible to specify a specific file (or search for default file) to read for extracting file-names as sample-names and other experiment realted information.
 #' Precedent and following aminoacids (relative to identified protease recognition sites) will be removed form peptide sequences and be displayed in $annot as columns 'prec' and 'foll'.
 #' If a column named \code{contamCol} is found, the data will be lateron filtered to remove all contaminants, set to \code{NULL} for keeping all contaminants
-#' This function replaces the depreciated function \code{readPDExport}.
+#' This function replaces the deprecated function \code{readPDExport}.
 #'
 #'  Besides, ProteomeDiscoverer version number and full raw-file path will be extracted for $notes in final output.
 #'
@@ -34,7 +34,7 @@
 #' @param annotCol (character) column names to be read/extracted for the annotation section (default  c("Accession","Description","Gene","Contaminant","Sum.PEP.Score","Coverage....","X..Peptides","X..PSMs","X..Unique.Peptides", "X..AAs","MW..kDa.") )
 #' @param FDRCol (list) optional indication to search for protein FDR information
 #' @param titGraph (character) custom title to plot
-#' @param titGraph (character) depreciated custom title to plot, please use 'tit'
+#' @param titGraph (character) deprecated custom title to plot, please use 'tit'
 #' @param wex (integer) relative expansion factor of the violin-plot (will be passed to \code{\link[wrGraph]{vioplotW}})
 #' @param specPref (character or list) define characteristic text for recognizing (main) groups of species (1st for comtaminants - will be marked as 'conta', 2nd for main species- marked as 'mainSpe',
 #'  and optional following ones for supplemental tags/species - maked as 'species2','species3',...);
@@ -83,8 +83,14 @@ readProteomeDiscovererPeptides <- function(fileName, path=NULL, normalizeMeth="m
 
   ## read (main) file
   ## future: look for fast reading of files
-  tmp <- try(utils::read.delim(file.path(paFi), stringsAsFactors=FALSE, header=TRUE), silent=TRUE)
+  tmp <- try(utils::read.delim(paFi, stringsAsFactors=FALSE, header=TRUE), silent=TRUE)
   if(inherits(tmp, "try-error")) stop("Unable to read input file ('",paFi,"')!")
+  if(length(dim(tmp))==2 && ncol(tmp)==1) { tmp <- try(utils::read.csv2(paFi, stringsAsFactors=FALSE), silent=TRUE)
+    if(inherits(tmp, "try-error")) warning(fxNa,"Tried as European csv, nut UNABLE to READ input file ('",paFi,"')!  (check if rights to read)") else {
+      if(length(dim(tmp))==2 && ncol(tmp) <3) warning(fxNa,"Tried as European csv, final reults contains very FEW COLUMNS ! trouble ahead ?") 
+    }
+  }      
+
   if(debug) { message(fxNa,"rPDP3b .. dims of initial data : ", nrow(tmp)," li and ",ncol(tmp)," col ")}
   ## extract peptide sequence
   pepSe <- sub("\\.\\[[[:upper:]]\\]$","", sub("^\\[[[:upper:]]\\]\\.","", tmp[,"Annotated.Sequence"]))
@@ -191,6 +197,9 @@ readProteomeDiscovererPeptides <- function(fileName, path=NULL, normalizeMeth="m
     annot <- .extrSpecPref(specPref, annot, useColumn=c("Master.Protein.Accessions"), soft="PD", silent=silent, debug=debug, callFrom=fxNa)   # set annot[,"specPref"] according to specPref   # use ? "Fasta.headers"
   } else if(debug) message(fxNa,"Note: Argument 'specPref' not specifed (empty)")
   
+    ## rename column 'Description' to 'ProteinName'  (fit better to UniProt description see  https://www.uniprot.org/help/fasta-headers)  wr10feb26
+    chDes <- colnames(annot) =="Description"
+    if(any(chDes, na.rm=TRUE)) colnames(annot)[which(chDes)[1]] <- "ProteinName"     
   
   rm(annot1)
   if(debug) {message(fxNa,"rPDP4d .. Done extracting peptide annotation ");
@@ -281,13 +290,13 @@ readProteomeDiscovererPeptides <- function(fileName, path=NULL, normalizeMeth="m
   if(length(abund) >0) {
     ## check for reference for normalization
     refLiIni <- refLi
-    if(length(refLi)==1 && is.character(refLi) && nchar(refLi) >0) {
-      if("SpecType" %in% colnames(annot)) { refLi <- which(annot[,"SpecType"]==refLi)
-        if(length(refLi) <1) message(fxNa,"Could not find any peptide matching argument 'refLi', ignoring ...") else {
-          if(!silent) message(fxNa,"Normalize using subset of ",length(refLi)) }            # may be "mainSpe"
-      } else if(!silent) message(fxNa,"")   
-    }      
-    if(length(refLi) <1) refLi <- NULL
+    if(is.character(refLi) && length(refLi)==1) {  # try search content of refLi in SpecType
+      refLi <- which(annot[,"SpecType"]==refLi)
+      if(length(refLi) ==0 && refLiIni=="mainSpe") refLi <- which(annot[,"SpecType"]=="mainSpecies")   # also allow 'mainSpecies'
+      if(length(refLi) ==0) { refLi <- 1:nrow(abund)
+        if(!silent) message(fxNa,"Could not find any proteins matching argument 'refLi=",refLiIni,"', ignoring ...")
+      } else {
+        if(!silent) message(fxNa,"Normalize using (custom) subset of ",length(refLi)," lines specified as '",refLiIni,"'")}}    # may be "mainSpe"  
 
     quant <- try(wrMisc::normalizeThis(log2(abund), method=normalizeMeth, mode="additive", refLines=refLi, silent=silent, debug=debug, callFrom=fxNa), silent=TRUE)
     if(debug) { message(fxNa,"rPDP9d .. dim quant: ", nrow(quant)," li and  ",ncol(quant)," cols; colnames : ",wrMisc::pasteC(colnames(quant))," "); 
@@ -400,9 +409,9 @@ readProteomeDiscovererPeptides <- function(fileName, path=NULL, normalizeMeth="m
 }
 
 
-#' readProtDiscovererPeptides, depreciated
+#' readProtDiscovererPeptides, deprecated
 #'
-#' This function has been depreciated and replaced by \code{\link{readProteomeDiscovererPeptides}} (from this package).
+#' This function has been deprecated and replaced by \code{\link{readProteomeDiscovererPeptides}} (from this package).
 #'
 #' @param ...  Actually, this function doesn't ready any input any more
 #' @return This function returns \code{NULL}

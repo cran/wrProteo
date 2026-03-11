@@ -45,6 +45,25 @@ readSdrf <- function(fi, chCol="auto", urlPrefix="github", silent=FALSE, callFro
    
    
   ####### 
+  .readCsvTxt <- function(x, header=TRUE, silent=TRUE) {
+    ## flexible/robust reading of  csv/txt/tsv  files : pick version giving most columns
+    ## return imported data.frame; move to wrMisc ?? also defined in readSampleMetaData()
+    fxNa <- ".readCsvTxt" 
+    inFiNa <- as.character(normalizePath(x)) 
+    tmp <- list(US=suppressWarnings(try(utils::read.csv(inFiNa, header=header), silent=TRUE)),
+      Eur=suppressWarnings(try(utils::read.csv2(inFiNa, header=header), silent=TRUE)),
+      txt1=suppressWarnings(try(utils::read.table(inFiNa, header=header), silent=TRUE)),
+      txt2=suppressWarnings(try(utils::read.delim(inFiNa, header=header), silent=TRUE)))
+    chErr <- sapply(tmp, inherits, "try-error")  
+    if(all(chErr)) {tmp <- NULL; warning(fxNa, " Unable to figure out proper format of sdrf !!")} else {
+      if(any(chErr)) tmp <- if(sum(!chErr)==1) tmp[[which(!chErr)]] else tmp[which(!chErr)] }
+    if(!is.data.frame(tmp) && length(tmp) >1) {
+      nCol <- sapply(tmp, ncol)
+      if(!silent) message(fxNa, " Importing table:  nCol= ",wrMisc::pasteC(nCol),"   ie, best import : ",nCol[which.max(nCol)]," cols")
+      tmp <- tmp[[which.max(nCol)]]                 
+    }  
+    tmp }
+
   ####### 
     
   if(debug) {message(fxNa," rs0"); rs0 <- list(fi=fi,chCol=chCol,urlPrefix=urlPrefix,datOK=datOK,fiMeth=fiMeth)}
@@ -73,7 +92,9 @@ readSdrf <- function(fi, chCol="auto", urlPrefix="github", silent=FALSE, callFro
   ## Main reading
   if(datOK) {
     if(debug && !grepl("(\\.sdrf)|(sdrf\\.tsv)(\\.gz){0,1}$",fi[1])) message(fxNa,"Trouble ahead ?  '",fi[1],"' does not contain '.sdrf' ...")
-    out <- suppressWarnings(try(utils::read.delim(wrMisc::gitDataUrl(fi[1]), sep='\t', header=TRUE, fill=TRUE), silent=!isTRUE(debug)))
+    out <- if(grepl("https://github",fi[1])) suppressWarnings(try(utils::read.delim(wrMisc::gitDataUrl(fi[1]), sep='\t', header=TRUE, fill=TRUE), silent=!isTRUE(debug))) else {
+      .readCsvTxt(wrMisc::gitDataUrl(fi[1])) }
+
     if(inherits(out, "try-error")) {
       if(any(grepl("pxd",fi))) {
         if(debug) message(fxNa,"First try not successful; trying rather as '", gsub("pxd","PXD", fi[1])," (instead of '",fi[1],"')")

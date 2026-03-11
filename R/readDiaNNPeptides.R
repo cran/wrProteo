@@ -133,6 +133,10 @@ readDiaNNPeptides <- function(fileName, path=NULL, normalizeMeth="median", sampl
       ## set annot[,"specPref"] according to specPref
       annot <- .extrSpecPref(specPref, annot, silent=silent, debug=debug, callFrom=fxNa)
     } else if(debug) message(fxNa,"Note: Argument 'specPref' not specifed (empty)")
+
+    ## rename column 'Description' to 'ProteinName'  (fit better to UniProt description see  https://www.uniprot.org/help/fasta-headers)  wr10feb26
+    chDes <- colnames(annot) =="Description"
+    if(any(chDes, na.rm=TRUE)) colnames(annot)[which(chDes)[1]] <- "ProteinName"     
     if(debug) {message(fxNa,"rdnp6b ..  ")}
 
     if(!silent) {
@@ -183,10 +187,11 @@ readDiaNNPeptides <- function(fileName, path=NULL, normalizeMeth="median", sampl
 
     ## check for reference for normalization
     refLiIni <- refLi
-    if(is.character(refLi) && length(refLi)==1) {
+    if(is.character(refLi) && length(refLi)==1) {  # try search content of refLi in SpecType
       refLi <- which(annot[,"SpecType"]==refLi)
-      if(length(refLi) <1 ) { refLi <- 1:nrow(abund)
-        if(!silent) message(fxNa,"Could not find any peptides matching argument 'refLi=",refLiIni,"', ignoring ...")
+      if(length(refLi) ==0 && refLiIni=="mainSpe") refLi <- which(annot[,"SpecType"]=="mainSpecies")   # also allow 'mainSpecies'
+      if(length(refLi) ==0) { refLi <- 1:nrow(abund)
+        if(!silent) message(fxNa,"Could not find any proteins matching argument 'refLi=",refLiIni,"', ignoring ...")
       } else {
         if(!silent) message(fxNa,"Normalize using (custom) subset of ",length(refLi)," lines specified as '",refLiIni,"'")}}    # may be "mainSpe"
 

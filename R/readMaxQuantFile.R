@@ -1,6 +1,6 @@
 #' Read Quantitation Data-Files (proteinGroups.txt) Produced From MaxQuant At Protein Level
 #'
-#' Protein quantification results from \href{https://www.maxquant.org}{MaxQuant} can be read using this function and relevant information extracted.
+#' Protein quantification results from \href{https://maxquant.org/}{MaxQuant} can be read using this function and relevant information extracted.
 #' Input files compressed as .gz can be read as well.
 #' The protein abundance values (XIC), peptide counting information like number of unique razor-peptides or PSM values and sample-annotation (if available) can be extracted, too.
 #' The protein abundance values may be normalized using multiple methods (median normalization as default), the determination of normalization factors can be restricted to specific proteins
@@ -9,7 +9,7 @@
 #' Besides, a graphical display of the distribution of protein abundance values may be generated before and after normalization.
 #'
 #' @details
-#' \href{https://www.maxquant.org}{MaxQuant} is proteomics quantification software provided by the MaxPlanck institute.
+#' \href{https://maxquant.org/}{MaxQuant} is proteomics quantification software provided by the MaxPlanck institute.
 #' By default MaxQuant writes the results of each run to the path \code{combined/txt}, from there (only) the files
 #'  'proteinGroups.txt' (main quantitation at protein level), 'summary.txt' and 'parameters.txt' will be used.
 #'
@@ -104,12 +104,18 @@ readMaxQuantFile <- function(path, fileName="proteinGroups.txt", normalizeMeth="
          excluCol <- "^Abundances.Count"   # exclude this from quantifications columns
   cleanDescription <- TRUE                 # clean 'Description' for artifacts of truncated text (tailing ';' etc)
   infoDat <- infoFi <- setupSd <- parametersD <- NULL        # initialize
+  if(debug){ message(fxNa,"rMQ0a .. This is wrProteo version ",utils::packageVersion("wrProteo")," ... Ready to read", if(length(path) >0) c(" from path ",path[1])," the file  ",fileName[1],"\n   current path : ",getwd())
+    rMQ0a <- list(fileName=fileName,path=path,normalizeMeth=normalizeMeth,read0asNA=read0asNA,quantCol=quantCol,refLi=refLi,separateAnnot=separateAnnot)
+    #save(rMQ0a, file="rMQ0a.RData")
+    }  # annotCol=annotCol,FDRCol=FDRCol
 
   ## check if path & file exist
   if(!grepl("\\.txt$|\\.txt\\.gz$", fileName)) message(fxNa,"Trouble ahead, expecting tabulated text file (the file'",fileName,"' might not be right format) !!")
   paFi <- wrMisc::checkFilePath(fileName, path, expectExt="txt", mode=c("compressedOption","stopIfNothing"), callFrom=fxNa, silent=silent,debug=debug)
-  if(debug){ message(fxNa,"rMQ0b .. Ready to read", if(length(path) >0) c(" from path ",path[1])," the file  ",fileName[1])
-    rMQ0b <- list(fileName=fileName,path=path,paFi=paFi,normalizeMeth=normalizeMeth,read0asNA=read0asNA,quantCol=quantCol,refLi=refLi,separateAnnot=separateAnnot)}  # annotCol=annotCol,FDRCol=FDRCol
+  if(debug){ message(fxNa,"rMQ0b .. This is wrProteo version ",utils::packageVersion("wrProteo")," ... Ready to read", if(length(path) >0) c(" from path ",path[1])," the file  ",fileName[1]);
+    rMQ0b <- list(fileName=fileName,path=path,paFi=paFi,normalizeMeth=normalizeMeth,read0asNA=read0asNA,quantCol=quantCol,refLi=refLi,separateAnnot=separateAnnot)
+    #save(rMQ0b, file="rMQ0b.RData")
+    }  # annotCol=annotCol,FDRCol=FDRCol
 
   ## read (main) file
   ## future: look for fast reading of files
@@ -149,7 +155,9 @@ readMaxQuantFile <- function(path, fileName="proteinGroups.txt", normalizeMeth="
           tmp <- if(length(isConta) < nrow(tmp) -1) tmp[-1*isConta,] else matrix(tmp[-1*isConta,], nrow=nrow(tmp)-length(isConta), dimnames=list(rownames(tmp)[-1*isConta], colnames(tmp)))
       } }
     } else if(!silent) message(fxNa,"BIZZARE, trouble ahead : Unable to find column '",extrColNames[1],"' (from argument 'extrColNames')")
-    if(debug) {message(fxNa,"rMQ2"); rMQ2 <- list(path=path,chPa=chPa,tmp=tmp,extrColNames=extrColNames,chCol=chCol,chMajProCol=chMajProCol,chRev=chRev,remConta=remConta)}
+    if(debug) {message(fxNa,"rMQ2"); rMQ2 <- list(path=path,chPa=chPa,tmp=tmp,extrColNames=extrColNames,chCol=chCol,chMajProCol=chMajProCol,chRev=chRev,remConta=remConta)
+      #save(rMQ2, file="rMQ2.RData")
+    }
   }
   if(length(tmp) >0) {
     ## further extracting : quantitation
@@ -241,13 +249,15 @@ readMaxQuantFile <- function(path, fileName="proteinGroups.txt", normalizeMeth="
     if(any(chLe, na.rm=TRUE)) MQan3[which(chLe),] <- matrix(unlist(MQan2[which(chLe)]), ncol=2, byrow=TRUE)
     chLe <- MQanLe >2
     locAccNo <- function(x) {      # function to select AccessionNumner (eg P02768) and EntryName (eg ALBU_HUMAN) after strsplit() of concatenated annotation
-      accIn <- grep("^[[:upper:]]+[[:digit:]]+$|^[[:upper:]]+[[:digit:]]+\\-[[:digit:]]+$", x)
+      accIn <- grep("^([[:upper:]]+[[:digit:]]+){1,3}(\\-[[:digit:]]+){0,1}$", x)
+      #old# accIn <- grep("(^[[:upper:]]+[[:digit:]]+$)|(^[[:upper:]]+[[:digit:]]+\\-[[:digit:]]+$)", x)
       namId <- grep("[[:upper:]]_[[:upper:]]", x)
       useInd <- c(acc=if(length(accIn) >0) accIn[1] else NA, name=if(length(namId) >0) namId[1] else NA)
       chNA <- is.na(useInd)
       if(any(chNA)) useInd[which(chNA)] <- (1:length(x))[-1*wrMisc::naOmit(unique(c(namId,useInd)))][1:sum(chNA)]
       x[useInd] }
     if(any(chLe, na.rm=TRUE)) MQan3[which(chLe),] <- t(sapply(MQan2[which(chLe)], locAccNo ))
+
     chSemc <- grep(";", MQan3[,2])                                     # look for semicolon separator  (eg "CATA_HUMAN_UPS;conta")
     if(length(chSemc) >0) MQan3[chSemc,2] <- sub(";[[:print:]]+","",MQan3[chSemc,2])       # remove all after semicolon (eg "CATA_HUMAN_UPS;conta")
     if(debug) {message(fxNa,"rMQ5c"); rMQ5c <- list(path=path,chPa=chPa,tmp=tmp,extrColNames=extrColNames,chCol=chCol,chMajProCol=chMajProCol,counts=counts,
@@ -392,6 +402,12 @@ readMaxQuantFile <- function(path, fileName="proteinGroups.txt", normalizeMeth="
 
     ## look for unique col from $annot to use as rownames
     chAn <- colSums(apply(annot[,c(1:min(ncol(annot),7))], 2, duplicated), na.rm=TRUE)          # look at first 6 cols : how many elements per column duplicated
+    
+    ## rename column 'Description' to 'ProteinName'  (fit better to UniProt description see  https://www.uniprot.org/help/fasta-headers)  wr10feb26
+    chDes <- colnames(annot) =="Description"
+    if(any(chDes, na.rm=TRUE)) colnames(annot)[which(chDes)[1]] <- "ProteinName"     
+
+    
     if(!silent) message(fxNa,"Use column '",colnames(annot)[which.min(chAn)],"' as identifyer (has fewest, ie ",chAn[which.min(chAn)]," duplicated entries) as rownames")
     rownames(abund) <- rownames(annot) <- if(any(chAn==0)) annot[,which(chAn==0)[1]] else wrMisc::correctToUnique(annot[,which.min(chAn)], callFrom=fxNa)
     if(length(counts) >0) rownames(counts) <- rownames(annot)
@@ -400,16 +416,17 @@ readMaxQuantFile <- function(path, fileName="proteinGroups.txt", normalizeMeth="
 
     ## check for reference for normalization
     refLiIni <- refLi
-    if(is.character(refLi) && length(refLi)==1) {
-       refLi <- which(annot[,"SpecType"]==refLi)
-      if(length(refLi) <1 ) { refLi <- 1:nrow(abund)
+    if(is.character(refLi) && length(refLi)==1) {  # try search content of refLi in SpecType
+      refLi <- which(annot[,"SpecType"]==refLi)
+      if(length(refLi) ==0 && refLiIni=="mainSpe") refLi <- which(annot[,"SpecType"]=="mainSpecies")   # also allow 'mainSpecies'
+      if(length(refLi) ==0) { refLi <- 1:nrow(abund)
         if(!silent) message(fxNa,"Could not find any proteins matching argument 'refLi=",refLiIni,"', ignoring ...")
       } else {
         if(!silent) message(fxNa,"Normalize using (custom) subset of ",length(refLi)," lines specified as '",refLiIni,"'")}}    # may be "mainSpe"
 
     ## take log2 & normalize
     quant <- try(wrMisc::normalizeThis(log2(abund), method=normalizeMeth, mode="additive", refLines=refLi, silent=silent, debug=debug, callFrom=fxNa), silent=TRUE)
-    if(inherits(quant, "try-error")) { warning(fxNa,"PROBLEMS ahead : Unable to normalize as log2-data !!") }
+    if(inherits(quant, "try-error")) { warning(fxNa,"PROBLEMS ahead : UNABLE TO NORMALIZE as log2-data !!") }
 
     if(debug) {message(fxNa,"rMQ10"); rMQ10 <- list(path=path,chPa=chPa,tmp=tmp,extrColNames=extrColNames,chCol=chCol,chMajProCol=chMajProCol,chRev=chRev,quantCol=quantCol,abund=abund,chNum=chNum,ch2=ch2,
       quant=quant,annot=annot,sampleNames=sampleNames,sdrf=sdrf,gr=gr,specPref=specPref,groupPref=groupPref,suplAnnotFile=suplAnnotFile,chLe=chLe,MQan2=MQan2,MQan3=MQan3,contam=contam,GNLi=GNLi,remConta=remConta)}
@@ -427,8 +444,8 @@ readMaxQuantFile <- function(path, fileName="proteinGroups.txt", normalizeMeth="
       }
       if("sampleNames" %in% names(specPref) && length(specPref$sampleNames)==ncol(abund)) groupPref$sampleNames <- specPref$sampleNames    # pipe content of specPref$sampleNames  to groupPref
       setupSd <- readSampleMetaData(sdrf=sdrf, suplAnnotFile=suplAnnotFile, quantMeth="MQ", path=path, abund=utils::head(quant), chUnit=isTRUE(groupPref$chUnit), groupPref=groupPref, silent=silent, debug=debug, callFrom=fxNa)
-    }
-    if(debug) {message(fxNa,"rMQ13 .."); rMQ13 <- list(sdrf=sdrf,gr=gr,suplAnnotFile=suplAnnotFile,abund=abund, quant=quant,specPref=specPref,refLi=refLi,annot=annot,setupSd=setupSd,sampleNames=sampleNames)}
+    } 
+    if(debug) {message(fxNa,"rMQ13 .."); rMQ13 <- list(sdrf=sdrf,gr=gr,suplAnnotFile=suplAnnotFile,abund=abund, quant=quant,specPref=specPref,refLi=refLi,annot=annot,setupSd=setupSd,groupPref=groupPref,sampleNames=sampleNames)}
 
     ## finish groups of replicates & annotation setupSd
     setupSd <- .checkSetupGroups(abund=abund, setupSd=setupSd, gr=gr, sampleNames=sampleNames, quantMeth="MQ", silent=silent, debug=debug, callFrom=fxNa)
@@ -440,7 +457,7 @@ readMaxQuantFile <- function(path, fileName="proteinGroups.txt", normalizeMeth="
 
     ### begin NEW
     ## option : choose (re-)naming of levels & columns on most redundance
-    if(length(setupSd$sampleNames)==ncol(quant) && length(setupSd$sdrfSampleNames)==ncol(quant)) {
+    if(length(setupSd$sampleNames)==ncol(abund) && length(setupSd$sdrfSampleNames)==ncol(abund)) {
       ## check if setupSd$sdrfSampleNames  or   setupSd$sampleNames contain better info (some info on replicates)
       chRed1 <- sum(duplicated(sub("(_|\\.| )[[:digit:]]+.*","", setupSd$sdrfSampleNames)), na.rm=TRUE)
       chRed2 <- sum(duplicated(sub("(_|\\.| )[[:digit:]]+.*","", setupSd$sampleNames)), na.rm=TRUE)
@@ -493,7 +510,7 @@ readMaxQuantFile <- function(path, fileName="proteinGroups.txt", normalizeMeth="
     if(length(setupSd$sampleNames)==ncol(abund)) setupSd$sampleNames <- colNa #no#else setupSd$groups <- colNa
     if(length(dim(counts)) >1 && length(counts) >0) colnames(counts) <- colNa
 
-    if(debug) {message(fxNa,"Read sample-meta data, rMQ14"); rMQ14 <- list(sdrf=sdrf,suplAnnotFile=suplAnnotFile,abund=abund, quant=quant,refLi=refLi,annot=annot,setupSd=setupSd,paFi=paFi,infoDat=infoDat,normalizeMeth=normalizeMeth)}
+    if(debug) {message(fxNa,"Done reading sample-meta data, rMQ14"); rMQ14 <- list(sdrf=sdrf,suplAnnotFile=suplAnnotFile,abund=abund, quant=quant,refLi=refLi,annot=annot,setupSd=setupSd,paFi=paFi,infoDat=infoDat,normalizeMeth=normalizeMeth)}
 
     ## main plotting of distribution of intensities
     custLay <- NULL
@@ -502,6 +519,7 @@ readMaxQuantFile <- function(path, fileName="proteinGroups.txt", normalizeMeth="
     if(plotGraph) .plotQuantDistr(abund=abund, quant=quant, custLay=custLay, normalizeMeth=normalizeMeth, softNa="MaxQuant",
       refLi=refLi, refLiIni=refLiIni, tit=titGraph, silent=debug, callFrom=fxNa, debug=debug)
 ## meta-data
+    if(debug) message("Finished plotting, gathering information for final output object")
     notes <- c(inpFile=paFi, qmethod="MaxQuant", qMethVersion=if(length(infoDat) >0) unique(infoDat$Software.Revision) else NA,
     	identType="protein", rawFilePath= if(length(infoDat) >0) infoDat$File.Name[1] else NA, normalizeMeth=normalizeMeth, call=deparse(match.call()),
       created=as.character(Sys.time()), wrProteo.version=paste(utils::packageVersion("wrProteo"), collapse="."), machine=Sys.info()["nodename"])

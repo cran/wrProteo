@@ -73,7 +73,7 @@ May contain \code{lowNumberOfGroups=FALSE} for automatically choosing a rather e
 May contain \code{chUnit} (logical or character) to be passed to \code{readSampleMetaData()} for (optional) adjustig of unit-prefixes in meta-data group labels, in case multiple different unit-prefixes 
 are used (eg '100pMol' and '1nMol').}
 
-\item{titGraph}{(character) depreciated custom title to plot, please use 'tit'}
+\item{titGraph}{(character) deprecated custom title to plot, please use 'tit'}
 
 \item{wex}{(integer) relative expansion factor of the violin-plot (will be passed to \code{/link[wrGraph]{vioplotW}})}
 

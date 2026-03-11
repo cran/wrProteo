@@ -483,14 +483,19 @@ readWombatNormFile <- function(fileName, path=NULL, quantSoft="(quant software n
     if(!silent) message(fxNa,"Use column '",colnames(annot)[which.min(chAn)],"' as identifyer (has fewest, ie ",chAn[which.min(chAn)]," duplicated entries) as rownames")
     rownames(abund) <- rownames(annot) <- if(any(chAn==0)) annot[,which(chAn==0)[1]] else wrMisc::correctToUnique(annot[,which.min(chAn)], callFrom=fxNa)
     if(length(counts) >0) rownames(counts) <- rownames(annot)
+
+    ## rename column 'Description' to 'ProteinName'  (fit better to UniProt description see  https://www.uniprot.org/help/fasta-headers)  wr10feb26
+    chDes <- colnames(annot) =="Description"
+    if(any(chDes, na.rm=TRUE)) colnames(annot)[which(chDes)[1]] <- "ProteinName"     
     if(debug) {message(fxNa,"rWB9"); rWB9 <- list(path=path,chPa=chPa,tmp=tmp,extrColNames=extrColNames,chCol=chCol,quantCol=quantCol,abund=abund,chNum=chNum,
       annot=annot,refLi=refLi,remConta=remConta)}
 
     ## check for reference for normalization
     refLiIni <- refLi
-    if(is.character(refLi) && length(refLi)==1) {
-       refLi <- which(annot[,"SpecType"]==refLi)
-      if(length(refLi) <1 ) { refLi <- 1:nrow(abund)
+    if(is.character(refLi) && length(refLi)==1) {  # try search content of refLi in SpecType
+      refLi <- which(annot[,"SpecType"]==refLi)
+      if(length(refLi) ==0 && refLiIni=="mainSpe") refLi <- which(annot[,"SpecType"]=="mainSpecies")   # also allow 'mainSpecies'
+      if(length(refLi) ==0) { refLi <- 1:nrow(abund)
         if(!silent) message(fxNa,"Could not find any proteins matching argument 'refLi=",refLiIni,"', ignoring ...")
       } else {
         if(!silent) message(fxNa,"Normalize using (custom) subset of ",length(refLi)," lines specified as '",refLiIni,"'")}}    # may be "mainSpe"

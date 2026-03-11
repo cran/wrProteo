@@ -1,6 +1,6 @@
 #' Complement Missing EntryNames In Annotation 
 #'
-#' This function helps replacing missing EntryNames (in $annot) after reading quantification results. 
+#' This function helps replacing missing EntryNames (in x$annot) after reading quantification results. 
 #' To do so the comumn-names of \code{annCol} will be used : 
 #' The content of 2nd element (and optional 3rd element) will be used to replace missing content in column defined by 1st element.
 #' 
@@ -11,7 +11,7 @@
 #' @param silent (logical) suppress messages
 #' @param debug (logical) display additional messages for debugging
 #' @param callFrom (character) allow easier tracking of message(s) produced
-#' @return This function returns a list (like as input), but with missing elments of $annot completed (if available in other columns) 
+#' @return This function returns a list (like as input), but with missing elments of $annot filled by information from the columns specified in \code{annCol} using fileds 2 (and 3)
 #' @seealso \code{\link{readMaxQuantFile}}, \code{\link{readProtDiscovFile}}, \code{\link{readProlineFile}} 
 #' @examples
 #' dat <- list(quant=matrix(sample(11:99,9,replace=TRUE), ncol=3), annot=cbind(EntryName=c(
@@ -21,7 +21,7 @@
 replMissingProtNames <- function(x, annCol=c("EntryName","Accession","SpecType"), silent=FALSE, debug=FALSE, callFrom=NULL) {
   ## replace in $annot missing EntryNames by concatenating Accession + SpecType (ie 2nd & 3rd of annCol)
   ## move to wrProteo ?
-  fxNa <- wrMisc::.composeCallName(callFrom, newNa="replreplMissingProtNames")
+  fxNa <- wrMisc::.composeCallName(callFrom, newNa="replMissingProtNames")
   if(!isTRUE(silent)) silent <- FALSE
   if(isTRUE(debug)) silent <- FALSE else debug <- FALSE
   msg <- "Argument 'x' should be list containg list-element called 'annot' (matrix), as produced by readMaxQuantFile(), readProtDiscovFile() etc"
@@ -31,10 +31,10 @@ replMissingProtNames <- function(x, annCol=c("EntryName","Accession","SpecType")
   ## main  
   chCol <- annCol %in% colnames(x$annot)
   if(all(chCol[1:2])) {
-    if(length(chCol) >2) {if(!chCol[3]) chCol <- chCol[1:2] }   # omit 3rd column-name if not present in x$annot
-    chNA1 <- is.na(x$annot[,annCol[1]]) | x$annot[,annCol[1]]==""
-    chNA2 <- is.na(x$annot[,annCol[2]]) | x$annot[,annCol[2]]==""
-    if(length(chCol) >2) {chNA3 <- is.na(x$annot[,annCol[3]]) | x$annot[,annCol[3]]==""
+    if(length(chCol) >2) {if(!chCol[3]) chCol <- chCol[1:2] }          # omit 3rd column-name if not present in x$annot
+    chNA1 <- is.na(x$annot[,annCol[1]]) | x$annot[,annCol[1]]==""      # missing/empty $EntryName 
+    chNA2 <- is.na(x$annot[,annCol[2]]) | x$annot[,annCol[2]]==""      # missing/empty $Accession
+    if(length(chCol) >2) {chNA3 <- is.na(x$annot[,annCol[3]]) | x$annot[,annCol[3]]==""         # missing/empty SpecType
       chNA <- chNA1 & (!chNA2 | !chNA3)
     } else chNA <-  chNA1 & !chNA2  
     if(any(chNA)) { 

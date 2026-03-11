@@ -2,7 +2,7 @@
 % Please edit documentation in R/readProlineFile.R
 \name{readProlineFile}
 \alias{readProlineFile}
-\title{Read xlsx, csv or tsv files exported from Proline and MS-Angel}
+\title{Read xlsx, csv or tsv Files Exported From Proline And MS-Angel}
 \usage{
 readProlineFile(
   fileName,

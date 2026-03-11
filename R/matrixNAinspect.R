@@ -12,7 +12,7 @@
 #' Of course, such decisions do have a strong impact on further steps of data-analysis and should be performed with care. 
 #' 
 #' @param dat (matrix or data.frame) main numeric data
-#' @param gr (charcter or factor) grouping of columns of dat indicating who is a replicate of whom (ie the length of 'gr' must be equivalent to the number of columns in 'dat')
+#' @param gr (character or factor) grouping of columns of dat indicating who is a replicate of whom (ie the length of 'gr' must be equivalent to the number of columns in 'dat')
 #' @param retnNA (logical) report number of NAs in graphic
 #' @param xLab (character) custom x-label
 #' @param tit (character) custom title
@@ -37,20 +37,22 @@ matrixNAinspect <- function(dat, gr=NULL, retnNA=TRUE, xLab=NULL, tit=NULL, xLim
   fxNa <- wrMisc::.composeCallName(callFrom, newNa="matrixNAinspect")
   if(!isTRUE(silent)) silent <- FALSE
   if(isTRUE(debug)) silent <- FALSE else debug <- FALSE
+  .adjPat <- function(x) { out <- match(x, unique(x)); names(out) <- if(length(names(x)) >0) names(x) else x; out}   # reduce to integer-pattern (with names)
+  
   ## extract if object
-  if(is.list(dat)) {
-    if("sampleSetup" %in% names(dat) & length(gr) <1) {
-      gr <- dat$sampleSetup$lev
-      if(length(gr) >1 && length(dat$sampleSetup$col) <2) names(gr) <- dat$sampleSetup$meta[,dat$sampleSetup$col]  # in case names are not provided
+  if(is.list(dat) && !is.data.frame(dat)) {
+    if("sampleSetup" %in% names(dat) && length(gr) <1) {
+      if(length(gr) != ncol(dat)) gr <- if("groups" %in% names(dat$sampleSetup)) dat$sampleSetup$groups else if("level" %in% names(dat$sampleSetup)) dat$sampleSetup$level 
+      #if(length(gr) >1 && length(dat$sampleSetup$col) <2) names(gr) <- dat$sampleSetup$meta[,dat$sampleSetup$col]  # in case names are not provided
     }
     if(!silent) message(fxNa,"Trying to extract quantitation data to use as 'dat' out of list ..")
-    dat <- dat$quant }
+    if("quant" %in% names(dat)) dat <- dat$quant else {if("raw" %in% names(dat)) dat <- dat$raw else stop(fxNa,"Unable to locate valid main data (dat$quant or dat$raw)")} }
   
-  if(any(length(dim(dat)) !=2, dim(dat) < 2, na.rm=TRUE)) stop("Invalid argument 'dat'; must be matrix or data.frame with min 2 lines and 2 cols")
+  if(length(dat) ==0 || length(dim(dat)) !=2 || any(dim(dat) < 2, na.rm=TRUE)) stop("Invalid argument 'dat'; must be matrix or data.frame with min 2 lines and 2 cols")
   if(is.data.frame(dat)) dat <- as.matrix(dat)
   chGr <- FALSE
   if(length(gr) != ncol(dat)) stop("Number of columns in 'dat' and number of (group-)elements in 'gr' do not match !")
-  if(length(gr)==length(unique(gr))) { hasNaNeigh <- FALSE
+  if(length(gr) ==length(unique(gr))) { hasNaNeigh <- FALSE
     if(!silent) message(fxNa,"NOTE : The argument 'gr' does not designate any replicates, can't determine NA-neighbours !")
   } else hasNaNeigh <- TRUE
   

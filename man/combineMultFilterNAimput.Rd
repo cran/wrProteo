@@ -8,6 +8,7 @@ combineMultFilterNAimput(
   dat,
   imputed,
   grp,
+  useComparison = NULL,
   annDat = NULL,
   abundThr = NULL,
   colRazNa = NULL,
@@ -25,6 +26,10 @@ combineMultFilterNAimput(
 \item{imputed}{(character)  same as 'dat' but with all \code{NA} imputed}
 
 \item{grp}{(character or factor) define groups of replicates (in columns of 'dat')}
+
+\item{useComparison}{(character or matrix) optional argument allowing to specify which pairwise comparions sould be performed, default \code{useComparison=NULL} will run all pairwise comparisons;
+may be character combining two group-names (from argument \code{grp}) separated by a '-' (eg 'A-B') or matrix where the rownames design the elements to be compared as pairwise;
+Note : the names of the groups may not contain any '-' to avoid confucing them with pairwise separators !}
 
 \item{annDat}{(matrix or data.frame) annotation data (should match lines of 'dat')}
 
@@ -45,17 +50,21 @@ combineMultFilterNAimput(
 \item{callFrom}{(character) allows easier tracking of messages produced}
 }
 \value{
-This function returns a vector of logical values if corresponding line passes filter criteria
+This function returns a list with $data, $nNA, $randParam, $NAneigLst, $seed, $filt, and $annot
 }
 \description{
 In most omics data-analysis one needs to employ a certain number of filtering strategies to avoid getting artifacts to the step of statistical testing.
 \code{combineMultFilterNAimput} takes on one side the origial data and on the other side NA-imputed data to create several differnet filters and to finally combine them.
-A filter aiming to take away the least abundant values (using the imputede data) can be fine-tuned by the argument \code{abundThr}. 
-This step compares the means for each group and line, at least one grou-mean has to be > the threshold (based on hypothesis 
-that if all conditions represent extrememy low measures their diffrenetial may not be determined with certainty).
+A filter aiming to take away the least abundant values (using the imputede data) can be fine-tuned by the argument \code{abundThr}.
+}
+\details{
+The filtering step compares the means for each group and line, at least one group-mean has to be superior the threshold (based on hypothesis 
+that if all conditions represent extrememy low measures their differential may not be determined with certainty).
+
 In contrast, the filter addressing the number of missing values (\code{NA}) uses the original data, the arguments \code{colTotNa},\code{minSpeNo} and \code{minTotNo} 
 are used at this step. Basically, this step allows defining a minimum content of 'real' (ie non-NA) values for further considering the measurements as reliable.
 This part uses internally \code{\link[wrMisc]{presenceFilt}} for filtering elevated content of \code{NA} per line.
+
 Finally, this function combines both filters (as matrix of \code{FALSE} and \code{TRUE}) on NA-imputed and original data 
 and retruns a vector of logical values if corresponding lines passe all filter criteria.
 }
@@ -70,7 +79,11 @@ datT6[which(datT6 < 6 & datT6 > 5)] <- NA
 datT6[which(datT6 < 4.6 & datT6 > 4)] <- NA
 datT6b <- matrixNAneighbourImpute(datT6, gr=gl(2,3))
 datT6c <- combineMultFilterNAimput(datT6, datT6b, grp=gl(2,3), abundThr=2)
-
+head(datT6c$filt)
+## with custom choice of comparisons :
+gr2 <- gl(2, 3, labels=c("A","B"))
+datT6d <- combineMultFilterNAimput(datT6, datT6b, grp=gr2, useCom="B-A", abundThr=2)
+head(datT6d$filt)
 }
 \seealso{
 \code{\link[wrMisc]{presenceFilt}}

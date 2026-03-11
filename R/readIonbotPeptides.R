@@ -35,7 +35,7 @@
 #'   May contain \code{chUnit} (logical or character) to be passed to \code{readSampleMetaData()} for (optional) adjustig of unit-prefixes in meta-data group labels, in case multiple different unit-prefixes 
 #'   are used (eg '100pMol' and '1nMol').
 #' @param titGraph (character) custom title to plot
-#' @param titGraph (character) depreciated custom title to plot, please use 'tit'
+#' @param titGraph (character) deprecated custom title to plot, please use 'tit'
 #' @param wex (integer) relative expansion factor of the violin-plot (will be passed to \code{/link[wrGraph]{vioplotW}})
 #' @param suplAnnotFile (logical or character) optional reading of supplemental files produced by ProteomeDiscoverer; however, if \code{gr} is provided, \code{gr} gets priority for grouping of replicates;
 #'  if \code{TRUE} defaults to file '*InputFiles.txt' (needed to match information of \code{sdrf}) which can be exported next to main quantitation results;
@@ -234,6 +234,10 @@ readIonbotPeptides <- function(fileName, path=NULL, normalizeMeth="median", samp
     colPos <- match(c("Accession","EntryName"), colnames(annot))
     annot <- cbind(annot[,colPos], annot[,-colPos])
   }
+  
+  ## rename column 'Description' to 'ProteinName'  (fit better to UniProt description see  https://www.uniprot.org/help/fasta-headers)  wr10feb26
+  chDes <- colnames(annot) =="Description"
+  if(any(chDes, na.rm=TRUE)) colnames(annot)[which(chDes)[1]] <- "ProteinName"     
   ## 
     
   ##  include charge - not avail in ionbot.peptides
@@ -326,12 +330,14 @@ readIonbotPeptides <- function(fileName, path=NULL, normalizeMeth="median", samp
   } else abund <- NULL
 
   ## check for reference for normalization (need annotation)
-  ##### ADJUST !!
-  refLiIni <- refLi
-  if(is.character(refLi) && length(refLi)==1) { refLi <- which(annot[,"SpecType"]==refLi)
-    if(length(refLi) <1) message(fxNa,"Could not find any peptide matching argument 'refLi', ignoring ...") else {
-      if(!silent) message(fxNa,"Normalize using subset of ",length(refLi)) } }           # may be "mainSpe"
-  if(length(refLi) <1) refLi <- NULL
+    refLiIni <- refLi
+    if(is.character(refLi) && length(refLi)==1) {  # try search content of refLi in SpecType
+      refLi <- which(annot[,"SpecType"]==refLi)
+      if(length(refLi) ==0 && refLiIni=="mainSpe") refLi <- which(annot[,"SpecType"]=="mainSpecies")   # also allow 'mainSpecies'
+      if(length(refLi) ==0) { refLi <- 1:nrow(abund)
+        if(!silent) message(fxNa,"Could not find any proteins matching argument 'refLi=",refLiIni,"', ignoring ...")
+      } else {
+        if(!silent) message(fxNa,"Normalize using (custom) subset of ",length(refLi)," lines specified as '",refLiIni,"'")}}    # may be "mainSpe"
 
   ## take log2 & normalize
   if(length(abund) >0) {

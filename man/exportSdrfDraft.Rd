@@ -30,7 +30,7 @@ exportSdrfDraft(
 This function writes an Sdrf draft to file
 }
 \description{
-Sample/experimental annotation meta-data form \href{https://www.maxquant.org/}{MaxQuant} that was previously import can now be formatted in sdrf-style and exported
+Sample/experimental annotation meta-data form \href{https://maxquant.org/}{MaxQuant} that was previously import can now be formatted in sdrf-style and exported
 using this function to write a draft-sdrf-file. Please note that this information will not _complete_ in respect to all information used in data-bases like  Pride.
 Sdrf-files provide additional meta-information about samles and MS-runs in a standardized format, they may also be part of submissions to \href{https://www.ebi.ac.uk/pride/}{Pride}.
 }

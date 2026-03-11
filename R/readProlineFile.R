@@ -1,4 +1,4 @@
-#' Read xlsx, csv or tsv files exported from Proline and MS-Angel
+#' Read xlsx, csv or tsv Files Exported From Proline And MS-Angel
 #'
 #' Quantification results from Proline \href{http://www.profiproteomics.fr/proline/}{Proline} and MS-Angel exported as xlsx format can be read directly using this function.
 #' Besides, files in tsv, csv (European and US format) or tabulated txt can be read, too.
@@ -254,6 +254,10 @@ readProlineFile <- function(fileName, path=NULL, normalizeMeth="median", logConv
     if(length(specPref) >0) {
       annot <- .extrSpecPref(specPref, annot, useColumn=c("Species","EntryName","GeneName","Accession"), silent=silent, debug=debug, callFrom=fxNa) }
 
+    ## rename column 'Description' to 'ProteinName'  (fit better to UniProt description see  https://www.uniprot.org/help/fasta-headers)  wr10feb26
+    chDes <- colnames(annot) =="Description"
+    if(any(chDes, na.rm=TRUE)) colnames(annot)[which(chDes)[1]] <- "ProteinName"     
+
     ## locate & extract abundance/quantitation data
     if(length(quantCol) >1) { abund <- as.matrix(wrMisc::extrColsDeX(out, extrCol=quantCol, doExtractCols=TRUE, silent=silent, callFrom=fxNa))
     } else {
@@ -298,19 +302,20 @@ readProlineFile <- function(fileName, path=NULL, normalizeMeth="median", logConv
 
     ## check for reference for normalization
     refLiIni <- refLi
-    if(is.character(refLi) && length(refLi) ==1) {
-      refLi <- which(annot[,"SpecType"] ==refLi)
-      if(length(refLi) <1 && identical(refLiIni, "mainSpe")) refLi <- which(annot[,"SpecType"] =="mainSpecies")              # fix compatibility problem  'mainSpe' to 'mainSpecies'
-      if(length(refLi) <1) { refLi <- 1:nrow(abund)
+    if(is.character(refLi) && length(refLi)==1) {  # try search content of refLi in SpecType
+      refLi <- which(annot[,"SpecType"]==refLi)
+      if(length(refLi) ==0 && refLiIni=="mainSpe") refLi <- which(annot[,"SpecType"]=="mainSpecies")   # also allow 'mainSpecies'
+      if(length(refLi) ==0) { refLi <- 1:nrow(abund)
         if(!silent) message(fxNa,"Could not find any proteins matching argument 'refLi=",refLiIni,"', ignoring ...")
       } else {
         if(!silent) message(fxNa,"Normalize using (custom) subset of ",length(refLi)," lines specified as '",refLiIni,"'")}}    # may be "mainSpe"
     if(debug) { message(fxNa," rpf16b"); rpf16b <- list(abund=abund,annot=annot,sampleNames=sampleNames,normalizeMeth=normalizeMeth,refLi=refLi,sdrf=sdrf,suplAnnotFile=suplAnnotFile,path=path,fxNa=fxNa,silent=silent)}
 
     ## take log2 & normalize
-    if(length(normalizeMeth) <1) normalizeMeth <- "median"
+    if(length(normalizeMeth) <1) normalizeMeth <- "median"    
     quant <- try(wrMisc::normalizeThis(log2(abund), method=normalizeMeth, mode="additive", refLines=refLi, silent=silent, debug=debug, callFrom=fxNa), silent=!debug)      
-    if(debug) { message(fxNa,"rpf16c .. dim quant: ", nrow(quant)," li and  ",ncol(quant)," cols; colnames : ",wrMisc::pasteC(colnames(quant))," ")}
+    if(debug) { message(fxNa,"rpf16c .. dim quant: ", nrow(quant)," li and  ",ncol(quant)," cols; colnames : ",wrMisc::pasteC(colnames(quant))," ");
+      rpf16c <- list(abund=abund,quant=quant,annot=annot,sampleNames=sampleNames,normalizeMeth=normalizeMeth,refLi=refLi,sdrf=sdrf,suplAnnotFile=suplAnnotFile,path=path,fxNa=fxNa,silent=silent) }
 
     ### GROUPING OF REPLICATES AND SAMPLE META-DATA
     if(length(suplAnnotFile) >0 || length(sdrf) >0) {
@@ -345,8 +350,10 @@ readProlineFile <- function(fileName, path=NULL, normalizeMeth="median", logConv
       ## adjust order of samples
       nOrd <- setupSd$iniSdrfOrder
       ## rename columns according to sdrf and set order of quant and abund ..
-      abund <- abund[,nOrd]
-      if(length(quant) >0) quant <- quant[,nOrd]
+      if(length(nOrd) >0) {
+        abund <- abund[,nOrd]
+        if(length(quant) >0) quant <- quant[,nOrd]
+      } else if(debug) message(fxNa,"NOTE: nOrd is empty !!")
       ## continue adjusting order in setupSd, incl init Sdrf
       if(length(setupSd) >0) { 
         is2dim <- sapply(setupSd, function(x,le) length(dim(x))==2 && nrow(x)==le, le=length(nOrd))    # look for matr or df to change order of lines
@@ -356,19 +363,12 @@ readProlineFile <- function(fileName, path=NULL, normalizeMeth="median", logConv
       gr <- gr[nOrd]
 
       if(length(pepCount) >0 && length(dim(pepCount)) ==3 ) pepCount <- pepCount[,nOrd,]
+      if(debug) {message(fxNa,"rpf17a .."); rpf17a <- list(sdrf=sdrf,gr=gr,suplAnnotFile=suplAnnotFile, quant=quant,abund=abund,refLi=refLi,annot=annot,setupSd=setupSd,sampleNames=sampleNames)}
 
       ## try re-adjusting levels
       names(setupSd$groups) <- setupSd$level <- match(setupSd$level, unique(setupSd$level))
       names(setupSd$level) <- setupSd$groups     
 
-      #tm1 <- sub("^[[:alpha:]]+( |_|-|\\.)+[[:alpha:]]+","", colnames(abund))  # remove heading text
-      #if(all(grepl("^[[:digit:]]", tm1))) {
-      #  tm1 <- try(as.numeric(sub("( |_|-|\\.)*[[:alpha:]].*","", tm1)), silent=TRUE)   # remove tailing text and try converting to numeric
-      #  if(!inherits(tm1, "try-error")) {
-      #    setupSd$level <- match(tm1, sort(unique(tm1)))
-      #    names(setupSd$level) <- tm1
-      #    if(!silent) message(fxNa,"Sucessfully re-adjusted levels after bringing in order of Sdrf")}
-      #}     
     } else {
       ## harmonize sample-names/2
       if(length(setupSd) <1) setupSd <- list()
@@ -382,6 +382,8 @@ readProlineFile <- function(fileName, path=NULL, normalizeMeth="median", logConv
       colnames(quant) <- setupSd$sampleNames 
       if(length(abund) >0) colnames(abund) <- setupSd$sampleNames  
     }
+    if(debug) {message(fxNa,"rpf17b .."); rpf17b <- list(sdrf=sdrf,gr=gr,suplAnnotFile=suplAnnotFile, quant=quant,abund=abund,refLi=refLi,annot=annot,setupSd=setupSd,sampleNames=sampleNames)}
+    
     if(length(setupSd$sampleNames) ==ncol(abund)) {                            # adjust colnames
       colnames(abund) <- setupSd$sampleNames <- setupSd$sampleNames       
       if(length(dim(counts)) >1 && length(counts) >0) colnames(counts) <- setupSd$sampleNames }

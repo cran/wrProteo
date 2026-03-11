@@ -78,10 +78,10 @@ readDiaNNFile <- function(fileName, path=NULL, normalizeMeth="median", sampleNam
   ## check if path & (tsv) file exist  (set paFi, if bad -> error)
   if(!grepl("\\.tsv$|\\.tsv\\.gz$", fileName)) message(fxNa,"Trouble ahead, expecting tabulated text file (the file'",fileName,"' might not be right format) !!")
   paFi <- wrMisc::checkFilePath(fileName, path, expectExt="tsv", compressedOption=TRUE, stopIfNothing=TRUE, callFrom=fxNa, silent=silent,debug=debug)  
-  if(debug) message(fxNa,"rdn0a ..")
 
   ## note : reading sample-setup from 'suplAnnotFile' at this place won't allow comparing if number of  samples/columns corresponds to data; do after reading main data
-  if(debug) message(fxNa,"rdn0 .. Ready to read", if(length(path) >0) c(" from path ",path[1])," the file  ",fileName[1])
+  if(debug) {message(fxNa,"rdn0 .. This is wrProteo version ",utils::packageVersion("wrProteo")," .. Ready to read", if(length(path) >0) c(" from path ",path[1])," the file  ",fileName[1])
+    rdn0 <- list(fileName=fileName,path=path,paFi=paFi,normalizeMeth=normalizeMeth,sampleNames=sampleNames,read0asNA=read0asNA,quantCol=quantCol,annotCol=annotCol,refLi=refLi,separateAnnot=separateAnnot,FDRCol=FDRCol )}
   
 
   ## read (main) file
@@ -146,6 +146,10 @@ readDiaNNFile <- function(fileName, path=NULL, normalizeMeth="median", sampleNam
       ## set annot[,"specPref"] according to specPref
       annot <- .extrSpecPref(specPref, annot, silent=silent, debug=debug, callFrom=fxNa)
     } else if(debug) message(fxNa,"Note: Argument 'specPref' not specifed (empty)")
+
+    ## rename column 'Description' to 'ProteinName'  (fit better to UniProt description see  https://www.uniprot.org/help/fasta-headers)  wr10feb26
+    chDes <- colnames(annot) =="Description"
+    if(any(chDes, na.rm=TRUE)) colnames(annot)[which(chDes)[1]] <- "ProteinName"     
     if(debug) {message(fxNa,"rdn6b ..  ")}
 
     if(!silent) {
@@ -194,9 +198,10 @@ readDiaNNFile <- function(fileName, path=NULL, normalizeMeth="median", sampleNam
 
     ## check for reference for normalization
     refLiIni <- refLi
-    if(is.character(refLi) && length(refLi)==1) {
+    if(is.character(refLi) && length(refLi)==1) {  # try search content of refLi in SpecType
       refLi <- which(annot[,"SpecType"]==refLi)
-      if(length(refLi) <1 ) { refLi <- 1:nrow(abund)
+      if(length(refLi) ==0 && refLiIni=="mainSpe") refLi <- which(annot[,"SpecType"]=="mainSpecies")   # also allow 'mainSpecies'
+      if(length(refLi) ==0) { refLi <- 1:nrow(abund)
         if(!silent) message(fxNa,"Could not find any proteins matching argument 'refLi=",refLiIni,"', ignoring ...")
       } else {
         if(!silent) message(fxNa,"Normalize using (custom) subset of ",length(refLi)," lines specified as '",refLiIni,"'")}}    # may be "mainSpe"

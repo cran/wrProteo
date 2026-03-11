@@ -157,11 +157,19 @@ readOpenMSFile <- function(fileName=NULL, path=NULL, normalizeMeth="median", ref
   }  
           
   ## check for reference for normalization
-  refLiIni <- refLi
-  if(is.character(refLi) & length(refLi)==1) { refLi <- which(annot[,"SpecType"]==refLi)
-    if(length(refLi) <1) message(fxNa," could not find any protein matching argument 'refLi', ignoring ...") else {
-      if(!silent) message(fxNa," normalize using subset of ",length(refLi))}}    # may be "mainSpe"
-  if(length(refLi) <1) refLi <- NULL
+    refLiIni <- refLi
+    if(is.character(refLi) && length(refLi)==1) {  # try search content of refLi in SpecType
+      refLi <- which(annot[,"SpecType"]==refLi)
+      if(length(refLi) ==0 && refLiIni=="mainSpe") refLi <- which(annot[,"SpecType"]=="mainSpecies")   # also allow 'mainSpecies'
+      if(length(refLi) ==0) { refLi <- 1:nrow(abund)
+        if(!silent) message(fxNa,"Could not find any proteins matching argument 'refLi=",refLiIni,"', ignoring ...")
+      } else {
+        if(!silent) message(fxNa,"Normalize using (custom) subset of ",length(refLi)," lines specified as '",refLiIni,"'")}}    # may be "mainSpe"
+
+  ## rename column 'Description' to 'ProteinName'  (fit better to UniProt description see  https://www.uniprot.org/help/fasta-headers)  wr10feb26
+  chDes <- colnames(annot) =="Description"
+  if(any(chDes, na.rm=TRUE)) colnames(annot)[which(chDes)[1]] <- "ProteinName"     
+
   ## take log2 & normalize
   quant <- wrMisc::normalizeThis(log2(abund[,,1]), method=normalizeMeth, refLines=refLi, callFrom=fxNa) 
 

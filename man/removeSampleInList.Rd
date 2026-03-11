@@ -2,7 +2,7 @@
 % Please edit documentation in R/removeSampleInList.R
 \name{removeSampleInList}
 \alias{removeSampleInList}
-\title{Remove Samples/Columns From list of matrixes}
+\title{Remove Samples/Columns From List Of Matrixes}
 \usage{
 removeSampleInList(
   dat,
@@ -30,7 +30,7 @@ removeSampleInList(
 This function returns a matrix including imputed values or list of final and matrix with number of imputed by group (plus optional plot)
 }
 \description{
-Remove samples (ie columns) from every instance of list of matrixes.
+Remove samples (ie columns) from every instance of list of matrixes, like from objects created with proteomics import-functions from this package.
 Note: This function assumes same order of columns in list-elements 'listElem' !
 }
 \examples{

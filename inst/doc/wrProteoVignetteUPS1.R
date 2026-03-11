@@ -109,7 +109,7 @@ fiNaMQ <- "proteinGroups.txt.gz"
 ## We need to define the setup of species
 specPrefMQ <- list(conta=contaInf[2], matrix=paste0("OS=",matrixType2), spike=spikeType, sampleNames="sdrf") #fasta=fastaFi, 
 dataMQ <- readMaxQuantFile(file=fiNaMQ, path=path1, refLi="mainSpe", specPref=specPrefMQ, 
-  sdrf=c(sdrfNa,"max",sdrfOrder=TRUE), suplAnnotFile=TRUE, plotGraph=FALSE, silent=TRUE)   # , refLi=useRefLi
+  sdrf=c(sdrfNa,"max",sdrfOrder=TRUE,skipCol=1), suplAnnotFile=TRUE, plotGraph=FALSE, silent=TRUE)   # , refLi=useRefLi
 
 
 ## ----readMaxQuant2, fig.height=8, fig.width=9.5, fig.align="center", echo=TRUE----
@@ -140,7 +140,7 @@ path1 <- system.file("extdata", package="wrProteo")
 fiNaPl <- "pxd001819_PL.xlsx"
 
 specPrefPL <- list(conta=contaInf[1], mainSpecies=matrixType2, spike=spikeType, sampleNames="sdrf")   # fasta=fastaFi,    # same as PL
-dataPL <- readProlineFile(file=fiNaPl, path=path1, specPref=specPrefPL, sdrf=c(sdrfNa,"max",sdrfOrder=TRUE), suplAnnotFile=TRUE, plotGraph=FALSE, silent=TRUE)   # refLi=useRefLi
+dataPL <- readProlineFile(file=fiNaPl, path=path1, specPref=specPrefPL, sdrf=c(sdrfNa,"max",sdrfOrder=TRUE,skipCol=1), suplAnnotFile=TRUE, plotGraph=FALSE, silent=TRUE)   # refLi=useRefLi
 
 
 ## ----readProlineInfo, fig.height=8, fig.width=9.5, fig.align="center", echo=TRUE----
@@ -160,20 +160,19 @@ if(any(c("PP3-0014-A", "PP1-1072-A", "SERV-SPECTRO2") %in% Sys.info()["nodename"
 #tmp <- cbind(
 #  MQ=colnames(dataMQ$quant),
 #  PD=colnames(dataPD$quant),
-#  PL=colnames(dataPL$quant))
+#  PL=colnames(dataPL$quant)) 
 
 ## ----postTreatm1, echo=TRUE---------------------------------------------------
 ## Need to address missing ProteinNames (UPS1) due to missing tags in Fasta
-dataPD <- replMissingProtNames(dataPD)
-dataMQ <- replMissingProtNames(dataMQ)
-dataPL <- replMissingProtNames(dataPL)
+#dataPD <- replMissingProtNames(dataPD)
+#dataMQ <- replMissingProtNames(dataMQ)
+#dataPL <- replMissingProtNames(dataPL)
     table(dataMQ$annot[,"SpecType"])
     table(dataPD$annot[,"SpecType"])
     table(dataPL$annot[,"SpecType"])
 
 ## synchronize order of groups
 (grp9 <- dataMQ$sampleSetup$level)
-names(grp9) <- paste0(names(grp9),"amol")
 #dataPL$sampleSetup$groups <- dataMQ$sampleSetup$groups <- dataPD$sampleSetup$groups <- grp9  # synchronize order of groups
 
 ## ----postTreatmCheck, echo=TRUE-----------------------------------------------
@@ -257,7 +256,8 @@ mtext("Dark red for high number signif proteins", cex=0.75)
 
 ## ----pairWiseSelect2, echo=TRUE-----------------------------------------------
 ## Selection in Ramus paper
-kable(table1[which(rownames(table1) %in% colnames(testPD$BH)[c(2,21,27)]),], caption="Selected pairwise comparisons (as in Ramus et al)", align="c")
+    # c("125amol-250amol","500amol-50amol","5000amol-50amol") %in% rownames(table1) 
+kable(table1[which(rownames(table1) %in% c("125 amol-250 amol","50 amol-500 amol","50 amol-5000 amol")),], caption="Selected pairwise comparisons (as in Ramus et al)", align="c")
 
 ## ----ROC_main1, echo=TRUE-----------------------------------------------------
 ## calulate  AUC for each ROC
@@ -278,6 +278,13 @@ names(rocPD) <- names(rocMQ) <- names(rocPL) <- rownames(table1)
 AucAll <- cbind(ind=table1[match(names(rocPD), rownames(table1)),"index"], clu=NA,
   PD=sapply(rocPD, AucROC), MQ=sapply(rocMQ, AucROC), PL=sapply(rocPL, AucROC) )
 
+## ----saveCheck1c, echo=FALSE--------------------------------------------------
+## devel only ?
+if(any(c("PP3-0014-A", "PP1-1072-A", "SERV-SPECTRO2") %in% Sys.info()["nodename"])) {                   # message("++ This is a WR checking/testing session ! ++")
+  wdirS <- "C:\\E\\projects\\TCAmethods\\wrProteoRamus"                                  # C:\E\projects\TCAmethods\wrProteoRamus
+  try(save.image(file=file.path(wdirS,"vignUPS1c_atTest_3jul25.RData")))   # after correction : rescale after normalization
+}
+
 ## ----ROC_biplot, fig.height=9, fig.width=9.5, fig.align="center", echo=TRUE----
 try(biplot(prcomp(AucAll[,names(methNa)]), cex=0.7, main="PCA of AUC from ROC Curves"))
 
@@ -293,7 +300,9 @@ AucAll[,"clu"] <- kMAx
 AucAll <- reorgByCluNo(AucAll, cluNo=kMAx, useColumn=c("PD","MQ","PL"))
 AucAll <- cbind(AucAll, iniInd=table1[match(rownames(AucAll), rownames(table1)), "index"])
 colnames(AucAll)[1:(which(colnames(AucAll)=="index")-1)] <- paste("Auc",colnames(AucAll)[1:(which(colnames(AucAll)=="index")-1)], sep=".")
-AucAll[,"cluNo"] <- rep(nGr:1, table(AucAll[,"cluNo"]))        # make cluNo descending
+order(tapply(AucAll[,5],AucAll[,6], mean))
+
+AucAll[,"cluNo"] <- rep(order(tapply(AucAll[,5],AucAll[,6], mean)), table(AucAll[,"cluNo"]))        # make cluNo descending (to mean of geometric mean of AUCs)
 
 kMAx <- AucAll[,"cluNo"]      # update
   table(AucAll[,"cluNo"])
@@ -531,8 +540,8 @@ datUPS1[,1,"medAbund"] <- apply(wrMisc::.scale01(dataPD$datImp)[match(UPS1$ac, r
 
 ## ----linModelMQ, echo=TRUE----------------------------------------------------
 lmMQ <- list(length=length(NamesUpsMQ))
-lmMQ[1:length(NamesUpsMQ)] <- lapply(NamesUpsMQ[1:length(NamesUpsMQ)], linModelSelect, dat=dataMQ,
-  expect=names(grp9), startLev=1:5, cexXAxis=0.7, logExpect=TRUE, plotGraph=doPl, silent=TRUE)
+lmMQ[1:length(NamesUpsMQ)] <- suppressWarnings(lapply(NamesUpsMQ[1:length(NamesUpsMQ)], linModelSelect, dat=dataMQ,
+  expect=names(grp9), startLev=1:5, cexXAxis=0.7, logExpect=TRUE, plotGraph=doPl, silent=TRUE))
 names(lmMQ) <- NamesUpsMQ
 
 ## ----linModelMQ2, fig.height=17, fig.width=9.5, fig.align="center", echo=TRUE----
@@ -543,8 +552,8 @@ datUPS1[,2,"medAbund"] <- apply(wrMisc::.scale01(dataMQ$datImp)[match(UPS1$ac,ro
 
 ## ----linModelPL, echo=TRUE----------------------------------------------------
 lmPL <- list(length=length(NamesUpsPL))
-lmPL[1:length(NamesUpsPL)] <- lapply(NamesUpsPL[1:length(NamesUpsPL)], linModelSelect, dat=dataPL,
-  expect=names(grp9), startLev=1:5, cexXAxis=0.7, logExpect=TRUE, plotGraph=doPl, silent=TRUE)
+lmPL[1:length(NamesUpsPL)] <- suppressWarnings(lapply(NamesUpsPL[1:length(NamesUpsPL)], linModelSelect, dat=dataPL,
+  expect=names(grp9), startLev=1:5, cexXAxis=0.7, logExpect=TRUE, plotGraph=doPl, silent=TRUE))
 names(lmPL) <- NamesUpsPL
 
 ## ----linModelPLsum, fig.height=17, fig.width=9.5, fig.align="center", echo=TRUE----

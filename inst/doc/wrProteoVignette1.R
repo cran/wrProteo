@@ -54,26 +54,25 @@ convAASeq2mass(pep1, seqN=FALSE)
 
 ## ----readFasta, echo=TRUE-----------------------------------------------------
 path1 <- system.file('extdata', package='wrProteo')
-fiNa <- "conta1.fasta.gz"
+fiNa <-  "conta1.fasta.gz"
 ## basic reading of Fasta
 fasta1 <- readFasta2(file.path(path1, fiNa))
 str(fasta1)
 
 ## now let's read and further separate details in annotation-fields
 fasta1b <- readFasta2(file.path(path1, fiNa), tableOut=TRUE)
-str(fasta1b)
+dim(fasta1b)
 
 ## ----treatFasta2, echo=TRUE---------------------------------------------------
 dupEntry <- duplicated(fasta1)
 table(dupEntry)
 
 ## ----treatFasta3, echo=TRUE---------------------------------------------------
-fasta3 <- fasta1[which(!dupEntry)]
-
-length(fasta3)
+fasta3 <- readFasta2(file.path(path1, fiNa), removeEntries="duplicated", tableOut=TRUE)
+dim(fasta3)
 
 ## ----writeFasta1, echo=TRUE, eval=FALSE---------------------------------------
-# writeFasta2(fasta3, fileNa="testWrite.fasta")
+# writeFasta2(fasta3, fileNa=file.path(tempdir(),"testWrite.fasta"))
 
 ## ----readMaxQuant1, fig.height=8, fig.width=9.5, fig.align="center", echo=TRUE----
 path1 <- system.file("extdata", package="wrProteo")
@@ -83,11 +82,10 @@ dim(dataMQ$quant)
 
 ## ----readMaxQuant2, fig.height=8, fig.width=9.5, fig.align="center", echo=TRUE----
 ## The grouping of replicates
-grp9 <- rep(1:9,each=3)
+grp9 <- rep(1:9, each=3)
 head(grp9)
 
 ## special group of proteins (we want to differentiate/ highlight lateron)
-UPS1ac <- getUPS1acc()$ac
 specPrefMQ <- list(conta="CON_|LYSC_CHICK", mainSpecies="OS=Saccharomyces cerevisiae", 
   spike=getUPS1acc()$ac)
 
@@ -102,6 +100,10 @@ dim(dataMQ$quant)
 table(dataMQ$annot[,"SpecType"])
 
 ## ----readMaxQuant4,  echo=TRUE------------------------------------------------
+path1 <- system.file("extdata", package="wrProteo")
+specPrefMQ <- list(conta="CON_|LYSC_CHICK", mainSpecies="OS=Saccharomyces cerevisiae", 
+  spike=getUPS1acc()$ac)
+
 dataMQ <- readMaxQuantFile(path1, specPref=specPrefMQ, sdrf="PXD001819", suplAnnotFile=TRUE,
   groupPref=list(lowNumberOfGroups=FALSE), plotGraph=FALSE)
 
@@ -120,6 +122,7 @@ dataMQpep <- readMaxQuantPeptides(path1, file=MQpepFi1, specPref=specPref1, tit=
 summary(dataMQpep$quant)
 
 ## ----readProteomeDiscovererProt1,  echo=TRUE----------------------------------
+path1 <- system.file("extdata", package="wrProteo")
 fiNa <- "tinyPD_allProteins.txt.gz"
 dataPD <- readProteomeDiscovererFile(file=fiNa, path=path1, suplAnnotFile=FALSE, plotGraph=FALSE)
 summary(dataPD$quant)
@@ -175,6 +178,16 @@ summary(dataWB$quant)
 MQsdrf001819Setup <- readSampleMetaData(quantMeth="MQ", sdrf="PXD001819", path=path1, suplAnnotFile="summary.txt.gz", abund=dataMQ$quant)
 names(MQsdrf001819Setup)
 
+## ----removeSamplesFromProject1,  echo=TRUE------------------------------------
+path1 <- system.file("extdata", package="wrProteo")
+fiNa <- "tinyPD_allProteins.txt.gz"
+dataPD <- readProteomeDiscovererFile(file=fiNa, path=path1, suplAnnotFile=FALSE, plotGraph=FALSE)
+
+dataPD2 <- removeSampleInList(dataPD, 2)
+
+summary(dataPD$quant)
+summary(dataPD2$quant)
+
 ## ----fuseProteomicsProjects1,  echo=TRUE--------------------------------------
 path1 <- system.file("extdata", package="wrProteo")
 dataMQ <- readMaxQuantFile(path1, specPref=NULL, normalizeMeth="median", plotGraph=FALSE)
@@ -191,11 +204,26 @@ matrixNAinspect(dataMQ$quant, gr=grp9, tit="Histogram of Protein Abundances and 
 dataMQimp <- matrixNAneighbourImpute(dataMQ$quant, gr=grp9, tit="Histogram of Imputed and Final Data")
 
 ## ----testRobustToNAimputation_MQ1, echo=TRUE----------------------------------
+path1 <- system.file("extdata", package="wrProteo")
+dataMQ <- readMaxQuantFile(path1, specPref=NULL, normalizeMeth="median", plotGraph=FALSE)
+grp9 <- sub("_.+","",colnames(dataMQ$quant))
 ## Impute NA-values repeatedly and run statistical testing after each round of imputations
 testMQ <- testRobustToNAimputation(dataMQ, gr=grp9)
 
 ## Example of the data after repeated NA-imputation
 head(testMQ$datImp[,1:6])
+
+## Example of the BH-FDR testing results after repeated NA-imputation & testing
+head(testMQ$BH[,1:6])
+
+## ----testRobustToNAimputation_MQ2, echo=TRUE----------------------------------
+testMQ2 <- testRobustToNAimputation(dataMQ, gr=grp9,nLoop=9, useComparison=c("125amol-25000amol","500amol-25000amol","2500amol-25000amol"))
+
+## Example of the data after repeated NA-imputation
+head(testMQ2$datImp[,1:6])
+
+## Example of the BH-FDR values after repeated NA-imputation & testing
+head(testMQ2$BH)
 
 ## ----PCA1MQ, fig.height=12, fig.width=9.5, fig.align="center", echo=TRUE------
 # limit to UPS1
@@ -213,6 +241,12 @@ MAplotW(testMQ, useComp=2, namesNBest="passFC")
 ## by default the first pairwise comparison is taken
 ## using the argument 'namesNBest' we can add names from the annotation
 VolcanoPlotW(testMQ, useComp=2, namesNBest="passFDR")
+
+## ----prepareForResults_MQ, echo=TRUE, eval=FALSE------------------------------
+# path1 <- system.file("extdata", package="wrProteo")
+# dataMQ <- readMaxQuantFile(path1, specPref=NULL, normalizeMeth="median", plotGraph=FALSE)
+# grp9 <- sub("_.+","",colnames(dataMQ$quant))
+# testMQ <- testRobustToNAimputation(dataMQ, gr=grp9)
 
 ## ----results1, echo=TRUE------------------------------------------------------
 res1 <- extractTestingResults(testMQ, compNo=1, thrsh=0.05, FCthrs=2)
@@ -239,6 +273,6 @@ deUniProtFi <- file.path(path1, "deUniProt_hg38chr11extr.tab")
 deUniPr1 <- readUniProtExport(UniP=deUniProtFi, deUcsc=UcscAnnot1, targRegion="chr11:1-135,086,622")
 str(deUniPr1)
 
-## ----sessionInfo, echo=FALSE--------------------------------------------------
+## ----sessionInfo, echo=TRUE---------------------------------------------------
 sessionInfo()
 

@@ -1,6 +1,6 @@
 #' Read Peptide Identification and Quantitation Data-Files (peptides.txt) Produced By MaxQuant
 #'
-#' Peptide level identification and quantification data produced by \href{https://www.maxquant.org/}{MaxQuant} can be read using
+#' Peptide level identification and quantification data produced by \href{https://maxquant.org/}{MaxQuant} can be read using
 #' this function and relevant information extracted.
 #' Input files compressed as .gz can be read as well.
 #' The peptide abundance values (XIC), peptide counting information and sample-annotation (if available) can be extracted, too.
@@ -10,7 +10,7 @@
 #' Besides, a graphical display of the distribution of peptide abundance values may be generated before and after normalization.
 #'
 #' @details
-#' \href{https://www.maxquant.org/}{MaxQuant} is proteomics quantification software provided by the MaxPlanck institute.
+#' \href{https://maxquant.org/}{MaxQuant} is proteomics quantification software provided by the MaxPlanck institute.
 #' By default MaxQuant write the results of each run to the path \code{combined/txt}, from there (only) the files
 #'  'peptides.txt' (main quantitation at peptide level), 'summary.txt' and 'parameters.txt' will be used for this function.
 #'
@@ -332,6 +332,10 @@ readMaxQuantPeptides <- function(path, fileName="peptides.txt", normalizeMeth="m
       if(any(chCo, na.rm=TRUE)) contam[which(chCo)[1]] <- TRUE
       annot[,"Potential.contaminant"] <- contam
     } else annot <- cbind(annot, Potential.contaminant=contam)
+
+    ## rename column 'Description' to 'ProteinName'  (fit better to UniProt description see  https://www.uniprot.org/help/fasta-headers)  wr10feb26
+    chDes <- colnames(annot) =="Description"
+    if(any(chDes, na.rm=TRUE)) colnames(annot)[which(chDes)[1]] <- "ProteinName"     
     if(debug) {message(fxNa,"rMQP9");  rMQP9 <- list(annot=annot,tmp=tmp,abund=abund,MQan2=MQan2,specMQ0=specMQ0,remStrainNo=remStrainNo,remConta=remConta,extrColNames=extrColNames,rmHeader=rmHeader)}
     
     ## look for unique col from $annot to use as rownames
@@ -362,10 +366,13 @@ readMaxQuantPeptides <- function(path, fileName="peptides.txt", normalizeMeth="m
 
     ## check for reference for normalization
     refLiIni <- refLi
-    if(is.character(refLi) && length(refLi)==1) { refLi <- which(annot[,"SpecType"]==refLi)
-      if(length(refLi) <1) message(fxNa,"Could not find any peptide matching argument 'refLi', ignoring ...") else {
-        if(!silent) message(fxNa,"Normalize using subset of ",length(refLi)) } }           # may be "mainSpe"
-    if(length(refLi) <1) refLi <- NULL
+    if(is.character(refLi) && length(refLi)==1) {  # try search content of refLi in SpecType
+      refLi <- which(annot[,"SpecType"]==refLi)
+      if(length(refLi) ==0 && refLiIni=="mainSpe") refLi <- which(annot[,"SpecType"]=="mainSpecies")   # also allow 'mainSpecies'
+      if(length(refLi) ==0) { refLi <- 1:nrow(abund)
+        if(!silent) message(fxNa,"Could not find any proteins matching argument 'refLi=",refLiIni,"', ignoring ...")
+      } else {
+        if(!silent) message(fxNa,"Normalize using (custom) subset of ",length(refLi)," lines specified as '",refLiIni,"'")}}    # may be "mainSpe"
  if(debug) {message(fxNa,"rMQP9d")}
 
     ## take log2 & normalize

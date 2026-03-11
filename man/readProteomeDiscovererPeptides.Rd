@@ -65,7 +65,7 @@ If a column named \code{contamCol} is found, the data will be lateron filtered t
 
 \item{plotGraph}{(logical or integer) optional plot of type vioplot of initial and normalized data (using \code{normalizeMeth}); if integer, it will be passed to \code{layout} when plotting}
 
-\item{titGraph}{(character) depreciated custom title to plot, please use 'tit'}
+\item{titGraph}{(character) deprecated custom title to plot, please use 'tit'}
 
 \item{wex}{(integer) relative expansion factor of the violin-plot (will be passed to \code{\link[wrGraph]{vioplotW}})}
 
@@ -99,7 +99,7 @@ The format of resulting files at export also depends which columns are chosen as
 Using the argument \code{suplAnnotFile} it is possible to specify a specific file (or search for default file) to read for extracting file-names as sample-names and other experiment realted information.
 Precedent and following aminoacids (relative to identified protease recognition sites) will be removed form peptide sequences and be displayed in $annot as columns 'prec' and 'foll'.
 If a column named \code{contamCol} is found, the data will be lateron filtered to remove all contaminants, set to \code{NULL} for keeping all contaminants
-This function replaces the depreciated function \code{readPDExport}.
+This function replaces the deprecated function \code{readPDExport}.
 
  Besides, ProteomeDiscoverer version number and full raw-file path will be extracted for $notes in final output.
 }

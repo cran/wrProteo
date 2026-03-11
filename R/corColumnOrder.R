@@ -9,7 +9,7 @@
 #' @param dat (matrix, list or MArrayLM-object from limma) main input of which columns should get re-ordered, may be output from \code{moderTestXgrp} or \code{moderTest2grp}.
 #' @param sampNames (character) column-names in desired order for output (its content must match colnames of \code{dat} or \code{replNames}, if used)
 #' @param replNames (character) option for replacing column-names by new/different colnames; should be vector of NEW column-names (in order as input from \code{dat} !), allows renaming colnames before defining new order
-#' @param newNames depreciated, pleqse use \code{replNames} instead
+#' @param newNames deprecated, pleqse use \code{replNames} instead
 #' @param useListElem (character) in case \code{dat} is list, all list-elements who's columns should get (re-)ordered
 #' @param annotElem (character) name of list-element of \code{dat} with annotation data to get in new order
 #' @param silent (logical) suppress messages
