@@ -85,6 +85,8 @@ readProteomeDiscovererFile <- function(fileName, path=NULL, normalizeMeth="media
   .corPathW <- function(x) gsub("\\\\", "/", x)
 
   ## check if path & (tsv) file exist
+  if(any(is.na(fileName))) stop(fxNa,"NAs are not permitted in argument 'fileName' (please check your settings)")
+  if(length(fileName) >1) {warning(fxNa,"Expecting one SINGLE charater entry in argument 'filename', here ",length(fileName)," were given, using 1st .. '",fileName[1],"'"); fileName <- fileName[1]} #19mar26
   if(!grepl("\\.txt$|\\.txt\\.gz$", fileName)) message(fxNa,"Trouble ahead, expecting tabulated text file (the file'",fileName,"' might not be right format) !!")
   paFi <- wrMisc::checkFilePath(fileName, path, expectExt="txt", compressedOption=TRUE, stopIfNothing=TRUE, callFrom=fxNa, silent=silent, debug=debug)
 

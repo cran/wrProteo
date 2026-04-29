@@ -104,7 +104,7 @@ readSampleMetaData <- function(quantMeth, sdrf=NULL, suplAnnotFile=NULL, path=".
   .readCsvTxt <- function(x, header=TRUE, silent=FALSE) {
     ## flexible/robust reading of  csv/txt/tsv  files : pick version giving most columns
     ## return imported data.frame; move to wrMisc ??  also defined in readSdrf()
-    fxNa <- ".readCsvTxt" 
+    fxNa <- wrMisc::.composeCallName(callFrom, newNa=".readCsvTxt")
     inFiNa <- as.character(normalizePath(x)) 
     tmp <- list(US=suppressWarnings(try(utils::read.csv(inFiNa, header=header), silent=TRUE)),
       Eur=suppressWarnings(try(utils::read.csv2(inFiNa, header=header), silent=TRUE)),

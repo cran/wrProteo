@@ -8,13 +8,16 @@ combineMultFilterNAimput(
   dat,
   imputed,
   grp,
-  useComparison = NULL,
+  useComparison = "all",
+  experSetup = NULL,
   annDat = NULL,
   abundThr = NULL,
   colRazNa = NULL,
   colTotNa = NULL,
   minSpeNo = 1,
   minTotNo = 2,
+  maxGrpMiss = 1,
+  ratMaxNA = 0.8,
   silent = FALSE,
   debug = FALSE,
   callFrom = NULL
@@ -27,9 +30,12 @@ combineMultFilterNAimput(
 
 \item{grp}{(character or factor) define groups of replicates (in columns of 'dat')}
 
-\item{useComparison}{(character or matrix) optional argument allowing to specify which pairwise comparions sould be performed, default \code{useComparison=NULL} will run all pairwise comparisons;
-may be character combining two group-names (from argument \code{grp}) separated by a '-' (eg 'A-B') or matrix where the rownames design the elements to be compared as pairwise;
-Note : the names of the groups may not contain any '-' to avoid confucing them with pairwise separators !}
+\item{useComparison}{(character or matrix) argument allowing to specify which pairwise comparions sould be performed, default \code{useComparison=NULL} will run all pairwise comparisons;
+may be character as result of combining two group-names (from argument \code{grp}) (eg 'A-B', beware, the separator may not appear inside group-names) 
+or 2-column matrix of group-names (thus, without separator; names combined with separator may be shown as rownames) or 2-column matrix of indexes to sorted group-names;
+default setting of \code{useComparison='all'} will select all possible pairwise combinations}
+
+\item{experSetup}{(list) optional esperimental setup (list with $ind, $pwGrpIndex,$sep and $pwGrpNa  as obtained using \code{getPairwiseSetup})}
 
 \item{annDat}{(matrix or data.frame) annotation data (should match lines of 'dat')}
 
@@ -43,6 +49,10 @@ Note : the names of the groups may not contain any '-' to avoid confucing them w
 
 \item{minTotNo}{(integer) minimum total ie max razor number of peptides}
 
+\item{maxGrpMiss}{(numeric) passd to \code{\link[wrMisc]{presenceFilt}} : at least 1 group has not more than this number of NAs (otherwise marke line as bad)}
+
+\item{ratMaxNA}{(numeric) passd to \code{\link[wrMisc]{presenceFilt}} : at least 1 group below this content of \code{NA} values}
+
 \item{silent}{(logical) suppress messages}
 
 \item{debug}{(logical) additional messages for debugging}
@@ -54,15 +64,15 @@ This function returns a list with $data, $nNA, $randParam, $NAneigLst, $seed, $f
 }
 \description{
 In most omics data-analysis one needs to employ a certain number of filtering strategies to avoid getting artifacts to the step of statistical testing.
-\code{combineMultFilterNAimput} takes on one side the origial data and on the other side NA-imputed data to create several differnet filters and to finally combine them.
-A filter aiming to take away the least abundant values (using the imputede data) can be fine-tuned by the argument \code{abundThr}.
+This function takes both the origial data and the NA-imputed data to create several different filters (number of NAs, min abundance, ..) and finally combines them.
+The filter-component aiming to take away the least abundant values (using the imputede data) can be fine-tuned by the argument \code{abundThr}.
 }
 \details{
-The filtering step compares the means for each group and line, at least one group-mean has to be superior the threshold (based on hypothesis 
-that if all conditions represent extrememy low measures their differential may not be determined with certainty).
+The main filtering step compares the means for each group and line (from argument \code{imputed}), at least one group-mean has to be superior the threshold (\code{abundThr}, 
+based on hypothesis that if all conditions represent extrememy low measures their differential may not be determined with certainty).
 
-In contrast, the filter addressing the number of missing values (\code{NA}) uses the original data, the arguments \code{colTotNa},\code{minSpeNo} and \code{minTotNo} 
-are used at this step. Basically, this step allows defining a minimum content of 'real' (ie non-NA) values for further considering the measurements as reliable.
+The filter addressing the number of missing values (\code{NA}) uses the original data (argument \code{dat}), the arguments \code{colTotNa}, \code{minSpeNo} and \code{minTotNo} 
+are used during this step. Basically, this step allows defining a minimum content of 'real' (ie non-\code{NA}) values for further considering the measurements as reliable.
 This part uses internally \code{\link[wrMisc]{presenceFilt}} for filtering elevated content of \code{NA} per line.
 
 Finally, this function combines both filters (as matrix of \code{FALSE} and \code{TRUE}) on NA-imputed and original data 

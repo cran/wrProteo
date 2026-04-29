@@ -31,7 +31,7 @@ it will be searched based at the location of \code{urlPrefix}}
 This function returns the content of sdrf-file as data.frame (or \code{NULL} if the corresponding file was not found)
 }
 \description{
-This function allows reading proteomics meta-data from sdrf file, as they are provided on https://github.com/bigbio/proteomics-sample-metadata.
+This function allows reading proteomics meta-data from sdrf file, as they are provided on https://github.com/bigbio/sdrf-annotated-datasets.
 A data.frame containing all annotation data will be returned. To stay conform with the (non-obligatory) recommendations, columnnames are shown as lower caps.
 }
 \details{
@@ -39,6 +39,8 @@ The packages utils and wrMisc must be installed.
 Please note that reading sdrf files (if not provided as local copy) will take a few seconds, depending on the responsiveness of github.
 This function only handles the main reading of sdrf data and some diagnostic checks.
 For mining sdrf data please look at \code{\link[wrMisc]{replicateStructure}} and \code{\link{readSampleMetaData}}.
+
+The migration of data within github in April 2026 has been implemented as documented in the bigbio project.
 }
 \examples{
 ## This may take a few sconds...

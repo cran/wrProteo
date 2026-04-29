@@ -1,12 +1,14 @@
 #' Read proteomics meta-data as sdrf file
 #'
-#' @description This function allows reading proteomics meta-data from sdrf file, as they are provided on https://github.com/bigbio/proteomics-sample-metadata.
+#' @description This function allows reading proteomics meta-data from sdrf file, as they are provided on https://github.com/bigbio/sdrf-annotated-datasets.
 #' A data.frame containing all annotation data will be returned. To stay conform with the (non-obligatory) recommendations, columnnames are shown as lower caps.
 #'
 #' @details The packages utils and wrMisc must be installed.
 #' Please note that reading sdrf files (if not provided as local copy) will take a few seconds, depending on the responsiveness of github.
 #' This function only handles the main reading of sdrf data and some diagnostic checks.
 #' For mining sdrf data please look at \code{\link[wrMisc]{replicateStructure}} and \code{\link{readSampleMetaData}}.
+#' 
+#' The migration of data within github in April 2026 has been implemented as documented in the bigbio project.
 #'
 #' @param fi (character) main input; may be full path or url to the file with meta-annotation. If a short project-name is given,
 #'   it will be searched based at the location of \code{urlPrefix}
@@ -26,7 +28,7 @@
 #' @export
 readSdrf <- function(fi, chCol="auto", urlPrefix="github", silent=FALSE, callFrom=NULL, debug=FALSE) {
   ## read proteomics meta-data as sdrf file
-  ## see https://github.com/bigbio/proteomics-sample-metadata
+  ## see https://github.com/bigbio/sdrf-annotated-datasets/    was https://github.com/bigbio/proteomics-sample-metadata until apr26
   ##  return data.frame, testing for
   fxNa <- wrMisc::.composeCallName(callFrom, newNa="readSdrf")
   if(isTRUE(debug)) silent <- FALSE else { debug <- FALSE
@@ -65,6 +67,9 @@ readSdrf <- function(fi, chCol="auto", urlPrefix="github", silent=FALSE, callFro
     tmp }
 
   ####### 
+  ## change in address for sdrf  (april2026) 
+   #  ie old   https://github.com/bigbio/proteomics-sample-metadata/blob/master/annotated-projects//PXD001819/PXD001819.sdrf.tsv
+   #  becomes  https://raw.githubusercontent.com/bigbio/sdrf-annotated-datasets/refs/heads/main/datasets/PXD001819/PXD001819.sdrf.tsv
     
   if(debug) {message(fxNa," rs0"); rs0 <- list(fi=fi,chCol=chCol,urlPrefix=urlPrefix,datOK=datOK,fiMeth=fiMeth)}
   if(datOK) {
@@ -73,8 +78,9 @@ readSdrf <- function(fi, chCol="auto", urlPrefix="github", silent=FALSE, callFro
     ## check for files to read from repository (github)
     if(!chFi && length(urlPrefix)==1 && !grepl("^https?://",fi)) {
       if(debug) {message(fxNa," rs1"); rs1 <- list(fi=fi,chCol=chCol,urlPrefix=urlPrefix,datOK=datOK,chFi=chFi)}
-      if(identical(urlPrefix,"github")) urlPrefix <- "https://github.com/bigbio/proteomics-sample-metadata/blob/master/annotated-projects/"
-      if(grepl("/",fi)) {                   # if abs or relative path- do not adjust lower/upper case
+      #until apr26#if(identical(urlPrefix,"github")) urlPrefix <- "https://github.com/bigbio/proteomics-sample-metadata/blob/master/annotated-projects/"
+      if(identical(urlPrefix,"github")) urlPrefix <- "https://raw.githubusercontent.com/bigbio/sdrf-annotated-datasets/refs/heads/main/datasets"   # updated april2026
+      if(grepl("/",fi)) {                   # if abs or relative path- do not adjust lower/upper case                                         
         if(flexFileNa) fi <- c(fi, file.path(dirname(fi),"sdrf.tsv"))        # now  'fi' may be longer ..
       } else {                              # simple name, need to add folder of pxd project
         projN <- toupper(sub("\\.sdrf\\.tsv$","",tolower(fi)))
@@ -92,8 +98,10 @@ readSdrf <- function(fi, chCol="auto", urlPrefix="github", silent=FALSE, callFro
   ## Main reading
   if(datOK) {
     if(debug && !grepl("(\\.sdrf)|(sdrf\\.tsv)(\\.gz){0,1}$",fi[1])) message(fxNa,"Trouble ahead ?  '",fi[1],"' does not contain '.sdrf' ...")
-    out <- if(grepl("https://github",fi[1])) suppressWarnings(try(utils::read.delim(wrMisc::gitDataUrl(fi[1]), sep='\t', header=TRUE, fill=TRUE), silent=!isTRUE(debug))) else {
-      .readCsvTxt(wrMisc::gitDataUrl(fi[1])) }
+    
+    out <- if(any(sapply(c("https://github","https://raw.githubusercontent.com"), grepl, fi[1]), na.rm=TRUE)) {
+      suppressWarnings(try(utils::read.delim(wrMisc::gitDataUrl(fi[1]), sep='\t', header=TRUE, fill=TRUE), silent=!isTRUE(debug)))    
+    } else { .readCsvTxt(wrMisc::gitDataUrl(fi[1])) }
 
     if(inherits(out, "try-error")) {
       if(any(grepl("pxd",fi))) {

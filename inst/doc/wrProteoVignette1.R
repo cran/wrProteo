@@ -110,7 +110,7 @@ dataMQ <- readMaxQuantFile(path1, specPref=specPrefMQ, sdrf="PXD001819", suplAnn
 ## ----exportSdrfDraftMaxQuant5,  echo=TRUE-------------------------------------
 path1 <- system.file("extdata", package="wrProteo")
 fiNaMQ <- "proteinGroups.txt.gz"
-dataMQ2 <- readMaxQuantFile(path1, file=fiNaMQ, refLi="mainSpe", sdrf=FALSE, suplAnnotFile=TRUE)
+dataMQ2 <- readMaxQuantFile(path1, file=fiNaMQ, sdrf=FALSE, suplAnnotFile=TRUE)
 ## Here we'll write simply in the current temporary directory of this R-session
 exportSdrfDraft(dataMQ2, file.path(tempdir(),"testSdrf.tsv"))
 
@@ -234,13 +234,17 @@ plotPCAw(testMQ$datImp, sampleGrp=grp9, tit="PCA on Protein Abundances (MaxQuant
 MAplotW(testMQ)
 
 ## ----MAplot2, fig.height=6.5, fig.width=9.5, fig.align="center", echo=TRUE----
-res1 <- NULL
-MAplotW(testMQ, useComp=2, namesNBest="passFC")
+MAplotW(testMQ, useComp=2, FCthrs=2, namesNBest="passFC")
 
 ## ----VolcanoPlot1MQ, fig.height=6.5, fig.width=9.5, fig.align="center", echo=TRUE----
 ## by default the first pairwise comparison is taken
 ## using the argument 'namesNBest' we can add names from the annotation
 VolcanoPlotW(testMQ, useComp=2, namesNBest="passFDR")
+
+## ----VolcanoPlot2MQ, fig.height=4.5, fig.width=6, fig.align="center", echo=TRUE----
+## custom settings and exporting as table 
+res1 <- VolcanoPlotW(testMQ, useComp=2, FCthrs=2, FdrThrs=0.05, returnData=TRUE)
+str(res1)
 
 ## ----prepareForResults_MQ, echo=TRUE, eval=FALSE------------------------------
 # path1 <- system.file("extdata", package="wrProteo")

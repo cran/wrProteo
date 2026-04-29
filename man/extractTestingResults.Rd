@@ -10,9 +10,11 @@ extractTestingResults(
   statTy = "BH",
   thrsh = 0.05,
   FCthrs = 1.5,
-  annotCol = c("Accession", "EntryName", "GeneName"),
+  annotCol = c("Accession", "EntryName", "GeneName", "ProteinName"),
   nSign = 6,
   addTy = c("allMeans"),
+  sortBy = NULL,
+  rowNames = TRUE,
   filename = NULL,
   fileTy = "csvUS",
   silent = FALSE,
@@ -21,9 +23,9 @@ extractTestingResults(
 )
 }
 \arguments{
-\item{stat}{('MArrayLM'-object or list) Designed for the output from \code{moderTest2grp} or \code{moderTestXgrp}}
+\item{stat}{('MArrayLM'-object or list) designed for the output from \code{moderTest2grp} or \code{moderTestXgrp}}
 
-\item{compNo}{(integer) the comparison number/index to be used}
+\item{compNo}{(integer) the comparison name/number/index to be used}
 
 \item{statTy}{(character) the multiple-testing correction type to be considered when looking for significant changes  with threshold \code{thrsh} (depends on which have been run initially with \code{moderTest2grp} or \code{moderTestXgrp})}
 
@@ -36,7 +38,13 @@ extractTestingResults(
 \item{nSign}{(integer) number of significant digits whe returning results}
 
 \item{addTy}{(character) additional groups of columns to add ("allMeans", "all" or "slim") in addition;
-if \code{addTy="slim"} only the FDR- and FC-columns directly concerned will be extracted/displayed}
+if \code{addTy="slim"} only the FDR- and FC-columns directly concerned will be extracted/displayed, column-names will be trimmed to max 26 characters;
+if \code{addTy="slim2"} only the FDR- and FC-columns directly concerned will be extracted/displayed, FDR- and FC- columns will have generic names (without indicating the comparison), all text will be trimmed to max 38 characters;
+if \code{addTy="slim3"} like slim2 but without ProteinName}
+
+\item{sortBy}{(character or logical) optional sorting of results, must specify a column-name of output, if \code{sortBy=TRUE} the fisrt column of argument \code{statTy} will be used}
+
+\item{rowNames}{(character or logical) optional custom rownames, or if \code{rowNames=FALSE} no rownames}
 
 \item{filename}{(character) optional (path and) file-name for exporting results to csv-file}
 
@@ -52,14 +60,23 @@ if \code{addTy="slim"} only the FDR- and FC-columns directly concerned will be e
 This function returns a data.frame or matrix (if no annotation added) with values (and annotation) conform to fiter criteria
 }
 \description{
-This function allows convenient access to results produced using the functions \code{\link[wrMisc]{moderTest2grp}} or \code{moderTestXgrp}.
-The user can define the threshold which type of multiple testing correction should be used
- (as long as the  multiple testing correction method was actually performed as part of testing).
+This function allows convenient access to results produced using the functions \code{\link[wrMisc]{moderTestXgrp}} or \code{\link[wrMisc]{moderTest2grp}}.
+The user can define the threshold and which type of multiple testing correction should be used
+ (as long as the multiple testing correction method cited was actually performed as part of testing).
 }
 \details{
+One single given comparison has to be selected by the user via argument \code{compNo}, multiple options exist :
+1) The use may give and index which refers to the i'th comparison stored in the object \code{stat}
+2) It may be more convenient to directy cite a goven comparison (eg \code{compNo=c("B-C")} in the examples below). 
+  Such comparions may be 'inversed' to the ones orginally performed, the M-values will be adjusted accordingly (eg \code{compNo=c("C-B")})
+3) It is also possible to give a vector of 2 integers which will be uses as index to the levels of the initial group-assignment, beware that levels are sorted.
+
 The number of columns returned can be modulated using the argument \code{addTy}. 
-\code{addTy='slim'} gives the fewest columns, only FDR and FC of current comparison specified in argument \code{compNo} will be returned.
-\code{addTy='all'} results in a rather exaustive collection of columns (incluing annotation data, if present), while default 'allMeans' gives a compromise
+\code{addTy='slim'} gives the fewer columns, only FDR and FC of current comparison specified in argument \code{compNo} will be returned.
+With \code{addTy='slim2'} the column-names for statistical testing and log Fold-Change will be generic, all colnames will be trimmed to max 25 characters
+\code{addTy='all'} results in a rather exaustive collection of columns (including annotation data, if present), 
+The option \code{addTy='slim3'} is like slim2 but without column ProteinName
+while default \code{addTy='allMeans'} gives a compromise for the number of columns returned.
 }
 \examples{
 grp <- factor(rep(LETTERS[4:2],c(2,3,3)))

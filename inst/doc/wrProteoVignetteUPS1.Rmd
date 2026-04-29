@@ -107,7 +107,7 @@ The project [Proteomics Sample Metadata Format](https://github.com/bigbio/proteo
 of providing a uniform format for documenting experimental meta-data (sdrf-format).
 The meta-data for experiments already integrated can be directly read/accessed from [wrProteo](https://CRAN.R-project.org/package=wrProteo).
 
-Either you download the meta-data as file 'sdrf.tsv' from [Pride/PXD001819](https://www.ebi.ac.uk/pride/archive/projects/PXD001819), or you may read file 'PXD001819.sdrf.tsv' directly from [github/bigbio](https://github.com/bigbio/proteomics-sample-metadata/blob/master/annotated-projects/PXD001819/PXD001819.sdrf.tsv).
+Either you download the meta-data as file 'sdrf.tsv' from [Pride/PXD001819](https://www.ebi.ac.uk/pride/archive/projects/PXD001819), or you may read file 'PXD001819.sdrf.tsv' directly from [github/bigbio](https://github.com/bigbio/sdrf-annotated-datasets/tree/main/datasets).
 
 
 ```{r metaData1, echo=TRUE}
@@ -323,7 +323,7 @@ In sum, `r sum(UPS1$ac %in% dataPD$annot[,1])` UPS1 proteins were found, `r sum(
 Later in this document data from Proline will by frequently abbreviated as **PL**.
 
 Protein identification in Proline gets performed by [SearchGUI](https://compomics.github.io/projects/searchgui), see also [Vaudel et al 2015](https://doi.org/10.1002/pmic.201000595).
-In this case [X!Tandem](https://www.thegpm.org/TANDEM/) (see also [Duncan et al 2005](https://doi.org/10.1021/pr050058i)) was used as search engine.
+In this case X!Tandem] ([Duncan et al 2005](https://doi.org/10.1021/pr050058i), see also [Muth et al 2010](https://analyticalsciencejournals.onlinelibrary.wiley.com/doi/10.1002/pmic.200900759) ) was used as search engine.
 
 Quantitation data at the level of consensus-proteins can be exported from [Proline](http://www.profiproteomics.fr/proline/)
 as _.xlsx_ or tabulated text files, both formats can be treated by the import-functions shown below.
@@ -1058,8 +1058,8 @@ Instead, we'll plot representative examples only after clustering the regression
 ```{r linModelPD, fig.height=17, fig.width=9.5, fig.align="center", echo=TRUE}
 lmPD <- list(length=length(NamesUpsPD))
 doPl <- FALSE
-lmPD[1:length(NamesUpsPD)] <- lapply(NamesUpsPD[1:length(NamesUpsPD)], wrMisc::linModelSelect, dat=dataPD,
-  expect=names(grp9), startLev=1:5, cexXAxis=0.7, logExpect=TRUE, plotGraph=doPl, silent=TRUE)
+lmPD[1:length(NamesUpsPD)] <- suppressWarnings(lapply(NamesUpsPD[1:length(NamesUpsPD)], wrMisc::linModelSelect, dat=dataPD,
+  expect=names(grp9), startLev=1:5, cexXAxis=0.7, logExpect=TRUE, plotGraph=doPl, silent=TRUE))
 names(lmPD) <- NamesUpsPD
 ```
 

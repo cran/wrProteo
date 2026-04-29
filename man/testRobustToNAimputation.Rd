@@ -21,6 +21,8 @@ testRobustToNAimputation(
   nLoop = 100,
   lfdrInclude = NULL,
   ROTSn = NULL,
+  pwSep = NULL,
+  param = NULL,
   silent = FALSE,
   debug = FALSE,
   callFrom = NULL
@@ -31,9 +33,10 @@ testRobustToNAimputation(
 
 \item{gr}{(character or factor) replicate association; if \code{dat} contains a list-element \code{$sampleSetup$groups} or \code{$sampleSetup$lev} this may be used in case \code{gr=NULL}}
 
-\item{useComparison}{(list, character or matrix) optional argument allowing to specify which pairwise comparions sould be performed, 
+\item{useComparison}{(list, character or matrix) optional argument allowing to specify which pairwise comparions should be performed, 
 default \code{useComparison=NULL} will run all pairwise comparisons;
-may be character combining two group-names (from argument \code{grp}) separated by a '-' (eg 'A-B') or matrix where the rownames design the elements to be compared as pairwise;
+may be character vector of pairwise (combined) group-names (matching groups from argument \code{grp}), the separator gets automatically detertmined (if not provided as \code{useComparison$sep}) (eg givingh 'A-B') or 
+matrix where the rownames design the elements to be compared as pairwise;
 It is also possible to give a list with $sep (separator to be used when combining) and $useComparison (regular comparisons)
 Note : the names of the groups may not contain any '-' to avoid confucing them with pairwise separators !}
 
@@ -62,6 +65,11 @@ Note : the names of the groups may not contain any '-' to avoid confucing them w
 \item{lfdrInclude}{(logical) deprecated, please used \code{multCorMeth} instead (include lfdr estimations, may cause warning message(s) concerning convergence if few too lines/proteins in dataset tested).}
 
 \item{ROTSn}{(integer) deprecated, please used \code{multCorMeth} instead (number of repeats by \code{ROTS}, if \code{NULL} \code{ROTS} will not be called)}
+
+\item{pwSep}{(character) custom separator to be (checked +) used for pairwise column-labels}
+
+\item{param}{(list) alternativbe way for passing multiple arguments the same time, will override individual arguments; may contain $filter (with $abundThr, $maxGrpMiss, $ratMaxNA, $minSpeNo, $minTotNo) 
+and $NAimpute (with $avSd, $imputMethod), $stat (with $nLoop, $lfdr, $pwSep)}
 
 \item{silent}{(logical) suppress messages}
 
@@ -107,9 +115,9 @@ However, if \code{grp}) does contain any '-', results will be presented using '-
 \examples{
 set.seed(2015); rand1 <- round(runif(600) +rnorm(600,1,2),3)
 dat1 <- matrix(rand1,ncol=6) + matrix(rep((1:100)/20,6),ncol=6)
-dat1[13:16,1:3] <- dat1[13:16,1:3] +2      # augment lines 13:16 
-dat1[19:20,1:3] <- dat1[19:20,1:3] +3      # augment lines 19:20
-dat1[15:18,4:6] <- dat1[15:18,4:6] +1.4    # augment lines 15:18 
+dat1[13:16,1:3] <- dat1[13:16,1:3] +2      # raise lines 13:16 
+dat1[19:20,1:3] <- dat1[19:20,1:3] +3      # raise lines 19:20
+dat1[15:18,4:6] <- dat1[15:18,4:6] +1.4    # raise lines 15:18 
 dat1[dat1 <1] <- NA                        # mimick some NAs for low abundance
 ## normalize data
 boxplot(dat1, main="Data Before Normalization", las=1)

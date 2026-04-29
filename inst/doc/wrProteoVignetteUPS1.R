@@ -528,8 +528,8 @@ datUPS1 <- array(NA, dim=c(length(UPS1$ac),length(methNa),7), dimnames=list(UPS1
 ## ----linModelPD, fig.height=17, fig.width=9.5, fig.align="center", echo=TRUE----
 lmPD <- list(length=length(NamesUpsPD))
 doPl <- FALSE
-lmPD[1:length(NamesUpsPD)] <- lapply(NamesUpsPD[1:length(NamesUpsPD)], wrMisc::linModelSelect, dat=dataPD,
-  expect=names(grp9), startLev=1:5, cexXAxis=0.7, logExpect=TRUE, plotGraph=doPl, silent=TRUE)
+lmPD[1:length(NamesUpsPD)] <- suppressWarnings(lapply(NamesUpsPD[1:length(NamesUpsPD)], wrMisc::linModelSelect, dat=dataPD,
+  expect=names(grp9), startLev=1:5, cexXAxis=0.7, logExpect=TRUE, plotGraph=doPl, silent=TRUE))
 names(lmPD) <- NamesUpsPD
 
 ## ----linModelPD2, echo=TRUE---------------------------------------------------

@@ -1,4 +1,4 @@
-#' Imputation of NA-values based on non-NA replicates
+#' Imputation Of NA-Values Based On Non-NA Replicates
 #'
 #' It is assumed that \code{NA}-values appear in data when quantitation values are very low (as this appears eg in quantitative shotgun proteomics).
 #' Here, the concept of (technical) replicates is used to investigate what kind of values appear in the other replicates next to NA-values for the same line/protein.
@@ -13,18 +13,17 @@
 #' @details
 #' There are a number of experimental settings where low measurements may be reported as \code{NA}.
 #' Sometimes an arbitrary defined baseline (as 'zero') may provoke those values found below being unfortunately reported as \code{NA} or as 0 (in case of MaxQuant).
-#' In quantitative proteomics (DDA-mode) the presence of numerous high-abundance peptides will lead to the fact that a number of less
+#' In quantitative proteomics (in particular in DDA-mode) the presence of numerous high-abundance peptides will lead to the fact that a number of less
 #' intense MS-peaks don't get identified properly and will then be reported as \code{NA} in the respective samples,
-#' while the same peptides may by correctly identified and quantified in other (replicate) samples.
+#' while the same peptides/proteins may by correctly identified and quantified in other (replicate) samples.
 #' So, if a given protein/peptide gets properly quantified in some replicate samples but reported as \code{NA} in other replicate samples
-#' one may thus speculate that similar values like in the successful quantifications may have occored.
+#' one may thus speculate that similar values (like in the successful quantifications) may have occored.
 #' Thus, imputation of \code{NA}-values may be done on the basis of \code{NA}-neighbours.
-#'
-#'
 #'
 #' When extracting \code{NA}-neighbours, a slightly more focussed approach gets checked, too, the 2-\code{NA}-neighbours : In case a set of replicates for a given protein
 #' contains at least 2 non-\code{NA}-values (instead of just one) it will be considered as a (min) 2-\code{NA}-neighbour as well as regular \code{NA}-neighbour.
 #' If >300 of these (min) 2-\code{NA}-neighbours get found, they will be used instead of the regular \code{NA}-neighbours.
+#' 
 #' For creating a collection of normal random values one may use directly the mode of the \code{NA}-neighbours (or 2-\code{NA}-neighbours, if >300 such values available).
 #' To do so, the first value of argument \code{avSd} must be set to \code{NA}. Otherwise, the first value \code{avSd} will be used as quantile of all data to define the mean
 #' for the imputed data (ie as \code{quantile(dat, avSd[1], na.rm=TRUE)}). The sd for generating normal random values will be taken from the sd of all  \code{NA}-neighbours (or 2-\code{NA}-neighbours)
