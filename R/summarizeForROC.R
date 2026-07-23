@@ -1,4 +1,4 @@
-#' Summarize statistical test result for plotting ROC-curves
+#' Summarize Statistical Test Result For Plotting ROC-Curves
 #'
 #' This function takes statistical testing results (obtained using \code{\link{testRobustToNAimputation}} or \code{\link[wrMisc]{moderTest2grp}},
 #' based on \href{https://bioconductor.org/packages/release/bioc/html/limma.html}{limma}) and calculates specifcity and sensitivity values for plotting ROC-curves along a panel of thresholds.
@@ -61,17 +61,17 @@ summarizeForROC <- function(test, useComp=1, tyThr="BH", thr=NULL, columnTest=NU
   badFCtoNA <- FALSE     # how to disqualify FC not passing filter
   ## checking
   if(!isTRUE(silent)) silent <- FALSE
-  if(isTRUE(debug)) silent <- FALSE else debug <- FALSE
+  if(isTRUE(debug)) { silent <- FALSE } else { debug <- FALSE }
   if(!isFALSE(plotROC)) plotROC <- TRUE
   if(!isTRUE(overlPlot)) overlPlot  <- FALSE
   if(isTRUE(batchMode)) plotROC <- FALSE
 
-  if(!"annot" %in% names(test)) stop("test$annot is needed to map content of 'spec'")
+  if(!"annot" %in% names(test)) stop(fxNa,"test$annot is needed to map content of 'spec'")
   chLst <- tyThr %in% names(test)
-  if(any(!chLst, na.rm=TRUE)) stop("Don't know what kind of test-results to use.  Can't find element '",tyThr[!chLst],"' in elements of 'test' !!")
-  if(length(dim(test[[tyThr]])) !=2) stop("Can't find data.frame or matrix as list-elment '",annotCol,"' in 'test'")
-  if(length(annotCol) <1) stop("Argument 'annotCol' must be specified (should be name of column of 'test$annot' to check for species from argument 'spec')")
-  if(length(spec) <1) stop("Argument 'spec' must be specified (should contain species names present in tst$annot$",annotCol,")")
+  if(any(!chLst, na.rm=TRUE)) stop(fxNa,"Don't know what kind of test-results to use.  Can't find element '",tyThr[!chLst],"' in elements of 'test' !!")
+  if(length(dim(test[[tyThr]])) !=2) stop(fxNa,"Can't find data.frame or matrix as list-elment '",annotCol,"' in 'test'")
+  if(length(annotCol) <1) stop(fxNa,"Argument 'annotCol' must be specified (should be name of column of 'test$annot' to check for species from argument 'spec')")
+  if(length(spec) <1) stop(fxNa,"Argument 'spec' must be specified (should contain species names present in tst$annot$",annotCol,")")
   if(is.numeric(useComp)) { msg <- "Argument 'useComp' points to comparison not existing, resetting to 1"
     if(useComp > ncol(test[[tyThr]])) { warning(msg); useComp <- 1 }
   } else if(!(useComp %in% test[[tyThr]])) { warning(msg); useComp <- 1 }
@@ -116,7 +116,7 @@ summarizeForROC <- function(test, useComp=1, tyThr="BH", thr=NULL, columnTest=NU
     chM <- "means" %in% names(test)
     if("means" %in% names(test)) {
       if(nrow(test$means) ==nrow(test[[tyThr]])) {
-        ## identify sample-groups to comparison(s) - needed lateron
+        ## identify sample-groups to comparison(s) - needed mater on
         pairwCol <- wrMisc::sampNoDeMArrayLM(test, useComp, lstMeans="means", lstP=which(names(test)==tyThr),callFrom=fxNa,silent=silent)
         grpMeans <- cbind(mean1=test$means[,pairwCol[1]], mean2=test$means[,pairwCol[2]])
         FCval <- grpMeans[,2] - grpMeans[,1]

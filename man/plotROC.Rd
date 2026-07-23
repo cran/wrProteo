@@ -2,7 +2,7 @@
 % Please edit documentation in R/plotROC.R
 \name{plotROC}
 \alias{plotROC}
-\title{Plot ROC curves}
+\title{Plot ROC Curves}
 \usage{
 plotROC(
   dat,
@@ -69,14 +69,17 @@ plotROC(
 
 \item{debug}{(logical) display additional messages for debugging}
 
-\item{callFrom}{(character) allow easier tracking of message(s) produced}
+\item{callFrom}{(character) allows easier tracking of messages produced}
 }
 \value{
 This function returns only a plot with ROC curves
 }
 \description{
-\code{plotROC} plots ROC curves based on results from \code{\link{summarizeForROC}}.
-This function plots only, it does not return any data. It allows printing simultaneously multiple ROC curves from different studies,
+This function plots ROC curves based on results from \code{\link{summarizeForROC}}.
+}
+\details{
+This function produces plots only, it does not return any data. 
+It allows printing simultaneously multiple ROC curves from different studies,
 it is also compatible with data from 3 species mix as in proteomics benchmark.
 Input can be prepared using \code{\link[wrMisc]{moderTest2grp}} followed by \code{\link{summarizeForROC}}.
 }

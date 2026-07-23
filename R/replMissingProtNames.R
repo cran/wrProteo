@@ -10,7 +10,7 @@
 #'   column where empty fields are searched and the 2nd and (optional) 3rd will be used to fill the empty spots in the st column
 #' @param silent (logical) suppress messages
 #' @param debug (logical) display additional messages for debugging
-#' @param callFrom (character) allow easier tracking of message(s) produced
+#' @param callFrom (character) allows easier tracking of messages produced
 #' @return This function returns a list (like as input), but with missing elments of $annot filled by information from the columns specified in \code{annCol} using fileds 2 (and 3)
 #' @seealso \code{\link{readMaxQuantFile}}, \code{\link{readProtDiscovFile}}, \code{\link{readProlineFile}} 
 #' @examples
@@ -23,9 +23,10 @@ replMissingProtNames <- function(x, annCol=c("EntryName","Accession","SpecType")
   ## move to wrProteo ?
   fxNa <- wrMisc::.composeCallName(callFrom, newNa="replMissingProtNames")
   if(!isTRUE(silent)) silent <- FALSE
-  if(isTRUE(debug)) silent <- FALSE else debug <- FALSE
+  if(isTRUE(debug)) { silent <- FALSE } else { debug <- FALSE }
   msg <- "Argument 'x' should be list containg list-element called 'annot' (matrix), as produced by readMaxQuantFile(), readProtDiscovFile() etc"
-  if(!is.list(x) | length(x) <1) stop(msg)
+
+  if(!is.list(x) || length(x) <1) stop(msg)
   if(!"annot" %in% names(x)) stop(msg)  
   if(any(length(dim(x$annot)) !=2, dim(x$annot) < 2:3)) stop("x$annot must be matrix or data.frame with min 2 lines and 3 cols")
   ## main  

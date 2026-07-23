@@ -2,7 +2,7 @@
 % Please edit documentation in R/readUCSCtable.R
 \name{readUCSCtable}
 \alias{readUCSCtable}
-\title{Read annotation files from UCSC}
+\title{Read Annotation Files From UCSC}
 \usage{
 readUCSCtable(
   fiName,
@@ -37,7 +37,9 @@ This function returns a matrix, optionally the file 'exportFileNa' may be writte
 }
 \description{
 This function allows reading and importing genomic \href{https://genome.ucsc.edu/cgi-bin/hgTables}{UCSC-annotation} data.
-Files can be read as default UCSC exprot or as GTF-format. 
+Files can be read as default UCSC exprot or as GTF-format.
+}
+\details{
 In the context of proteomics we noticed that sometimes UniProt tables from UCSC are hard to match to identifiers from UniProt Fasta-files, ie many protein-identifiers won't match.
 For this reason additional support is given to reading 'Genes and Gene Predictions': Since this table does not include protein-identifiers, a non-redundant list of ENSxxx transcript identifiers 
 can be exprted as file for an additional stop of conversion, eg using a batch conversion tool at the site of \href{https://www.uniprot.org/id-mapping/}{UniProt}. 

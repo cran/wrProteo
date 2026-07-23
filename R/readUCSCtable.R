@@ -1,7 +1,9 @@
-#' Read annotation files from UCSC
+#' Read Annotation Files From UCSC
 #'
 #' This function allows reading and importing genomic \href{https://genome.ucsc.edu/cgi-bin/hgTables}{UCSC-annotation} data.
 #' Files can be read as default UCSC exprot or as GTF-format. 
+#' 
+#' @details
 #' In the context of proteomics we noticed that sometimes UniProt tables from UCSC are hard to match to identifiers from UniProt Fasta-files, ie many protein-identifiers won't match.
 #' For this reason additional support is given to reading 'Genes and Gene Predictions': Since this table does not include protein-identifiers, a non-redundant list of ENSxxx transcript identifiers 
 #' can be exprted as file for an additional stop of conversion, eg using a batch conversion tool at the site of \href{https://www.uniprot.org/id-mapping/}{UniProt}. 
@@ -38,12 +40,14 @@ readUCSCtable <- function(fiName, exportFileNa=NULL, gtf=NA, simplifyCols=c("gen
   fxNa <- wrMisc::.composeCallName(callFrom, newNa="readUCSCtable")
   if(length(fiName) >1) fiName <- fiName[1] else {if(length(fiName) < 1) stop(" argument 'fiName' seems empty")}
   if(!isTRUE(silent)) silent <- FALSE
-  if(isTRUE(debug)) silent <- FALSE else debug <- FALSE
+  if(isTRUE(debug)) { silent <- FALSE } else { debug <- FALSE }
   chFi <- file.exists(fiName)
   if(!chFi) stop(" File '",fiName,"' not found ! (maybe you are not pointing to the correct direcory ?)")
-  chPa1 <- try(find.package("utils"), silent=TRUE)
-  chPa2 <- try(find.package("R.utils"), silent=TRUE)
-  if(inherits(chPa1, "try-error")) stop(fxNa,"Package 'utils' not found ! Please install first ..")     
+  chPa1 <- requireNamespace("utils", quietly=TRUE)
+  chPa2 <- requireNamespace("R.utils", quietly=TRUE)
+
+  if(!chPa1) stop(fxNa,"Package 'utils' not found ! Please install first from CRAN..")     
+  if(!chPa2) stop(fxNa,"Package 'R.utils' not found ! Please install first from CRAN ..")     
 
   ## check/find out if file is gtf
   if(is.na(gtf)) {                           # try to guess/check if gtf=TRUE

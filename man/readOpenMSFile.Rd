@@ -2,7 +2,7 @@
 % Please edit documentation in R/readOpenMSFile.R
 \name{readOpenMSFile}
 \alias{readOpenMSFile}
-\title{Read csv files exported by OpenMS}
+\title{Read Csv Files Exported By OpenMS}
 \usage{
 readOpenMSFile(
   fileName = NULL,
@@ -51,8 +51,8 @@ readOpenMSFile(
 
 \item{wex}{(integer) relative expansion factor of the violin-plot (will be passed to \code{\link[wrGraph]{vioplotW}})}
 
-\item{specPref}{(character or list) define characteristic text for recognizing (main) groups of species (1st for comtaminants - will be marked as 'conta', 2nd for main species- marked as 'mainSpe', 
-and optional following ones for supplemental tags/species - maked as 'species2','species3',...); 
+\item{specPref}{(character or list) define characteristic text for recognizing (main) groups of species (1st for contaminants - will be marked as 'conta', 2nd for main species- marked as 'mainSpe', 
+and optional following ones for supplemental tags/species - marked as 'species2','species3',...); 
 if list and list-element has multiple values they will be used for exact matching of accessions (ie 2nd of argument \code{annotCol})}
 
 \item{silent}{(logical) suppress messages}

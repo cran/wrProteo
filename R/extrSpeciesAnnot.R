@@ -24,7 +24,7 @@ extrSpeciesAnnot <- function(annot, spec=c("_CONT","_HUMAN","_YEAST","_ECOLI"), 
   ## 'shortextrSpeciesAnnotNa' .. (character) term to code output
   fxNa <- wrMisc::.composeCallName(callFrom, newNa="extrSpeciesAnnot")
   if(!isTRUE(silent)) silent <- FALSE
-  if(isTRUE(debug)) silent <- FALSE else debug <- FALSE
+  if(isTRUE(debug)) { silent <- FALSE } else { debug <- FALSE }
 
   msg <- "Argument 'shortNa' doesn't fit to length of 'spec'"
   if(length(shortNa) < length(spec) && length(shortNa) >0) {

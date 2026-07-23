@@ -12,7 +12,9 @@ extractTestingResults(
   FCthrs = 1.5,
   annotCol = c("Accession", "EntryName", "GeneName", "ProteinName"),
   nSign = 6,
-  addTy = c("allMeans"),
+  outTy = "slim",
+  sep = NULL,
+  addTy = NULL,
   sortBy = NULL,
   rowNames = TRUE,
   filename = NULL,
@@ -37,12 +39,16 @@ extractTestingResults(
 
 \item{nSign}{(integer) number of significant digits whe returning results}
 
-\item{addTy}{(character) additional groups of columns to add ("allMeans", "all" or "slim") in addition;
-if \code{addTy="slim"} only the FDR- and FC-columns directly concerned will be extracted/displayed, column-names will be trimmed to max 26 characters;
-if \code{addTy="slim2"} only the FDR- and FC-columns directly concerned will be extracted/displayed, FDR- and FC- columns will have generic names (without indicating the comparison), all text will be trimmed to max 38 characters;
-if \code{addTy="slim3"} like slim2 but without ProteinName}
+\item{outTy}{(character) additional groups of columns to add ("allMeans", "all" or "slim") in addition;
+if \code{outTy="slim"} only the FDR- and FC-columns directly concerned will be extracted/displayed, column-names will be trimmed to max 26 characters;
+if \code{outTy="slim2"} only the FDR- and FC-columns directly concerned will be extracted/displayed, FDR- and FC- columns will have generic names (without indicating the comparison), all text will be trimmed to max 38 characters;
+if \code{outTy="slim3"} like slim2 but without ProteinName}
 
-\item{sortBy}{(character or logical) optional sorting of results, must specify a column-name of output, if \code{sortBy=TRUE} the fisrt column of argument \code{statTy} will be used}
+\item{sep}{(character of length=1 or \code{NULL}) custom choice for separator for column-names of pairwise comparisons, otherwise based on \code{stat} or (if \code{outTy="slim3"} or \code{outTy="slim4"}) '_vs_' (or '__vs__' if '-' or '_' appear in groups)}
+
+\item{addTy}{this argument has been deprecated and replaced by \code{outTy} (content of addTy will be ignored)}
+
+\item{sortBy}{(character or logical) optional sorting of results according to argument \code{compNo}, may be name of mutiple-testing correction (eg 'BH', see also argument \code{statTy}), if \code{sortBy=TRUE} the first column of argument \code{statTy} will be used}
 
 \item{rowNames}{(character or logical) optional custom rownames, or if \code{rowNames=FALSE} no rownames}
 
@@ -66,17 +72,17 @@ The user can define the threshold and which type of multiple testing correction 
 }
 \details{
 One single given comparison has to be selected by the user via argument \code{compNo}, multiple options exist :
-1) The use may give and index which refers to the i'th comparison stored in the object \code{stat}
-2) It may be more convenient to directy cite a goven comparison (eg \code{compNo=c("B-C")} in the examples below). 
+1) The use may give and index which refers to the i'th comparison stored in the object \code{stat$setup}
+2) It may be more convenient to directy cite a given comparison (eg \code{compNo=c("B-C")} in the examples below). 
   Such comparions may be 'inversed' to the ones orginally performed, the M-values will be adjusted accordingly (eg \code{compNo=c("C-B")})
 3) It is also possible to give a vector of 2 integers which will be uses as index to the levels of the initial group-assignment, beware that levels are sorted.
 
-The number of columns returned can be modulated using the argument \code{addTy}. 
-\code{addTy='slim'} gives the fewer columns, only FDR and FC of current comparison specified in argument \code{compNo} will be returned.
-With \code{addTy='slim2'} the column-names for statistical testing and log Fold-Change will be generic, all colnames will be trimmed to max 25 characters
-\code{addTy='all'} results in a rather exaustive collection of columns (including annotation data, if present), 
-The option \code{addTy='slim3'} is like slim2 but without column ProteinName
-while default \code{addTy='allMeans'} gives a compromise for the number of columns returned.
+The number and type of columns returned can be modulated using the argument \code{outTy}. 
+\code{outTy='slim'} gives the fewer columns, only FDR and FC of current comparison specified in argument \code{compNo} will be returned.
+With \code{outTy='slim2'} the column-names for statistical testing and log Fold-Change will be generic, all colnames will be trimmed to max 25 characters
+\code{outTy='all'} results in a rather exaustive collection of columns (including annotation data, if present), 
+The option \code{outTy='slim3'} is like slim2 but without column ProteinName
+while default \code{outTy='allMeans'} gives a compromise for the number of columns returned.
 }
 \examples{
 grp <- factor(rep(LETTERS[4:2],c(2,3,3)))
@@ -93,8 +99,8 @@ test8 <- moderTestXgrp(t8, grp)
 extractTestingResults(test8)
 extractTestingResults(test8, compNo=c("B-C"))
 
-extractTestingResults(test8, addTy="all")
-extractTestingResults(test8, addTy="slim")
+extractTestingResults(test8, outTy="all")
+extractTestingResults(test8, outTy="slim")
 }
 \seealso{
 \code{\link{testRobustToNAimputation}}, \code{\link[wrMisc]{moderTestXgrp}} or \code{\link[wrMisc]{moderTest2grp}}

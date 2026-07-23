@@ -488,9 +488,9 @@ As described with [MaxQuant](#ReadMaxQuant), additional meta-data as [sdrf](#Imp
 
 ### Ionbot : Import Peptide Identification And  Quantification Data       {#ReadIonbot}
 
-[ionbot](https://ionbot.cloud/about) is a database search tool for protein and peptide identification, developed by the [ComPomics group](https://www.compomics.com/) headed by L. Martens,
+ionbot is a database search tool for protein and peptide identification, developed by the [ComPomics group](https://compomics.com/) headed by L. Martens,
 see eg  [Kong et al 2017](https://doi.org/10.1101/2021.07.02.450686) or other related publications.
-Peptide identification from [ionbot](https://ionbot.cloud/about) are typically complemeented by quantification using [FlashLFQ](https://doi.org/10.1021/acs.jproteome.7b00608). 
+Peptide identification from ionbot are typically complemeented by quantification using [FlashLFQ](https://doi.org/10.1021/acs.jproteome.7b00608). 
 The resulting output in tsv format can get imported using `readIonbotPeptides()`.  
 Since the output may not have complete protein annotation information, it is possible to complement annotations from the fasta-file (Uniprot-formatted) used for initial identifications (using the argument '_specPref_', not shown below).
 The example below is just a tiny toy data-set, normally one can identify and quantify many more proteins.

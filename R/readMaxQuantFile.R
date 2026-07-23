@@ -46,7 +46,7 @@
 #' @param separateAnnot (logical) if \code{TRUE} output will be organized as list with \code{$annot}, \code{$abund} for initial/raw abundance values and \code{$quant} with final normalized quantitations
 #' @param gr (character or factor) custom defined pattern of replicate association, will override final grouping of replicates from \code{sdrf} and/or \code{suplAnnotFile} (if provided)   \code{}
 #' @param sdrf (character, list or data.frame) optional extraction and adding of experimenal meta-data: if character, this may be the ID at ProteomeExchange,
-#'   the second & third elements may give futher indicatations for automatic organization of groups of replicates.
+#'   the second & third elements may give further indications for automatic organization of groups of replicates.
 #'   Besides, the output from \code{readSdrf} or a list from \code{defineSamples} may be provided;
 #'   if \code{gr} is provided, \code{gr} gets priority for grouping of replicates;
 #'   if \code{sdrfOrder=TRUE} the output will be put in order of sdrf
@@ -99,12 +99,13 @@ readMaxQuantFile <- function(path, fileName="proteinGroups.txt", normalizeMeth="
   reqPa <- c("utils","wrMisc")
   chPa <- sapply(reqPa, requireNamespace, quietly=TRUE)
   if(any(!chPa)) stop("Package(s) '",paste(reqPa[which(!chPa)], collapse="','"),"' not found ! Please install first from CRAN")
-  if(isTRUE(debug)) silent <- FALSE else { debug <- FALSE
-    if(!isTRUE(silent)) silent <- FALSE }
-         excluCol <- "^Abundances.Count"   # exclude this from quantifications columns
+  if(!isTRUE(silent)) silent <- FALSE
+  if(isTRUE(debug)) { silent <- FALSE } else { debug <- FALSE }
+
+  excluCol <- "^Abundances.Count"   # exclude this from quantifications columns
   cleanDescription <- TRUE                 # clean 'Description' for artifacts of truncated text (tailing ';' etc)
   infoDat <- infoFi <- setupSd <- parametersD <- NULL        # initialize
-  if(debug){ message(fxNa,"rMQ0a .. This is wrProteo version ",utils::packageVersion("wrProteo")," ... Ready to read", if(length(path) >0) c(" from path ",path[1])," the file  ",fileName[1],"\n   current path : ",getwd())
+  if(debug) { message(fxNa,"rMQ0a .. This is wrProteo version ",utils::packageVersion("wrProteo")," ... Ready to read", if(length(path) >0) c(" from path ",path[1])," the file  ",fileName[1],"\n   current path : ",getwd())
     rMQ0a <- list(fileName=fileName,path=path,normalizeMeth=normalizeMeth,read0asNA=read0asNA,quantCol=quantCol,refLi=refLi,separateAnnot=separateAnnot)
     #save(rMQ0a, file="rMQ0a.RData")
     }  # annotCol=annotCol,FDRCol=FDRCol

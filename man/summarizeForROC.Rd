@@ -2,7 +2,7 @@
 % Please edit documentation in R/summarizeForROC.R
 \name{summarizeForROC}
 \alias{summarizeForROC}
-\title{Summarize statistical test result for plotting ROC-curves}
+\title{Summarize Statistical Test Result For Plotting ROC-Curves}
 \usage{
 summarizeForROC(
   test,

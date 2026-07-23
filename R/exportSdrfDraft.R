@@ -42,12 +42,13 @@ exportSdrfDraft <- function(lst, fileName="sdrfDraft.tsv", correctFileExtension=
   ## export sdrf-like
   ## Note : lst$sampleSetup$sdrfExport  is created only if import-function was run with sdrf=FALSE !!
   fxNa <- wrMisc::.composeCallName(callFrom, newNa="exportSdrfDraft")
-  if(isTRUE(debug)) silent <- FALSE
   if(!isTRUE(silent)) silent <- FALSE
+  if(isTRUE(debug)) { silent <- FALSE } else { debug <- FALSE }
   datOK <- TRUE
   msg <- "Invalid entry - nothing to do.  Argument 'lst' should be object like output of import-function from wrProteo"
   if(!is.list(lst) || length(lst) <1) { datOK <- FALSE
     if(!silent) message(fxNa, msg) }
+
   if(datOK) {
     expSdrf <- lst$sampleSetup$sdrfExport
     datDim <- dim(lst$quant)

@@ -23,7 +23,7 @@ AucROC <- function(dat, useCol=c("spec","sens"), returnIfInvalid=NA, silent=FALS
   ## calculate AUC (area under the curve) from ROC data
   fxNa <- wrMisc::.composeCallName(callFrom, newNa="AucROC")
   if(!isTRUE(silent)) silent <- FALSE
-  if(isTRUE(debug)) silent <- FALSE else debug <- FALSE
+  if(isTRUE(debug)) { silent <- FALSE } else { debug <- FALSE }
   if(!is.null(returnIfInvalid)) returnIfInvalid <- NA
   ## basic checks
   datOK <- length(dat) >0 && length(useCol) >1

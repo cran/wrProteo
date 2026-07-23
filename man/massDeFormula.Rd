@@ -9,6 +9,7 @@ massDeFormula(
   massTy = "mono",
   rmEmpty = FALSE,
   silent = FALSE,
+  debug = FALSE,
   callFrom = NULL
 )
 }
@@ -20,6 +21,8 @@ massDeFormula(
 \item{rmEmpty}{(logical) suppress empty entries}
 
 \item{silent}{(logical) suppress messages}
+
+\item{debug}{(logical) display additional messages for debugging}
 
 \item{callFrom}{(character) allow easier tracking of messages produced}
 }

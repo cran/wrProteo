@@ -15,7 +15,7 @@ testRobustToNAimputation(
   plotHist = FALSE,
   xLab = NULL,
   tit = NULL,
-  imputMethod = "mode2",
+  imputMethod = NULL,
   seedNo = NULL,
   multCorMeth = c("lfdr", "FDR"),
   nLoop = 100,

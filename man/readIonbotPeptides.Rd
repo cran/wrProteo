@@ -41,7 +41,7 @@ readIonbotPeptides(
 \item{gr}{(character or factor) custom defined pattern of replicate association, will override final grouping of replicates from \code{sdrf} and/or \code{suplAnnotFile} (if provided)}
 
 \item{sdrf}{(character, list or data.frame) optional extraction and adding of experimenal meta-data: if character, this may be the ID at ProteomeExchange,
-the second & third elements may give futher indicatations for automatic organization of groups of replicates.
+the second & third elements may give further indications for automatic organization of groups of replicates.
 Besides, the output from \code{readSdrf} or a list from \code{defineSamples} may be provided;
 if \code{gr} is provided, \code{gr} gets priority for grouping of replicates;
 if \code{sdrfOrder=TRUE} the output will be put in order of sdrf}
@@ -54,7 +54,7 @@ if \code{sdrfOrder=TRUE} the output will be put in order of sdrf}
 c("Accession","Description","Gene","Contaminant","Sum.PEP.Score","Coverage....","X..Peptides","X..PSMs","X..Unique.Peptides", "X..AAs","MW..kDa.") )}
 
 \item{contamCol}{(character or integer, length=1) which columns should be used for contaminants marked by ProteomeDiscoverer.
-If a column named \code{contamCol} is found, the data will be lateron filtered to remove all contaminants, set to \code{NULL} for keeping all contaminants}
+If a column named \code{contamCol} is found, the data will be mater on filtered to remove all contaminants, set to \code{NULL} for keeping all contaminants}
 
 \item{refLi}{(character or integer) custom specify which line of data is main species, if character (eg 'mainSpe'), the column 'SpecType' in $annot will be searched for exact match of the (single) term given}
 
@@ -77,8 +77,8 @@ are used (eg '100pMol' and '1nMol').}
 
 \item{wex}{(integer) relative expansion factor of the violin-plot (will be passed to \code{/link[wrGraph]{vioplotW}})}
 
-\item{specPref}{(character or list) define characteristic text for recognizing (main) groups of species (1st for comtaminants - will be marked as 'conta', 2nd for main species- marked as 'mainSpe',
-and optional following ones for supplemental tags/species - maked as 'species2','species3',...);
+\item{specPref}{(character or list) define characteristic text for recognizing (main) groups of species (1st for contaminants - will be marked as 'conta', 2nd for main species- marked as 'mainSpe',
+and optional following ones for supplemental tags/species - marked as 'species2','species3',...);
 if list and list-element has multiple values they will be used for exact matching of accessions (ie 2nd of argument \code{annotCol})}
 
 \item{silent}{(logical) suppress messages}
@@ -92,13 +92,13 @@ This function returns a list with \code{$raw} (initial/raw abundance values), \c
   and \code{$notes}; or if \code{separateAnnot=FALSE} the function returns a data.frame with annotation and quantitation only
 }
 \description{
-This function allows importing initial petide identification and quantification results from  \href{https://ionbot.cloud/about}{Ionbot} 
+This function allows importing initial petide identification and quantification results from  \href{https://www.biorxiv.org/content/10.1101/2021.07.02.450686v2}{Ionbot} 
 which were exported as tabulated tsv can be imported and relevant information extracted.
 The final output is a list containing 3 main elements: \code{$annot}, \code{$raw} and optional \code{$quant}, or returns data.frame with entire content of file if \code{separateAnnot=FALSE}.
 }
 \details{
 Using the argument \code{suplAnnotFile} it is possible to specify a specific file (or search for default file) to read for extracting file-names as sample-names 
-and other experiment realted information.
+and other experiment related information.
 }
 \examples{
 path1 <- system.file("extdata", package="wrProteo")

@@ -2,7 +2,7 @@
 % Please edit documentation in R/matrixNAinspect.R
 \name{matrixNAinspect}
 \alias{matrixNAinspect}
-\title{Histogram of content of NAs in matrix}
+\title{Histogram Of Content Of NAs In Matrix}
 \usage{
 matrixNAinspect(
   dat,
@@ -39,13 +39,17 @@ matrixNAinspect(
 This function produces a graphic (to the current graphical device)
 }
 \description{
-\code{matrixNAinspect} makes histograms of the full data and shows sub-population of \code{NA}-neighbour values.  
+This function makes histograms of the full data and shows sub-population of \code{NA}-neighbour values.
+}
+\details{
 The aim of this function is to investigate the nature of \code{NA} values in matrix (of experimental measures) where replicate measurements are available.
 If a given element was measured twice, and one of these measurements revealed a \code{NA} while the other one gave a (finite) numeric value, the non-NA-value is considered a \code{NA}-neighbour.  
 The subpopulation of these \code{NA}-neighbour values will then be highlighted in the resulting histogram.
+
 In a number of experimental settiongs some actual measurements may not meet an arbitrary defined baseline (as 'zero') or may be too low to be distinguishable from noise that 
 associated measures were initially recorded as \code{NA}. In several types of measurments in proteomics and transcriptomics this may happen.
-So this fucntion allows to collect all \code{NA}-neighbour values and compare them to the global distribution of the data to investigate if \code{NA}-neighbours are typically very low values.
+So this function allows to collect all \code{NA}-neighbour values and compare them to the global distribution of the data to investigate if \code{NA}-neighbours are typically very low values.
+
 In case of data with multiple replicates \code{NA}-neighbour values may be distinguished for the case of 2 \code{NA} per group/replicate-set.
 The resulting plots are typically used to decide if and how \code{NA} values may get replaced by imputed random values or wether measues containing \code{NA}-values should rather me omitted.
 Of course, such decisions do have a strong impact on further steps of data-analysis and should be performed with care.

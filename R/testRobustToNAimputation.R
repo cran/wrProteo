@@ -88,17 +88,22 @@
 #' head(PLtestR2$means)
 #' 
 #' @export
-testRobustToNAimputation <- function(dat, gr=NULL, useComparison=NULL, annot=NULL, retnNA=TRUE, avSd=c(0.15,0.5), avSdH=NULL, plotHist=FALSE, xLab=NULL, tit=NULL, imputMethod="mode2", 
+testRobustToNAimputation <- function(dat, gr=NULL, useComparison=NULL, annot=NULL, retnNA=TRUE, avSd=c(0.15,0.5), avSdH=NULL, plotHist=FALSE, xLab=NULL, tit=NULL, imputMethod=NULL, 
   seedNo=NULL,  multCorMeth=c("lfdr","FDR"), nLoop=100, lfdrInclude=NULL, ROTSn=NULL, pwSep=NULL, param=NULL, silent=FALSE, debug=FALSE, callFrom=NULL) {
   fxNa <- wrMisc::.composeCallName(callFrom, newNa="testRobustToNAimputation")
   if(!isTRUE(silent)) silent <- FALSE
-  if(isTRUE(debug)) silent <- FALSE else debug <- FALSE
+  if(isTRUE(debug)) { silent <- FALSE } else { debug <- FALSE }
   if(!isTRUE(plotHist)) plotHist <- FALSE
   datOK <- length(dat) >0
-  msg <- grIni <- sampleSetup <- sep1 <- useComparisonNa <- pwIndex <- out <- NULL
+  msg <- sampleSetup <- sep1 <- useComparisonNa <- pwIndex <- out <- NULL
+  grIni <- gr
 
   ## (default) parameters
-  param1 <- if(length(param) ==0 || !is.list(param)) list(filter=list(abundThr=TRUE, maxGrpMiss=1, ratMaxNA=0.8, minSpeNo=1, minTotNo=2), NAimpute=list(avSd=c(0.15,0.5)), stat=list(nLoop=nLoop, pwSep=pwSep,seedNo=seedNo)) else param
+  param1 <- if(length(param) ==0 || !is.list(param)) list(filter=list(abundThr=0.02, maxGrpMiss=1, ratMaxNA=0.8, minSpeNo=1, minTotNo=2), 
+    NAimpute=list(avSd=c(0.15,0.5), imputMethod="mode2"), stat=list(nLoop=nLoop, pwSep=pwSep,seedNo=seedNo)) else param
+  if(length(imputMethod) ==1 && !is.na(imputMethod)) {
+    param1$NAimpute$imputMethod <- imputMethod
+    if(!silent) message(fxNa,"Note : Custom defined 'imputMethod' will be used")}  
 
   ## start testing input, see if is list or MArrayLM
   if(datOK >0 && is.list(dat)) { if(all(c("quant","annot") %in% names(dat))) {
@@ -108,7 +113,7 @@ testRobustToNAimputation <- function(dat, gr=NULL, useComparison=NULL, annot=NUL
     if("sampleSetup" %in% names(dat) && length(gr) <1) {
       gr <- if("groups" %in% names(dat$sampleSetup)) dat$sampleSetup$groups else dat$sampleSetup$level
       ## rather use names instead of index
-      if(all(is.integer(gr)) && all(nchar(names(gr)) > 0)) { grIni <- gr
+      if(all(is.integer(gr)) && all(nchar(names(gr)) > 0)) { 
         gr <- names(gr)
         names(gr) <- as.character(grIni)
       }
@@ -150,11 +155,14 @@ testRobustToNAimputation <- function(dat, gr=NULL, useComparison=NULL, annot=NUL
         sep1 <- try(wrMisc::getPWseparator(compNames=NULL, grp=gr, potSep=wrMisc::pwSeparatorList(type="combine1", silent=!silent, debug=debug, callFrom=fxNa), silent=!debug, callFrom=fxNa,debug=debug), silent=TRUE)
         if(inherits(sep1, "try-error") || length(sep1)==0) sep1 <- wrMisc::findHeadAndTail(gr, useComparison, silent=silent, debug=debug,callFrom=fxNa) 
         sampleSetup$sep <- sep1
+        if(!identical(param1$stat$pwSep, sep1)) {
+          param1$stat$pwSep <- sep1
+          if(debug) message(fxNa,"Override 'sep' given from annot by '",sep1,"'")}
       }
     }
     if(debug) {message(fxNa," .. tRN1d"); tRN1d <- list(dat=dat, gr=gr,grIni=grIni,useComparison=useComparison,sampleSetup=sampleSetup,annot=annot,retnNA=retnNA,avSd=avSd,pwSep=pwSep )}
 
-    ## check main dat (notlist-element any more)
+    ## check main dat (not list-element any more)
     if(is.data.frame(dat)) dat <- as.matrix(dat)
     if(length(gr) != ncol(dat)) { datOK <- FALSE
       msg <- "Number of columns in 'dat' and number of (group-)elements in 'gr' do NOT match !"}
@@ -211,56 +219,59 @@ testRobustToNAimputation <- function(dat, gr=NULL, useComparison=NULL, annot=NUL
       useComparisonNa <- ch1$pwGrpNa
       pwIndex <- ch1$pwIndex
     }
-    ## thus finally useComparison is not used lateron since too open format, rather use useComparisonNa as matrix of names or pwIndex
+    ## thus finally useComparison is not used mater on since too open format, rather use useComparisonNa as matrix of names or pwIndex
 
     ## recuperate parameters from/as batch
     abundThre <- param1$filter$abundThr
-    if(length(abundThre)==0 || isTRUE(abundThre)) abundThre <- 0.02                      # special case: default 0.02 quantile
-    if(length(abundThre)==1 && is.numeric(abundThre) && abundThre <1) abundThre <- stats::quantile(if(is.list(dat)) dat$quant else dat, abundThre, na.rm=TRUE)
+    if(length(abundThre) !=1 || isTRUE(abundThre)) abundThre <- 0.02                      # special case: default 0.02 quantile
+    if(length(abundThre) ==1 && is.numeric(abundThre) && abundThre <1) abundThre <- stats::quantile(if(is.list(dat)) dat$quant else dat, abundThre, na.rm=TRUE)
     minSpeNo <- if(length(param1$filter$minSpeNo)==1 && is.numeric(param1$filter$minSpeNo) && param1$filter$minSpeNo >=0) param1$filter$minSpeNo else 1
     minTotNo <- if(length(param1$filter$minTotNo)==1 && is.numeric(param1$filter$minTotNo) && param1$filter$minTotNo >=0) param1$filter$minTotNo else 2
     maxGrpMiss <- if(length(param1$filter$maxGrpMiss)==1 && is.numeric(param1$filter$maxGrpMiss) && param1$filter$maxGrpMiss >=0) param1$filter$maxGrpMiss else 1
     ratMaxNA <- if(length(param1$filter$ratMaxNA)==1 && is.numeric(param1$filter$ratMaxNA) && param1$filter$ratMaxNA <=1) param1$filter$ratMaxNA else 1
     if(length(param1$NAimpute$avSd)==2 && is.numeric(param1$NAimpute$avSd) && all(param1$NAimpute$avSd >= 0)) avSd <- param1$NAimpute$avSd   # overrides argument !
-    if(length(param1$NAimpute$imputMethod)==1 && !is.na(param1$NAimpute$imputMethod)) imputMethod <- param1$NAimpute$imputMethod   # overrides argument !
-    if(length(param1$stat$lfdr)==1 && is.logical(param1$stat$lfdr) && !is.na(param1$stat$lfdr)) imputMethod <- param1$stat$lfdr   # overrides argument !
+    
+    imputMethod <- if(length(param1$NAimpute$imputMethod)==1 && !is.na(param1$NAimpute$imputMethod)) param1$NAimpute$imputMethod else "mode2"
+    #if(length(param1$stat$lfdr)==1 && is.logical(param1$stat$lfdr) && !is.na(param1$stat$lfdr)) imputMethod <- param1$stat$lfdr   # overrides argument !
     if(length(param1$stat$pwSep)==1 && is.character(param1$stat$pwSep) && !is.na(param1$stat$pwSep)) pwSep <- param1$stat$pwSep   # overrides argument !
+    if(debug) {message(fxNa,"imputMethod= ",imputMethod,"  tRN1f"); tRN1f <- list(dat=dat,datOK=datOK, gr=gr,grIni=grIni,useComparison=useComparison,useComparisonNa=useComparisonNa,pwIndex=pwIndex,annot=annot,retnNA=retnNA,avSd=avSd,sep1=sep1,imputMethod=imputMethod,plotHist=plotHist, xLab=xLab, tit=tit )}
     
+    #?## if(is.null(names(useComparisonNa)) && length(useComparisonNa) <= 676)   # only needed for older wrMisc::convPairwiseSetup
 
-    if(debug) {message(fxNa,"imputMethod= ",imputMethod,"  tRN1f"); tRN1f <- list(dat=dat,datOK=datOK, gr=gr,grIni=grIni,useComparison=useComparison,pwIndex=pwIndex,annot=annot,retnNA=retnNA,avSd=avSd,useComparisonNa=useComparisonNa,sep1=sep1,imputMethod=imputMethod,plotHist=plotHist, xLab=xLab, tit=tit )}
-    
+    experSetup1 <- list(sep= sep1, pwGrpNa= useComparisonNa, pwGrpIndex=pwIndex)
     if("none" %in% tolower(imputMethod)) {
-      if(debug) {message(fxNa," tRN1g"); tRN1g <- list(dat=dat,gr=gr,useComparison=useComparison,pwIndex=pwIndex,imputMethod=imputMethod,annot=annot,seedNo=seedNo, retnNA=retnNA, avSd=avSd,ROTSn=ROTSn,lfdrInclude=lfdrInclude,multCorMeth=multCorMeth)}
+      if(debug) { message(fxNa,"tRN1g"); tRN1g <- list(dat=dat,gr=gr,useComparison=useComparison,pwIndex=pwIndex,imputMethod=imputMethod,annot=annot,seedNo=seedNo, retnNA=retnNA, avSd=avSd,ROTSn=ROTSn,lfdrInclude=lfdrInclude,multCorMeth=multCorMeth)}
       #nLoop <- 1
       chFin <- is.finite(dat)
       if(any(!chFin, na.rm=TRUE)) dat[which(!chFin)] <- NA   # need to replace Inf & -Inf by NA to avoid problems at limma::lmFit() 
       datI <- list(data=dat)
-      datFi <- combineMultFilterNAimput(dat=dat, imputed=datI, grp=gr, useComparison=rownames(pwIndex),experSetup=NULL, annDat=annot, abundThr=abundThre, 
+      datFi <- combineMultFilterNAimput(dat=dat, imputed=datI, grp=gr, useComparison=rownames(pwIndex), experSetup=experSetup1, annDat=annot, abundThr=abundThre, 
         colRazNa=NULL, colTotNa=NULL, minSpeNo=minSpeNo, minTotNo=minTotNo, maxGrpMiss=maxGrpMiss, ratMaxNA=ratMaxNA, silent=silent, debug=debug,callFrom=fxNa)  # number of unique peptides unknown !
     } else {
-      ## do first imputation befor applying filtering
+      ## do first imputation before applying filtering
       datI <- matrixNAneighbourImpute(dat, gr, imputMethod=imputMethod, retnNA=retnNA ,avSd=avSd, plotHist=plotHist, xLab=xLab, tit=tit, seedNo=seedNo, silent=!debug,debug=debug,callFrom=fxNa)
-      if(debug) { message(fxNa,"Start combineMultFilterNAimput   tRN1h"); tRN1h <- list(dat=dat,datI=datI,gr=gr,useComparison=useComparison,pwIndex=pwIndex,imputMethod=imputMethod,annot=annot,seedNo=seedNo, retnNA=retnNA, avSd=avSd,ROTSn=ROTSn,lfdrInclude=lfdrInclude,multCorMeth=multCorMeth,plotHist=plotHist, xLab=xLab,tit=tit, seedNo=seedNo)}      
-      datFi <- combineMultFilterNAimput(dat=dat, imputed=datI, grp=gr, useComparison=pwIndex, experSetup=NULL, annDat=annot, abundThr=abundThre, #abundThr=stats::quantile(if(is.list(dat)) dat$quant else dat, 0.02,na.rm=TRUE),
+      if(debug) { message(fxNa,"Ready to start combineMultFilterNAimput   tRN1h"); tRN1h <- list(dat=dat,datI=datI,gr=gr,useComparison=useComparison,pwIndex=pwIndex,imputMethod=imputMethod,annot=annot,seedNo=seedNo, retnNA=retnNA, avSd=avSd,ROTSn=ROTSn,lfdrInclude=lfdrInclude,multCorMeth=multCorMeth,plotHist=plotHist, xLab=xLab,tit=tit, seedNo=seedNo)}      
+      datFi <- combineMultFilterNAimput(dat=dat, imputed=datI, grp=gr, useComparison=pwIndex, experSetup=experSetup1, annDat=annot, abundThr=abundThre, #abundThr=stats::quantile(if(is.list(dat)) dat$quant else dat, 0.02,na.rm=TRUE),
       colRazNa=NULL, colTotNa=NULL, minSpeNo=minSpeNo, minTotNo=minTotNo, maxGrpMiss=maxGrpMiss, ratMaxNA=ratMaxNA, silent=silent, debug=debug,callFrom=fxNa)  # number of unique peptides unknown !
       if(debug) {message(fxNa,"Done 1st imput  combineMultFilterNAimput   tRN1i")}     # done combineMultFilterNAimput
     }
-    if(debug) {message(fxNa,"  tRN1j"); tRN1j <- list(dat=dat,datOK=datOK,datFi=datFi, gr=gr,grIni=grIni,useComparison=useComparison,pwIndex=pwIndex,annot=annot,retnNA=retnNA,avSd=avSd,useComparisonNa=useComparisonNa,sep1=sep1,imputMethod=imputMethod )}
+    if(debug) {message(fxNa,"tRN1j"); tRN1j <- list(dat=dat,datOK=datOK,datFi=datFi, gr=gr,grIni=grIni,useComparison=useComparison,pwIndex=pwIndex,annot=annot,retnNA=retnNA,avSd=avSd,useComparisonNa=useComparisonNa,sep1=sep1,imputMethod=imputMethod )}
     
     ## prepare for testing
     if(lfdrInclude) {
-      chLfdr <- try(find.package("fdrtool"), silent=TRUE)
-      if(inherits(chLfdr, "try-error")) { 
-        message(fxNa,"Package 'fdrtool' NOT found ! Please install first from CRAN for calculating lfdr-values. Omitting (defaut) 'lfdr' option from argument 'multCorMeth' ..")
-        lfdrInclude <- FALSE } }
-    if(debug) {message(fxNa,"  tRN2"); tRN2 <- list(dat=dat,gr=gr,useComparison=pwIndex,datFi=datFi,multCorMeth=multCorMeth,datI=datI,imputMethod=imputMethod)}
+      chLfdr <- requireNamespace("fdrtool", quietly=TRUE)
+      if(!chLfdr) {
+        message(fxNa,"Package 'fdrtool' NOT found ! Please INSTALL first from CRAN for calculating lfdr-values. Omitting (defaut) 'lfdr' option from argument 'multCorMeth' ..")
+        lfdrInclude <- FALSE } 
+    }
+    if(debug) {message(fxNa,"tRN2"); tRN2 <- list(dat=dat,gr=gr,useComparison=useComparison,pwIndex=pwIndex,useComparisonNa=useComparisonNa, datFi=datFi,multCorMeth=multCorMeth,datI=datI,imputMethod=imputMethod,sep1=sep1,chNA=chNA)}
     
     if(debug) message(fxNa,"Start 1st moderTestXgrp()")
     ## replace pwComb by useComparisonNa
 
 
     # ## from now on rather use useComparisonNa (pwComb) instead of useComparison (ie pwIndex)
-    if(debug) {message(fxNa,"  tRN2b"); tRN2b <- list(dat=dat,gr=gr,datFi=datFi,multCorMeth=multCorMeth,datI=datI,useComparison=useComparison,sep1=sep1,chNA=chNA)}
+    #if(debug) {message(fxNa,"  tRN2b"); tRN2b <- list()}
 
     out <- suppressWarnings(wrMisc::moderTestXgrp(datFi$data, grp=gr, useComparison=useComparisonNa, limmaOutput=TRUE, addResults=multCorMeth, sep=pwSep, silent=silent, debug=debug, callFrom=fxNa))   # can't do question specific filtering w/o explicit loop
     pValColNa <- colnames(out$p.value)    # colnames for later use
@@ -272,31 +283,34 @@ testRobustToNAimputation <- function(dat, gr=NULL, useComparison=NULL, annot=NUL
     comp <- pwIndex
     
     ## need to add $ROTS.p
-    if(length(ROTSn)==1) { if(ROTSn >0 && !is.na(ROTSn)) {  
-      chPa <- requireNamespace("ROTS", quietly=TRUE)
-      if(!chPa) { message(fxNa,"Package 'ROTS' not found/installed (please install from Bioconductor), omitting argument 'ROTSn'")
-        ROTSn <- 0 }
-      } else ROTSn <- NULL }
-    if(length(ROTSn)==1 && ROTSn >0) {
+    if(length(ROTSn)==1) {
+      if(ROTSn != 0 && !is.na(ROTSn)) {  
+        chPa <- requireNamespace("ROTS", quietly=TRUE)
+        if(!chPa) { ROTSn <- 0 
+          message(fxNa,"Package 'ROTS' not found/installed (please install from Bioconductor), omitting argument 'ROTSn'")
+        }
+      } 
+    } else { ROTSn <- NULL } 
+    if(length(ROTSn)==1 && ROTSn !=0) {
       ## this requires package ROTS
       if(debug) message(fxNa,"Start ROTS   n=",ROTSn)
 
       tmRO <- matrix(nrow=nrow(datFi$data), ncol=nrow(useComparisonNa))
       comPair <- matrix(unlist(strsplit(rownames(useComparisonNa),"-")), ncol=nrow(useComparisonNa))
       useCol <- apply(comPair, 2, function(x) gr %in% x)
-      for(i in 1:nrow(useComparisonNa)) tmRO[which(datFi$filt[,i]),i] <- ROTS::ROTS(datFi$data[which(datFi$filt[,i]), 
-        which(useCol[,i])], groups=as.numeric(as.factor(gr[which(useCol[,i])]))-1, B=ROTSn)$pvalue        # K=500  
+      for(i in 1:nrow(useComparisonNa)) { tmRO[which(datFi$filt[,i]),i] <- ROTS::ROTS(datFi$data[which(datFi$filt[,i]), 
+        which(useCol[,i])], groups=as.numeric(as.factor(gr[which(useCol[,i])]))-1, B=ROTSn)$pvalue }       # K=500  
       out$ROTS.p <- tmRO
-      if(length(ROTSn)==1 && ROTSn >0) {
+      if(length(ROTSn)==1 && ROTSn !=0) {
         out$ROTS.BH <- apply(tmRO, 2, stats::p.adjust, method="BH") 
         if(lfdrInclude) out$ROTS.lfdr <- suppressWarnings(apply(tmRO, 2, wrMisc::pVal2lfdr)) }
     }
-    if(debug) {message(fxNa," tRN4"); tRN4 <- list(dat=dat,datI=datI, gr=gr,datFi=datFi,multCorMeth=multCorMeth,datI=datI,out=out,comp=comp,useComparison=useComparison,useComparisonNa=useComparisonNa,sep1=sep1,chNA=chNA,nLoop=nLoop,seedNo=seedNo,imputMethod=imputMethod,avSd=avSd,retnNA=retnNA)}
+    if(debug) {message(fxNa,"tRN4"); tRN4 <- list(dat=dat,datI=datI, gr=gr,datFi=datFi,multCorMeth=multCorMeth,datI=datI,out=out,comp=comp,useComparison=useComparison,useComparisonNa=useComparisonNa,sep1=sep1,chNA=chNA,nLoop=nLoop,seedNo=seedNo,imputMethod=imputMethod,avSd=avSd,retnNA=retnNA)}
 
     # ## now need to possibly re-adjust sampleSetup
     # if(!identical(sampleSetup, sep1)) { sampleSetup$sep <- sep1
     #   if(debug) message(fxNa,"Updating separator") }             # finish separator
-    if(debug) {message(fxNa," tRN5"); tRN5 <- list(dat=dat,datI=datI, gr=gr,datFi=datFi,multCorMeth=multCorMeth,datI=datI,out=out,comp=comp,sep1=sep1,useComparison=useComparison,useComparisonNa=useComparisonNa,sep1=sep1,chNA=chNA,nLoop=nLoop,seedNo=seedNo,imputMethod=imputMethod,avSd=avSd,retnNA=retnNA)}
+    if(debug) {message(fxNa,"tRN5"); tRN5 <- list(dat=dat,datI=datI, gr=gr,datFi=datFi,multCorMeth=multCorMeth,datI=datI,out=out,comp=comp,sep1=sep1,useComparison=useComparison,useComparisonNa=useComparisonNa,sep1=sep1,chNA=chNA,nLoop=nLoop,seedNo=seedNo,imputMethod=imputMethod,avSd=avSd,retnNA=retnNA)}
 
 
     ## subsequent rounds of NA-imputation  
@@ -310,8 +324,7 @@ testRobustToNAimputation <- function(dat, gr=NULL, useComparison=NULL, annot=NUL
       if(length(ROTSn)==1) if(ROTSn >0) {
         pVaRotsTab <- array(NA_real_, dim=c(nrow(dat), nrow(useComparisonNa), min(10,nLoop)))
         pVaRotsTab[,,1] <- out$ROTS.p }
-      if(debug) {message(fxNa," tRN6"); tRN6 <- list(out=out,dat=dat,datI=datI,gr=gr,datFi=datFi,multCorMeth=multCorMeth,nLoop=nLoop,imputMethod=imputMethod,seedNo=seedNo,retnNA=retnNA,pwSep=pwSep,comp=comp, avSd=avSd,sampleSetup=sampleSetup, NAneigLst=datI$NAneigLst,datIm=datIm,pValTab=pValTab,tValTab=tValTab)}  # 
-
+      if(debug) {message(fxNa,"tRN6"); tRN6 <- list(out=out,dat=dat,datI=datI,gr=gr,datFi=datFi,multCorMeth=multCorMeth,nLoop=nLoop,imputMethod=imputMethod,seedNo=seedNo,retnNA=retnNA,pwSep=pwSep,comp=comp, avSd=avSd,sampleSetup=sampleSetup, NAneigLst=datI$NAneigLst,datIm=datIm,pValTab=pValTab,tValTab=tValTab,ROTSn=ROTSn)}  # 
 
       for(i in 2:nLoop) {
         ## the repeated NA-imputation & testing   
@@ -329,24 +342,12 @@ testRobustToNAimputation <- function(dat, gr=NULL, useComparison=NULL, annot=NUL
         pValTab[,,i] <- fitX$p.value
         tValTab[,,i] <- fitX$t
         #if(debug) message(fxNa,"  tRN5c - ",i)
-        if(length(ROTSn)==1) if(ROTSn >0 & i < min(10, nLoop)) {       # test using ROTS (TAKES MUCH TIME !!)
-          for(i in 1:nrow(useComparisonNa)) tmRO[which(datFi$filt[,i]),i] <- ROTS::ROTS(datFi$data[which(datFi$filt[,i]),which(useCol[,i])], groups=as.numeric(as.factor(gr[which(useCol[,i])])), B=ROTSn)$pvalue   # ,K=500  
-          pVaRotsTab[,,i] <- tmRO } 
+        if(length(ROTSn)==1) if(ROTSn >0 && i < min(99, nLoop)) {       # test using ROTS (TAKES MUCH TIME !!)
+          for(i in 1:nrow(useComparisonNa)) { 
+            tmRO[which(datFi$filt[,i]), i] <- ROTS::ROTS(datFi$data[which(datFi$filt[,i]), which(useCol[,i])], groups=as.numeric(as.factor(gr[which(useCol[,i])])), B=ROTSn)$pvalue   # ,K=500  
+          pVaRotsTab[,,i] <- tmRO } }
       }      # end loop of repetitive NA-imputation & testing
-    
-      
-      # if(length(pwIndex) >0) {
-      #   ## ?? moove block below (from moderTestXgrp() ) to separate fx ??  : check for suitable sep for grp, only once occuring in pwIndex (if given)
-      #   if(length(dim(pwIndex))==0) {
-      #     sepOnceInComp <- sapply(sepX, function(x) nchar(gsub(x,"", pwIndex)) + nchar(x) ==nchar(pwIndex))
-      #     if(length(dim(sepOnceInComp))==2) sepOnceInComp <- colSums(sepOnceInComp) == nrow(sepOnceInComp)
-
-      #     if(any(sepOnceInComp)) sep1 <- names(sepInGrp)[sepOnceInComp & !sepInGrp][1] else {
-      #       if(!silent) message(fxNa,"Problem understanding 'useComparison', no reasonable group-separator found, ignoring 'useComparison'")
-      #       sep1 <- pwIndex <- NULL }
-      #   } else sep1 <- names(sepInGrp)[which(!sepInGrp)[1]] 
-      # } else sep1 <- names(sepInGrp)[which(!sepInGrp)[1]]
-      if(debug) { message(fxNa," tRN7"); tRN7 <- list(out=out,datFi=datFi,annot=annot,dat=dat,gr=gr,retnNA=retnNA, useComparison=useComparison,comp=comp,avSd=avSd,datI=datI,multCorMeth=multCorMeth, pValTab=pValTab,datIm=datIm,nLoop=nLoop,useComparison=useComparison,sep1=sep1,pValColNa=pValColNa )  }
+      if(debug) { message(fxNa,"tRN7"); tRN7 <- list(out=out,datFi=datFi,annot=annot,dat=dat,gr=gr,retnNA=retnNA, useComparison=useComparison,comp=comp,avSd=avSd,datI=datI,multCorMeth=multCorMeth, pValTab=pValTab,datIm=datIm,nLoop=nLoop,useComparison=useComparison,sep1=sep1,pValColNa=pValColNa )  }
       
       ## (if needed) combine values from interative procedure  before filtering
       if(length(dim(pValTab)) ==3) {
@@ -354,6 +355,7 @@ testRobustToNAimputation <- function(dat, gr=NULL, useComparison=NULL, annot=NUL
         colnames(pValTab) <- pValColNa
         out$datImp <- as.matrix(apply(datIm, 1:2, mean, na.rm=TRUE))
       } else out$datImp <- datIm
+      if(debug) { message(fxNa,"tRN7a"); tRN7 <- list(out=out,datFi=datFi,annot=annot,dat=dat,gr=gr,retnNA=retnNA, useComparison=useComparison,useComparisonNa=useComparisonNa,comp=comp,avSd=avSd,datI=datI,multCorMeth=multCorMeth, pValTab=pValTab,datIm=datIm,nLoop=nLoop,useComparison=useComparison,sep1=sep1,pValColNa=pValColNa )  }
       
       ## prepepare for adjusting to custom useComparison : adjCol gives index to use from complete combinatorics 
       adjCol <- match(rownames(useComparisonNa), colnames(datFi$filt))
@@ -374,7 +376,7 @@ testRobustToNAimputation <- function(dat, gr=NULL, useComparison=NULL, annot=NUL
         useFi <- datFi$filt[,adjCol]
         pValTab[which(!useFi)] <- NA
       }   
-      if(debug) { message(fxNa," tRN7b"); tRN7b <- list(out=out,datFi=datFi,annot=annot,dat=dat,gr=gr,retnNA=retnNA, useComparison=useComparison,comp=comp,adjCol=adjCol,avSd=avSd,datI=datI,multCorMeth=multCorMeth, pValTab=pValTab,datIm=datIm,nLoop=nLoop,useComparison=useComparison,sep1=sep1 )  }
+      if(debug) { message(fxNa,"tRN7b"); tRN7b <- list(out=out,datFi=datFi,annot=annot,dat=dat,gr=gr,retnNA=retnNA, useComparison=useComparison,comp=comp,adjCol=adjCol,avSd=avSd,datI=datI,multCorMeth=multCorMeth, pValTab=pValTab,datIm=datIm,nLoop=nLoop,useComparison=useComparison,sep1=sep1 )  }
           
       ## resume indiv rounds of imputation, optinal return details       
       rownames(out$datImp) <- if(is.null(rownames(dat))) rownames(annot) else rownames(dat)
@@ -397,7 +399,7 @@ testRobustToNAimputation <- function(dat, gr=NULL, useComparison=NULL, annot=NUL
 
     
     out$annot <- annot
-    out$filter <- datFi$filt[,adjCol]
+    out$filter <- datFi$filt[ , adjCol, drop=FALSE]
     out$param <- param1
     if(debug) {message(fxNa," tRN8"); tRN8 <- list(out=out,annot=annot,dat=dat,gr=gr,retnNA=retnNA, adjCol=adjCol,avSd=avSd,datI=datI,multCorMeth=multCorMeth,datFi=datFi, pValTab=pValTab,datIm=datIm,lfdrInclude=lfdrInclude ) }
 

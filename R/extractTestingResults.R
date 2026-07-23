@@ -6,17 +6,17 @@
 #'  
 #' @details
 #' One single given comparison has to be selected by the user via argument \code{compNo}, multiple options exist :
-#' 1) The use may give and index which refers to the i'th comparison stored in the object \code{stat}
-#' 2) It may be more convenient to directy cite a goven comparison (eg \code{compNo=c("B-C")} in the examples below). 
+#' 1) The use may give and index which refers to the i'th comparison stored in the object \code{stat$setup}
+#' 2) It may be more convenient to directy cite a given comparison (eg \code{compNo=c("B-C")} in the examples below). 
 #'   Such comparions may be 'inversed' to the ones orginally performed, the M-values will be adjusted accordingly (eg \code{compNo=c("C-B")})
 #' 3) It is also possible to give a vector of 2 integers which will be uses as index to the levels of the initial group-assignment, beware that levels are sorted.
 #' 
-#' The number of columns returned can be modulated using the argument \code{addTy}. 
-#' \code{addTy='slim'} gives the fewer columns, only FDR and FC of current comparison specified in argument \code{compNo} will be returned.
-#' With \code{addTy='slim2'} the column-names for statistical testing and log Fold-Change will be generic, all colnames will be trimmed to max 25 characters
-#' \code{addTy='all'} results in a rather exaustive collection of columns (including annotation data, if present), 
-#' The option \code{addTy='slim3'} is like slim2 but without column ProteinName
-#' while default \code{addTy='allMeans'} gives a compromise for the number of columns returned.
+#' The number and type of columns returned can be modulated using the argument \code{outTy}. 
+#' \code{outTy='slim'} gives the fewer columns, only FDR and FC of current comparison specified in argument \code{compNo} will be returned.
+#' With \code{outTy='slim2'} the column-names for statistical testing and log Fold-Change will be generic, all colnames will be trimmed to max 25 characters
+#' \code{outTy='all'} results in a rather exaustive collection of columns (including annotation data, if present), 
+#' The option \code{outTy='slim3'} is like slim2 but without column ProteinName
+#' while default \code{outTy='allMeans'} gives a compromise for the number of columns returned.
 #' 
 #' @param stat ('MArrayLM'-object or list) designed for the output from \code{moderTest2grp} or \code{moderTestXgrp}
 #' @param compNo (integer) the comparison name/number/index to be used
@@ -25,11 +25,13 @@
 #' @param FCthrs (numeric) Fold-Change threshold given as Fold-change and NOT log2(FC), default at 1.5 (for filtering at M-value =0.585)
 #' @param annotCol (character) column-names from the annotation to be included
 #' @param nSign (integer) number of significant digits whe returning results
-#' @param addTy (character) additional groups of columns to add ("allMeans", "all" or "slim") in addition;
-#'   if \code{addTy="slim"} only the FDR- and FC-columns directly concerned will be extracted/displayed, column-names will be trimmed to max 26 characters;
-#'   if \code{addTy="slim2"} only the FDR- and FC-columns directly concerned will be extracted/displayed, FDR- and FC- columns will have generic names (without indicating the comparison), all text will be trimmed to max 38 characters;
-#'   if \code{addTy="slim3"} like slim2 but without ProteinName
-#' @param sortBy (character or logical) optional sorting of results, must specify a column-name of output, if \code{sortBy=TRUE} the fisrt column of argument \code{statTy} will be used
+#' @param outTy (character) additional groups of columns to add ("allMeans", "all" or "slim") in addition;
+#'   if \code{outTy="slim"} only the FDR- and FC-columns directly concerned will be extracted/displayed, column-names will be trimmed to max 26 characters;
+#'   if \code{outTy="slim2"} only the FDR- and FC-columns directly concerned will be extracted/displayed, FDR- and FC- columns will have generic names (without indicating the comparison), all text will be trimmed to max 38 characters;
+#'   if \code{outTy="slim3"} like slim2 but without ProteinName
+#' @param sep (character of length=1 or \code{NULL}) custom choice for separator for column-names of pairwise comparisons, otherwise based on \code{stat} or (if \code{outTy="slim3"} or \code{outTy="slim4"}) '_vs_' (or '__vs__' if '-' or '_' appear in groups)
+#' @param addTy  this argument has been deprecated and replaced by \code{outTy} (content of addTy will be ignored) 
+#' @param sortBy (character or logical) optional sorting of results according to argument \code{compNo}, may be name of mutiple-testing correction (eg 'BH', see also argument \code{statTy}), if \code{sortBy=TRUE} the first column of argument \code{statTy} will be used
 #' @param rowNames (character or logical) optional custom rownames, or if \code{rowNames=FALSE} no rownames
 #' @param filename (character) optional (path and) file-name for exporting results to csv-file
 #' @param fileTy (character) file-type to be used with argument \code{filename}, may be 'csvEur' or 'csvUS'
@@ -53,156 +55,168 @@
 #' extractTestingResults(test8)
 #' extractTestingResults(test8, compNo=c("B-C"))
 #' 
-#' extractTestingResults(test8, addTy="all")
-#' extractTestingResults(test8, addTy="slim")
+#' extractTestingResults(test8, outTy="all")
+#' extractTestingResults(test8, outTy="slim")
 #' @export
 extractTestingResults <- function(stat, compNo=1, statTy="BH", thrsh=0.05, FCthrs=1.5, annotCol=c("Accession","EntryName","GeneName","ProteinName"), 
-  nSign=6, addTy=c("allMeans"), sortBy=NULL, rowNames=TRUE, filename=NULL, fileTy="csvUS", silent=FALSE, debug=FALSE, callFrom=NULL) {
+  nSign=6, outTy="slim", sep=NULL, addTy=NULL, sortBy=NULL, rowNames=TRUE, filename=NULL, fileTy="csvUS", silent=FALSE, debug=FALSE, callFrom=NULL) {
   ##
   fxNa <- wrMisc::.composeCallName(callFrom, newNa="extractTestingResults")
   if(!isTRUE(silent)) silent <- FALSE
-  if(isTRUE(debug)) silent <- FALSE else debug <- FALSE
+  if(isTRUE(debug)) { silent <- FALSE } else { debug <- FALSE }
+  shortColNa <- FALSE     # in case of extracting single comparison shorten colnames for FDR & logFC (ie not citing groups)
+  #later#newSep <- if(any("slim2" %in% outTy)) "_vs_" else "__vs__"                          # note cbind will change colnames with '  /  ' to '.....'
+  
   out <- outX <- NULL
   fdrOk <- FALSE
   argNa <- deparse(substitute(stat))
   
   if(!"list" %in% mode(stat) || length(stat) <1) stop("Argument 'stat' must be a list or 'MArrayLM'-object from limma")
   if(!("MArrayLM" %in% class(stat)) && !silent) message(fxNa," Caution, '",argNa,"' is not 'MArrayLM'-object as expected")
-  if(length(statTy) <1) { statTy <- "BH"
+  if(length(statTy) ==0) { statTy <- "BH"
     if(!silent) message(fxNa,"Argument 'statTy' empty, setting to default 'BH'")}
-  useFdrTy <- if(identical(statTy,"BH") & "FDR" %in% names(stat)) "FDR" else statTy    # maybe not needed to force to FDR
-  chLstEl <- c(useFdrTy,"annot") %in% names(stat) 
+  useFdrTy <- if(identical(statTy,"BH") && "FDR" %in% names(stat)) "FDR" else statTy    # maybe not needed to force to FDR
+  datOK <- all(c("means", useFdrTy) %in% names(stat) )
+  
+  hasAnn <- "annot" %in% names(stat) && length(stat$annot) != 0 
+  if(!hasAnn && !silent) message(fxNa,"Note : no list-element 'annot' found in '",argNa,"' (would be useful for better annotation of results)")
+  chLstEl <- c(useFdrTy) %in% names(stat)   
   if(!chLstEl[1]) stop(fxNa,"Cannot find list-element '",useFdrTy,"' in 'stat'")
-  if(!chLstEl[2]) {
-    if(!silent && length(annotCol) >0) message(fxNa,"Cannot find list-element 'annot' in ",argNa)
-    annotCol <- NULL }
+
   if(length(compNo) != 1) stop("Argument 'compNo' must be numeric and of length=1")
-  if(compNo > ncol(stat[[useFdrTy]])) { compNo <- 1
+  if(compNo > ncol(stat[[useFdrTy[1]]])) { compNo <- 1
     message(fxNa,"Invalid entry of argument 'compNo', setting to defaul compNo=1")}   
   if(is.na(FCthrs) || !is.numeric(FCthrs)) FCthrs <- NULL
   if(length(FCthrs) >0 && is.numeric(FCthrs)) FCthrs <- log2(FCthrs) else FCthrs <- NULL
-  if(length(addTy) ==0 || any(is.na(addTy))) addTy <- "slim"
-  groupSep <- "-"                                    # used to separate comparison groups  
-  if(debug) {message(fxNa,"eTR00"); eTR00 <- list(stat=stat,compNo=compNo,statTy=statTy,thrsh=thrsh,FCthrs=FCthrs,annotCol=annotCol,addTy=addTy,filename=filename,groupSep=groupSep)}      
-
+  if(length(outTy) != 1 || any(is.na(outTy))) outTy <- "slim"
+  
   ## main extracting
   ## redo sample-pair assoc
   avCol <- wrMisc::sampNoDeMArrayLM(stat, compNo, outTy="list", silent=silent, callFrom=fxNa, debug=debug)          # 
-  if(debug) {message(fxNa,"eTR0"); eTR0 <- list(stat=stat,compNo=compNo,statTy=statTy,thrsh=thrsh,FCthrs=FCthrs,annotCol=annotCol,addTy=addTy,avCol=avCol,filename=filename, groupSep=groupSep)}      
-
-  ## filtering ?  normally already taken care of during testing
+  if(debug) {message(fxNa,"eTR0"); eTR0 <- list(stat=stat,compNo=compNo,statTy=statTy,thrsh=thrsh,FCthrs=FCthrs,annotCol=annotCol,outTy=outTy,avCol=avCol,filename=filename,sep=sep, hasAnn=hasAnn)}      
   
-  ## need FC values
-  if(!"means" %in% names(stat)) stop(fxNa,"Need list-elment stat$means - but is ABSENT !") else {
-    if(!any(c("pwGrpNa","pwInd") %in% names(avCol))) stop(fxNa,"Need list-element  avCol$pwGrpNa  (or avCol$avInd) - but is ABSENT !")}
-  logFC <- if(length(avCol$pwGrpNa) >1) try(stat$means[,avCol$pwGrpNa[1]] - stat$means[,avCol$pwGrpNa[2]]) else try(stat$means[,avCol$avInd[1]] - stat$means[,avCol$avInd[2]])  ## note that order of columns may not be alphabetically
-  if(inherits(logFC, "try-error") || length(logFC)==0) { fcOk <- FALSE
-    if(!silent) message(fxNa,"Having PROBLEMS calulating M-values (FC-values), possible problem of indexing or non-numeric values !  ... nothing to do")    
-  } else {
-    fcOk <- if(length(FCthrs) ==1) abs(logFC) > FCthrs else rep(TRUE, length(logFC))
-    chNa <- is.na(fcOk)
-    if(any(chNa)) fcOk[which(chNa)] <- FALSE
-    ## check for Fdr results
-    fdrOk <- stat[[useFdrTy]][,compNo] < thrsh
-    chNa <- is.na(fdrOk)
-    if(any(chNa)) fdrOk[which(chNa)] <- FALSE
-    if(debug) {message(fxNa,"eTR0a"); eTR0a <- list(stat=stat,compNo=compNo,statTy=statTy,thrsh=thrsh,FCthrs=FCthrs,annotCol=annotCol,addTy=addTy,filename=filename, avCol=avCol,groupSep=groupSep,useFdrTy=useFdrTy,fcOk=fcOk,fdrOk=fdrOk)}        
+  ## define separator for different types of extracting
+  newSep <- if(length(sep) !=1 || identical(sep,NA)) { 
+    if(grepl("^slim[3-4]", outTy)) { if(any(grepl("_|-", stat$setup$grpNa))) "__vs__" else "_vs_"} else stat$setup$sep    # special sep for slim3 & slim4
+  } else sep
+  #newSep <- if("slim" %in% outTy) else stat$setup$sep if(grepl("^slim[3-4]", outTy)) "_vs_" else "__vs__"                          # note:  cbind will change colnames with '  /  ' to '.....' 
+  if(any(grepl(newSep, stat$setup$grpNa), na.rm=TRUE)) warning(fxNa,"NOTE : (New) separator 'sep' for pairwise groups seems not well chosen - occuring inside some of the group-names !")
+  shortColNa2 <- grepl("^slim4", outTy)    # give only 'FDR' or 'logFC' if single column/comparison
+      
+  useCompNo <- if(any(grepl("^slim", outTy)) || ncol(stat$setup$pwGrpNa) ==1) compNo else c(compNo,(1:ncol(stat[[useFdrTy[1]]]))[-compNo])   # index of targert comparison and remaining comparisons
+  if(debug) {message(fxNa,"eTR0a"); eTR0a <- list(stat=stat,compNo=compNo,useFdrTy=useFdrTy,thrsh=thrsh,FCthrs=FCthrs,annotCol=annotCol,outTy=outTy,avCol=avCol,filename=filename, hasAnn=hasAnn,newSep=newSep,useCompNo=useCompNo)}      
+    
+  if(datOK) {      
+    ## prepare names & co
+    if(is.null(names((stat$setup$grpNa)))) { 
+      shortGrp <- if(length(stat$setup$grpNa) <27) LETTERS else {
+        if(length(stat$setup$grpNa) <27) paste0(rep(LETTERS, each=26), rep(LETTERS, 26)) else paste0(rep(LETTERS, each=676), rep(LETTERS, each=26), rep(LETTERS, 676))}
+      shortGrp <- shortGrp[1:length(stat$setup$grpNa)]
+      names(shortGrp) <- stat$setup$grpNa
+      names(stat$setup$grpNa) <- shortGrp
+    } else { shortGrp <- names(stat$setup$grpNa) }
+
+    useGrpNaFull <- stat$setup$pwGrpNa
+    if(any(c("slim3","slim4") %in% outTy)) {                                         
+      useGrpNa <- matrix(shortGrp[stat$setup$pwIndex], nrow=nrow(stat$setup$pwIndex))
+    } else { 
+      useGrpNa <- stat$setup$pwGrpNa }
+        
+    usePwNa <- paste0(useGrpNa[,1], newSep, useGrpNa[,2]) 
+    usePwNaFull <- paste0(stat$setup$pwGrpNa[,1], newSep, stat$setup$pwGrpNa[,2]) 
+    if(any(grepl("^slim", outTy)) && nrow(stat$setup$pwIndex) >1) {     ## adjust order to bring question of interest to front
+      useGrpNa <- useGrpNa[useCompNo,, drop=FALSE]
+      useGrpNaFull <- useGrpNaFull[useCompNo,, drop=FALSE]
+      usePwNaFull <- usePwNaFull[useCompNo]
+      usePwNa <- usePwNa[useCompNo] }
+    if(debug) {message(fxNa,"eTR0b"); eTR0b <- list(stat=stat,compNo=compNo,useFdrTy=useFdrTy,thrsh=thrsh,FCthrs=FCthrs,annotCol=annotCol,outTy=outTy,avCol=avCol,useFdrTy=useFdrTy,filename=filename, shortColNa2=shortColNa2,hasAnn=hasAnn,newSep=newSep,useCompNo=useCompNo,useGrpNa=useGrpNa,usePwNa=usePwNa,usePwNaFull=usePwNaFull)}
+               
+    ## FDR results
+    out <- as.data.frame(stat[[useFdrTy[1]]][ , useCompNo, drop=FALSE] )   
+    names(out) <- if(shortColNa2 && ncol(out) ==1) "FDR" else { paste0(useFdrTy,".", if(!"lfdr" %in% useFdrTy) "FDR.", usePwNa)}
+    if(length(useFdrTy) >1) {
+      for(i in 2:length(useFdrTy)) out <- cbind(out, stat[[useFdrTy[i]]][ , useCompNo, drop=FALSE])
+    }
+      
+    ## FC results                            if(shortColNa2 && ncol(out)==1)
+    logFC <- as.matrix(apply(stat$setup$pwGrpNa[useCompNo,, drop=FALSE], 1, function(grN) stat$means[,grN[1]] - stat$means[,grN[2]]))
+    if(length(useCompNo) !=1) logFC <- logFC[ , useCompNo, drop=FALSE]       # place main question/comparison first
+    colnames(logFC) <- if(shortColNa2 && ncol(logFC) ==1) "logFC" else paste0("logFC.",usePwNa)
+
+    ## prepare filter 
+    fcOK <- if(length(FCthrs) ==1) abs(logFC[,1]) > FCthrs else rep(TRUE, nrow(logFC))
+    fdrOK <- out[,1] < thrsh
+    extrLi <- if("all" %in% outTy) rep(TRUE, nrow(out)) else { fcOK & fdrOK }
+    chNA <- is.na(extrLi)
+    if(any(chNA)) extrLi[which(chNA)] <- FALSE
+    if(debug) { message(fxNa,"eTR0c"); eTR0c <- list(stat=stat,compNo=compNo,useFdrTy=useFdrTy,thrsh=thrsh,FCthrs=FCthrs,annotCol=annotCol,outTy=outTy,avCol=avCol,useFdrTy=useFdrTy,filename=filename, shortColNa2=shortColNa2,hasAnn=hasAnn,newSep=newSep,useCompNo=useCompNo,useGrpNa=useGrpNa,usePwNa=usePwNa,out=out,logFC=logFC,fcOK=fcOK,fdrOK=fdrOK,extrLi=extrLi,shortGrp=shortGrp)}
+  }  
+    
+  if(datOK && sum(extrLi) !=0) {
+    extrLi <- which(extrLi)
+    
+    ## group means
+    useMeanCol <- if(grepl("^slim[[:digit:]]",outTy)) match(useGrpNaFull[1,], colnames(stat$means)) else 1:ncol(stat$means)
+    outD <- stat$means[, useMeanCol ]
+    colnames(outD) <- paste0("av.", if(grepl("^slim[3-4]",outTy)) shortGrp[match(colnames(outD),names(shortGrp))] else colnames(outD))
+    
+    out <- signif(cbind(out, logFC, outD)[extrLi,, drop=FALSE], nSign)                 # combine FDR, logFC & means
+    if(debug) { message(fxNa,"eTR2"); eTR2 <- list(stat=stat,compNo=compNo,statTy=statTy,thrsh=thrsh,FCthrs=FCthrs,annotCol=annotCol,outTy=outTy,avCol=avCol,useFdrTy=useFdrTy,filename=filename, shortColNa2=shortColNa2,hasAnn=hasAnn,newSep=newSep,useCompNo=useCompNo,useGrpNa=useGrpNa,usePwNa=usePwNa,out=out,outD=outD,logFC=logFC,fcOK=fcOK,fdrOK=fdrOK,extrLi=extrLi,shortGrp=shortGrp)}
+    
+    ## number of NAs per group of replicates & protein
+    if(length(stat$isNA) ==0 && length(stat$nNA) ==0) {                # && packageVersion("wrMisc") < 2.1.0     # primarily needed with older wrMisc 
+      chDat <- c("raw","quant") %in% names(stat)
+      if(any(chDat)) stat$isNA <- is.na(stat[[which(chDat)[1]]])  
+    }
+    if(length(stat$nNArat) ==0 && length(stat$isNA) !=0) {
+      stat$nNArat <- wrMisc::rowGrpNA(stat, mode="complete")  # gives '0/3' etc
+      if(all(grepl(".nNA$", colnames(stat$nNArat)))) colnames(stat$nNArat) <- paste0("nNA.",sub("X{0,1}\\.nNA$","", colnames(stat$nNArat) ))     # shuffle 'nNA' to beginning of colnames to remain similar
+    } 
+    if(length(stat$nNArat) !=0 && grepl("slim[3-4]", outTy)) {                                      # adjust names for nNA to shortGrp (eg nNA.A)  etc
+      colnames(stat$nNArat) <- paste0("nNA.",shortGrp[match(names(shortGrp),colnames(stat$means))])      
+    }           
+    if(debug) { message(fxNa,"eTR3"); eTR3 <- list(stat=stat,compNo=compNo,useFdrTy=useFdrTy,thrsh=thrsh,FCthrs=FCthrs,annotCol=annotCol,outTy=outTy,avCol=avCol,filename=filename, hasAnn=hasAnn,newSep=newSep,useCompNo=useCompNo,useGrpNa=useGrpNa,usePwNa=usePwNa,out=out,outD=outD,logFC=logFC,fcOK=fcOK,fdrOK=fdrOK,extrLi=extrLi,shortGrp=shortGrp,useMeanCol=useMeanCol,sortBy=sortBy)}
+    
+    ## annotation
+    if(hasAnn) {
+      if("slim3" %in% outTy && isTRUE("ProteinName" %in% annotCol)) {annotCol <- annotCol[-which(annotCol =="ProteinName")] }     
+      if(grepl("^slim", outTy)) {                   # remove all NA columns from annot (unless all cols would ghet removed)
+        isNA <- colSums(!is.na(stat$annot[extrLi, annotCol, drop=FALSE])) ==0
+        if(any(isNA) && !all(isNA)) annotCol <- annotCol[which(!isNA)]                 # adjust if some cols maissing
+      }
+      useAnnLi <- match( rownames(out), stat$annot[,"EntryName"])
+      if(all(is.na(useAnnLi))) useAnnLi <- match( rownames(out), stat$annot[,"Accession"])
+      if(debug && any(is.na(useAnnLi))) message(fxNa,"Note : ","Adding Annotation : Mapping of gave ",sum(is.na(useAnnLi)),"/",length(useAnnLi)," NAs !")
+
+      out <- data.frame(stat$annot[useAnnLi, annotCol, drop=FALSE], stat$nNArat[extrLi, useMeanCol, drop=FALSE], out)   ## combine &  apply filter
+    }     
+     
+    ## sort
+    newOrd <- 1:nrow(out)    # init default
+    if(length(sortBy) ==1) { if(isTRUE(sortBy)) { 
+        newOrd <- order(stat[[useFdrTy[1]]][ extrLi, useCompNo], decreasing=FALSE ) 
+      } else { if(sortBy %in% names(stat) && ncol(stat[[sortBy]]) >= useCompNo) { newOrd <- order(stat[[sortBy]][ extrLi, useCompNo], decreasing=FALSE ) 
+        } else if(!isFALSE(sortBy)) warning(fxNa,"Invalid entry for argument 'sortBy' (The corresponding element doesn't have sufficient columns compared to argument 'compNo')")
+      }
+    } 
+
+    out <- out[newOrd,, drop=FALSE]
+    if(length(rowNames)==nrow(out) && length(rowNames) !=0 && !any(duplicated(rowNames))) rownames(out) <- rowNames
+    if(isFALSE(rowNames)) rownames(out) <- NULL
+    if(debug) { message(fxNa,"eTR4"); eTR4 <- list(stat=stat,compNo=compNo,useFdrTy=useFdrTy,thrsh=thrsh,FCthrs=FCthrs,annotCol=annotCol,outTy=outTy,avCol=avCol,filename=filename, hasAnn=hasAnn,newSep=newSep,useCompNo=useCompNo,useGrpNa=useGrpNa,usePwNa=usePwNa,out=out,outD=outD,logFC=logFC,fcOK=fcOK,fdrOK=fdrOK,extrLi=extrLi,shortGrp=shortGrp,useMeanCol=useMeanCol,newOrd=newOrd)}
+      
+    ## export
+    if(length(filename)==1 && length(out) !=0 && length(dim(out))==2) {
+      if(any(c("csvUS","UScsv") %in% fileTy)) {
+        ch1 <- try(utils::write.csv(out, file=filename, row.names=FALSE, quote=FALSE))
+      } else {
+        ch1 <- try(utils::write.csv2(out, file=filename, row.names=FALSE, quote=FALSE))
+      }
+      if(inherits(ch1, "try-error")) { warning("FAILED to export as file '",filename,"'") } }
   }
-  
-  if(any(fcOk & fdrOk)) {
-    extrLi <- if(TRUE) which(fcOk & fdrOk) else which(fcOk | fdrOk)
-    if("slim3" %in%  addTy && isTRUE("ProteinName" %in% annotCol)) annotCol <- annotCol[-which(annotCol =="ProteinName")]
-    
-    useCompNo <- if(any(grepl("^slim", addTy))) compNo else c(compNo,(1:ncol(stat[[useFdrTy]]))[-compNo])   # index of targert comparison and remaining comparisons
-    if(debug) {message(fxNa,"eTR0b"); eTR0b <- list(stat=stat,compNo=compNo,statTy=statTy,thrsh=thrsh,FCthrs=FCthrs,annotCol=annotCol,addTy=addTy,filename=filename, avCol=avCol,groupSep=groupSep,useFdrTy=useFdrTy,fcOk=fcOk,fdrOk=fdrOk)}      
-    ## some results .. continue
-    if(any(c("all","allFDR","slim","slim2","slim3") %in% addTy) && ncol(stat[[useFdrTy]]) >1) {    # possibility of extracting multiple FDR
-      out <- stat[[useFdrTy]][extrLi,, drop=FALSE]
-      out <- out[,if("all" %in% addTy)  unique(c(compNo, 1:ncol(out))) else useCompNo, drop=FALSE]            # place comparison of interest first (if many retained)
-      if(debug) {message(fxNa,"eTR0c"); eTR0c <- list(stat=stat,compNo=compNo,statTy=statTy,thrsh=thrsh,FCthrs=FCthrs,annotCol=annotCol,addTy=addTy,filename=filename, avCol=avCol,logFC=logFC,extrLi=extrLi,useCompNo=useCompNo,useFdrTy=useFdrTy,chNa=chNa,out=out)}  
-    } else out <- data.frame(FDR=stat[[useFdrTy]][extrLi, compNo, drop=FALSE])
-    colnames(out) <- paste0(useFdrTy,".", colnames(out))
-    if(debug) {message(fxNa,"eTR1"); eTR1 <- list(stat=stat,compNo=compNo,statTy=statTy,thrsh=thrsh,FCthrs=FCthrs,annotCol=annotCol,addTy=addTy,filename=filename, avCol=avCol,logFC=logFC,extrLi=extrLi,useCompNo=useCompNo,useFdrTy=useFdrTy,chNa=chNa,out=out)}  
-    
-  
-    if(any(c("all","allFC","slim","slim2","slim3") %in% addTy)) addTy <- c(addTy,"allMeans")         # Do we realy want to report all means when using slim ??
-
-    ## prepare FC
-    #if(any(c("all","allFC","slim","slim2") %in% addTy)) {     #  && length(avCol) >2
-    #  ## index of grp-means cited in comparison
-    #  #curComp <- colnames(stat$lods)[compNo]
-    #  outX <- sapply(useCompNo, function(x) wrMisc::sampNoDeMArrayLM(stat, x, outT=useFdrTy))        # need to finish !!
-    #  out2 <- (stat$means[,outX[[1]][2,], drop=FALSE] - stat$means[,outX[[1]][1,], drop=FALSE]) [extrLi, useCompNo, drop=FALSE]    ## creat M-values (FC)      
-    #  colnames(out2) <- if(length(useCompNo) >1) paste0("logFC.",apply(outX,2, function(x) paste(colnames(stat$means)[x],collapse="-"))) else "logFC"
-    #} else {out2 <- as.matrix(logFC[extrLi]); colnames(out2) <- paste0("logFC.",colnames(stat[[useFdrTy]])[compNo]) }
-    out2 <- as.matrix(logFC[extrLi])
-    colnames(out2) <- paste0("logFC.",colnames(stat[[useFdrTy]])[compNo])
-    if(debug) {message(fxNa,"eTR1b"); eTR1b <- list(stat=stat,compNo=compNo,statTy=statTy,thrsh=thrsh,FCthrs=FCthrs,annotCol=annotCol,addTy=addTy,filename=filename, avCol=avCol,logFC=logFC,extrLi=extrLi,useFdrTy=useFdrTy,chNa=chNa,out=out,out2=out2,outX=outX,avCol=avCol)}  
-
-    ## prepare means
-    ch2 <- any(grepl("^slim", addTy))
-    ch1 <- any(c("all","allMeans") %in% addTy)  && !ch2  # || length(avCol) <3)
-    out3 <- if(ch1) stat$means[extrLi,] else stat$means[extrLi, which(colnames(stat$means) %in% avCol$pwGrpNa), drop=FALSE]         # the group-means
-    if(length(dim(out3)) >1) colnames(out3) <- paste0("av.",colnames(out3))
-    if(any(grepl("^slim[2-3]", addTy))) {
-      colnames(out) <- if(any(c("BH","BY") %in% statTy)) paste0(statTy[1],".FDR") else statTy[1] 
-      colnames(out2) <- "logFC" 
-    }
-    out <- if("annot" %in% names(stat)) signif(data.frame(out, out2, out3), nSign) else signif(cbind(out, out2, out3), nSign)                 # combine FDR, logFC & means
-
-    ## adjust annotCol accoring to addTy
-    if("all" %in% addTy && "annot" %in% names(stat) && "ProteinName" %in% colnames(stat$annot)) annotCol <- unique(c(annotCol, "EntryName","ProteinName"))
-    outAnn <- stat$annot[extrLi, wrMisc::naOmit(match(annotCol,colnames(stat$annot))), drop=FALSE]
-    ## trim to max char size if slim ?
-    
-    if(length(annotCol) >0) out <- cbind(outAnn, out)  # add annotation
-    if(debug) {message(fxNa,"eTR2"); eTR2 <- list(stat=stat,out=out,out2=out2,compNo=compNo,statTy=statTy,thrsh=thrsh,FCthrs=FCthrs,annotCol=annotCol,addTy=addTy,filename=filename,outAnn=outAnn,sortBy=sortBy,rowNames=rowNames, logFC=logFC,chNa=chNa,out=out,useFdrTy=useFdrTy)}  
-    
-    ## optional writing to file
-    if(length(filename)==1) {
-      digits <- min(nSign, 12)
-      tmp <- if(identical(fileTy,"csvEur")) {
-        try(utils::write.csv2(as.matrix(format(out, digits=digits)), filename, row.names=FALSE, quote=FALSE), silent=silent)
-      } else try(utils::write.csv(as.matrix(format(out, digits=digits)), filename, row.names=FALSE, quote=FALSE), silent=silent)
-      if(inherits(tmp, "try-error")) message(fxNa,"Note: Did not manage to write results to file '",filename,"', check for rights to write  ...") else {
-        if(!silent) message(fxNa,"Wrote results successfully to file '",filename,"'")}
-    }
-    ## final optional trimming of text
-    if(any(grepl("^slim", addTy))) {
-      ## remove all empty cols
-      chNA <- colSums(is.na(out))==nrow(out)
-      if(any(chNA)) out <- out[,which(!chNA), drop=FALSE]
-      ## trim colnames
-      nColChar <- nchar(colnames(out)) >26
-      if(any(nColChar)) colnames(out)[which(nColChar)] <- substr(colnames(out)[which(nColChar)], 1, 26)
-      ## trim  text to max length
-      if(any(grepl("^slim[2-3]", addTy))) {
-        if(length(outAnn) >0) {
-          nChar <- nchar(outAnn) >38
-          if(any(nChar)) outAnn[which(nChar)] <- paste0(substr(outAnn[which(nChar)], 1, 38),"..") }
-      }
-    }  
-    ## Custom Sorting
-    if(length(sortBy)==1) {               # prepare custom sorting
-      if(isTRUE(sortBy)) if(length(statTy)==0) {
-          sortBy <- NULL
-          if(!silent) message(fxNa,"Unable to sort with argument 'statTy' being empty")
-        } else sortBy <- statTy[1]
-    }  
-    if(length(sortBy)==1 && is.character(sortBy)) {               # custom sorting    
-      sortBy1 <- which(colnames(out) %in% sortBy)
-      if(length(sortBy1) ==0) sortBy1 <- grep(paste0("^",sortBy,"\\."), colnames(out))  # may be composed colname
-      if(length(sortBy1) >0) out <- out[order(out[,sortBy1[1]]),,drop=FALSE] else {
-        if(!silent) message(fxNa,"Unable to understand argument 'sortBy' (not found in colnames of output)")
-      } 
-    }
-    ## customize rownames
-    if(length(rowNames) !=0 && !any(is.na(rowNames))) {                 
-      if(isFALSE(rowNames)) rownames(out) <- NULL else {
-        if(length(rowNames) ==nrow(out) && sum(duplicated(rowNames))==0) rownames(out) <- rowNames
-      }
-    }
-    out
-  } else {if(!silent) message(fxNa,"No results pass thresholds"); return(NULL)} }
-              
-
+      
+   ## return results
+   out
+}
+      
+   

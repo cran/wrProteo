@@ -24,7 +24,7 @@ removeSampleInList(
 
 \item{debug}{(logical) display additional messages for debugging}
 
-\item{callFrom}{(character) allow easier tracking of message(s) produced}
+\item{callFrom}{(character) allows easier tracking of messages produced}
 }
 \value{
 This function returns a matrix including imputed values or list of final and matrix with number of imputed by group (plus optional plot)

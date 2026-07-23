@@ -6,17 +6,21 @@
 #' @param massTy (character) 'mono' or 'average'
 #' @param rmEmpty (logical) suppress empty entries
 #' @param silent (logical) suppress messages
+#' @param debug (logical) display additional messages for debugging
 #' @param callFrom (character) allow easier tracking of messages produced
 #' @return This function returns a numeric vector with mass
 #' @seealso \code{\link[wrMisc]{convToNum}}
 #' @examples
 #' massDeFormula(c("12H12O","HO"," 2H 1 Se, 6C 2N","HSeCN"," ","e"))
 #' @export
-massDeFormula <- function(comp, massTy="mono", rmEmpty=FALSE, silent=FALSE, callFrom=NULL){
+massDeFormula <- function(comp, massTy="mono", rmEmpty=FALSE, silent=FALSE, debug=FALSE, callFrom=NULL){
   ## calculate molecular mass based on composition formula (sum formula: number & element)
   ## 'comp' .. character vector with molecular composition(s)
   ##
   fxNa <- wrMisc::.composeCallName(callFrom,newNa="massDeFormula")
+  if(!isTRUE(silent)) silent <- FALSE
+  if(isTRUE(debug)) { silent <- FALSE } else { debug <- FALSE }
+
   if(length(wrMisc::naOmit(comp)) < length(comp)){
     if(!silent) message(fxNa,sum(is.na(comp))," entries of 'comp' are NA  (remove) !")
     comp <- comp[wrMisc::naOmit(match(wrMisc::naOmit(comp), comp))] }

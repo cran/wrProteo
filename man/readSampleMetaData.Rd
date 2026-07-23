@@ -2,7 +2,7 @@
 % Please edit documentation in R/readSampleMetaData.R
 \name{readSampleMetaData}
 \alias{readSampleMetaData}
-\title{Read Sample Meta-data from Quantification-Software And/Or Sdrf And Align To Experimental Data}
+\title{Read Sample Meta-data From Quantification-Software And/Or Sdrf And Align To Experimental Data}
 \usage{
 readSampleMetaData(
   quantMeth,
@@ -38,7 +38,7 @@ in case of \code{method=='PL'} (Proline), this argument should contain the initi
 \item{groupPref}{(list) additional parameters for interpreting meta-data to identify structure of groups (replicates);
 May contain \code{lowNumberOfGroups=FALSE} for automatically choosing a rather elevated number of groups if possible (defaults to low number of groups, ie higher number of samples per group).
 A vector of custom sample-names may be provided via \code{sampleNames=...} (must be of correct length);
-if contains \code{sampleNames="sdrf"} sample-names will be used from trimmed file-names.}
+if contains \code{sampleNames="sdrf"} sample-names will be used from trimmed file-names out of sdrf.}
 
 \item{chUnit}{(logical or character) optional adjustig of group-labels from sample meta-data in case multipl different unit-prefixes are used to single common prefix 
 (eg adjust '100pMol' and '1nMol' to '100pMol' and '1000pMol') for better downstream analysis. This option will call \code{\link[wrMisc]{adjustUnitPrefix}} and \code{\link[wrMisc]{checkUnitPrefix}} from package \code{wrMisc}

@@ -75,7 +75,7 @@ if \code{character} a fasta-file at this location will be read/used/}
 \item{sdrf}{(logical, character, list or data.frame) optional extraction and adding of experimenal meta-data:
 if \code{sdrf=TRUE} the 1st sdrf in the directory above \code{fileName} will be used
 if character, this may be the ID at ProteomeExchange,
-the second element may give futher indicatations for automatic organization of groups of replicates.
+the second element may give further indications for automatic organization of groups of replicates.
 Besides, the output from \code{readSdrf} or a list from \code{defineSamples} may be provided; if \code{gr} is provided, \code{gr} gets priority for grouping of replicates}
 
 \item{suplAnnotFile}{(logical or character) optional reading of supplemental files produced by Compomics; if \code{gr} is provided, it gets priority for grouping of replicates

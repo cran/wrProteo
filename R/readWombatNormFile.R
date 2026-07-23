@@ -50,7 +50,7 @@
 #' @param sdrf (logical, character, list or data.frame) optional extraction and adding of experimenal meta-data:
 #'   if \code{sdrf=TRUE} the 1st sdrf in the directory above \code{fileName} will be used
 #'   if character, this may be the ID at ProteomeExchange,
-#'   the second element may give futher indicatations for automatic organization of groups of replicates.
+#'   the second element may give further indications for automatic organization of groups of replicates.
 #'   Besides, the output from \code{readSdrf} or a list from \code{defineSamples} may be provided; if \code{gr} is provided, \code{gr} gets priority for grouping of replicates
 #' @param suplAnnotFile (logical or character) optional reading of supplemental files produced by Compomics; if \code{gr} is provided, it gets priority for grouping of replicates
 #'  if \code{TRUE} default to files 'summary.txt' (needed to match information of \code{sdrf}) and 'parameters.txt' which can be found in the same folder as the main quantitation results;
@@ -82,6 +82,9 @@ readWombatNormFile <- function(fileName, path=NULL, quantSoft="(quant software n
   titGraph=NULL, wex=1.6, plotGraph=TRUE, silent=FALSE, debug=FALSE, callFrom=NULL) {
   ## prepare
   fxNa <- wrMisc::.composeCallName(callFrom, newNa="readWombatNormFile")
+  if(!isTRUE(silent)) silent <- FALSE
+  if(isTRUE(debug)) { silent <- FALSE } else { debug <- FALSE }
+  
   oparMar <- if(plotGraph) graphics::par("mar") else NULL       # only if figure might be drawn
   remStrainNo <- TRUE                   # if TRUE extract Species in very stringent pattern
   cleanDescription <- TRUE              # clean 'Description' for artifacts of truncated text (tailing ';' etc)
@@ -229,7 +232,7 @@ readWombatNormFile <- function(fileName, path=NULL, quantSoft="(quant software n
     ## check for lines with absent IDs  => eliminate
     chNa <- which(if("protein_group" %in% colnames(tmp)) is.na(tmp[,"protein_group"]) else rowSums(is.na(tmp))==ncol(tmp))
     if(length(chNa) >0) {
-      if(!silent) message(fxNa,"Removing ",length(chNa)," lines since absent ID or all NA  (won't be able to do anything lateron withour ID ..)")
+      if(!silent) message(fxNa,"Removing ",length(chNa)," lines since absent ID or all NA  (won't be able to do anything mater on withour ID ..)")
       tmp <- tmp[-chNa,]
     }
     if(debug) {message(fxNa,"rWB1d"); rWB1d <- list(tmp=tmp,paFi=paFi,fasta=fasta,quantCol=quantCol,extrColNames==extrColNames)}

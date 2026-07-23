@@ -26,7 +26,7 @@
 getUPS1acc <- function(updated=TRUE, silent=FALSE, debug=FALSE, callFrom=NULL) {
   fxNa <- wrMisc::.composeCallName(callFrom, newNa="getUPS1acc")
   if(!isTRUE(silent)) silent <- FALSE
-  if(isTRUE(debug)) silent <- FALSE else debug <- FALSE
+  if(isTRUE(debug)) { silent <- FALSE } else { debug <- FALSE }
   ## The UniProt accession numbers for the UPS1 proteins
   UPS1 <- data.frame(ac=rep(NA, 48), 
     acFull=c("P00915", "P00918", "P01031", "P69905", "P68871", "P41159", "P02768", 

@@ -24,8 +24,8 @@ exportAsWombatP <- function(wrProtObj, path=".", combineFractions="mean", silent
   ## This function allows exporting objects created from wrProteo to the format of Wombat-P \href{https://github.com/wombat-p}{Wombat-P}.
 
   fxNa <- wrMisc::.composeCallName(callFrom, newNa="exportAsWombatP")
-  if(isTRUE(debug)) silent <- FALSE
   if(!isTRUE(silent)) silent <- FALSE
+  if(isTRUE(debug)) { silent <- FALSE } else { debug <- FALSE }
   subDir <- "dev"
   if(identical(subDir,".")) subDir <- NULL
   ## check path

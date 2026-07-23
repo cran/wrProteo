@@ -1,7 +1,10 @@
-#' Plot ROC curves
+#' Plot ROC Curves
 #'
-#' \code{plotROC} plots ROC curves based on results from \code{\link{summarizeForROC}}.
-#' This function plots only, it does not return any data. It allows printing simultaneously multiple ROC curves from different studies,
+#' This function plots ROC curves based on results from \code{\link{summarizeForROC}}.
+#' 
+#' @details
+#' This function produces plots only, it does not return any data. 
+#' It allows printing simultaneously multiple ROC curves from different studies,
 #' it is also compatible with data from 3 species mix as in proteomics benchmark.
 #' Input can be prepared using \code{\link[wrMisc]{moderTest2grp}} followed by \code{\link{summarizeForROC}}.
 #'
@@ -26,7 +29,7 @@
 #' @param addSuplT (logical) add text with information about precision,accuracy and FDR
 #' @param silent (logical) suppress messages
 #' @param debug (logical) display additional messages for debugging
-#' @param callFrom (character) allow easier tracking of message(s) produced
+#' @param callFrom (character) allows easier tracking of messages produced
 #' @return This function returns only a plot with ROC curves
 #' @seealso \code{\link[wrProteo]{summarizeForROC}}, \code{\link[wrMisc]{moderTest2grp}}
 #' @examples
@@ -41,7 +44,7 @@ plotROC <- function(dat,..., useColumn=2:3, methNames=NULL, col=NULL, pch=1, bg=
   ##
   fxNa <- wrMisc::.composeCallName(callFrom, newNa="plotROC")
   if(!isTRUE(silent)) silent <- FALSE
-  if(isTRUE(debug)) silent <- FALSE else debug <- FALSE
+  if(isTRUE(debug)) { silent <- FALSE } else { debug <- FALSE }
   if(!isFALSE(addSuplT)) addSuplT <- TRUE
 
   inpSu <- list(...)

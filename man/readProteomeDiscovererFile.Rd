@@ -48,7 +48,7 @@ if \code{quantCol='allAfter_calc.pI'} all columns to the right of the column 'ca
 \item{annotCol}{(character) column names to be read/extracted for the annotation section (default  c("Accession","Description","Gene","Contaminant","Sum.PEP.Score","Coverage....","X..Peptides","X..PSMs","X..Unique.Peptides", "X..AAs","MW..kDa.") )}
 
 \item{contamCol}{(character or integer, length=1) which columns should be used for contaminants marked by ProteomeDiscoverer.
-If a column named \code{contamCol} is found, the data will be lateron filtered to remove all contaminants, set to \code{NULL} for keeping all contaminants}
+If a column named \code{contamCol} is found, the data will be mater on filtered to remove all contaminants, set to \code{NULL} for keeping all contaminants}
 
 \item{refLi}{(character or integer) custom specify which line of data is main species, if character (eg 'mainSpe'), the column 'SpecType' in $annot will be searched for exact match of the (single) term given}
 
@@ -59,7 +59,7 @@ If a column named \code{contamCol} is found, the data will be lateron filtered t
 \item{gr}{(character or factor) custom defined pattern of replicate association, will override final grouping of replicates from \code{sdrf} and/or \code{suplAnnotFile} (if provided)   \code{}}
 
 \item{sdrf}{(character, list or data.frame) optional extraction and adding of experimenal meta-data: if character, this may be the ID at ProteomeExchange,
-the second & third elements may give futher indicatations for automatic organization of groups of replicates.
+the second & third elements may give further indications for automatic organization of groups of replicates.
 Besides, the output from \code{readSdrf} or a list from \code{defineSamples} may be provided;
 if \code{gr} is provided, \code{gr} gets priority for grouping of replicates;
 if \code{sdrfOrder=TRUE} the output will be put in order of sdrf}
@@ -73,8 +73,8 @@ May contain \code{lowNumberOfGroups=FALSE} for automatically choosing a rather e
 May contain \code{chUnit} (logical or character) to be passed to \code{readSampleMetaData()} for (optional) adjustig of unit-prefixes in meta-data group labels, in case multiple different unit-prefixes 
 are used (eg '100pMol' and '1nMol').}
 
-\item{specPref}{(character or list) define characteristic text for recognizing (main) groups of species (1st for comtaminants - will be marked as 'conta', 2nd for main species- marked as 'mainSpe',
-and optional following ones for supplemental tags/species - maked as 'species2','species3',...);
+\item{specPref}{(character or list) define characteristic text for recognizing (main) groups of species (1st for contaminants - will be marked as 'conta', 2nd for main species- marked as 'mainSpe',
+and optional following ones for supplemental tags/species - marked as 'species2','species3',...);
 if list and list-element has multiple values they will be used for exact matching of accessions (ie 2nd of argument \code{annotCol})}
 
 \item{plotGraph}{(logical or integer) optional plot of type vioplot of initial and normalized data (using \code{normalizeMeth}); if integer, it will be passed to \code{layout} when plotting}
@@ -94,15 +94,15 @@ This function returns a list with \code{$raw} (initial/raw abundance values), \c
  and \code{$notes}; or if \code{separateAnnot=FALSE} the function returns a data.frame with annotation and quantitation only
 }
 \description{
-Protein identification and quantification results from
+This function allows importing protein identification and quantification results from
 \href{https://www.thermofisher.com/order/catalog/product/OPTON-30812}{Thermo ProteomeDiscoverer}
 which were exported as tabulated text can be imported and relevant information extracted.
 }
 \details{
 This function has been developed using Thermo ProteomeDiscoverer versions 2.2 to 2.5.
 The format of resulting files at export also depends which columns are chosen as visible inside ProteomeDiscoverer and subsequently get chosen for export.
-Using the argument \code{suplAnnotFile} it is possible to specify a specific file (or search for default file) to read for extracting file-names as sample-names and other experiment realted information.
-If a column named \code{contamCol} is found, the data will be lateron filtered to remove all contaminants, set to \code{NULL} for keeping all contaminants.
+Using the argument \code{suplAnnotFile} it is possible to specify a specific file (or search for default file) to read for extracting file-names as sample-names and other experiment related information.
+If a column named \code{contamCol} is found, the data will be mater on filtered to remove all contaminants, set to \code{NULL} for keeping all contaminants.
 
 The final output is a list containing as (main) elements: \code{$annot}, \code{$raw} and optional \code{$quant},
 or returns data.frame with entire content of file if \code{separateAnnot=FALSE}.

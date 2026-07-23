@@ -2,7 +2,7 @@
 % Please edit documentation in R/readMaxQuantPeptides.R
 \name{readMaxQuantPeptides}
 \alias{readMaxQuantPeptides}
-\title{Read Peptide Identification and Quantitation Data-Files (peptides.txt) Produced By MaxQuant}
+\title{Read Peptide Identification And Quantitation Data-Files (peptides.txt) Produced By MaxQuant}
 \usage{
 readMaxQuantPeptides(
   path,
@@ -66,7 +66,7 @@ for initial/raw abundance values and \code{$quant} with final normalized quantit
 replicates from \code{sdrf} and/or \code{suplAnnotFile} (if provided)   \code{}}
 
 \item{sdrf}{(character, list or data.frame) optional extraction and adding of experimenal meta-data: if character, this may be the ID at ProteomeExchange,
-the second & third elements may give futher indicatations for automatic organization of groups of replicates.
+the second & third elements may give further indications for automatic organization of groups of replicates.
 Besides, the output from \code{readSdrf} or a list from \code{defineSamples} may be provided;
 if \code{gr} is provided, \code{gr} gets priority for grouping of replicates;
 if \code{sdrfOrder=TRUE} the output will be put in order of sdrf}

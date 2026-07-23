@@ -2,7 +2,7 @@
 % Please edit documentation in R/readProlineFile.R
 \name{readProlineFile}
 \alias{readProlineFile}
-\title{Read xlsx, csv or tsv Files Exported From Proline And MS-Angel}
+\title{Read Xlsx, Csv Or Tsv Files Exported From Proline And MS-Angel}
 \usage{
 readProlineFile(
   fileName,
@@ -62,14 +62,14 @@ readProlineFile(
 
 \item{wex}{(integer) relative expansion factor of the violin-plot (will be passed to \code{\link[wrGraph]{vioplotW}})}
 
-\item{specPref}{(character or list) define characteristic text for recognizing (main) groups of species (1st for comtaminants - will be marked as 'conta', 2nd for main species- marked as 'mainSpe',
-and optional following ones for supplemental tags/species - maked as 'species2','species3',...);
+\item{specPref}{(character or list) define characteristic text for recognizing (main) groups of species (1st for contaminants - will be marked as 'conta', 2nd for main species- marked as 'mainSpe',
+and optional following ones for supplemental tags/species - marked as 'species2','species3',...);
 if list and list-element has multiple values they will be used for exact matching of accessions (ie 2nd of argument \code{annotCol})}
 
 \item{gr}{(character or factor) custom defined pattern of replicate association, will override final grouping of replicates from \code{sdrf} and/or \code{suplAnnotFile} (if provided)   \code{}}
 
 \item{sdrf}{(character, list or data.frame) optional extraction and adding of experimenal meta-data: if character, this may be the ID at ProteomeExchange,
-the second & third elements may give futher indicatations for automatic organization of groups of replicates.
+the second & third elements may give further indications for automatic organization of groups of replicates.
 Besides, the output from \code{readSdrf} or a list from \code{defineSamples} may be provided;
 if \code{gr} is provided, \code{gr} gets priority for grouping of replicates;
 if \code{sdrfOrder=TRUE} the output will be put in order of sdrf}
@@ -94,14 +94,15 @@ This function returns a list with \code{$raw} (initial/raw abundance values), \c
 }
 \description{
 Quantification results from Proline \href{http://www.profiproteomics.fr/proline/}{Proline} and MS-Angel exported as xlsx format can be read directly using this function.
-Besides, files in tsv, csv (European and US format) or tabulated txt can be read, too.
-Then relevant information gets extracted, the data can optionally normalized and displayed as boxplot or vioplot.
+Besides, files in tsv, csv (European and US format) or tabulated txt can be read and interpreted, too.
+}
+\details{
+After reading the specified quantification-file relevant information gets extracted, the data can optionally normalized and displayed as boxplot or vioplot.
 The final output is a list containing 6 elements: \code{$raw}, \code{$quant},  \code{$annot}, \code{$counts}, \code{$quantNotes} and \code{$notes}.
 Alternatively, a data.frame with annotation and quantitation data may be returned if \code{separateAnnot=FALSE}.
 Note: There is no normalization by default since quite frequently data produced by Proline are already sufficiently normalized.
 The figure produced using the argument \code{plotGraph=TRUE} may help judging if the data appear sufficiently normalized (distribtions should align).
-}
-\details{
+
 This function has been developed using Proline version 1.6.1 coupled with MS-Angel 1.6.1.
 The classical way of using ths function consists in exporting results produced by Proline and MS-Angel as xlsx file.
 Besides, other formats may be read, too. This includes csv (eg the main sheet/table of ths xlsx exported file saved as csv).

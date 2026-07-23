@@ -1,6 +1,6 @@
-#' t-test each line of 2 groups of data
+#' t-test Each Line Of 2 Groups Of Data
 #'
-#' \code{test2grp} performs t-test on two groups of data using \href{https://bioconductor.org/packages/release/bioc/html/limma.html}{limma},
+#' This function performs t-test on two groups of data using \href{https://bioconductor.org/packages/release/bioc/html/limma.html}{limma},
 #' this is a custom implementation of \code{\link[wrMisc]{moderTest2grp}} for proteomics.
 #' The final obkect also includes the results without moderation by \code{limma} (eg BH-FDR in \code{$nonMod.BH}). 
 #' Furthermore, there is an option to make use of package ROTS (note, this will increase the time of computatins considerably).
@@ -34,7 +34,7 @@ test2grp <- function(dat, questNo, useCol=NULL, grp=NULL, annot=NULL, ROTSn=0, s
   if(!all(c("data","filt") %in% names(dat))) stop(msg)
   if(nrow(dat$filt) != nrow(dat$data)) stop(msg)
   if(!isTRUE(silent)) silent <- FALSE
-  if(isTRUE(debug)) silent <- FALSE else debug <- FALSE
+  if(isTRUE(debug)) { silent <- FALSE } else { debug <- FALSE }
   
   questNa <- colnames(dat$filt)[questNo]
   questNa <- unlist(strsplit(questNa, "-"))

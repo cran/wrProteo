@@ -9,7 +9,7 @@
 #' @param listElem (character) names of list-elements where columns indicated with 'remSamp' should be removed
 #' @param silent (logical) suppress messages
 #' @param debug (logical) display additional messages for debugging
-#' @param callFrom (character) allow easier tracking of message(s) produced
+#' @param callFrom (character) allows easier tracking of messages produced
 #' @return This function returns a matrix including imputed values or list of final and matrix with number of imputed by group (plus optional plot)
 #' @seealso \code{\link{testRobustToNAimputation}}
 #' @examples
@@ -24,7 +24,8 @@ removeSampleInList <- function(dat, remSamp, listElem=c("raw","quant","counts","
   fxNa <- wrMisc::.composeCallName(callFrom, newNa="removeSampleInList")
   msg <- c("'dat' should be list or S3-object with $raw, $quant, $annot","; invalid entry - can't do anything ...","'remSamp' should be index of columns to remove")
   if(!isTRUE(silent)) silent <- FALSE
-  if(isTRUE(debug)) silent <- FALSE else debug <- FALSE
+  if(isTRUE(debug)) { silent <- FALSE } else { debug <- FALSE }
+
   nSampIni <- transpEl <- NULL  #out
   datOK <- TRUE
   if(length(dat) <1 || !is.list(dat)) { datOK <- FALSE

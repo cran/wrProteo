@@ -14,6 +14,7 @@
   refLiIni = NULL,
   notLogAbund = NA,
   figMarg = c(3.5, 3.5, 3, 1),
+  col = "rainbow",
   tit = NULL,
   las = NULL,
   cexAxis = 0.8,
@@ -42,6 +43,8 @@
 \item{notLogAbund}{(logical) set to \code{TRUE} if \code{abund} is linear but should be plotted as log2}
 
 \item{figMarg}{(numeric, length=4) custom figure margins (will be passed to \code{\link[graphics]{par}}), defaults to c(3.5, 3.5, 3, 1)}
+
+\item{col}{(character) custom colors (length must match number of columns)}
 
 \item{tit}{(character) custom title}
 

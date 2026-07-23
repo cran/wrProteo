@@ -29,7 +29,7 @@ countNoOfCommonPeptides <- function(..., prefix=c("Hs","Sc","Ec"), sep="_", sile
   ## .. input must be lists of proteins wther their respective peptides
   fxNa <- wrMisc::.composeCallName(callFrom, newNa="countNoOfCommonPeptides")
   if(!isTRUE(silent)) silent <- FALSE
-  if(isTRUE(debug)) silent <- FALSE else debug <- FALSE
+  if(isTRUE(debug)) { silent <- FALSE } else { debug <- FALSE }
 
   inp <- list(...)
   chInp <- c("prefix","sep","silent","callFrom") %in% names(inp)

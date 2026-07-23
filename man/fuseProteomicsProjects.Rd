@@ -65,7 +65,7 @@ which used by default the median value).
 Thus, it is very important to know your data and to understand when lines that appear with the same identifyers should/may be fused/summarized without 
 doing damage to the later biological interpretation ! The user may specify for each dataset the colum out of the protein/peptide-annotation to use
 via the argument \code{columnNa}. 
-Then, this content will be matched as identical match, so when combining data from different software special care shoud be taken !
+Then, this content will be matched as identical match, so when combining data from different software special care should be taken !
 
 Please note, that (at this point) the data from different series/objects will be joined as they are, ie without any additional normalization.
 It is up to the user to inspect the resulting data and to decide if and which type of normalization may be suitable !

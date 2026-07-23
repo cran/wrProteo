@@ -40,7 +40,7 @@ corColumnOrder <- function(dat, sampNames, replNames=NULL, useListElem=c("quant"
     ## colNa (character)
     ##
     out1 <- lapply(repl, function(x) {ch2 <- grep(paste0(".\\",sep[1],x,"[[:digit:]]+$"), colNa)
-      if(identical(ch2, 1:length(colNa))) {le <- sub(paste0("\\",sep[1],x,"[[:digit:]]+$"), paste0("\\",sep[1]), colNa); paste0(le, substr(colNa, nchar(le)+2, nchar(colNa)))}}) # nolint # nolint: line_length_linter.
+      if(identical(ch2, 1:length(colNa))) {le <- sub(paste0("\\",sep[1],x,"[[:digit:]]+$"), paste0("\\",sep[1]), colNa); paste0(le, substr(colNa, nchar(le)+2, nchar(colNa)))}}) # nolint: line_length_linter.
     chLe1 <- sapply(out1, length)
     out2 <- lapply(repl, function(x) {ch2 <- grep(paste0(".\\",sep[2],x,"[[:digit:]]+$"), colNa)
       if(identical(ch2, 1:length(colNa))) {le <- sub(paste0("\\",sep[2],x,"[[:digit:]]+$"), paste0("\\",sep[2]), colNa); paste0(le, substr(colNa, nchar(le)+2, nchar(colNa)))}})
@@ -50,7 +50,7 @@ corColumnOrder <- function(dat, sampNames, replNames=NULL, useListElem=c("quant"
     out }
 
   if(!isTRUE(silent)) silent <- FALSE
-  if(isTRUE(debug)) silent <- FALSE else debug <- FALSE
+  if(isTRUE(debug)) { silent <- FALSE } else { debug <- FALSE }
   datOK <- TRUE
   alreadyOK <- FALSE
   newO <- NA            # initialize

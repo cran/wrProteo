@@ -1,6 +1,8 @@
-#' Filter based on either number of total peptides and specific peptides or number of razor petides
+#' Filter Based On Either Number Of total Peptides And Specific Peptides Or Number Of Razor Petides
 #'
-#' \code{razorNoFilter} filters based on either a) number of total peptides and specific peptides or b) numer of razor petides.
+#' This function filters based on either a) number of total peptides and specific peptides or b) numer of razor petides.
+#' 
+#' @details
 #' This function was designed for filtering using a mimimum number of (PSM-) count values following the common practice to consider results with 2 or more peptide counts as reliable. 
 #' The function be (re-)run independently on each of various questions (comparisons).
 #' Note: Non-integer data will be truncated to integer (equivalent to  \code{floor}). 
@@ -13,7 +15,7 @@
 #' @param minTotNo (integer) minimum total ie max razor number of peptides
 #' @param silent (logical) suppress messages
 #' @param debug (logical) display additional messages for debugging
-#' @param callFrom (character) allow easier tracking of messages produced
+#' @param callFrom (character) allows easier tracking of messages produced
 #' @return This function returns a vector of logical values if corresponding line passes filter criteria  
 #' @seealso \code{\link[wrMisc]{presenceFilt}} 
 #' @examples
@@ -26,7 +28,7 @@
 razorNoFilter <- function(annot, speNa=NULL, totNa=NULL, minRazNa=NULL, minSpeNo=1, minTotNo=2, silent=FALSE, debug=FALSE, callFrom=NULL) {
   fxNa <- wrMisc::.composeCallName(callFrom, newNa="razorNoFilter")
   if(!isTRUE(silent)) silent <- FALSE
-  if(isTRUE(debug)) silent <- FALSE else debug <- FALSE
+  if(isTRUE(debug)) { silent <- FALSE } else { debug <- FALSE }
   msg <- NULL
   doFilter <- length(annot) >0
   if(length(speNa) != length(totNa) && is.null(minRazNa)) { doFilter <- FALSE

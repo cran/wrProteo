@@ -2,7 +2,7 @@
 % Please edit documentation in R/VolcanoPlotW2.R
 \name{VolcanoPlotW2}
 \alias{VolcanoPlotW2}
-\title{Deprecialed Volcano-plot}
+\title{Deprecated Volcano-plot}
 \usage{
 VolcanoPlotW2(
   Mvalue,

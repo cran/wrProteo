@@ -23,7 +23,7 @@ column where empty fields are searched and the 2nd and (optional) 3rd will be us
 
 \item{debug}{(logical) display additional messages for debugging}
 
-\item{callFrom}{(character) allow easier tracking of message(s) produced}
+\item{callFrom}{(character) allows easier tracking of messages produced}
 }
 \value{
 This function returns a list (like as input), but with missing elments of $annot filled by information from the columns specified in \code{annCol} using fileds 2 (and 3)

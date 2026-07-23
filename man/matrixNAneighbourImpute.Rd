@@ -40,7 +40,7 @@ matrixNAneighbourImpute(
 
 \item{NAneigLst}{(list) option for repeated rounds of imputations: list of \code{NA}-neighbour values can be furnished for slightly faster processing}
 
-\item{plotHist}{(character or logical) decide if supplemental figure with histogram shoud be drawn, the details 'Hist','quant' (display quantile of originak data), 'mode' (display mode of original data) can be chosen explicitely}
+\item{plotHist}{(character or logical) decide if supplemental figure with histogram should be drawn, the details 'Hist','quant' (display quantile of originak data), 'mode' (display mode of original data) can be chosen explicitely}
 
 \item{xLab}{(character) label on x-axis on plot}
 
@@ -111,5 +111,5 @@ datT6b <- matrixNAneighbourImpute(datT6, gr=gl(2,3))
 head(datT6b$data)
 }
 \seealso{
-this function gets used by \code{\link{testRobustToNAimputation}}; estimation of mode \code{\link[wrMisc]{stableMode}}; detection of NAs \code{\link[stats]{na.fail}}
+This function gets used by \code{\link{testRobustToNAimputation}}; estimation of mode \code{\link[wrMisc]{stableMode}}; detection of NAs \code{\link[stats]{na.fail}}
 }

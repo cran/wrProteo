@@ -1,4 +1,4 @@
-#' Deprecialed Volcano-plot 
+#' Deprecated Volcano-plot 
 #'
 #' Please use VolcanoPlotW() from package wrGraph.
 #' This function does NOT produce a plot any more.
@@ -52,6 +52,6 @@ VolcanoPlotW2 <- function(Mvalue, pValue=NULL, useComp=1, filtFin=NULL, ProjNa=N
   ## MA plot
   ## optional arguments for explicit title in batch-mode
   fxNa <- wrMisc::.composeCallName(callFrom, newNa="VolcanoPlotW2")
-  .Deprecated("++ NOTE : OLD VERSION !! ++   Please use VolcanoPlotW() from package wrGraph")
+  .Deprecated(new="VolcanoPlotW", package="wrGraph", msg="++ NOTE : OLD VERSION !! ++   Please use VolcanoPlotW() from package wrGraph")
  }
    

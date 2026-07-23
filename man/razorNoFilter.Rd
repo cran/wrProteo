@@ -2,7 +2,7 @@
 % Please edit documentation in R/razorNoFilter.R
 \name{razorNoFilter}
 \alias{razorNoFilter}
-\title{Filter based on either number of total peptides and specific peptides or number of razor petides}
+\title{Filter Based On Either Number Of total Peptides And Specific Peptides Or Number Of Razor Petides}
 \usage{
 razorNoFilter(
   annot,
@@ -33,13 +33,15 @@ razorNoFilter(
 
 \item{debug}{(logical) display additional messages for debugging}
 
-\item{callFrom}{(character) allow easier tracking of messages produced}
+\item{callFrom}{(character) allows easier tracking of messages produced}
 }
 \value{
 This function returns a vector of logical values if corresponding line passes filter criteria
 }
 \description{
-\code{razorNoFilter} filters based on either a) number of total peptides and specific peptides or b) numer of razor petides.
+This function filters based on either a) number of total peptides and specific peptides or b) numer of razor petides.
+}
+\details{
 This function was designed for filtering using a mimimum number of (PSM-) count values following the common practice to consider results with 2 or more peptide counts as reliable. 
 The function be (re-)run independently on each of various questions (comparisons).
 Note: Non-integer data will be truncated to integer (equivalent to  \code{floor}).

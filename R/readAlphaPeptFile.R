@@ -43,7 +43,7 @@
 #' @param separateAnnot (logical) if \code{TRUE} output will be organized as list with \code{$annot}, \code{$abund} for initial/raw abundance values and \code{$quant} with final normalized quantitations
 #' @param gr (character or factor) custom defined pattern of replicate association, will override final grouping of replicates from \code{sdrf} and/or \code{suplAnnotFile} (if provided)   \code{}
 #' @param sdrf (character, list or data.frame) optional extraction and adding of experimenal meta-data: if character, this may be the ID at ProteomeExchange,
-#'   the second & third elements may give futher indicatations for automatic organization of groups of replicates.
+#'   the second & third elements may give further indications for automatic organization of groups of replicates.
 #'   Besides, the output from \code{readSdrf} or a list from \code{defineSamples} may be provided;
 #'   if \code{gr} is provided, \code{gr} gets priority for grouping of replicates;
 #'   if \code{sdrfOrder=TRUE} the output will be put in order of sdrf
@@ -135,8 +135,9 @@ readAlphaPeptFile <- function(fileName="results_proteins.csv", path=NULL, fasta=
   chPa <- sapply(reqPa, requireNamespace, quietly=TRUE)
   if(any(!chPa)) stop("Package(s) '",paste(reqPa[which(!chPa)], collapse="','"),"' not found ! Please install first from CRAN")
   if(!isTRUE(silent)) silent <- FALSE
-  if(isTRUE(debug)) silent <- FALSE else debug <- FALSE
-         excluCol <- "^Abundances.Count"   # exclude this from quantifications columns
+  if(isTRUE(debug)) { silent <- FALSE } else { debug <- FALSE }
+
+  excluCol <- "^Abundances.Count"   # exclude this from quantifications columns
   cleanDescription <- TRUE                 # clean 'Description' for artifacts of truncated text (tailing ';' etc)
   infoDat <- infoFi <- setupSd <- parametersD <- annot <- annotMQ <- annotMQ <- NULL        # initialize
 
@@ -177,7 +178,7 @@ readAlphaPeptFile <- function(fileName="results_proteins.csv", path=NULL, fasta=
     ## check for lines with absent IDs  => eliminate
     chNa <- is.na(tmp[,extrColNames$annot]) | nchar(tmp[,extrColNames$annot]) <2
     if(any(chNa)) {
-      if(!silent) message(fxNa,"Removing ",sum(chNa)," lines since absent ID or all NA  (won't be able to do anything lateron withour ID ..)")
+      if(!silent) message(fxNa,"Removing ",sum(chNa)," lines since absent ID or all NA  (won't be able to do anything mater on withour ID ..)")
       tmp <- tmp[-which(chNa),]
     }
     if(debug) {message(fxNa,"rAP1d"); rAP1d <- list(tmp=tmp,paFi=paFi,fasta=fasta,quantCol=quantCol)}

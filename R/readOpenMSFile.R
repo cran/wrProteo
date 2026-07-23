@@ -1,4 +1,4 @@
-#' Read csv files exported by OpenMS
+#' Read Csv Files Exported By OpenMS
 #'
 #' Protein quantification results form \href{https://openms.de/}{OpenMS} 
 #' which were exported as \code{.csv} can be imported and relevant information extracted. 
@@ -23,8 +23,8 @@
 #' @param separateAnnot (logical) if \code{TRUE} output will be organized as list with \code{$annot}, \code{$abund} for initial/raw abundance values and \code{$quant} with final normalized quantitations 
 #' @param tit (character) custom title to plot
 #' @param wex (integer) relative expansion factor of the violin-plot (will be passed to \code{\link[wrGraph]{vioplotW}})
-#' @param specPref (character or list) define characteristic text for recognizing (main) groups of species (1st for comtaminants - will be marked as 'conta', 2nd for main species- marked as 'mainSpe', 
-#'  and optional following ones for supplemental tags/species - maked as 'species2','species3',...); 
+#' @param specPref (character or list) define characteristic text for recognizing (main) groups of species (1st for contaminants - will be marked as 'conta', 2nd for main species- marked as 'mainSpe', 
+#'  and optional following ones for supplemental tags/species - marked as 'species2','species3',...); 
 #'  if list and list-element has multiple values they will be used for exact matching of accessions (ie 2nd of argument \code{annotCol})
 #' @param separateAnnot (logical) if \code{TRUE} output will be organized as list with \code{$annot}, \code{$abund} for initial/raw abundance values and \code{$quant} with final normalized quantitations
 #' @param plotGraph (logical) optional plot of type vioplot of initial and normalized data (using \code{normalizeMeth}); if integer, it will be passed to \code{layout} when plotting
@@ -53,10 +53,10 @@ readOpenMSFile <- function(fileName=NULL, path=NULL, normalizeMeth="median", ref
   opar <- graphics::par(no.readonly=TRUE)
   chPa <- try(find.package("utils"), silent=TRUE)
   if(inherits(chPa, "try-error")) stop("package 'utils' not found ! Please install first")   
-  if(isTRUE(debug)) silent <- FALSE
   if(!isTRUE(silent)) silent <- FALSE
+  if(isTRUE(debug)) { silent <- FALSE } else { debug <- FALSE }
   infoDat <- NULL
-  if(debug) message("rmso1")
+  if(debug) message(fxNa,"rmso1")
   ## check & read file
   paFi <- wrMisc::checkFilePath(fileName, path, expectExt="csv", compressedOption=TRUE, stopIfNothing=TRUE, callFrom=fxNa, silent=silent,debug=debug)
   

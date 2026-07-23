@@ -1,4 +1,4 @@
-#' Read Tabulated Files Exported by DIA-NN At Protein Level
+#' Read Tabulated Files Exported By DIA-NN At Protein Level
 #'
 #' This function allows importing protein identification and quantification results from \href{https://github.com/vdemichev/DiaNN}{DIA-NN}.
 #' Data should be exported as tabulated text (tsv) as protein-groups (pg) to allow import by thus function. 
@@ -23,12 +23,12 @@
 #' @param annotCol (character) column names to be read/extracted for the annotation section (default  c("Accession","Description","Gene","Contaminant","Sum.PEP.Score","Coverage....","X..Peptides","X..PSMs","X..Unique.Peptides", "X..AAs","MW..kDa.") )
 #' @param FDRCol - not used (the argument was kept to remain with the same synthax as the other import functions fo this package)
 #' @param wex (integer) relative expansion factor of the violin-plot (will be passed to \code{\link[wrGraph]{vioplotW}})
-#' @param specPref (character or list) define characteristic text for recognizing (main) groups of species (1st for comtaminants - will be marked as 'conta', 2nd for main species- marked as 'mainSpe',
-#'  and optional following ones for supplemental tags/species - maked as 'species2','species3',...);
+#' @param specPref (character or list) define characteristic text for recognizing (main) groups of species (1st for contaminants - will be marked as 'conta', 2nd for main species- marked as 'mainSpe',
+#'  and optional following ones for supplemental tags/species - marked as 'species2','species3',...);
 #'  if list and list-element has multiple values they will be used for exact matching of accessions (ie 2nd of argument \code{annotCol})
 #' @param gr (character or factor) custom defined pattern of replicate association, will override final grouping of replicates from \code{sdrf} and/or \code{suplAnnotFile} (if provided)   \code{}
 #' @param sdrf (character, list or data.frame) optional extraction and adding of experimenal meta-data: if character, this may be the ID at ProteomeExchange,
-#'   the second element may give futher indicatations for automatic organization of groups of replicates.
+#'   the second element may give further indications for automatic organization of groups of replicates.
 #'   Besides, the output from \code{readSdrf} or a list from \code{defineSamples} may be provided; if \code{gr} is provided, \code{gr} gets priority for grouping of replicates
 #' @param suplAnnotFile (logical or character) optional reading of supplemental files; however, if \code{gr} is provided, \code{gr} gets priority for grouping of replicates;
 #'  if \code{character} the respective file-name (relative or absolute path)
@@ -63,8 +63,8 @@ readDiaNNFile <- function(fileName, path=NULL, normalizeMeth="median", sampleNam
   oparMar <- graphics::par("mar")                     # old margins, for rest after figure
   oparLayout <- graphics::par("mfcol")                # old layout, for rest after figure
   on.exit(graphics::par(mar=oparMar, mfcol=oparLayout))            # restore old mar settings
-  if(isTRUE(debug)) silent <- FALSE else debug <- FALSE
   if(!isTRUE(silent)) silent <- FALSE
+  if(isTRUE(debug)) { silent <- FALSE } else { debug <- FALSE }
 
   reqPa <- c("utils","wrMisc")
   chPa <- sapply(reqPa, requireNamespace, quietly=TRUE)
@@ -73,76 +73,73 @@ readDiaNNFile <- function(fileName, path=NULL, normalizeMeth="median", sampleNam
   if(isTRUE(debug)) silent <- FALSE else debug <- FALSE
          ##excluCol <- "^Abundances.Count"   # exclude this from quantifications columns
   cleanDescription <- TRUE          # clean 'Description' for artifacts of truncated text (tailing ';' etc)
-  infoDat <- infoFi <- setupSd <- parametersD <- NULL        # initialize
+  infoDat <- infoFi <- setupSd <- parametersD <- annot <- NULL        # initialize
 
   ## check if path & (tsv) file exist  (set paFi, if bad -> error)
-  if(!grepl("\\.tsv$|\\.tsv\\.gz$", fileName)) message(fxNa,"Trouble ahead, expecting tabulated text file (the file'",fileName,"' might not be right format) !!")
-  paFi <- wrMisc::checkFilePath(fileName, path, expectExt="tsv", compressedOption=TRUE, stopIfNothing=TRUE, callFrom=fxNa, silent=silent,debug=debug)  
+  datOK <- length(fileName) != 0
+  if(datOK) {
+    if(!grepl("\\.tsv$|\\.tsv\\.gz$", fileName)) message(fxNa,"Trouble ahead, expecting tabulated text file (the file'",fileName,"' might not be right format) !!")
+    paFi <- wrMisc::checkFilePath(fileName, path, expectExt="tsv", compressedOption=TRUE, stopIfNothing=TRUE, callFrom=fxNa, silent=silent,debug=debug)  
 
-  ## note : reading sample-setup from 'suplAnnotFile' at this place won't allow comparing if number of  samples/columns corresponds to data; do after reading main data
-  if(debug) {message(fxNa,"rdn0 .. This is wrProteo version ",utils::packageVersion("wrProteo")," .. Ready to read", if(length(path) >0) c(" from path ",path[1])," the file  ",fileName[1])
-    rdn0 <- list(fileName=fileName,path=path,paFi=paFi,normalizeMeth=normalizeMeth,sampleNames=sampleNames,read0asNA=read0asNA,quantCol=quantCol,annotCol=annotCol,refLi=refLi,separateAnnot=separateAnnot,FDRCol=FDRCol )}
-  
+    ## note : reading sample-setup from 'suplAnnotFile' at this place won't allow comparing if number of  samples/columns corresponds to data; do after reading main data
+    if(debug) {message(fxNa,"rdn0 .. This is wrProteo version ",utils::packageVersion("wrProteo")," .. Ready to read", if(length(path) >0) c(" from path ",path[1])," the file  ",fileName[1])
+      rdn0 <- list(fileName=fileName,path=path,paFi=paFi,normalizeMeth=normalizeMeth,sampleNames=sampleNames,read0asNA=read0asNA,quantCol=quantCol,annotCol=annotCol,refLi=refLi,separateAnnot=separateAnnot,FDRCol=FDRCol )} 
 
-  ## read (main) file
-  ## future: look for fast reading of files    
-  tmp <- try(utils::read.delim(file.path(paFi), stringsAsFactors=FALSE), silent=TRUE)
+    ## read (main) file
+    ## future: look for fast reading of files    
+    tmp <- try(utils::read.delim(file.path(paFi), stringsAsFactors=FALSE), silent=TRUE)
 
-  if(length(tmp) <1 || inherits(tmp, "try-error") || length(dim(tmp)) <2) {
-    if(inherits(tmp, "try-error")) warning("Unable to read input file ('",paFi,"')!  (check if rights to read)") else {
-      if(!silent) message(fxNa,"Content of  file '",paFi,"' seeps empty or non-conform !  Returning NULL; check if this is really a Fragpipe-file") }
-    NULL
-  } else {
-    if(debug) { message(fxNa,"rdn1 .. dims of initial data : ", nrow(tmp)," li and ",ncol(tmp)," col "); rdn1 <- list(fileName=fileName,path=path,paFi=paFi,tmp=tmp,normalizeMeth=normalizeMeth,sampleNames=sampleNames,read0asNA=read0asNA,quantCol=quantCol,
-      annotCol=annotCol,refLi=refLi,separateAnnot=separateAnnot,FDRCol=FDRCol   )}
-
-    ## locate & extract annotation
-    ## note : space (' ') in orig colnames are transformed to '.'
-    if(length(annotCol) <1) annotCol <- c("Protein.Group","Protein.Ids","Protein.Names","Genes","First.Protein.Description")
-
-    ## check for essential colnames !   distinguish export as protein-groups (pg) or gene-groups (gg)
-      ## 'Accesion' (eg "P00498")  .. missing
-      ## 'Description' (eg "Cyclin-dependent kinase 1")   .. missing
-      ## no PSM o spectral counts data in file
-      ##
-    if(is.character(annotCol)) annotColNo <- match(annotCol, colnames(tmp))
-    chNa <- is.na(annotColNo)
-    if(any(chNa) && silent) message(fxNa,"Missing ",sum(chNa)," annotation columns:  ",wrMisc::pasteC(annotCol[chNa], quoteC="'"))
-    if(all(chNa) && "Genes" %in% colnames(tmp)) {
-      annotColG <- which(colnames(tmp) %in% "Genes")
-      annot <- cbind(Accession=NA, EntryName=if(is.na(annotColNo[3])) NA else tmp[,annotCol[3]], GeneName=tmp[,annotColG], Species=NA, Contam=NA, SpecType=NA,
-        Description=NA,  UniProtID=NA, EntryNamesAll=NA,  GeneNameAll=tmp[,annotColG] )    # may be better to name column 'species'
-      if(!silent) message(fxNa,"NOTE : Data seems to be 'gene-groups' (gg) format, MISSING protein identifiers in annoation !!")
-
+    if(length(tmp) <1 || inherits(tmp, "try-error") || length(dim(tmp)) <2) {
+      if(inherits(tmp, "try-error")) warning("Unable to read input file ('",paFi,"')!  (check if rights to read)") else {
+        if(!silent) message(fxNa,"Content of  file '",paFi,"' seeps empty or non-conform !  Returning NULL; check if this is really a Fragpipe-file") }
+      datOK <- FALSE
     } else {
-      ## rename columns to wrProteo format
-      annot <- cbind(Accession=NA, EntryName=tmp[,annotCol[3]], GeneName=tmp[,annotCol[4]], Species=NA, Contam=NA, SpecType=NA,
-        Description=NA,  UniProtID=tmp[,annotCol[2]], EntryNamesAll=tmp[,annotCol[3]],  GeneNameAll=tmp[,annotCol[4]], tmp[,wrMisc::naOmit(annotColNo[c(5)])])   # may be better to name column 'species'
-    }
-    
-    if(debug) { message(fxNa,"rdn2 .. annotColNo : ", wrMisc::pasteC(annotColNo)); rdn2 <- list(annot=annot,annotCol=annotCol,tmp=tmp,specPref=specPref )}
+      if(debug) { message(fxNa,"rdn1 .. dims of initial data : ", nrow(tmp)," li and ",ncol(tmp)," col "); rdn1 <- list(fileName=fileName,path=path,paFi=paFi,tmp=tmp,normalizeMeth=normalizeMeth,sampleNames=sampleNames,read0asNA=read0asNA,quantCol=quantCol,
+        annotCol=annotCol,refLi=refLi,separateAnnot=separateAnnot,FDRCol=FDRCol   )}
 
+      ## prepare for locate & extract annotation
+      ## note : space (' ') in orig colnames are transformed to '.'
+      annotCol2 <- if(length(annotCol) <1) c("Protein.Group","Protein.Names","Genes","First.Protein.Description","N.Sequences","N.Proteotypic.Sequences") else unique(annotCol)   # all columns preceeding quantitation (file path+name)
+      annotColNo <- match(annotCol2, colnames(tmp))
+      if(all(is.na(annotColNo))) { datOK <- FALSE
+        warning(fxNa,"Main input seems invalid : NO ANNOTATION found  (nothing to do)")
+      }  
+    }  
+  }
+  
+  if(datOK) {
+    ## locate & extract annotation
+    useCol <- (1+  max(annotColNo, na.rm=TRUE)) : ncol(tmp)    # for quant data
+    annot <- cbind(Accession=if(is.na(annotColNo[1])) NA else tmp[,annotColNo[1]], 
+      EntryName=if(is.na(annotColNo[2])) NA else tmp[,annotColNo[2]] ,
+      ProteinName=if(is.na(annotColNo[4])) NA else tmp[,annotColNo[4]],
+      GeneName=if(is.na(annotColNo[3])) NA else tmp[,annotColNo[3]], 
+      Species=NA, Contam=NA, SpecType=NA,
+      N.Sequences= if(is.na(annotColNo[5])) NA else tmp[,annotColNo[5]],
+      N.Proteotypic.Sequences=if(is.na(annotColNo[6])) NA else tmp[,annotColNo[6]]
+    )
+    ## complete species
+    tm2 <- try(.getSpeciesFromEntryName(annot[, c("EntryName","Species")]), silent=TRUE)
+    if(inherits(tm2, "try-error")) { warning(fxNa,"Failed to complete Species annotation")
+    } else { 
+      annot[, c("EntryName","Species")] <- tm2
+      rm(tm2) }
+    if(debug) { message(fxNa,"rdn2 .. annotColNo : ", wrMisc::pasteC(annotColNo)); rdn2 <- list(annot=annot,annotCol=annotCol,annotCol2=annotCol2,annotColNo=annotColNo,tmp=tmp,specPref=specPref )}
+         
     ## 'EntryName' & 'GeneName'  may contain multiple proteins, pick 1st
     chMult <- grep(";",annot[,2])
     if(length(chMult) >0) annot[,2] <- sub(";.+","", annot[,2])
     chMult <- grep(";",annot[,3])
     if(length(chMult) >0) annot[,3] <- sub(";.+","", annot[,3])
+    if("EntryName" %in% colnames(annot)) rownames(annot) <- annot[,"EntryName"]  
+    if(debug) { message(fxNa,"rdn2b"); rdn2b <- list(annot=annot,tmp=tmp,chMult=chMult,specPref=specPref,annotCol=annotCol,annotCol2=annotCol2,annotColNo=annotColNo) }
 
-    ## Species  (need to run before reparsing badly parsed)
-      ## is there anaything that can be done for  annotColNo[3], ie 'First.Protein.Description' ?? was all NA in data provided
-    if(!is.na(annotColNo[3])) {
-      chSp <- grep("^[[:alnum:]]+_[[:upper:]]", tmp[,annotColNo[3]])
-      if(length(chSp) >0) { commonSpec <- .commonSpecies()
-        spe2 <- sub("^[[:alnum:]]+_", "", tmp[chSp,annotColNo[3]])
-        chSp3 <- which(sub("^_","", commonSpec[,1]) %in% spe2)
-      if(length(chSp3) >0) for(i in chSp3) annot[chSp,"Species"] <- commonSpec[i,2]}
-    }
     ## clean 'Description' entries: remove tailing punctuation or open brackets (ie not closed) at end of (truncated) fasta header - applicable ?
-    if(debug) {message(fxNa,"rdn6d ..  "); rdn6d <- list(annot=annot,tmp=tmp,chSp=chSp,specPref=specPref,annotCol=annotCol)}
+    if(debug) {message(fxNa,"rdn6d ..  "); rdn6d <- list(annot=annot,tmp=tmp,specPref=specPref,annotCol=annotCol)}
 
 
-    ## look for tags from  specPref
-    if(length(specPref) >0) {
+    ## look f tags from  specPref
+    if(length(specPref) !=0 && length(annot) !=0) {
       ## set annot[,"specPref"] according to specPref
       annot <- .extrSpecPref(specPref, annot, silent=silent, debug=debug, callFrom=fxNa)
     } else if(debug) message(fxNa,"Note: Argument 'specPref' not specifed (empty)")
@@ -153,14 +150,17 @@ readDiaNNFile <- function(fileName, path=NULL, normalizeMeth="median", sampleNam
     if(debug) {message(fxNa,"rdn6b ..  ")}
 
     if(!silent) {
-      if(any(chSp, na.rm=TRUE) && !all(chSp)) message(fxNa,"Note: ",sum(chSp)," (out of ",nrow(tmp),") lines with unrecognized species")
-      if(!all(chSp)) { tab <- table(annot[,"Species"])
-        tab <- rbind(names(tab), paste0(": ",tab," ;  "))
-        if(!silent) message(fxNa,"Count by 'specPref' : ",apply(tab, 2, paste)) }}             # all lines assigned
+      # chSp <- grep("^[[:alnum:]]+_[[:upper:]]", tmp[,annotColNo[3]])    # <<== NEED TO ADJUST  16jun26
+       # if(!all(chSp)) { 
+      chSp <- is.na(annot[,"Species"]) | nchar(annot[,"Species"]) ==0
+      if(any(chSp, na.rm=TRUE)) message(fxNa,"Note: ",sum(chSp)," (out of ",nrow(tmp),") lines with unrecognized species")
+      tab <- table(annot[,"Species"])
+      tab <- rbind(names(tab), paste0(": ",tab," ;  "))
+      message(fxNa,"Count by 'specPref' : ",apply(tab, 2, paste)) }             # all lines assigned
     if(debug) {message(fxNa,"rdn6e ..  ")}
 
     ## check for unique annot[,"Accession"] - not applicable
-    if(debug) { message(fxNa,"rdn7 .. dim annot ",nrow(annot)," and ",ncol(annot)); rdn7 <- list(annot=annot,tmp=tmp,annot=annot,specPref=specPref) }
+    if(debug) { message(fxNa,"rdn7 .. dim annot ",nrow(annot)," and ",ncol(annot)); rdn7 <- list(annot=annot,tmp=tmp,annot=annot,specPref=specPref,annotColNo=annotColNo,annotCol2=annotCol2) }
 
     ## locate & extract abundance/quantitation data
     msg <- " CANNOT find ANY quantification columns"
@@ -168,7 +168,7 @@ readDiaNNFile <- function(fileName, path=NULL, normalizeMeth="median", sampleNam
 
     if(length(quantCol) ==1) {
       ## pattern search (for abundance/quantitation data)
-      if(is.character(quantCol)) quantCol <- grep(quantCol, tolower(colnames(tmp)))
+      if(is.character(quantCol)) quantCol <- intersect(grep(quantCol, tolower(colnames(tmp))), (1+  max(annotColNo, na.rm=TRUE)) : ncol(tmp) )     
     }
     if(length(quantCol) <1) stop(msg,"  ('",quantCol,"')")
     abund <- as.matrix(tmp[, quantCol])

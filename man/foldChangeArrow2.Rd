@@ -50,11 +50,7 @@ plots arrow only (and explicative text), if \code{returnRatio=TRUE} also returns
 }
 \description{
 NOTE : This function is deprecated, please use \code{\link[wrGraph]{foldChangeArrow}} instead !!
-This function was made for adding an arrow indicating a fold-change to MA- or Volcano-plots. 
-When comparing mutiple concentratios of standards in benchmark-tests it may be useful to indicate the expected ratio in a pair-wise comparison.
-In case of main input as list or MArrayLM-object (as generated from limma), the colum-names of multiple pairwise comparisons can be used 
-for extracting a numeric content (supposed as concentrations in sample-names) which will be used to determine the expected ratio used for plotting. 
-Optionally the ratio used for plotting can be returned as numeric value.
+This function was made for adding an arrow indicating a fold-change to MA- or Volcano-plots.
 }
 \details{
 The argument \code{addText} also allows specifying a fixed position when using \code{addText=c(loc="bottomleft")}, also bottomright, topleft, topright, toleft and toright may be used.
@@ -63,7 +59,6 @@ The argument \code{addText} also allows specifying a fixed position when using \
  Ultimately this function will be integated to the package wrGraph.
 }
 \examples{
-plot(rnorm(20,1.5,0.1),1:20)
 #deprecated# foldChangeArrow2(FC=1.5) 
 
 }

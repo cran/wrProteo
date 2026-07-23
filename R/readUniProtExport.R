@@ -1,11 +1,13 @@
-#' Read protein annotation as exported from UniProt batch-conversion
+#' Read Protein Annotation As Exported From UniProt Batch-Conversion
 #'
 #' This function allows reading and importing protein-ID conversion results from \href{https://www.uniprot.org/id-mapping/}{UniProt}.
+#' 
+#' @details
 #' To do so, first copy/paste your query IDs into \href{https://www.uniprot.org/id-mapping/}{UniProt} 'Retrieve/ID mapping' field called '1. Provide your identifiers' (or upload as file), verify '2. Select options'.
 #' In a typical case of 'enst000xxx' IDs  you may leave default settings, ie 'Ensemble Transcript' as input and 'UniProt KB' as output. Then, 'Submit' your search and retreive results via 
 #' 'Download', you need to specify a 'Tab-separated' format ! If you download as 'Compressed' you need to decompress the .gz file before running the function \code{readUCSCtable} 
 #' In addition, a file with UCSC annotation (Ensrnot accessions and chromosomic locations, obtained using \code{\link{readUCSCtable}}) can be integrated.
-#' @details
+#' 
 #' In a typicall use case, first chromosomic location annotation is extracted from UCSC for the species of interest and imported to R using  \code{\link{readUCSCtable}} . 
 #' However, the tables provided by UCSC don't contain Uniprot IDs. Thus, an additional (batch-)conversion step needs to get added. 
 #' For this reason \code{\link{readUCSCtable}} allows writing a file with Ensemble transcript IDs which can be converted tu UniProt IDs at the site of  \href{https://www.uniprot.org/id-mapping/}{UniProt}. 
@@ -42,13 +44,15 @@ readUniProtExport <- function(UniProtFileNa, deUcsc=NULL, targRegion=NULL, useUn
   ## targRegion : list('chr1',pos=c(198110001,198570000)) or 'chr11:1-135,086,622'
   fxNa <- wrMisc::.composeCallName(callFrom,newNa="readUniProtExport")
   if(!isTRUE(silent)) silent <- FALSE
-  if(isTRUE(debug)) silent <- FALSE else debug <- FALSE
+  if(isTRUE(debug)) { silent <- FALSE } else { debug <- FALSE }
+
   if(length(UniProtFileNa) >1) UniProtFileNa <- UniProtFileNa[1] else {if(length(UniProtFileNa) < 1) stop(" argument 'UniProtFileNa' seems empty")}
   chFi <- file.exists(UniProtFileNa)
   if(!chFi) stop(" file '",UniProtFileNa,"' not found !")
   chExt <- length(grep("\\.gz$", UniProtFileNa, fixed=FALSE, perl=FALSE)) >0  
-  chPa <- try(find.package("utils"),silent=TRUE)
-  if(inherits(chPa, "try-error")) stop("Package 'utils' not found ! Please install first")   
+  chPa <- requireNamespace("utils", quietly=TRUE)
+
+  if(!chPa) stop("Package 'utils' not found ! Please install first")   
   ## main  
   deUniProt <- try(utils::read.delim(UniProtFileNa,stringsAsFactors=FALSE), silent=TRUE)
   errMsg1 <- " seems not to be in UniProt 'tab-separated' format (does not contain sufficent number of columns) !"
@@ -75,7 +79,7 @@ readUniProtExport <- function(UniProtFileNa, deUcsc=NULL, targRegion=NULL, useUn
   splitExtendConcat <- function(mat,useCol=1,sep=",",sep2="[[:digit:]],[[:alpha:]]+"){
     ## extend matrix or data.frame by additional lines if column 'useCol' contains multiple concatenated terms (content of other columns will be duplicated)
     ## 'sep' used with strsplit() and grep() to identify lines and split, also used to construct (generic) term for keeping just first 
-    ## 'sep2' optional custom pattern used with grep() to identify lines; will be used instead of 'generic' sep to identify entries to split lateron 
+    ## 'sep2' optional custom pattern used with grep() to identify lines; will be used instead of 'generic' sep to identify entries to split mater on 
     ## main
     chMult <- grep(if(length(sep2) >0) sep2 else sep, mat[,useCol], fixed=FALSE, perl=FALSE)
     if(length(chMult) >0)  {

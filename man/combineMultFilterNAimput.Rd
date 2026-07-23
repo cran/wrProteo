@@ -2,7 +2,7 @@
 % Please edit documentation in R/combineMultFilterNAimput.R
 \name{combineMultFilterNAimput}
 \alias{combineMultFilterNAimput}
-\title{Combine Multiple Filters On NA-imputed Data}
+\title{Combine Multiple Filters On NA-Imputed Data}
 \usage{
 combineMultFilterNAimput(
   dat,
@@ -35,7 +35,7 @@ may be character as result of combining two group-names (from argument \code{grp
 or 2-column matrix of group-names (thus, without separator; names combined with separator may be shown as rownames) or 2-column matrix of indexes to sorted group-names;
 default setting of \code{useComparison='all'} will select all possible pairwise combinations}
 
-\item{experSetup}{(list) optional esperimental setup (list with $ind, $pwGrpIndex,$sep and $pwGrpNa  as obtained using \code{getPairwiseSetup})}
+\item{experSetup}{(list) optional esperimental setup (list with $ind, $pwGrpIndex, $sep and $pwGrpNa  as obtained using \code{getPairwiseSetup})}
 
 \item{annDat}{(matrix or data.frame) annotation data (should match lines of 'dat')}
 
@@ -60,7 +60,7 @@ default setting of \code{useComparison='all'} will select all possible pairwise 
 \item{callFrom}{(character) allows easier tracking of messages produced}
 }
 \value{
-This function returns a list with $data, $nNA, $randParam, $NAneigLst, $seed, $filt, and $annot
+This function returns a list with $data (unmodified input from dat), $nNA, $randParam, $NAneigLst, $seed, $filt (the reommended filtering : TRUE for keeping value), and $annot
 }
 \description{
 In most omics data-analysis one needs to employ a certain number of filtering strategies to avoid getting artifacts to the step of statistical testing.

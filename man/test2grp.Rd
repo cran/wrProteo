@@ -2,7 +2,7 @@
 % Please edit documentation in R/test2grp.R
 \name{test2grp}
 \alias{test2grp}
-\title{t-test each line of 2 groups of data}
+\title{t-test Each Line Of 2 Groups Of Data}
 \usage{
 test2grp(
   dat,
@@ -39,7 +39,7 @@ test2grp(
 This function returns a limma-type S3 object of class 'MArrayLM' (which can be accessed like a list); multiple testing correction types or modified testing by ROTS may get included ('p.value','FDR','BY','lfdr' or 'ROTS.BH')
 }
 \description{
-\code{test2grp} performs t-test on two groups of data using \href{https://bioconductor.org/packages/release/bioc/html/limma.html}{limma},
+This function performs t-test on two groups of data using \href{https://bioconductor.org/packages/release/bioc/html/limma.html}{limma},
 this is a custom implementation of \code{\link[wrMisc]{moderTest2grp}} for proteomics.
 The final obkect also includes the results without moderation by \code{limma} (eg BH-FDR in \code{$nonMod.BH}). 
 Furthermore, there is an option to make use of package ROTS (note, this will increase the time of computatins considerably).

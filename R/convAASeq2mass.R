@@ -19,6 +19,9 @@ convAASeq2mass <- function(x, massTy="mono", seqName=TRUE, silent=FALSE, debug=F
   ## convert (character) aminoacid sequence vector (ie AA seq in single upper case letters) to mass with corresp modif
   ## 'seqName'  .. to use 'x' (aa seq) as name (always if 'x' has no names)
   fxNa <- wrMisc::.composeCallName(callFrom, newNa="convAASeq2mass")
+  if(!isTRUE(silent)) silent <- FALSE
+  if(isTRUE(debug)) { silent <- FALSE } else { debug <- FALSE }
+
   AAmass1 <- AAmass(massTy=massTy ,inPept=TRUE)
   mH20 <- massDeFormula("2HO", massTy=massTy)
   if(length(names(x)) <1) seqName <- TRUE

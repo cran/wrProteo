@@ -38,7 +38,7 @@
 #' @param avSd (numerical,length=2) population characteristics 'high' (mean and sd) for >1 \code{NA}-neighbours (per line)
 #' @param avSdH deprecated, please use \code{avSd} inestad; (numerical,length=2) population characteristics 'high' (mean and sd) for >1 \code{NA}-neighbours (per line)
 #' @param NAneigLst (list) option for repeated rounds of imputations: list of \code{NA}-neighbour values can be furnished for slightly faster processing
-#' @param plotHist (character or logical) decide if supplemental figure with histogram shoud be drawn, the details 'Hist','quant' (display quantile of originak data), 'mode' (display mode of original data) can be chosen explicitely
+#' @param plotHist (character or logical) decide if supplemental figure with histogram should be drawn, the details 'Hist','quant' (display quantile of originak data), 'mode' (display mode of original data) can be chosen explicitely
 #' @param xLab (character) label on x-axis on plot
 #' @param xLim (numeric, length=2) custom x-axis limits
 #' @param yLab (character) label on y-axis on plot
@@ -50,7 +50,7 @@
 #' @param callFrom (character) allow easier tracking of messages produced
 #' @param debug (logical) supplemental messages for debugging
 #' @return This function returns a list with \code{$data} .. matrix of data where \code{NA} are replaced by imputed values, \code{$nNA} .. number of \code{NA} by group, \code{$randParam} .. parameters used for making random data
-#' @seealso this function gets used by \code{\link{testRobustToNAimputation}}; estimation of mode \code{\link[wrMisc]{stableMode}}; detection of NAs \code{\link[stats]{na.fail}}
+#' @seealso This function gets used by \code{\link{testRobustToNAimputation}}; estimation of mode \code{\link[wrMisc]{stableMode}}; detection of NAs \code{\link[stats]{na.fail}}
 #' @examples
 #' set.seed(2013)
 #' datT6 <- matrix(round(rnorm(300)+3,1), ncol=6, dimnames=list(paste("li",1:50,sep=""),
@@ -71,7 +71,7 @@ matrixNAneighbourImpute <- function(dat, gr, imputMethod="mode2", retnNA=TRUE, a
   ## 'batch-mode' (iterated runs) furnish NAneigLst (with $nNaNei, $charAll, $all.lm or $linMod, $NAneighbour), avSd (postition 3+ for medMode)
   fxNa <- wrMisc::.composeCallName(callFrom, newNa="matrixNAneighbourImpute")
   if(!isTRUE(silent)) silent <- FALSE
-  if(isTRUE(debug)) silent <- FALSE
+  if(isTRUE(debug)) { silent <- FALSE } else { debug <- FALSE }
   datOK <- TRUE
   tx1 <- "; invalid entry - nothing to do"
   if(datOK) { if(length(unique(gr))==length(gr)) { datOK <- FALSE
@@ -192,11 +192,11 @@ matrixNAneighbourImpute <- function(dat, gr, imputMethod="mode2", retnNA=TRUE, a
         randVa <- signif(stats::rnorm(sum(isNA), medMod, avSd[2]),5)
         msg <- paste("mode=",signif(medMod,4),"and sd=", signif(avSd[2],4))  # correct ??
       }
-        if(debug) {message(fxNa," mn5b") }
+      if(debug) {message(fxNa," mn5b") }
 
       if("mode2" %in% imputMethod) {      # selective mode of NA of '2-NA-neighbours' if n.2NA > 300
         if(debug) message(fxNa,"Starting methods 'mode2'")
-        if(length(medMod) <1) medMod <- wrMisc::stableMode(if(sum(sapply(NAneighbour[-1], length)) >300) unlist(NAneighbour[-1]) else unlist(NAneighbour), method="density", callFrom=fxNa,silent=silent)
+        if(length(medMod) <1) medMod <- wrMisc::stableMode(if(length(NAneighbour) >1 && sum(sapply(NAneighbour[-1], length)) >300) unlist(NAneighbour[-1]) else unlist(NAneighbour), method="density", callFrom=fxNa,silent=silent, debug=debug)
         if(length(seedNo) ==1) set.seed(seedNo)
         randVa <- signif(stats::rnorm(sum(isNA), medMod, avSd[2]),5)
         msg <- paste("mean=",signif(medMod,4),"and sd=", signif(avSd[2],4))

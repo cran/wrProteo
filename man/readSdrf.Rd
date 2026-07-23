@@ -2,7 +2,7 @@
 % Please edit documentation in R/readSdrf.R
 \name{readSdrf}
 \alias{readSdrf}
-\title{Read proteomics meta-data as sdrf file}
+\title{Read Proteomics Meta-Data As/From Sdrf File}
 \usage{
 readSdrf(
   fi,

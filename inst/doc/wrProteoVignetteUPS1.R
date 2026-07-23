@@ -34,8 +34,9 @@ packageVersion("wrProteo")
 pxd001819meta <- readSdrf("PXD001819")
 
 ## The concentration of the UPS1 spike-in proteins in the samples
-if(length(pxd001819meta) >0) {
-  UPSconc <- sort(unique(as.numeric(wrMisc::trimRedundText(pxd001819meta$characteristics.spiked.compound.))))  # trim to get to 'essential' info
+if(length(pxd001819meta) >0 && "characteristics.concentration.of." %in% colnames(pxd001819meta)) {     
+  UPSconc <- sort(unique(as.numeric(wrMisc::trimRedundText(pxd001819meta$characteristics.concentration.of.))))  # trim to get to 'essential' info
+  #old#UPSconc <- sort(unique(as.numeric(wrMisc::trimRedundText(pxd001819meta$characristics.spiked.compound.))))  # trim to get to 'essential' info
 } else {
   UPSconc <- c(50, 125, 250, 500, 2500, 5000, 12500, 25000, 50000)       # in case access to github failed
 }
@@ -54,8 +55,7 @@ sdrfNa <- "PXD001819"                     # name of sdrf to use
 ## The accession numbers for the UPS1 proteins
 UPS1 <- getUPS1acc(updated=FALSE)
 ## global information about what could be contaminants
-contaInf <- c("Bos tauris|Gallus", MQ="CON_|LYSC_CHICK")
-  
+contaInf <- c("Bos tauris|Gallus", MQ="CON_|LYSC_CHICK")  
 
 ## ----functions2, echo=TRUE----------------------------------------------------
 ## additional functions
@@ -110,7 +110,6 @@ fiNaMQ <- "proteinGroups.txt.gz"
 specPrefMQ <- list(conta=contaInf[2], matrix=paste0("OS=",matrixType2), spike=spikeType, sampleNames="sdrf") #fasta=fastaFi, 
 dataMQ <- readMaxQuantFile(file=fiNaMQ, path=path1, refLi="mainSpe", specPref=specPrefMQ, 
   sdrf=c(sdrfNa,"max",sdrfOrder=TRUE,skipCol=1), suplAnnotFile=TRUE, plotGraph=FALSE, silent=TRUE)   # , refLi=useRefLi
-
 
 ## ----readMaxQuant2, fig.height=8, fig.width=9.5, fig.align="center", echo=TRUE----
 ## The number of lines and colums

@@ -2,7 +2,7 @@
 % Please edit documentation in R/shortSoftwName.R
 \name{shortSoftwName}
 \alias{shortSoftwName}
-\title{Get Short Names of Proteomics Quantitation Software}
+\title{Get Short Names Of Proteomics Quantitation Software}
 \usage{
 shortSoftwName(
   x,
@@ -21,7 +21,7 @@ shortSoftwName(
 
 \item{debug}{(logical) additional messages for debugging}
 
-\item{callFrom}{(character) allow easier tracking of messages produced}
+\item{callFrom}{(character) allows easier tracking of messages produced}
 }
 \value{
 This function returns a vector with 2-letter abbreviation for the software

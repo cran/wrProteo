@@ -9,7 +9,7 @@
 #' Thus, it is very important to know your data and to understand when lines that appear with the same identifyers should/may be fused/summarized without 
 #' doing damage to the later biological interpretation ! The user may specify for each dataset the colum out of the protein/peptide-annotation to use
 #' via the argument \code{columnNa}. 
-#' Then, this content will be matched as identical match, so when combining data from different software special care shoud be taken !
+#' Then, this content will be matched as identical match, so when combining data from different software special care should be taken !
 #' 
 #' Please note, that (at this point) the data from different series/objects will be joined as they are, ie without any additional normalization.
 #' It is up to the user to inspect the resulting data and to decide if and which type of normalization may be suitable !
@@ -56,9 +56,11 @@ fuseProteomicsProjects <- function(x, y, z=NULL, columnNa="Accession", NA.rm=TRU
   ## set 'textModif' (character) to 'rmTerminalDigit' for treating peptides from DiaNN
   ##  note : no normalization by default
   fxNa <- wrMisc::.composeCallName(callFrom, newNa="fuseProteomicsProjects")
-  #namesXY <- c(deparse(substitute(x)), deparse(substitute(y)), if(length(z) >0) deparse(substitute(z)))
+  if(!isTRUE(silent)) silent <- FALSE
+  if(isTRUE(debug)) { silent <- FALSE } else { debug <- FALSE }
   namesXY <- c(deparse(substitute(x)), deparse(substitute(y)), deparse(substitute(z)))
   out <- NULL
+
   if(length(x) <1) stop("Argument 'x' seems empty !")
   if(length(y) <1) stop("Argument 'y' seems empty !")
   if(debug) message(fxNa,"  fPL0")

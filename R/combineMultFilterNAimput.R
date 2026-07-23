@@ -1,4 +1,4 @@
-#' Combine Multiple Filters On NA-imputed Data
+#' Combine Multiple Filters On NA-Imputed Data
 #'
 #' In most omics data-analysis one needs to employ a certain number of filtering strategies to avoid getting artifacts to the step of statistical testing.
 #' This function takes both the origial data and the NA-imputed data to create several different filters (number of NAs, min abundance, ..) and finally combines them.
@@ -22,7 +22,7 @@
 #'   may be character as result of combining two group-names (from argument \code{grp}) (eg 'A-B', beware, the separator may not appear inside group-names) 
 #'   or 2-column matrix of group-names (thus, without separator; names combined with separator may be shown as rownames) or 2-column matrix of indexes to sorted group-names;
 #'   default setting of \code{useComparison='all'} will select all possible pairwise combinations
-#' @param experSetup (list) optional esperimental setup (list with $ind, $pwGrpIndex,$sep and $pwGrpNa  as obtained using \code{getPairwiseSetup})
+#' @param experSetup (list) optional esperimental setup (list with $ind, $pwGrpIndex, $sep and $pwGrpNa  as obtained using \code{getPairwiseSetup})
 #' @param annDat (matrix or data.frame) annotation data (should match lines of 'dat')
 #' @param abundThr (numeric) optional threshold filter for minimumn abundance
 #' @param colRazNa (character) if razor peptides are used: column name for razor peptide count 
@@ -34,7 +34,7 @@
 #' @param silent (logical) suppress messages
 #' @param debug (logical) additional messages for debugging
 #' @param callFrom (character) allows easier tracking of messages produced
-#' @return This function returns a list with $data, $nNA, $randParam, $NAneigLst, $seed, $filt, and $annot  
+#' @return This function returns a list with $data (unmodified input from dat), $nNA, $randParam, $NAneigLst, $seed, $filt (the reommended filtering : TRUE for keeping value), and $annot  
 #' @seealso \code{\link[wrMisc]{presenceFilt}} 
 #' @examples
 #' set.seed(2013)
@@ -55,8 +55,8 @@
 #' @export
 combineMultFilterNAimput <- function(dat, imputed, grp, useComparison="all", experSetup=NULL, annDat=NULL, abundThr=NULL, colRazNa=NULL, colTotNa=NULL, minSpeNo=1, minTotNo=2, maxGrpMiss=1, ratMaxNA=0.8, silent=FALSE,debug=FALSE,callFrom=NULL){
   fxNa <- wrMisc::.composeCallName(callFrom, newNa="combineMultFilterNAimput")
-  if(isTRUE(debug)) silent <- FALSE else debug <- FALSE
   if(!isTRUE(silent)) silent <- FALSE
+  if(isTRUE(debug)) { silent <- FALSE } else { debug <- FALSE }
   pwComb <- pwIndex <- pwGrpNa <- sep1 <- NULL
   ## checks
   if(length(dat)==0 || length(dim(dat)) !=2 || any(dim(dat) < c(1,2))) stop(fxNa,"Invalid input for argument 'dat' : Must be matrix or data.frame with min 2 columns !")

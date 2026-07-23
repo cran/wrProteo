@@ -7,9 +7,9 @@
 #' @details
 #' This function has been developed using Thermo ProteomeDiscoverer versions 2.2 to 2.5.
 #' The format of resulting files at export also depends which columns are chosen as visible inside ProteomeDiscoverer and subsequently get chosen for export.
-#' Using the argument \code{suplAnnotFile} it is possible to specify a specific file (or search for default file) to read for extracting file-names as sample-names and other experiment realted information.
+#' Using the argument \code{suplAnnotFile} it is possible to specify a specific file (or search for default file) to read for extracting file-names as sample-names and other experiment related information.
 #' Precedent and following aminoacids (relative to identified protease recognition sites) will be removed form peptide sequences and be displayed in $annot as columns 'prec' and 'foll'.
-#' If a column named \code{contamCol} is found, the data will be lateron filtered to remove all contaminants, set to \code{NULL} for keeping all contaminants
+#' If a column named \code{contamCol} is found, the data will be mater on filtered to remove all contaminants, set to \code{NULL} for keeping all contaminants
 #' This function replaces the deprecated function \code{readPDExport}.
 #'
 #'  Besides, ProteomeDiscoverer version number and full raw-file path will be extracted for $notes in final output.
@@ -20,7 +20,7 @@
 #' @param sampleNames (character) new column-names for quantification data (ProteomeDiscoverer does not automatically use file-names from spectra); this argument has priority over \code{suplAnnotFile}
 #' @param gr (character or factor) custom defined pattern of replicate association, will override final grouping of replicates from \code{sdrf} and/or \code{suplAnnotFile} (if provided)   \code{}
 #' @param sdrf (character, list or data.frame) optional extraction and adding of experimenal meta-data: if character, this may be the ID at ProteomeExchange,
-#'   the second element may give futher indicatations for automatic organization of groups of replicates.
+#'   the second element may give further indications for automatic organization of groups of replicates.
 #'   Besides, the output from \code{readSdrf} or a list from \code{defineSamples} may be provided; if \code{gr} is provided, \code{gr} gets priority for grouping of replicates
 #' @param suplAnnotFile (logical or character) optional reading of supplemental files produced by ProteomeDiscoverer; however, if \code{gr} is provided, \code{gr} gets priority for grouping of replicates;
 #'  if \code{TRUE} defaults to file '*InputFiles.txt' (needed to match information of \code{sdrf}) which can be exported next to main quantitation results;
@@ -28,7 +28,7 @@
 #' @param read0asNA (logical) decide if initial quntifications at 0 should be transformed to NA
 #' @param quantCol (character or integer) exact col-names, or if length=1 content of \code{quantCol} will be used as pattern to search among column-names for $quant using \code{grep}
 #' @param contamCol (character or integer, length=1) which columns should be used for contaminants marked by ProteomeDiscoverer.
-#'  If a column named \code{contamCol} is found, the data will be lateron filtered to remove all contaminants, set to \code{NULL} for keeping all contaminants
+#'  If a column named \code{contamCol} is found, the data will be mater on filtered to remove all contaminants, set to \code{NULL} for keeping all contaminants
 #' @param refLi (character or integer) custom specify which line of data is main species, if character (eg 'mainSpe'), the column 'SpecType' in $annot will be searched for exact match of the (single) term given
 #' @param separateAnnot (logical) if \code{TRUE} output will be organized as list with \code{$annot}, \code{$abund} for initial/raw abundance values and \code{$quant} with final normalized quantitations
 #' @param annotCol (character) column names to be read/extracted for the annotation section (default  c("Accession","Description","Gene","Contaminant","Sum.PEP.Score","Coverage....","X..Peptides","X..PSMs","X..Unique.Peptides", "X..AAs","MW..kDa.") )
@@ -36,8 +36,8 @@
 #' @param titGraph (character) custom title to plot
 #' @param titGraph (character) deprecated custom title to plot, please use 'tit'
 #' @param wex (integer) relative expansion factor of the violin-plot (will be passed to \code{\link[wrGraph]{vioplotW}})
-#' @param specPref (character or list) define characteristic text for recognizing (main) groups of species (1st for comtaminants - will be marked as 'conta', 2nd for main species- marked as 'mainSpe',
-#'  and optional following ones for supplemental tags/species - maked as 'species2','species3',...);
+#' @param specPref (character or list) define characteristic text for recognizing (main) groups of species (1st for contaminants - will be marked as 'conta', 2nd for main species- marked as 'mainSpe',
+#'  and optional following ones for supplemental tags/species - marked as 'species2','species3',...);
 #'  if list and list-element has multiple values they will be used for exact matching of accessions (ie 2nd of argument \code{annotCol})
 #' @param groupPref (list) additional parameters for interpreting meta-data to identify structure of groups (replicates), will be passed to \code{readSampleMetaData}.
 #'   May contain \code{lowNumberOfGroups=FALSE} for automatically choosing a rather elevated number of groups if possible (defaults to low number of groups, ie higher number of samples per group)
@@ -65,7 +65,7 @@ readProteomeDiscovererPeptides <- function(fileName, path=NULL, normalizeMeth="m
   chPa <- sapply(reqPa, requireNamespace, quietly=TRUE)
   if(any(!chPa)) stop("package(s) '",paste(reqPa[which(!chPa)], collapse="','"),"' not found ! Please install first from CRAN")
   if(!isTRUE(silent)) silent <- FALSE
-  if(isTRUE(debug)) silent <- FALSE else debug <- FALSE
+  if(isTRUE(debug)) { silent <- FALSE } else { debug <- FALSE }
   excluCol <- c("^Abundance\\.Count","^Abundances\\.Count","^Abundance\\.Ratio","^Abundances\\.Ratio","^Abundance\\.Grouped","^Abundances\\.Grouped")   # exclude this from quantifications columns
   cleanDescription <- TRUE          # clean 'Description' for artifacts of truncated text (tailing ';' etc)
   infoDat <- infoFi <- setupSd <- parametersD <- quant <- counts <- NULL        # initialize
@@ -150,7 +150,7 @@ readProteomeDiscovererPeptides <- function(fileName, path=NULL, normalizeMeth="m
     if(length(chFoll) >0) out[chFoll,3] <- sub("\\].*","", sub(".+\\.\\[","", x[chFoll]))
     out }
   annot1 <- fxPrecAA(pepSeq)      # split
-  pepSeq <- annot1[,4] <- annot1[,1]            # also used lateron for rownames of quant
+  pepSeq <- annot1[,4] <- annot1[,1]            # also used mater on for rownames of quant
 
   if(modifSensible) { hasMod <- nchar(tmp[,maSeCo[3]]) >0
     if(any(hasMod, na.rm=TRUE)) annot1[which(hasMod),4] <- gsub(" ","", paste(annot1[which(hasMod),1], tmp[which(hasMod),maSeCo[3]], sep="_"))         # add separator & modification
@@ -418,7 +418,7 @@ readProteomeDiscovererPeptides <- function(fileName, path=NULL, normalizeMeth="m
 #' @seealso \code{\link{readProteomeDiscovererFile}}, \code{\link{readProteomeDiscovererPeptides}}
 #' @export
 readProtDiscovererPeptides <- function(...) {
-  .Deprecated(new="readProteomeDiscovererPeptides", package="wrMisc", msg="The function readProtDiscovererPeptides() has been deprecated and replaced by readProteomeDiscovererPeptides() in this package")  # only this message will be shown..
+  .Deprecated(new="readProteomeDiscovererPeptides", package="wrProteo", msg="The function readProtDiscovererPeptides() has been deprecated and replaced by readProteomeDiscovererPeptides() in this package")  # only this message will be shown..
   NULL
 }
      

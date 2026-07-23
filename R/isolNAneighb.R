@@ -1,4 +1,4 @@
-#' Isolate NA-neighbours
+#' Isolate NA-Neighbours
 #'
 #' This functions extracts all replicate-values where at least one of the replicates is \code{NA} and sorts by number of \code{NA}s per group.
 #' A list with all \code{NA}-neighbours organized by the number of \code{NA}s gets returned.
@@ -23,10 +23,11 @@ isolNAneighb <- function(mat, gr, silent=FALSE, debug=FALSE, callFrom=NULL) {
   ## isolate NA-neighbours
   fxNa <- wrMisc::.composeCallName(callFrom, newNa="isolNAneighb")
   if(!isTRUE(silent)) silent <- FALSE
-  if(isTRUE(debug)) silent <- FALSE else debug <- FALSE
+  if(isTRUE(debug)) { silent <- FALSE } else { debug <- FALSE }
   msg <- NULL
   datOK <- TRUE
   NAneig <- NULL
+
   if(any(length(mat) <1, length(dim(mat)) !=2, dim(mat) < c(2,1))) { datOK <- FALSE
     msg <- "'mat' should be matrix or data.frame with min 2 rows & 1 column, nothing to do, return NULL"}
   if(datOK && length(gr) !=ncol(mat)) { datOK <- FALSE
@@ -42,9 +43,9 @@ isolNAneighb <- function(mat, gr, silent=FALSE, debug=FALSE, callFrom=NULL) {
     NAneig <- lapply(1:maxHi, function(x) NULL)         # initialize output
     names(NAneig) <- paste0("n", 1:maxHi)
     ## need first to separate by groups of replicates
-    matR <- lapply(unique(gr), function(x) {mat[, which(gr ==x)]})     # split by groups of replicates
+    matR <- lapply(unique(gr), function(x) {mat[, which(gr ==x), drop=FALSE]})     # split by groups of replicates
     ## now separate NA-neighbours for each group/line
-    nNA <- as.integer(sapply(matR, function(x) rowSums(is.na(x))))
+    nNA <- as.integer(sapply(matR, function(x) if(length(dim(x)) ==2) rowSums(is.na(x)) else 0 +is.na(x)  ))
     naNei <- wrMisc::partUnlist(lapply(matR, apply, 1, function(x) {chN <- is.na(x); if(sum(chN) ==0 || sum(chN)==length(x)) NULL else x[which(!chN)]}), silent=silent, debug=debug, callFrom=fxNa)
     chLe <- sapply(naNei, length)
     

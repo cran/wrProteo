@@ -27,7 +27,7 @@ cleanListCoNames <- function(dat, rem=NULL, subst=c("-","_"), lstE=c("raw","quan
   ## clean/stratify columnames
   fxNa <- wrMisc::.composeCallName(callFrom, newNa="cleanListCoNames")
   if(!isTRUE(silent)) silent <- FALSE
-  if(isTRUE(debug)) silent <- FALSE else debug <- FALSE
+  if(isTRUE(debug)) { silent <- FALSE } else { debug <- FALSE }
   ch1 <- lstE %in% names(dat)
   if(!is.list(dat) || all(!ch1)) {if(!silent) message(fxNa," Nothing to do (verifiy your input)"); ok <- FALSE} else ok <- TRUE
   if(ok && any(!ch1)) { if(!silent) message(fxNa," Term ",wrMisc::pasteC(lstE[which(!ch1)],quoteC="'")," not found in 'dat', ignoring ..")

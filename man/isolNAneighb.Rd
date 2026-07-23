@@ -2,7 +2,7 @@
 % Please edit documentation in R/isolNAneighb.R
 \name{isolNAneighb}
 \alias{isolNAneighb}
-\title{Isolate NA-neighbours}
+\title{Isolate NA-Neighbours}
 \usage{
 isolNAneighb(mat, gr, silent = FALSE, debug = FALSE, callFrom = NULL)
 }

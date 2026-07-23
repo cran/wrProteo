@@ -1,4 +1,4 @@
-#' Read Peptide Identification and Quantitation Data-Files (peptides.txt) Produced By MaxQuant
+#' Read Peptide Identification And Quantitation Data-Files (peptides.txt) Produced By MaxQuant
 #'
 #' Peptide level identification and quantification data produced by \href{https://maxquant.org/}{MaxQuant} can be read using
 #' this function and relevant information extracted.
@@ -53,7 +53,7 @@
 #' @param gr (character or factor) custom defined pattern of replicate association, will override final grouping of
 #'   replicates from \code{sdrf} and/or \code{suplAnnotFile} (if provided)   \code{}
 #' @param sdrf (character, list or data.frame) optional extraction and adding of experimenal meta-data: if character, this may be the ID at ProteomeExchange,
-#'   the second & third elements may give futher indicatations for automatic organization of groups of replicates.
+#'   the second & third elements may give further indications for automatic organization of groups of replicates.
 #'   Besides, the output from \code{readSdrf} or a list from \code{defineSamples} may be provided;
 #'   if \code{gr} is provided, \code{gr} gets priority for grouping of replicates;
 #'   if \code{sdrfOrder=TRUE} the output will be put in order of sdrf
@@ -102,7 +102,8 @@ readMaxQuantPeptides <- function(path, fileName="peptides.txt", normalizeMeth="m
   chPa <- sapply(reqPa, requireNamespace, quietly=TRUE)
   if(any(!chPa)) stop("package(s) '",paste(reqPa[which(!chPa)], collapse="','"),"' not found ! Please install first from CRAN")
   if(!isTRUE(silent)) silent <- FALSE
-  if(isTRUE(debug)) silent <- FALSE else debug <- FALSE
+  if(isTRUE(debug)) { silent <- FALSE } else { debug <- FALSE }
+
   excluCol <- "^Abundances.Count"   # exclude this from quantifications columns
   setupSd <- setupSdmq <- summaryD <- parametersD <- NULL       # initialize (meta-data)
   if(debug) {message("rMQP1"); rMQP1 <- list(path=path,chPa=chPa,setupSd=setupSd,excluCol=excluCol,remStrainNo=remStrainNo,cleanDescription=cleanDescription)}

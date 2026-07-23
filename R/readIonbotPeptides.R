@@ -1,12 +1,12 @@
 #' Read Tabulated Files Exported by Ionbot At Peptide Level
 #'
-#' This function allows importing initial petide identification and quantification results from  \href{https://ionbot.cloud/about}{Ionbot} 
+#' This function allows importing initial petide identification and quantification results from  \href{https://www.biorxiv.org/content/10.1101/2021.07.02.450686v2}{Ionbot} 
 #' which were exported as tabulated tsv can be imported and relevant information extracted.
 #' The final output is a list containing 3 main elements: \code{$annot}, \code{$raw} and optional \code{$quant}, or returns data.frame with entire content of file if \code{separateAnnot=FALSE}.
 #'
 #' @details
 #' Using the argument \code{suplAnnotFile} it is possible to specify a specific file (or search for default file) to read for extracting file-names as sample-names 
-#' and other experiment realted information.
+#' and other experiment related information.
 #'
 #' 
 #'
@@ -17,14 +17,14 @@
 #' @param sampleNames (character) new column-names for quantification data (ProteomeDiscoverer does not automatically use file-names from spectra); this argument has priority over \code{suplAnnotFile}
 #' @param gr (character or factor) custom defined pattern of replicate association, will override final grouping of replicates from \code{sdrf} and/or \code{suplAnnotFile} (if provided) 
 #' @param sdrf (character, list or data.frame) optional extraction and adding of experimenal meta-data: if character, this may be the ID at ProteomeExchange,
-#'   the second & third elements may give futher indicatations for automatic organization of groups of replicates.
+#'   the second & third elements may give further indications for automatic organization of groups of replicates.
 #'   Besides, the output from \code{readSdrf} or a list from \code{defineSamples} may be provided;
 #'   if \code{gr} is provided, \code{gr} gets priority for grouping of replicates;
 #'   if \code{sdrfOrder=TRUE} the output will be put in order of sdrf
 #' @param read0asNA (logical) decide if initial quntifications at 0 should be transformed to NA
 #' @param quantCol (character or integer) exact col-names, or if length=1 content of \code{quantCol} will be used as pattern to search among column-names for $quant using \code{grep}
 #' @param contamCol (character or integer, length=1) which columns should be used for contaminants marked by ProteomeDiscoverer.
-#'  If a column named \code{contamCol} is found, the data will be lateron filtered to remove all contaminants, set to \code{NULL} for keeping all contaminants
+#'  If a column named \code{contamCol} is found, the data will be mater on filtered to remove all contaminants, set to \code{NULL} for keeping all contaminants
 #' @param refLi (character or integer) custom specify which line of data is main species, if character (eg 'mainSpe'), the column 'SpecType' in $annot will be searched for exact match of the (single) term given
 #' @param separateAnnot (logical) if \code{TRUE} output will be organized as list with \code{$annot}, \code{$abund} for initial/raw abundance values and \code{$quant} with final normalized quantitations
 #' @param annotCol (character) column names to be read/extracted for the annotation section (default 
@@ -40,8 +40,8 @@
 #' @param suplAnnotFile (logical or character) optional reading of supplemental files produced by ProteomeDiscoverer; however, if \code{gr} is provided, \code{gr} gets priority for grouping of replicates;
 #'  if \code{TRUE} defaults to file '*InputFiles.txt' (needed to match information of \code{sdrf}) which can be exported next to main quantitation results;
 #'  if \code{character} the respective file-name (relative or absolute path)
-#' @param specPref (character or list) define characteristic text for recognizing (main) groups of species (1st for comtaminants - will be marked as 'conta', 2nd for main species- marked as 'mainSpe',
-#'   and optional following ones for supplemental tags/species - maked as 'species2','species3',...);
+#' @param specPref (character or list) define characteristic text for recognizing (main) groups of species (1st for contaminants - will be marked as 'conta', 2nd for main species- marked as 'mainSpe',
+#'   and optional following ones for supplemental tags/species - marked as 'species2','species3',...);
 #'   if list and list-element has multiple values they will be used for exact matching of accessions (ie 2nd of argument \code{annotCol})
 #' @param plotGraph (logical or integer) optional plot of type vioplot of initial and normalized data (using \code{normalizeMeth}); if integer, it will be passed to \code{layout} when plotting
 #' @param silent (logical) suppress messages
@@ -66,8 +66,9 @@ readIonbotPeptides <- function(fileName, path=NULL, normalizeMeth="median", samp
   reqPa <- c("utils","wrMisc")
   chPa <- sapply(reqPa, requireNamespace, quietly=TRUE)
   if(any(!chPa)) stop("package(s) '",paste(reqPa[which(!chPa)], collapse="','"),"' not found ! Please install first from CRAN")
-  if(isTRUE(debug)) silent <- FALSE else { debug <- FALSE
-    if(!isTRUE(silent)) silent <- FALSE }
+  if(!isTRUE(silent)) silent <- FALSE
+  if(isTRUE(debug)) { silent <- FALSE } else { debug <- FALSE }
+
   excluCol <- c()
   #excluCol <- c("^Abundance//.Count","^Abundances//.Count","^Abundance//.Ratio","^Abundances//.Ratio","^Abundance//.Grouped","^Abundances//.Grouped")   # exclude this from quantifications columns
   cleanDescription <- TRUE          # clean 'Description' for artifacts of truncated text (tailing ';' etc)

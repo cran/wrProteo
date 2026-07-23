@@ -40,8 +40,8 @@ readFasta2 <- function(filename, delim="|", databaseSign=c("sp","tr","generic","
   ## info about Uniprot fasta https://www.uniprot.org/help/fasta-headers
   ## return (based on 'tableOut') simple character vector (of sequence) with Uniprot ID as name or matrix with cols:'ID','Sequence','EntryName','ProteinName','OS','GN'
   fxNa <- wrMisc::.composeCallName(callFrom, newNa="readFasta2")
-  if(isTRUE(debug)) silent <- FALSE
   if(!isTRUE(silent)) silent <- FALSE
+  if(isTRUE(debug)) { silent <- FALSE } else { debug <- FALSE }
   ## initial test reading
   if(!file.exists(filename)) stop(" file ",filename," not existing")
   if(length(databaseSign) >0 && any(is.na(databaseSign))) databaseSign <- databaseSign[which(!is.na(databaseSign))]   # remove NAs

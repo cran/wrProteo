@@ -1,9 +1,11 @@
-#' Read proteomics meta-data as sdrf file
+#' Read Proteomics Meta-Data As/From Sdrf File
 #'
-#' @description This function allows reading proteomics meta-data from sdrf file, as they are provided on https://github.com/bigbio/sdrf-annotated-datasets.
+#' @description 
+#' This function allows reading proteomics meta-data from sdrf file, as they are provided on https://github.com/bigbio/sdrf-annotated-datasets.
 #' A data.frame containing all annotation data will be returned. To stay conform with the (non-obligatory) recommendations, columnnames are shown as lower caps.
 #'
-#' @details The packages utils and wrMisc must be installed.
+#' @details 
+#' The packages utils and wrMisc must be installed.
 #' Please note that reading sdrf files (if not provided as local copy) will take a few seconds, depending on the responsiveness of github.
 #' This function only handles the main reading of sdrf data and some diagnostic checks.
 #' For mining sdrf data please look at \code{\link[wrMisc]{replicateStructure}} and \code{\link{readSampleMetaData}}.
@@ -31,8 +33,8 @@ readSdrf <- function(fi, chCol="auto", urlPrefix="github", silent=FALSE, callFro
   ## see https://github.com/bigbio/sdrf-annotated-datasets/    was https://github.com/bigbio/proteomics-sample-metadata until apr26
   ##  return data.frame, testing for
   fxNa <- wrMisc::.composeCallName(callFrom, newNa="readSdrf")
-  if(isTRUE(debug)) silent <- FALSE else { debug <- FALSE
-    if(!isTRUE(silent)) silent <- FALSE }
+  if(!isTRUE(silent)) silent <- FALSE
+  if(isTRUE(debug)) { silent <- FALSE } else { debug <- FALSE }
 
   datOK <- length(fi) >0
   reqPa <- c("utils","wrMisc")

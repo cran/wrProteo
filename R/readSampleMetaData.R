@@ -1,4 +1,4 @@
-#' Read Sample Meta-data from Quantification-Software And/Or Sdrf And Align To Experimental Data
+#' Read Sample Meta-data From Quantification-Software And/Or Sdrf And Align To Experimental Data
 #'
 #' Sample/experimental annotation meta-data form \href{https://maxquant.org/}{MaxQuant}, ProteomeDiscoverer, FragPipe, Proline or similar, can be read using this function and relevant information extracted.
 #' Furthermore, annotation in \href{https://github.com/bigbio/proteomics-sample-metadata}{sdrf-format} can be added (the order of sdrf will be adjated automatically, if possible).
@@ -34,7 +34,7 @@
 #' @param groupPref (list) additional parameters for interpreting meta-data to identify structure of groups (replicates);
 #'   May contain \code{lowNumberOfGroups=FALSE} for automatically choosing a rather elevated number of groups if possible (defaults to low number of groups, ie higher number of samples per group).
 #'   A vector of custom sample-names may be provided via \code{sampleNames=...} (must be of correct length);
-#'   if contains \code{sampleNames="sdrf"} sample-names will be used from trimmed file-names.
+#'   if contains \code{sampleNames="sdrf"} sample-names will be used from trimmed file-names out of sdrf.
 #' @param chUnit (logical or character) optional adjustig of group-labels from sample meta-data in case multipl different unit-prefixes are used to single common prefix 
 #'   (eg adjust '100pMol' and '1nMol' to '100pMol' and '1000pMol') for better downstream analysis. This option will call \code{\link[wrMisc]{adjustUnitPrefix}} and \code{\link[wrMisc]{checkUnitPrefix}} from package \code{wrMisc}
 #'   If \code{character} exatecly this/these unit-names will be searched in sample-names and checked if multiple different decimal prefixes are used; 
@@ -72,8 +72,8 @@ readSampleMetaData <- function(quantMeth, sdrf=NULL, suplAnnotFile=NULL, path=".
   ## 2.3 ready to make setupSd
 
   fxNa <- wrMisc::.composeCallName(callFrom, newNa="readSampleMetaData")
-  if(isTRUE(debug)) silent <- FALSE
   if(!isTRUE(silent)) silent <- FALSE
+  if(isTRUE(debug)) { silent <- FALSE } else { debug <- FALSE }
 
   setupSd <- NULL
   summaryD <- parametersD <- setupSdSoft <- setupSd <- sdrfInf <- annSh <- parametersSd <- useSdrfCol <- sdrfDat <- grp <- colNa <- NULL         # initialize    (setupSd needed ?)
@@ -550,7 +550,6 @@ readSampleMetaData <- function(quantMeth, sdrf=NULL, suplAnnotFile=NULL, path=".
         names(setupSdSoft$groups) <- as.integer(grp)
       } else { 
         if(length(groupPref$gr)==1) {
-          ## now length(groupPref$gr)==1
           if(groupPref$gr=="colnames") grp <- .adjPat(wrMisc::rmEnumeratorName(colnames(abund), incl=c("anyCase","trim0","rmEnum"), sepEnum=c(" ","-","_"), nameEnum=c("Number","No","#","","Replicate","Sample","Run"), silent=silent, debug=debug, callFrom=fxNa))
   
           if(grepl("^sdrf", groupPref$gr)) {
@@ -559,7 +558,8 @@ readSampleMetaData <- function(quantMeth, sdrf=NULL, suplAnnotFile=NULL, path=".
           #if(grepl("^groupPref\\$[[:alpha:]]", groupPref$gr)) {
           #} else if(groupPref$gr=="sdrf")
   
-      } }
+        } 
+      }
 #}}}  #  exit after 1.4.1      
       
       ## 1.4.2  (special case) replicate structure based on custom colNames (if 'sampleNames' given and 'gr' not given)
@@ -580,12 +580,13 @@ readSampleMetaData <- function(quantMeth, sdrf=NULL, suplAnnotFile=NULL, path=".
         if(debug) { message(fxNa,"rSM4f2"); rSM4f2 <- list(grp=grp,sdrf=sdrf,abund=abund,suplAnnotFile=suplAnnotFile,quantMeth=quantMeth,summaryD=summaryD,parametersD=parametersD,groupPref=groupPref,syncColumns=syncColumns,setupSdSoft=setupSdSoft,colNa=colNa) }
 
         ## so far no direct information about groups (all filenames are different), need to try to find out (remove enumerators)
-        if(all(!duplicated(setupSdSoft$level)) && length(abund) >0) {
+        if(all(!duplicated(setupSdSoft$level)) && length(abund) >0) {   
+          ## all different (no replicates found so far)
           setupSdSoft$sampleNames <- grpA <- wrMisc::trimRedundText(txt=colnames(abund), spaceElim=TRUE, silent=debug, debug=debug, callFrom=fxNa)                 # 26oct22
           colNaGrp <- wrMisc::rmEnumeratorName(grpA, incl=c("anyCase","trim0","rmEnum"), sepEnum=c(" ","-","_"), nameEnum=c("Number","No","#","","Replicate","Sample"), silent=silent, debug=debug, callFrom=fxNa)
           colNaGrPref <- TRUE                                  ## preferential to colnames for searching groups
           if(any(duplicated(colNaGrp)) && colNaGrPref) {       # colnames may be used for designing groups
-            setupSdSoft$level <- grp <- .adjPat(colNaGrp)
+            setupSdSoft$level <- grp <- .adjPat(colNaGrp)      # typically levels based on filenames
           } else {
             if(all(setupSdSoft$level ==1:ncol(abund))) {
               ## note : .adjTrimPat() does NOT allow keeping names of levels
@@ -665,6 +666,22 @@ readSampleMetaData <- function(quantMeth, sdrf=NULL, suplAnnotFile=NULL, path=".
           if(length(dim(sdrf)) <2 && !silent) message(fxNa,"Note: 'sdrf' looks bizarre (trouble ahead ?), expecting either file, data.frame or complete list")
           sdrfDat <- sdrf
           sdrf[1] <- "User provided custom object"}
+      }
+      ## sanity check of sdrfDat (against col-names repeated inside sample-annotation, 16jul26)
+      if(length(sdrfDat) !=0 && length(dim(sdrfDat)==2)) {
+        ## check for column-names repeated inside data        colNa <- colnames(sdrfDat)
+        sdrfDa2 <- gsub("\\[|\\]| ",".",as.matrix(sdrfDat))   # mimick text-changes when reading colum-names
+        containsName <- sapply(colnames(sdrfDa2), function(col) col %in% sdrfDa2[, col])
+        if(any(containsName)) {
+          for(i in which(containsName)) {
+            vals <- unique(sdrfDat[,i])
+            if(length(vals) >1) {
+              sdrfDat[which(sdrfDa2[,i] %in% colnames(sdrfDat)[i]),i] <- sdrfDat[which(!sdrfDa2[,i] %in% colnames(sdrfDat)[i])[1], i]  # fix
+              if(!silent) message(fxNa,if(length(vals) >2) "Beware" else "Note",length(vals) -1," repeating colnames (considered as artifact in initial sdrf) were replaced by other line's content !")
+            }
+          }     
+        }
+        rm(sdrfDa2)
       }
       if(debug) { message(fxNa,"rSM6  dim sdrfDat ",nrow(sdrfDat)," ",ncol(sdrfDat)); rSM6 <- list(sdrf=sdrf,sdrfDat=sdrfDat,setupSd=setupSd,abund=abund,suplAnnotFile=suplAnnotFile,groupPref=groupPref,quantMeth=quantMeth,abund=abund,summaryD=summaryD,parametersD=parametersD,syncColumns=syncColumns) }
 #}}}  #  exit after 2.0   ##
@@ -807,16 +824,33 @@ readSampleMetaData <- function(quantMeth, sdrf=NULL, suplAnnotFile=NULL, path=".
 
           ## further check if useSdrfCol just contains 'Sample 1' or 'run 1' etc
           ch1 <- grepl("^((sample)|(run)){0,1} {0,2}-{0,1}[[:digit:]]+$", tolower(setupSd$sampleNames))
+          if("compareto" %in% nonUsefulColNa) nonUsefulColNa <- unique(c(nonUsefulColNa, tolower(colnames(sdrfDat))[grep("compareto", tolower(colnames(sdrfDat)))]))
+
           avoidCol <- c( unlist(lapply(tolower(nonUsefulColNa), grep, tolower(colnames(sdrfDat)))))
-          if(all(ch1)) {
+          if(all(ch1)) {    # setupSd$sampleNames seems generic (ie not useful)
             if(debug) message(fxNa,"Initial sampleNames seem to be generic, ie non informative")
-            ch2 <- colSums(apply( if(length(avoidCol) >0) sdrfDat[,-avoidCol, drop=FALSE] else sdrfDat, 2, duplicated))    # alternat wider search
-            if(any(ch2 ==0)) {
-              ## possible new sample-names
-              setupSd$sampleNames <- if(length(avoidCol) >0) sdrfDat[,((1:ncol(sdrfDat))[-avoidCol])[which(ch2==0)[1]]] else sdrfDat[,(1:ncol(sdrfDat))[which(ch2==0)[1]]]
-            } else {
-              if(!silent) message(fxNa,"Having trouble identifying possibly meaningful sample-names (all look like 'sample 1', etc)")
-            } 
+            sdrfD2 <- if(length(avoidCol) >0) sdrfDat[,-avoidCol, drop=FALSE] else sdrfDat
+
+            ch2 <- colSums(apply( sdrfD2, 2, duplicated))==0    # alternat wider search : sum of repeating names =0 ; ie no repeats
+            if(any(ch2)) {          # refine looking for which column to use : exclude those identical to current setupSd$sampleNames and exclude other enumerating as seen in ProteomeDiscoverer 
+              ch3 <- ch2 & !apply(sdrfDat[,-avoidCol, drop=FALSE], 2, function(x) all(x==setupSd$sampleNames)) & !grepl("(creation.date)|(iniSdrfOrd)", colnames(sdrfDat[,-avoidCol, drop=FALSE]))  # check for columns all different and different to setupSd$sampleNames 
+              ##
+              if(sum(ch3) >1) {  # reduce to single most likely column
+                ch4 <- tolower(colnames(sdrfD2)) %in% c("input.files","file.id","ref")
+                if(any(ch4)) { ch3b <- colSums(apply(sdrfD2[,which(ch4),drop=FALSE], 2, function(x) !grepl("^(Abundance.){0,1}F{0,1}[[:digit:]]+(.Sample){0,1}$", x)))==0  # check if containing non-useful (ProteomeDiscoverer)
+                  if(any(ch3b)) ch3 <- ch3 & !(names(ch3) %in% names(ch3b[which(ch3b)])) }
+                ch5 <- rep(FALSE, length(ch3))
+                ch5[which(ch3)[1]] <- TRUE
+                ch3 <- ch5       
+              } else {
+                ch3 <- ch2 & !apply(sdrfDat[,-avoidCol, drop=FALSE], 2, function(x) all(x==setupSd$sampleNames))  # check for columns like setupSd$sampleNames 
+                if(sum(ch3) ==0) if(!silent) warning(fxNa,"Having trouble identifying possibly meaningful sample-names (all look like initial setupSd$sampleNames)")
+              }
+              ch2 <- ch3 
+            }             
+            if(any(ch2)) setupSd$sampleNames <- sdrfD2[,which(ch2)[1]] else if(!silent) warning(fxNa,"Having trouble identifying possibly meaningful sample-names (all look like 'sample 1', etc)")
+
+
             ### mine for groups while info is available - but mines only single column !!
             #if(any(ch2 > 0 & ch2 < nrow(sdrfDat) -1)) {  # use only if some replicates found
             #  ## use new sampleNames from here
@@ -826,18 +860,10 @@ readSampleMetaData <- function(quantMeth, sdrf=NULL, suplAnnotFile=NULL, path=".
           setupSd$fullSampleNames <- setupSd$sampleNames          
           setupSd$sdrfSampleNames <- setupSd$sampleNames <- wrMisc::rmSharedWords(setupSd$sampleNames, sep=c("_","-",",",".","=",";"), callFrom=fxNa, silent=!debug)
           #if(!identical(sdrfDat[,useSdrfCol], setupSd$sampleNames)) setupSd$fullSampleNames <- sdrfDat[,useSdrfCol]
-          if(debug) { message(fxNa,"rSM6dB  dim sdrfDat ",nrow(sdrfDat)," ",ncol(sdrfDat)); rSM6dB <- list(sdrf=sdrf,sdrfDat=sdrfDat,abund=abund,suplAnnotFile=suplAnnotFile,quantMeth=quantMeth,groupPref=groupPref, avoidCol=avoidCol,nonUsefulColNa=nonUsefulColNa, summaryD=summaryD,parametersD=parametersD,syncColumns=syncColumns,iniSdrfOrder=iniSdrfOrder,setupSd=setupSd,defUnits=defUnits,chUnit=chUnit,refNSamp=refNSamp,grp=grp) }
-
-
-          #if(length(setupSd$groups) ==nrow(sdrfDat)) {
-          #  setupSd$level <- names(setupSd$groups) <- .adjPat(setupSd$groups)
-          #  names(setupSd$level) <- setupSd$groups
-          #}
           
         } else avoidCol <- unlist(lapply(tolower(nonUsefulColNa), grep, tolower(colnames(sdrfDat))))
         if(debug) { message(fxNa,"rSM6dC  dim sdrfDat ",nrow(sdrfDat)," ",ncol(sdrfDat)); rSM6dC <- list(sdrf=sdrf,sdrfDat=sdrfDat,sdrfDatIni=sdrfDatIni,useSdrfCol=useSdrfCol,abund=abund,suplAnnotFile=suplAnnotFile,quantMeth=quantMeth,groupPref=groupPref, avoidCol=avoidCol,nonUsefulColNa=nonUsefulColNa, summaryD=summaryD,parametersD=parametersD,syncColumns=syncColumns,iniSdrfOrder=iniSdrfOrder,setupSd=setupSd,defUnits=defUnits,chUnit=chUnit,avoidCol=avoidCol,grp=grp,refNSamp=refNSamp) }
         
-
         ## 2.3.2  groups of replicates 
         ##  when to consider/integrate info from summaryD ?
         grpIni <- grp     # need to conserve grouping from prev ??
@@ -861,7 +887,6 @@ readSampleMetaData <- function(quantMeth, sdrf=NULL, suplAnnotFile=NULL, path=".
           if(debug) { message(fxNa,"rSM6d1  dim sdrfDat ",nrow(sdrfDat)," ",ncol(sdrfDat)); rSM6d1 <- list(sdrf=sdrf,sdrfDat=sdrfDat,sdrfDatIni=sdrfDatIni,abund=abund,suplAnnotFile=suplAnnotFile,quantMeth=quantMeth,groupPref=groupPref,avoidCol=avoidCol,summaryD=summaryD,parametersD=parametersD,syncColumns=syncColumns,iniSdrfOrder=iniSdrfOrder,setupSd=setupSd,chColNa=chColNa,chUnit=chUnit) }
 
           ## automatic mining (from sdrf) (eg groupPref=list(gr="sdrf") or groupPref=list(gr=c("sdrf_source.name","sdrf_xy"),combMeth="median") .. last will be used for choosing
-
           
           ## groupPref$gr may assign column of sdrf to use (eg style groupPref=list(gr="sdrf1") for 1st column) : extact columns names of sdrf to examine, return index
           if(length(groupPref$gr) >0 && all(grepl("^sdrf_",groupPref$gr))) {
@@ -880,12 +905,12 @@ readSampleMetaData <- function(quantMeth, sdrf=NULL, suplAnnotFile=NULL, path=".
             nonUsefulColInd <- unlist(lapply(nonUsefulColNa, grep, colnames(sdrfDat)[useSdrfCol]))
           } else nonUsefulColInd <- NULL
           ## avoidCol must be index or full name, may be preceded by sdrf_
-          if(length(avoidCol) >0) { avoidCol <- if(is.numeric(avoidCol)) as.integer(avoidCol) else {
+          if(length(avoidCol) >0) { avoidCol <- if(is.numeric(avoidCol)) as.integer(unique(avoidCol)) else {
             if(!all(grepl("^(sdrf_){0,1}[[:digit:]]+$", avoidCol))) as.integer(sub("^sdrf_","",avoidCol)) else {
               wrMisc::naOmit(match(sub("^sdrf_","",avoidCol), colnames(sdrfDat)[useSdrfCol])) }
-            }  # combine avoidCol (txt or index) & nonUsefulColNa (txt)
+            }  # combine avoidCol (txt or index) & nonUsefulColNa (txt), express as index
             avoidCol <- wrMisc::naOmit(if(length(nonUsefulColInd) >0) unique(nonUsefulColInd, avoidCol) else avoidCol)
-          } else avoidCol <- nonUsefulColInd 
+          } else avoidCol <- unique(nonUsefulColInd) 
           if(debug) { message(fxNa,"rSM6d2  dim sdrfDat ",nrow(sdrfDat)," ",ncol(sdrfDat)); rSM6d2 <- list(sdrf=sdrf,sdrfDat=sdrfDat,sdrfDatIni=sdrfDatIni,abund=abund,suplAnnotFile=suplAnnotFile,quantMeth=quantMeth,groupPref=groupPref,avoidCol=avoidCol,summaryD=summaryD,parametersD=parametersD,syncColumns=syncColumns,iniSdrfOrder=iniSdrfOrder,setupSd=setupSd,chColNa=chColNa,chUnit=chUnit,chColInd=chColInd) }
             
           ## 2.3.2.4  final assignment of columns to check for defining groups
@@ -906,12 +931,15 @@ readSampleMetaData <- function(quantMeth, sdrf=NULL, suplAnnotFile=NULL, path=".
           ## 2.3.2.5  check method for mining/combining
           if(length(groupPref$combMeth) ==0 || any(is.na(groupPref$combMeth))) groupPref$combMeth <- "def"
           if(debug) {message(fxNa,"length setupSd ", length(setupSd),"  rSM6g"); rSM6g <- list(setupSd=setupSd,sdrf=sdrf,sdrfDat=sdrfDat,abund=abund,suplAnnotFile=suplAnnotFile,groupPref=groupPref,summaryD=summaryD,parametersD=parametersD,setupSdSoft=setupSdSoft,quantMeth=quantMeth,useSdrfCol=useSdrfCol,chUnit=chUnit) }  #useSdrfCol=useSdrfCol,
-          replStrOpt <- c("default","def","highest","high","lowest","min","max","median","combAll","combineAll","combNonOrth")  # possible options for groupPref$combMeth
+          replStrOpt <- c("default","def","highest","high","lowest","min","max","median","combAll","combineAll","combNonOrth")  # possible options for groupPref$combMeth in 2.3.2.5 (& 2.3.2.5.3)
           chMeth <- groupPref$combMeth %in% replStrOpt
           if(length(chMeth) <1 || !isTRUE(all(chMeth))) { 
             if(length(chMeth) >0) message(fxNa,"Unable to understand argument groupPref$combMeth, setting to default")
             groupPref$combMeth <- "def"
           } else groupPref$combMeth <- groupPref$combMeth[which(chMeth)]      # default in doubt
+          ## check if 'combMeth' is 'default' or 'def'
+          if(isTRUE(grepl("^def", groupPref$combMeth))) groupPref$combMeth <- c("combNonOrth","lowest")    # set default !!
+
           if(debug) { message(fxNa,"rSM6h1 "); rSM6h1 <- list(sdrf=sdrf,sdrfDat=sdrfDat,sdrfDatIni=sdrfDatIni,abund=abund,suplAnnotFile=suplAnnotFile,quantMeth=quantMeth,groupPref=groupPref,avoidCol=avoidCol,summaryD=summaryD,parametersD=parametersD,syncColumns=syncColumns,iniSdrfOrder=iniSdrfOrder,setupSd=setupSd,chColNa=chColNa,chUnit=chUnit) }
           #sdrfDatIni <- sdrfDat
   
@@ -919,11 +947,14 @@ readSampleMetaData <- function(quantMeth, sdrf=NULL, suplAnnotFile=NULL, path=".
           if(length(groupPref$chCol) >1) {    
             ## 2.3.2.5.1   setupSd$gr : consider multiple columns of sdrf
             ## use/mine MULTIPLE/all columns of sdrf :  groupPref=list(useCol=c("sdrf_source.name","sdrf_xy"))
-            useSdrfCol <- if("useCol" %in% names(groupPref)) match(groupPref$useCol, colnames(sdrfDat)) else {
-              if(is.numeric(groupPref$chCol)) groupPref$chCol else match(sub("^sdrf\\$","",groupPref$chCol), colnames(sdrfDat))}  ## check & tranform to index
+            useSdrfCol <- if("useCol" %in% names(groupPref)) { match(groupPref$useCol, colnames(sdrfDat)) 
+            } else {
+              if(is.numeric(groupPref$chCol)) groupPref$chCol else match(sub("^sdrf\\$","",groupPref$chCol), colnames(sdrfDat))}  ## check & transform to index
             useSdrfCol <- wrMisc::naOmit(useSdrfCol)
-            if(length(useSdrfCol) <1) {useSdrfCol <- 1:ncol(sdrfDat); groupPref$meth <- "(nothing matching initially) using all columns from sdrf"
-                if(!silent) message(fxNa,"none of groupPref$gr match colnames of sdrfDat, using all columns")} 
+            if(length(useSdrfCol) ==0) { 
+              useSdrfCol <- 1:ncol(sdrfDat)
+              groupPref$meth <- "(nothing matching initially) using all columns from sdrf"
+              if(!silent) message(fxNa,"None of groupPref$gr match colnames of sdrfDat, using all columns")} 
             #useSdrf <- sdrfDat[,useSdrfCol, drop=FALSE]
             
             if("ref.file.id" %in% colnames(sdrfDat) && sum(duplicated(sdrfDat[,"ref.file.id"]))==nrow(sdrfDat)-2) nonUsefulColNa <- c(nonUsefulColNa, PD2="ref\\.file\\.id")
@@ -932,25 +963,18 @@ readSampleMetaData <- function(quantMeth, sdrf=NULL, suplAnnotFile=NULL, path=".
             if(!("excludeReplicates" %in% names(groupPref) && isFALSE(groupPref$excludeTechnReplicates))) {       # exclude columns with replicate-numbers unless   groupPref=list(excludeTechReplicates=FALSE)
               ## exclude columns labeled 'replicate'
               chCo2 <- unlist(lapply(nonUsefulColNa, grep, colnames(sdrfDat)[useSdrfCol]))
-              if(length(chCo2) >0) useSdrfCol <- useSdrfCol[-1*(chCo2)]             
+              if(length(chCo2) !=0) useSdrfCol <- useSdrfCol[-1*(chCo2)]             
             }             
-              
-            ## 2.3.2.5.3   check groupPref$combMeth
-            if(length(groupPref$combMeth) ==0) groupPref$combMeth <- "def"   # still needed ?
             if(debug) {message(fxNa,"length setupSd ", length(setupSd),"  rSM6h"); rSM6h <- list(setupSd=setupSd,sdrf=sdrf,sdrfDat=sdrfDat,abund=abund,suplAnnotFile=suplAnnotFile,groupPref=groupPref,summaryD=summaryD,parametersD=parametersD,setupSdSoft=setupSdSoft,quantMeth=quantMeth,useSdrfCol=useSdrfCol,chUnit=chUnit) }  #useSdrfCol=useSdrfCol,
-            replStrOpt <- c("default","def","highest","lowest","min","max","median","combAll","combNonOrth")  # possible options for groupPref$combMeth
-            chMeth <- groupPref$combMeth %in% replStrOpt
-            groupPref$combMeth <- if(length(chMeth) <1 || !isTRUE(all(chMeth))) "def" else groupPref$combMeth[which(chMeth)]      # default in doubt
-
+              
+            ## 2.3.2.5.3   
             setupSdIni <- setupSd
             replMeth <- "failed"             # initialize
-            ## check if 'combMeth' is 'default' or 'def'
-            if(isTRUE(grepl("^def", groupPref$combMeth))) groupPref$combMeth <- c("combNonOrth","lowest")
             
             ## 2.3.2.5.4   
             if(length(useSdrfCol) >1) {
               if(length(groupPref$combMeth) >1) {
-                ## 'default : test 2 methods ('lowest' & 'combNonOrth'), then 
+                ## 'default : test 2 methods ('lowest' & 'combNonOrth'), then
                 tmp <- list(combNonOrth=try(wrMisc::replicateStructure(sdrfDat[,useSdrfCol, drop=FALSE], method=groupPref$combMeth[1], silent=silent, callFrom=fxNa, debug=debug), silent=TRUE),
                   lowest=try(wrMisc::replicateStructure(sdrfDat[,useSdrfCol , drop=FALSE], method=groupPref$combMeth[2], silent=silent, callFrom=fxNa, debug=debug), silent=TRUE))
               } else {
@@ -1068,7 +1092,7 @@ readSampleMetaData <- function(quantMeth, sdrf=NULL, suplAnnotFile=NULL, path=".
 
         ## 2.4   PAIRWISE GROUP COMPARISONS  (better after defining setupSd$groups)
         ## transfer info from groupPref=list(gr="sdrf",compareto="xxyy") to setupSd$compareTo (as obj with 2 columns)
-        if("compareto" %in% tolower(names(groupPref))) {
+        if("compareto" %in% tolower(names(groupPref))) {     # plan for pw comparison given via groupPref
           if(length(groupPref$compareTo)==1 && groupPref$compareTo %in% colnames(sdrfDatIni)) {
             ## take this COLUMN of sdrfDatIni for custom-comparisons
             ## need 'final' group-names for proper use of compareTo  (not avail yet); thus, just store vector
@@ -1080,26 +1104,43 @@ readSampleMetaData <- function(quantMeth, sdrf=NULL, suplAnnotFile=NULL, path=".
               setupSd$compareTo <- groupPref$compareTo
             } else if(debug) message(fxNa,"Note : Don't know how to interpret  groupPref$compareTo , ignoring")
           }
-        } else { if("compareto" %in% colnames(sdrfDat)) {
-            ch1 <- c(gr=sum(sdrfDat$compareto %in% setupSd$groups, na.rm=TRUE), lev=sum(sdrfDat$compareto %in% setupSd$level, na.rm=TRUE))
+        } else { 
+          ## otherwise check sdrf
+          #if("compareto" %in% colnames(sdrfDat)) {
+          chCompCol <- grepl("^compareto( |_){0,1}[[:digit:]]* *$", colnames(sdrfDatIni))     ## define pattern for recognizing multiple compareTo columns
+          if(any(chCompCol)) {       # colnames(sdrfDat) is already all lower case
+            #ch1 <- c(gr=sum(sdrfDat$compareto %in% setupSd$groups, na.rm=TRUE), lev=sum(sdrfDat$compareto %in% setupSd$level, na.rm=TRUE))
+            compDat <- as.matrix(sdrfDatIni[,which(chCompCol)])
+            ch1 <- c(gr=sum(compDat %in% setupSd$groups, na.rm=TRUE), lev=sum(compDat %in% setupSd$level, na.rm=TRUE))   # check if group-names or level-numbers fit better
+            
             if(any(ch1 >0)) {
-              if(ch1[1] >= ch1[2]) setupSd$compareTo <- cbind(sam=setupSd$groups, ref=sdrfDat$compareto) else {
-                setupSd$compareTo <- cbind(sam=setupSd$level, ref=sdrfDat$compareto)
-                ## ??? still need to convert names of levels to names of groups ???
-
-              }
+              if(ch1[1] >= ch1[2]) {
+                setupSd$compareTo <- if(sum(chCompCol)==1) cbind(samp=setupSd$groups, ref=compDat) else cbind(samp=rep(setupSd$groups, sum(chCompCol)), ref=as.character(compDat)) 
+              }   ## ??? still need to convert names of levels to names of groups ???
             } else if(debug) message(fxNa, "Bizzare: Found 'compareTo' specified in groupPref, but not matching to colnames of sdrfDat !") }
         }
-        if(length(setupSd$compareTo) >0 && ncol(setupSd$compareTo) >1) {  # check & trim
+
+        if(length(setupSd$compareTo) !=0 && ncol(setupSd$compareTo) ==2) {  # check & trim
+          ## table of pairwise comparisons has been defined ... 
           ## remove redundant lines, lines with NA or ""
           ch1 <- paste(setupSd$compareTo[,1], setupSd$compareTo[,2], sep="__")
           ch2 <- duplicated(ch1) | (rowSums(is.na(setupSd$compareTo) | setupSd$compareTo %in% "" ) >0)
           if(any(ch2)) setupSd$compareTo <- setupSd$compareTo[-which(ch2), 1:2, drop=FALSE]
 
-          ## check if fitting setupSd
-          ch3 <- setupSd$compareTo %in% setupSd$groups
-          if(any(!ch3)) warning(fxNa, sum(!ch3)," elements of matrix defining which groups to compare (setupSd$compareTo) not present in setupSd$groups (",
-            wrMisc::pasteC(as.character(setupSd$compareTo)[which(ch3)], quoteC="'"),")") 
+          ## check if fitting setupSd, remove any lines/comparisons not matching setupSd$groups
+          ch3 <- setupSd$compareTo %in% unique(setupSd$groups)
+          if(any(!ch3)) { message(fxNa, " ++ IMPORTANT ++  REMOVING ",sum(!ch3)," groups/elements of matrix defining which groups to compare (setupSd$compareTo) since NOT PRESENT in setupSd$groups (",
+            wrMisc::pasteC(as.character(setupSd$compareTo)[which(ch3)], quoteC="'"),")")            
+            rmLi <- sort(unlist(sapply(setupSd$compareTo[which(!ch3)], function(x) which(setupSd$compareTo==x, arr.ind=TRUE)[1])))
+            setupSd$compareTo <- setupSd$compareTo[-rmLi,, drop=FALSE]
+            if(length(setupSd$compareTo) !=0 && is.numeric(setupSd$compareTo)) {     # force to character content (fix problem when group-names are given by numbers)
+              xDim <- dim(setupSd$compareTo)
+              xDimNa <- dimnames(setupSd$compareTo)
+              setupSd$compareTo <- matrix(as.character(setupSd$compareTo), nrow=xDim[1], dimnames=xDimNa)
+            }
+          }
+          ## check for min number of replicates 
+
 
 
         } else {
@@ -1112,15 +1153,16 @@ readSampleMetaData <- function(quantMeth, sdrf=NULL, suplAnnotFile=NULL, path=".
       }    ## reading sdrf done
 #}}}  #  exit after 2.4   ##
 
-    ## 3.0  allow export of sdrf-draft (based on summaryD, so far only from MQ)
-    if(length(parametersSd) >0 && length(setupSd$sdrfDat) <1) {
-      setupSd$sdrfExport <- parametersSd
-      setupSd$summaryD <- summaryD
-    }
-    if(debug) { message(fxNa,"rSM8  head of setupSd$level : ",wrMisc::pasteC(utils::head(setupSd$level))); rSM8 <- list(setupSd=setupSd)}
+      ## 3.0  allow export of sdrf-draft (based on summaryD, so far only from MQ)
+      if(length(parametersSd) >0 && length(setupSd$sdrfDat) <1) {
+        setupSd$sdrfExport <- parametersSd
+        setupSd$summaryD <- summaryD
+      }
+      if(debug) { message(fxNa,"rSM8  head of setupSd$level : ",wrMisc::pasteC(utils::head(setupSd$level))); rSM8 <- list(setupSd=setupSd)}
 #}}}  #  exit after 3.0   ##
-  }
+    }
   }  
   ## finished readSampleMetaData
   setupSd }      
-          
+            
+  

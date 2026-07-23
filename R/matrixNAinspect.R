@@ -1,12 +1,16 @@
-#' Histogram of content of NAs in matrix
+#' Histogram Of Content Of NAs In Matrix
 #'
-#' \code{matrixNAinspect} makes histograms of the full data and shows sub-population of \code{NA}-neighbour values.  
+#' This function makes histograms of the full data and shows sub-population of \code{NA}-neighbour values.  
+#' 
+#' @details
 #' The aim of this function is to investigate the nature of \code{NA} values in matrix (of experimental measures) where replicate measurements are available.
 #' If a given element was measured twice, and one of these measurements revealed a \code{NA} while the other one gave a (finite) numeric value, the non-NA-value is considered a \code{NA}-neighbour.  
 #' The subpopulation of these \code{NA}-neighbour values will then be highlighted in the resulting histogram.
+#' 
 #' In a number of experimental settiongs some actual measurements may not meet an arbitrary defined baseline (as 'zero') or may be too low to be distinguishable from noise that 
 #' associated measures were initially recorded as \code{NA}. In several types of measurments in proteomics and transcriptomics this may happen.
-#' So this fucntion allows to collect all \code{NA}-neighbour values and compare them to the global distribution of the data to investigate if \code{NA}-neighbours are typically very low values.
+#' So this function allows to collect all \code{NA}-neighbour values and compare them to the global distribution of the data to investigate if \code{NA}-neighbours are typically very low values.
+#' 
 #' In case of data with multiple replicates \code{NA}-neighbour values may be distinguished for the case of 2 \code{NA} per group/replicate-set.
 #' The resulting plots are typically used to decide if and how \code{NA} values may get replaced by imputed random values or wether measues containing \code{NA}-values should rather me omitted.
 #' Of course, such decisions do have a strong impact on further steps of data-analysis and should be performed with care. 
@@ -36,7 +40,7 @@
 matrixNAinspect <- function(dat, gr=NULL, retnNA=TRUE, xLab=NULL, tit=NULL, xLim=NULL, silent=FALSE, debug=FALSE, callFrom=NULL) {
   fxNa <- wrMisc::.composeCallName(callFrom, newNa="matrixNAinspect")
   if(!isTRUE(silent)) silent <- FALSE
-  if(isTRUE(debug)) silent <- FALSE else debug <- FALSE
+  if(isTRUE(debug)) { silent <- FALSE } else { debug <- FALSE }
   .adjPat <- function(x) { out <- match(x, unique(x)); names(out) <- if(length(names(x)) >0) names(x) else x; out}   # reduce to integer-pattern (with names)
   
   ## extract if object
@@ -79,31 +83,31 @@ matrixNAinspect <- function(dat, gr=NULL, retnNA=TRUE, xLab=NULL, tit=NULL, xLim
       maxCol <- length(curCol)
       useLi <- which(nNAmat[,i] >0 & nNAmat[,i] < maxCol)           # 1 or 2 NAs  (but not all)
       useL2 <- which(nNAmat[,i] >1 & nNAmat[,i] < maxCol)           # just 2 NAs  (but not all)
-      if(length(useLi) >0) NAneig <- c(NAneig, wrMisc::naOmit(as.numeric(dat[useLi,curCol])))
-      if(length(useL2) >0) NAneig2 <- c(NAneig2, wrMisc::naOmit(as.numeric(dat[useL2,curCol])))
+      if(length(useLi) >0) NAneig <- c(NAneig, wrMisc::naOmit(as.numeric(dat[useLi, curCol])))
+      if(length(useL2) >0) NAneig2 <- c(NAneig2, wrMisc::naOmit(as.numeric(dat[useL2, curCol])))
       }
     n <- c(sum(!is.na(dat)), length(NAneig), length(NAneig2))
-    perc <- c("",paste(" (",round(100*n[2:3]/n[1],1),"%)"))
+    perc <- c("",paste(" (", round(100*n[2:3]/n[1],1), "%)"))
     if(debug) {message(fxNa,"mMNi1  n=",wrMisc::pasteC(n))}
     hi1 <- graphics::hist(dat, breaks="FD", plot=FALSE)
     if(is.null(xLim)) graphics::plot(hi1, border=grDevices::grey(0.85), col=grDevices::grey(0.92), xlab=xLab, las=1, main=tit, cex.main=cexMain) else {
       graphics::plot(hi1, border=grDevices::grey(0.85), col=grDevices::grey(0.92), xlab=xLab, las=1, main=tit, xlim=xLim,cex.main=cexMain)}
-    graphics::abline(v=stats::quantile(dat,c(0.05,0.1,0.15),na.rm=TRUE), col=c(quaCol[-1],"tomato3"), lty=2)
+    graphics::abline(v=stats::quantile(dat,c(0.05,0.1,0.15), na.rm=TRUE), col=c(quaCol[-1],"tomato3"), lty=2)
     graphics::mtext(paste(c(" (bar) all data",paste(" (box) ",c("any","min 2")," NA-neighbour values"))," n=",n,perc), col=colPanel[1:3],cex=0.65,adj=0,line=c(0.6,-0.1,-0.7),side=3)
     graphics::mtext(paste(" - -",c(5,10,15),"%-quantile (all data)"), col=c(quaCol[-1],"tomato3"), cex=0.6, adj=0, line=c(-1.5,-2.1,-2.7), side=3)
     if(length(NAneig) >10) {    # display mode
       yLim <- signif(graphics::par("usr")[3:4], 3)             # current y-limits
       mod <- signif(wrMisc::stableMode(if(length(NAneig2) >300) NAneig2 else NAneig, method="density"), 3)
       graphics::mtext(paste(" (arrow) mode of",if(length(NAneig2) >300) "2-"," NA-neighbours :",signif(mod,3)), col="sienna2", cex=0.7, adj=0, line=-3.4, side=3)
-      graphics::arrows(mod, yLim[1]+(yLim[2]-yLim[1])*0.4, mod, yLim[1]+(yLim[2]-yLim[1])/4, length=0.1, col="sienna2", lwd=2)
+      graphics::arrows(mod, yLim[1] +(yLim[2]-yLim[1])*0.4, mod, yLim[1] + (yLim[2] -yLim[1])/4, length=0.1, col="sienna2", lwd=2)
     }    
     graphics::hist(NAneig, breaks=hi1$breaks, border=grDevices::grey(0.75), col=grDevices::rgb(0.1,1,0.1,0.15), add=TRUE);                    # in green
     graphics::hist(NAneig2, breaks=hi1$breaks, border=grDevices::grey(0.75), col=grDevices::rgb(0,0,0.7,0.2), add=TRUE);                      # in purple
     
   } else {
-    graphics::hist(dat, breaks="FD", border=grDevices::grey(0.85), col=grDevices::grey(0.92), xlab=xLab, las=1,main=tit,cex.main=cexMain)
+    graphics::hist(dat, breaks="FD", border=grDevices::grey(0.85), col=grDevices::grey(0.92), xlab=xLab, las=1, main=tit, cex.main=cexMain)
     graphics::mtext(paste(" (bar) all data  n=",length(dat)), col=colPanel[1], cex=0.7, adj=0, line=0.6, side=3)
-    graphics::abline(v=stats::quantile(dat,c(0.05,0.1,0.15),na.rm=TRUE), col=c(quaCol[-1],"tomato3"), lty=2) 
+    graphics::abline(v=stats::quantile(dat, c(0.05,0.1,0.15), na.rm=TRUE), col=c(quaCol[-1],"tomato3"), lty=2) 
     graphics::mtext(paste(" - -",c(5,10,15),"%-quantile (all data)"), col=c(quaCol[-1],"tomato3"), cex=0.6, adj=0, line=c(-1.5,-2.1,-2.7), side=3)}
 }
     
