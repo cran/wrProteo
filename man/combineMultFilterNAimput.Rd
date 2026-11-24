@@ -16,8 +16,9 @@ combineMultFilterNAimput(
   colTotNa = NULL,
   minSpeNo = 1,
   minTotNo = 2,
-  maxGrpMiss = 1,
-  ratMaxNA = 0.8,
+  maxGrpMiss = 9,
+  ratMaxNA = 0.5,
+  ratMaxTotNA = NULL,
   silent = FALSE,
   debug = FALSE,
   callFrom = NULL
@@ -49,9 +50,11 @@ default setting of \code{useComparison='all'} will select all possible pairwise 
 
 \item{minTotNo}{(integer) minimum total ie max razor number of peptides}
 
-\item{maxGrpMiss}{(numeric) passd to \code{\link[wrMisc]{presenceFilt}} : at least 1 group has not more than this number of NAs (otherwise marke line as bad)}
+\item{maxGrpMiss}{(numeric) passd to \code{\link[wrMisc]{presenceFilt}} : at least 1 group has equal or less n NAs ;; at least 1 group has not more than this number of NAs (otherwise marke line as bad)}
 
-\item{ratMaxNA}{(numeric) passd to \code{\link[wrMisc]{presenceFilt}} : at least 1 group below this content of \code{NA} values}
+\item{ratMaxNA}{(numeric) passd to \code{\link[wrMisc]{presenceFilt}} : at least 1 group has equal or less percent NAs ;; at least 1 group below this content of \code{NA} values}
+
+\item{ratMaxTotNA}{(default NULL, numeric) passd to \code{\link[wrMisc]{presenceFilt}} : max ration of NAs in all samples per protein}
 
 \item{silent}{(logical) suppress messages}
 
@@ -87,6 +90,7 @@ datT6[6:7,c(1,3,6)] <- NA
 datT6[which(datT6 < 11 & datT6 > 10.5)] <- NA
 datT6[which(datT6 < 6 & datT6 > 5)] <- NA
 datT6[which(datT6 < 4.6 & datT6 > 4)] <- NA
+datT6[8,1:3] <- NA
 datT6b <- matrixNAneighbourImpute(datT6, gr=gl(2,3))
 datT6c <- combineMultFilterNAimput(datT6, datT6b, grp=gl(2,3), abundThr=2)
 head(datT6c$filt)

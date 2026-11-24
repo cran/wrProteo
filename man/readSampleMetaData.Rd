@@ -10,7 +10,8 @@ readSampleMetaData(
   suplAnnotFile = NULL,
   path = ".",
   abund = NULL,
-  groupPref = list(lowNumberOfGroups = TRUE, sampleNames = NULL, gr = NULL),
+  groupPref = list(lowNumberOfGroups = TRUE, sampleNames = NULL, gr = NULL,
+    addSamplePrefix = "s"),
   chUnit = TRUE,
   silent = FALSE,
   debug = FALSE,
@@ -38,7 +39,8 @@ in case of \code{method=='PL'} (Proline), this argument should contain the initi
 \item{groupPref}{(list) additional parameters for interpreting meta-data to identify structure of groups (replicates);
 May contain \code{lowNumberOfGroups=FALSE} for automatically choosing a rather elevated number of groups if possible (defaults to low number of groups, ie higher number of samples per group).
 A vector of custom sample-names may be provided via \code{sampleNames=...} (must be of correct length);
-if contains \code{sampleNames="sdrf"} sample-names will be used from trimmed file-names out of sdrf.}
+if contains \code{sampleNames="sdrf"} sample-names will be used from trimmed file-names out of sdrf.
+The element \code{addSamplePrefix="s"} allows adding a specified prefix (here 's') when all sample-names look like numbers to prevent confusion with indexes}
 
 \item{chUnit}{(logical or character) optional adjustig of group-labels from sample meta-data in case multipl different unit-prefixes are used to single common prefix 
 (eg adjust '100pMol' and '1nMol' to '100pMol' and '1000pMol') for better downstream analysis. This option will call \code{\link[wrMisc]{adjustUnitPrefix}} and \code{\link[wrMisc]{checkUnitPrefix}} from package \code{wrMisc}
@@ -77,7 +79,14 @@ Both types can be imported and checked in the same run, if valid sdrf-informatio
 For more information about the sdrf format please see \href{https://github.com/bigbio/proteomics-sample-metadata}{sdrf on github}.
 }
 \examples{
+## read sdrf from https://github.com/bigbio/sdrf-annotated-datasets/
 sdrf001819Setup <- readSampleMetaData(quantMeth=NA, sdrf="PXD001819")
+str(sdrf001819Setup)
+
+## read from local file
+path1 <- system.file("extdata", package="wrProteo")
+sdrfFi <- "PXD001819.sdrf.tsv.gz"
+sdrf001819Setup <- readSampleMetaData(quantMeth=NA, sdrf=file.path(path1, sdrfFi))
 str(sdrf001819Setup)
 
 }

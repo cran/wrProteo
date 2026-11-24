@@ -26,6 +26,7 @@
 #' @param specPref (character or list) define characteristic text for recognizing (main) groups of species (1st for contaminants - will be marked as 'conta', 2nd for main species- marked as 'mainSpe', 
 #'  and optional following ones for supplemental tags/species - marked as 'species2','species3',...); 
 #'  if list and list-element has multiple values they will be used for exact matching of accessions (ie 2nd of argument \code{annotCol})
+#'   The element \code{addSamplePrefix="s"} allows adding a specified prefix (here 's') when all sample-names look like numbers to prevent confusion with indexes
 #' @param separateAnnot (logical) if \code{TRUE} output will be organized as list with \code{$annot}, \code{$abund} for initial/raw abundance values and \code{$quant} with final normalized quantitations
 #' @param plotGraph (logical) optional plot of type vioplot of initial and normalized data (using \code{normalizeMeth}); if integer, it will be passed to \code{layout} when plotting
 #' @param silent (logical) suppress messages
@@ -42,7 +43,7 @@
 #' @export
 readOpenMSFile <- function(fileName=NULL, path=NULL, normalizeMeth="median", refLi=NULL, sampleNames=NULL, quantCol="Intensity", 
   sumMeth="top3", minPepNo=1, protNaCol="ProteinName", separateAnnot=TRUE, plotGraph=TRUE, tit="OpenMS", wex=1.6,
-  specPref=c(conta="LYSC_CHICK", mainSpecies="OS=Homo sapiens"), silent=FALSE, debug=FALSE, callFrom=NULL) {
+  specPref=c(conta="LYSC_CHICK", mainSpecies="OS=Homo sapiens", addSamplePrefix="s"), silent=FALSE, debug=FALSE, callFrom=NULL) {
   ## read OpenMS exported csv
   #fileName <- "C:\\E\\projects\\MassSpec\\smallProj\\2021\\OpenMS\\beforeMSstats\\proteomics_lfq\\out.csv"; 
   #specPref <- list(conta="CON_|LYSC_CHICK", mainSpecies="OS=Saccharomyces cerevisiae", spike="UPS")

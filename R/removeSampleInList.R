@@ -7,6 +7,7 @@
 #' @param dat (list) main input to be filtered
 #' @param remSamp (integer) column number to exclude
 #' @param listElem (character) names of list-elements where columns indicated with 'remSamp' should be removed
+#' @param rmAllNA (logical, length=1) allow re-checking if new reduced selection contains any all-NA elements
 #' @param silent (logical) suppress messages
 #' @param debug (logical) display additional messages for debugging
 #' @param callFrom (character) allows easier tracking of messages produced
@@ -19,7 +20,7 @@
 #' datL <- list(raw=datT6, quant=datT6, annot=matrix(nrow=nrow(datT6), ncol=2))
 #' datDelta2 <- removeSampleInList(datL, remSam=2)
 #' @export
-removeSampleInList <- function(dat, remSamp, listElem=c("raw","quant","counts","sampleSetup"), silent=FALSE, debug=FALSE, callFrom=NULL) {
+removeSampleInList <- function(dat, remSamp, listElem=c("raw","quant","counts","annot","sampleSetup"), rmAllNA=TRUE, silent=FALSE, debug=FALSE, callFrom=NULL) {
   ##
   fxNa <- wrMisc::.composeCallName(callFrom, newNa="removeSampleInList")
   msg <- c("'dat' should be list or S3-object with $raw, $quant, $annot","; invalid entry - can't do anything ...","'remSamp' should be index of columns to remove")
@@ -79,11 +80,31 @@ removeSampleInList <- function(dat, remSamp, listElem=c("raw","quant","counts","
               if(length(remSamp) >0)  dat[[i]] <- dat[[i]][-remSamp,, drop=FALSE] }
           }
           chVect <- sapply(liDim, length) ==1
-          if(length(remSamp) !=0 && any(chVect) && length(nSampIni) >0) for(i in which(chVect)) {if(length(dat[[listElemI[i]]])==nSampIni) dat[[listElemI[i]]] <- dat[[listElemI[i]]][-remSamp] }    
+          if(length(remSamp) !=0 && any(chVect) && length(nSampIni) >0) for(i in which(chVect)) {
+            if(length(dat[[listElemI[i]]])==nSampIni) dat[[listElemI[i]]] <- dat[[listElemI[i]]][-remSamp] }   
+          if(debug) { message(fxNa,"rSIL6"); rSIL6 <- list(dat=dat,remSamp=remSamp,listElem=listElem,listElemI=listElemI, nSampIni=nSampIni,rmAllNA=rmAllNA)}
+ 
           
+          ## should also redo check for all-NA lines/rows & remove ...
+          isNA <- is.na(dat[[listElemI[1]]])
+          if(!any(isNA) && length(listElemI) >1) isNA <- is.na(dat[[listElemI[1]]])
+          if(any(isNA) && rmAllNA) {
+            chDim <- lapply(dat[listElemI], dim)
+            hasRows <- sapply(chDim, function(x) length(x) >1 && x[1] >1)
+            if(debug) { message(fxNa,"rSIL6b"); rSIL6b <- list(dat=dat,remSamp=remSamp,listElem=listElem,listElemI=listElemI, nSampIni=nSampIni,rmAllNA=rmAllNA,chDim=chDim,hasRows=hasRows)} 
+            hasRows <- hasRows & sapply(chDim, function(x) if(length(x)==0) FALSE else x[1]==chDim[[which(hasRows[1])]][1])  # filter to all having same number of rows as 1st from hasRows (2 dims)
+            allNAr <- rowSums(!isNA) == 0
+            if(any(allNAr)) {
+              allNAr <- which(allNAr)
+              if(debug) message(fxNa,"Found ",length(allNAr)," all-NA lines - rmoving from ",wrMisc::pasteC(names(hasRows)[which(hasRows)], quoteC="'"))
+              for(i in names(hasRows)[which(hasRows)]) dat[[i]] <- if(length(chDim[[i]]) ==2) dat[[i]][-allNAr,, drop=FALSE] else dat[[i]][-allNAr,,, drop=FALSE]
+              ## look for other list-elements to consider ?
+            }
+          }
         }
         if(debug) { message(fxNa,"rSIL6"); rSIL6 <- list(dat=dat,remSamp=remSamp,listElem=listElem,listElemI=listElemI, nSampIni=nSampIni,byDim=byDim,liDim=liDim)} #,chSamAn=chSamAn
         if(length(remSamp) !=0 && "sampleSetup" %in% names(dat) && "sampleSetup" %in% listElem) {
+          if(length(dat$setup) !=0) warning(fxNa,"Data contains element 'setup' but it which will NOT be taken into account when removing samples !")
           for(i in 1 :length(dat$sampleSetup)) { chDim <- dim(dat$sampleSetup[[i]])
             if(length(chDim) ==2 && all(nrow(dat$sampleSetup[[i]]) >= remSamp)) dat$sampleSetup[[i]] <- dat$sampleSetup[[i]][-1*remSamp[which(remSamp <= nSampIni)],,drop=FALSE]
             if(length(chDim) ==3 && all(nrow(dat$sampleSetup[[i]]) >= remSamp)) dat$sampleSetup[[i]] <- dat$sampleSetup[[i]][-1*remSamp[which(remSamp <= nSampIni)],,,drop=FALSE]

@@ -18,7 +18,8 @@ readOpenMSFile(
   plotGraph = TRUE,
   tit = "OpenMS",
   wex = 1.6,
-  specPref = c(conta = "LYSC_CHICK", mainSpecies = "OS=Homo sapiens"),
+  specPref = c(conta = "LYSC_CHICK", mainSpecies = "OS=Homo sapiens", addSamplePrefix =
+    "s"),
   silent = FALSE,
   debug = FALSE,
   callFrom = NULL
@@ -53,7 +54,8 @@ readOpenMSFile(
 
 \item{specPref}{(character or list) define characteristic text for recognizing (main) groups of species (1st for contaminants - will be marked as 'conta', 2nd for main species- marked as 'mainSpe', 
 and optional following ones for supplemental tags/species - marked as 'species2','species3',...); 
-if list and list-element has multiple values they will be used for exact matching of accessions (ie 2nd of argument \code{annotCol})}
+if list and list-element has multiple values they will be used for exact matching of accessions (ie 2nd of argument \code{annotCol})
+ The element \code{addSamplePrefix="s"} allows adding a specified prefix (here 's') when all sample-names look like numbers to prevent confusion with indexes}
 
 \item{silent}{(logical) suppress messages}
 

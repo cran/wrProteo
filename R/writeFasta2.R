@@ -46,6 +46,7 @@ writeFasta2 <- function(prot, fileNa=NULL, sep="|", suplSep=" ", suplColumns=c("
     pNa <- names(prot) 
     prot <- as.character(prot)
     if(length(pNa) >0) names(prot) <- pNa else message(fxNa,"Input given as matrix but no column available for fasta-header") } 
+  if(debug) {message(fxNa,"wFa0"); wFa0 <- list(prot=prot,fileNa=fileNa,sep=sep,ref=ref,lineLength=lineLength,eol=eol,truSuf=truSuf,substName=substName)}
     
   if(length(dim(prot))==2) {
     seqCol <- which(tolower(colnames(prot)) %in% c("sequence","seq"))
@@ -91,7 +92,7 @@ writeFasta2 <- function(prot, fileNa=NULL, sep="|", suplSep=" ", suplColumns=c("
     chLeRe <- sapply(ref, nchar)
     if(!silent) message(fxNa," (out of ",length(prot)," proteins) ",sum(chLe < chLeRe)," proteins shorter, ",sum(chLe > chLeRe)," proteins longer as in '",namesInp[2],"'")
     ## propagate names from ref, adj if truncated
-    if(debug) {message(fxNa,"wF2\n"); wF2 <- list(prot=prot,ref=ref,heP=heP,heR=heR,chLe=chLe,chLeRe=chLeRe,chN=chN)}
+    if(debug) {message(fxNa,"wFa4\n"); wFa4 <- list(prot=prot,ref=ref,heP=heP,heR=heR,chLe=chLe,chLeRe=chLeRe,chN=chN)}
     ## adjust names
     if(chN && length(names(ref))==length(ref)) names(prot) <- names(ref)    
     ## look for truncated proteins
@@ -109,7 +110,7 @@ writeFasta2 <- function(prot, fileNa=NULL, sep="|", suplSep=" ", suplColumns=c("
   ## check names of lines/sequences for fasta-format  (heading '>')
   ch1 <- !grepl("^>", names(prot))
   if(any(ch1)) {if(all(ch1)) names(prot) <- paste0(">",names(prot)) else names(prot)[which(ch1)] <- paste0(">",names(prot)[which(ch1)])}
-  if(debug) {message(fxNa,"wFa4"); wFa4 <- list(prot=prot, ch1=ch1,ref=ref,fileNa=fileNa,lineLength=lineLength)}
+  if(debug) {message(fxNa,"wFa5"); wFa5 <- list(prot=prot, ch1=ch1,ref=ref,fileNa=fileNa,lineLength=lineLength)}
 
   ## prepare for adding header, split sequence in fixed length blocks
   out <- rep(">", length(prot)*2)
@@ -121,7 +122,7 @@ writeFasta2 <- function(prot, fileNa=NULL, sep="|", suplSep=" ", suplColumns=c("
   if(all(length(lineLength)==1, is.numeric(lineLength), !is.na(lineLength))) {
     out[2*(1:length(prot))] <- strsplit(gsub(paste0("([[:alpha:]]{",lineLength,"})"), "\\1 ", as.character(prot)), " ")  # first, use pattern recall to add spaces used then with strsplit
     out <- unlist(out, use.names=FALSE)}
-  if(debug) {message(fxNa,"wFa5"); wFa5 <- list(prot=prot, ch1=ch1,ref=ref,fileNa=fileNa,lineLength=lineLength, out=out)}
+  if(debug) {message(fxNa,"wFa6"); wFa6 <- list(prot=prot, ch1=ch1,ref=ref,fileNa=fileNa,lineLength=lineLength, out=out)}
 
   ## check fileName
   if(length(fileNa) <1) fileNa <- namesInp[2]

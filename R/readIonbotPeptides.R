@@ -34,6 +34,7 @@
 #'   May contain \code{lowNumberOfGroups=FALSE} for automatically choosing a rather elevated number of groups if possible (defaults to low number of groups, ie higher number of samples per group)
 #'   May contain \code{chUnit} (logical or character) to be passed to \code{readSampleMetaData()} for (optional) adjustig of unit-prefixes in meta-data group labels, in case multiple different unit-prefixes 
 #'   are used (eg '100pMol' and '1nMol').
+#'   The element \code{addSamplePrefix="s"} allows adding a specified prefix (here 's') when all sample-names look like numbers to prevent confusion with indexes
 #' @param titGraph (character) custom title to plot
 #' @param titGraph (character) deprecated custom title to plot, please use 'tit'
 #' @param wex (integer) relative expansion factor of the violin-plot (will be passed to \code{/link[wrGraph]{vioplotW}})
@@ -58,7 +59,7 @@
 #' @export
 readIonbotPeptides <- function(fileName, path=NULL, normalizeMeth="median", sampleNames=NULL, gr=NULL, sdrf=NULL, read0asNA=TRUE, quantCol="^Abundances*",
   annotCol=NULL, contamCol="Contaminant", refLi=NULL, separateAnnot=TRUE, FDRCol=list(c("^Protein.FDR.Confidence","High"), c("^Found.in.Sample.","High")), plotGraph=TRUE, 
-  suplAnnotFile=TRUE, groupPref=list(lowNumberOfGroups=TRUE, chUnit=TRUE), titGraph="Ionbot", wex=1.6, specPref=c(conta="CON_|LYSC_CHICK", mainSpecies="OS=Homo sapiens"), silent=FALSE, debug=FALSE, callFrom=NULL) {
+  suplAnnotFile=TRUE, groupPref=list(lowNumberOfGroups=TRUE, chUnit=TRUE, addSamplePrefix="s"), titGraph="Ionbot", wex=1.6, specPref=c(conta="CON_|LYSC_CHICK", mainSpecies="OS=Homo sapiens"), silent=FALSE, debug=FALSE, callFrom=NULL) {
   ## read ProteomeDiscoverer exported txt
   fxNa <- wrMisc::.composeCallName(callFrom, newNa="readIonbotPeptides")    # Ionbot
   oparMar <- if(plotGraph) graphics::par("mar") else NULL       # only if figure might be drawn
@@ -289,7 +290,7 @@ readIonbotPeptides <- function(fileName, path=NULL, normalizeMeth="median", samp
     rownames(abund) <- rownames(annot)
     if(debug) {message(fxNa,"rIBP8 ..  "); rIBP8 <- list(tmp=tmp,annot=annot,specPref=specPref,abund=abund,quantCol=quantCol)}
 
-    ## check & clean abudances
+    ## check & clean abudances    
     ch0 <- which(abund==0)
     if(length(ch0) >0) abund[ch0] <- NA
     if(!silent) message(fxNa,"Note: ",length(ch0)," values are '0', setting as NA")  
@@ -302,6 +303,18 @@ readIonbotPeptides <- function(fileName, path=NULL, normalizeMeth="median", samp
     chNum <- is.numeric(abund)
     if(!chNum) {abund <- apply(tmp[,quantCol], 2, wrMisc::convToNum, convert="allChar", silent=silent, callFrom=fxNa)}
 
+    ## check for all-NA lines
+    isNA <- is.na(abund)
+    notAllNA <- 1:nrow(abund)
+    if(any(isNA)) {
+      notAllNA <- rowSums(!isNA) !=0
+      if(any(!notAllNA)) {
+        notAllNA <- which(notAllNA)
+        if(length(annot) !=0 && nrow(annot)==nrow(abund)) annot <- annot[notAllNA,, drop=FALSE]
+        #if(length(counts) >0) counts <- counts[notAllNA,,, drop=FALSE]
+        abund <- abund[notAllNA,, drop=FALSE]
+      }
+    } 
 
     ## remove heading 'X..' from headers (only if header won't get duplicated
     ### why here ??? 24mar23

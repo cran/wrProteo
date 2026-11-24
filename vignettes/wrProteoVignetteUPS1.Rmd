@@ -109,13 +109,16 @@ The meta-data for experiments already integrated can be directly read/accessed f
 
 Either you download the meta-data as file 'sdrf.tsv' from [Pride/PXD001819](https://www.ebi.ac.uk/pride/archive/projects/PXD001819), or you may read file 'PXD001819.sdrf.tsv' directly from [github/bigbio](https://github.com/bigbio/sdrf-annotated-datasets/tree/main/datasets).
 
+Please note, that at some (rare) occasions the corresponding page on github may not respond for access/download. 
+In this case we'll use in the later steps the sdrf-file as provided with this package.
 
 ```{r metaData1, echo=TRUE}
 ## Read meta-data from  github.com/bigbio/proteomics-metadata-standard/
 pxd001819meta <- readSdrf("PXD001819")
+gitOK <- length(pxd001819meta) != 0
 
 ## The concentration of the UPS1 spike-in proteins in the samples
-if(length(pxd001819meta) >0 && "characteristics.concentration.of." %in% colnames(pxd001819meta)) {     
+if(gitOK && "characteristics.concentration.of." %in% colnames(pxd001819meta)) {     
   UPSconc <- sort(unique(as.numeric(wrMisc::trimRedundText(pxd001819meta$characteristics.concentration.of.))))  # trim to get to 'essential' info
   #old#UPSconc <- sort(unique(as.numeric(wrMisc::trimRedundText(pxd001819meta$characristics.spiked.compound.))))  # trim to get to 'essential' info
 } else {
@@ -233,11 +236,12 @@ Files compressed as .gz can be read, too (like in the example below).
 ```{r readMaxQuant, fig.height=8, fig.width=9.5, fig.align="center", echo=TRUE}
 path1 <- system.file("extdata", package="wrProteo")
 fiNaMQ <- "proteinGroups.txt.gz"
+sdrfFi <- "PXD001819.sdrf.tsv.gz"
 
 ## We need to define the setup of species
 specPrefMQ <- list(conta=contaInf[2], matrix=paste0("OS=",matrixType2), spike=spikeType, sampleNames="sdrf") #fasta=fastaFi, 
 dataMQ <- readMaxQuantFile(file=fiNaMQ, path=path1, refLi="mainSpe", specPref=specPrefMQ, 
-  sdrf=c(sdrfNa,"max",sdrfOrder=TRUE,skipCol=1), suplAnnotFile=TRUE, plotGraph=FALSE, silent=TRUE)   # , refLi=useRefLi
+  sdrf=c(if(gitOK) sdrfNa else file.path(path1,sdrfFi), "max", sdrfOrder=TRUE, skipCol=1), suplAnnotFile=TRUE, plotGraph=FALSE, silent=TRUE)   # , refLi=useRefLi
 ```
 
 The data were imported, log2-transformed and median-normalized, the protein annotation was parsed to automatically extract IDs, protein-names and species information.
@@ -282,9 +286,11 @@ Since the order of samples may appear different in various quantification-softwa
 ```{r readProteomeDiscoverer1, fig.height=8, fig.width=9.5, fig.align="center", echo=TRUE}
 path1 <- system.file("extdata", package="wrProteo")
 fiNaPd <- "pxd001819_PD24_Proteins.txt.gz"
+sdrfFi <- "PXD001819.sdrf.tsv.gz"
 ## Next, we define the setup of species
 specPrefPD <- list(conta=contaInf[1], mainSpecies=matrixType2, spike=spikeType, sampleNames="sdrf", lowNumberOfGroups=FALSE)   # fasta=fastaFi,
-dataPD <- readProteomeDiscovererFile(file=fiNaPd, path=path1,  refLi="mainSpe", specPref=specPrefPD, sdrf=c(sdrfNa,"max",sdrfOrder=TRUE,skipCol=1), suplAnnotFile=TRUE, plotGraph=FALSE, silent=TRUE)   # refLi=useRefLi
+dataPD <- readProteomeDiscovererFile(file=fiNaPd, path=path1,  refLi="mainSpe", specPref=specPrefPD, 
+  sdrf=c(if(gitOK) sdrfNa else file.path(path1,sdrfFi), "max", sdrfOrder=TRUE, skipCol=1), suplAnnotFile=TRUE, plotGraph=FALSE, silent=TRUE)   # refLi=useRefLi
 ```
 
 The data were imported, log2-transformed and median-normalized, the protein annotation was parsed to automatically extract IDs, protein-names and species information.
@@ -334,7 +340,8 @@ path1 <- system.file("extdata", package="wrProteo")
 fiNaPl <- "pxd001819_PL.xlsx"
 
 specPrefPL <- list(conta=contaInf[1], mainSpecies=matrixType2, spike=spikeType, sampleNames="sdrf")   # fasta=fastaFi,    # same as PL
-dataPL <- readProlineFile(file=fiNaPl, path=path1, specPref=specPrefPL, sdrf=c(sdrfNa,"max",sdrfOrder=TRUE,skipCol=1), suplAnnotFile=TRUE, plotGraph=FALSE, silent=TRUE)   # refLi=useRefLi
+dataPL <- readProlineFile(file=fiNaPl, path=path1, specPref=specPrefPL, 
+  sdrf=c(if(gitOK) sdrfNa else file.path(path1,sdrfFi), "max", sdrfOrder=TRUE, skipCol=1), suplAnnotFile=TRUE, plotGraph=FALSE, silent=TRUE)   # refLi=useRefLi
 
 ```
 
@@ -500,19 +507,19 @@ Please note, that the procedure including repetive NA-imputations may take a sev
 
 
 ```{r testProteomeDiscoverer, echo=TRUE}
-testPD <- testRobustToNAimputation(dataPD, imputMethod="informed")     # ProteomeDiscoverer
+testPD <- testRobustToNAimputation(dataPD, imputMethod="mode2")     # ProteomeDiscoverer       #old imputMethod="informed"
 ```
 .
 
 Then for MaxQuant ...
 ```{r testMaxQuant, echo=TRUE}
-testMQ <- testRobustToNAimputation(dataMQ, imputMethod="informed")      # MaxQuant , ok
+testMQ <- testRobustToNAimputation(dataMQ, imputMethod="mode2")      # MaxQuant , ok
 ```
 
 
 And finally for Proline :
 ```{r testProline, echo=TRUE}
-testPL <- testRobustToNAimputation(dataPL, imputMethod="informed")      # Proline
+testPL <- testRobustToNAimputation(dataPL, imputMethod="mode2")      # Proline
 ```
 
 From these results we'll use i) the NA-imputed version of our datasets for plotting principal components (PCA) and ii) the (stabilized) testing results for counting TP, FP, etc and to construct ROC curves.

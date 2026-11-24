@@ -34,6 +34,7 @@
 #'   May contain \code{lowNumberOfGroups=FALSE} for automatically choosing a rather elevated number of groups if possible (defaults to low number of groups, ie higher number of samples per group)
 #'   May contain \code{chUnit} (logical or character) to be passed to \code{readSampleMetaData()} for (optional) adjustig of unit-prefixes in meta-data group labels, in case multiple different unit-prefixes 
 #'   are used (eg '100pMol' and '1nMol').
+#'   The element \code{addSamplePrefix="s"} allows adding a specified prefix (here 's') when all sample-names look like numbers to prevent confusion with indexes
 #' @param plotGraph (logical or integer) optional plot of type vioplot of initial and normalized data (using \code{normalizeMeth}); if integer, it will be passed to \code{layout} when plotting
 #' @param titGraph (character) custom title to plot of distribution of quantitation values
 #' @param silent (logical) suppress messages
@@ -54,7 +55,7 @@
 #' @export
 readDiaNNPeptides <- function(fileName, path=NULL, normalizeMeth="median", sampleNames=NULL, read0asNA=TRUE, quantCol="\\.raw$",
   annotCol=NULL,  refLi=NULL, separateAnnot=TRUE, FDRCol=NULL,   
-  groupPref=list(lowNumberOfGroups=TRUE, chUnit=TRUE), plotGraph=TRUE, titGraph="DiaNN", wex=1.6, specPref=c(conta="CON_|LYSC_CHICK", mainSpecies="OS=Homo sapiens"),
+  groupPref=list(lowNumberOfGroups=TRUE, chUnit=TRUE, addSamplePrefix="s"), plotGraph=TRUE, titGraph="DiaNN", wex=1.6, specPref=c(conta="CON_|LYSC_CHICK", mainSpecies="OS=Homo sapiens"),
   gr=NULL, sdrf=NULL, suplAnnotFile=FALSE, silent=FALSE, debug=FALSE, callFrom=NULL) {
 
   ## read DiaNN exported txt
@@ -164,6 +165,18 @@ readDiaNNPeptides <- function(fileName, path=NULL, normalizeMeth="median", sampl
     if(debug) { message(fxNa,"rdnp8 .. dim abund ",nrow(abund)," and ",ncol(abund)) }
 
     ## check & clean abundances
+    ## check for all-NA lines
+    isNA <- is.na(abund)
+    notAllNA <- 1:nrow(abund)
+    if(any(isNA)) {
+      notAllNA <- rowSums(!isNA) !=0
+      if(any(!notAllNA)) {
+        notAllNA <- which(notAllNA)
+        if(length(annot) !=0 && nrow(annot)==nrow(abund)) annot <- annot[notAllNA,, drop=FALSE]
+        #if(length(counts) >0) counts <- counts[notAllNA,,, drop=FALSE]
+        abund <- abund[notAllNA,, drop=FALSE]
+      }
+    }
     ## add custom sample names (if provided)
     if(length(sampleNames) ==ncol(abund) && ncol(abund) >0) {
       if(debug) { message(fxNa,"Valid 'sampleNames' were provided   rdnp8b") }
@@ -189,7 +202,7 @@ readDiaNNPeptides <- function(fileName, path=NULL, normalizeMeth="median", sampl
     refLiIni <- refLi
     if(is.character(refLi) && length(refLi)==1) {  # try search content of refLi in SpecType
       refLi <- which(annot[,"SpecType"]==refLi)
-      if(length(refLi) ==0 && refLiIni=="mainSpe") refLi <- which(annot[,"SpecType"]=="mainSpecies")   # also allow 'mainSpecies'
+      if(length(refLi) ==0 && any(c("mainSpe","mainSpecies") %in% refLiIni)) refLi <- which(annot[,"SpecType"]=="mainSpecies")   # also allow 'mainSpecies'
       if(length(refLi) ==0) { refLi <- 1:nrow(abund)
         if(!silent) message(fxNa,"Could not find any proteins matching argument 'refLi=",refLiIni,"', ignoring ...")
       } else {

@@ -54,7 +54,7 @@ Note : the names of the groups may not contain any '-' to avoid confucing them w
 
 \item{tit}{(character) custom title}
 
-\item{imputMethod}{(character) choose the imputation method (may be 'mode2'(default), 'mode1', 'datQuant', 'modeAdopt', 'informed' or 'none', for details see \code{\link{matrixNAneighbourImpute}} )}
+\item{imputMethod}{(character) choose the imputation method (may be 'mode2'(default), 'mode1', 'datQuant', 'modeAdopt', 'perseus15', 'informed' or 'none', for details see \code{\link{matrixNAneighbourImpute}} )}
 
 \item{seedNo}{(integer) seed-value for normal random values}
 
@@ -113,8 +113,8 @@ In case the names of groups (argument \code{grp}) do not contain any '-' the sin
 However, if \code{grp}) does contain any '-', results will be presented using '--' as separator to prevent any confusion.
 }
 \examples{
-set.seed(2015); rand1 <- round(runif(600) +rnorm(600,1,2),3)
-dat1 <- matrix(rand1,ncol=6) + matrix(rep((1:100)/20,6),ncol=6)
+set.seed(2015); rand1 <- round(runif(600) + rnorm(600,1,2),3)
+dat1 <- matrix(rand1, ncol=6) + matrix(rep((1:100)/20, 6), ncol=6)
 dat1[13:16,1:3] <- dat1[13:16,1:3] +2      # raise lines 13:16 
 dat1[19:20,1:3] <- dat1[19:20,1:3] +3      # raise lines 19:20
 dat1[15:18,4:6] <- dat1[15:18,4:6] +1.4    # raise lines 15:18 
@@ -122,6 +122,7 @@ dat1[dat1 <1] <- NA                        # mimick some NAs for low abundance
 ## normalize data
 boxplot(dat1, main="Data Before Normalization", las=1)
 dat1 <- wrMisc::normalizeThis(as.matrix(dat1), meth="median")
+
 ## designate replicate relationships in samples ...  
 grp1 <- gl(2, 3, labels=LETTERS[1:2])                   
 ## moderated t-test with repeated imputations (may take >10 sec, >60 sec if ROTSn >0 !) 

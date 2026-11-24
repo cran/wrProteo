@@ -85,7 +85,37 @@ intense MS-peaks don't get identified properly and will then be reported as \cod
 while the same peptides/proteins may by correctly identified and quantified in other (replicate) samples.
 So, if a given protein/peptide gets properly quantified in some replicate samples but reported as \code{NA} in other replicate samples
 one may thus speculate that similar values (like in the successful quantifications) may have occored.
-Thus, imputation of \code{NA}-values may be done on the basis of \code{NA}-neighbours.
+Thus, imputation of \code{NA}-values may be done on the basis of \code{NA}-neighbours (see also vignette to this package).
+
+Multiple different options for  \code{NA}-Imputation have been implemented : 
+
++) Custom mean and sd for normal distributed random data  : 'datQuant'
+
+'datQuant' with 2 values .. the custom mean is taken as avSd[1]'th quantile ( avSd[1] must be between 0 & 1) of all data and custom sd from avSd[2]
+ if(avSd[1]) is \code{NA} it will be set to custom 0.1
+
+'datQuant' with 3 values .. the custom mean is taken from avSd[3] and custom sd from avSd[2]
+
++) Methods absed on on \code{NA}-neighbours : 'medmode', 'mode1', 'mode2', 'mode3','modeadopt','informed'
+The concept of \code{NA}-neighbours is further described in the vignette for this package.
+
+'medmode' .. will use the lower value of the \code{NA}-neighbour-median and -mode as mean for normal distributed random data and avSd[2] as sd
+
+'mode1' .. will use the mode of all \code{NA}-neighbour-data as mean for normal distributed random data and avSd[2] as sd
+
+'mode2' .. will chjeck if >300 \code{NA}-neighbour-values exist from cases where et least 2 non-NA-measures exists.
+   If so, will use the 2NAèneighbour values for determining the mode to use as mean for normal distributed random data and avSd[2] as sd.
+  In tendecy the value used as mean may be slightly lower than the mode of all \code{NA}-neighbour-values. 
+
+'mode3' .. not available
+
+'informed' .. based on ide of using the mode \code{NA}-neighbour-median and as mean for normal distributed random data, 
+  but 
+
+
+'medmode' .. will use the lower value of the \code{NA}-neighbour-median and -mode as mean for normal distributed random data
+
++) Perseus-like with width=0.3 & downshift=1.8 : 'perseus15'
 
 When extracting \code{NA}-neighbours, a slightly more focussed approach gets checked, too, the 2-\code{NA}-neighbours : In case a set of replicates for a given protein
 contains at least 2 non-\code{NA}-values (instead of just one) it will be considered as a (min) 2-\code{NA}-neighbour as well as regular \code{NA}-neighbour.

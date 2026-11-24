@@ -59,6 +59,7 @@
 #'   May contain \code{lowNumberOfGroups=FALSE} for automatically choosing a rather elevated number of groups if possible (defaults to low number of groups, ie higher number of samples per group)
 #'   May contain \code{chUnit} (logical or character) to be passed to \code{readSampleMetaData()} for (optional) adjustig of unit-prefixes in meta-data group labels, in case multiple different unit-prefixes 
 #'   are used (eg '100pMol' and '1nMol').
+#'   The element \code{addSamplePrefix="s"} allows adding a specified prefix (here 's') when all sample-names look like numbers to prevent confusion with indexes
 #' @param plotGraph (logical) optional plot vioplot of initial and normalized data (using \code{normalizeMeth}); alternatively the argument may contain numeric details that will be passed to \code{layout} when plotting
 #' @param titGraph (character) custom title to plot of distribution of quantitation values
 #' @param wex (numeric)  relative expansion factor of the violin in plot
@@ -78,7 +79,7 @@
 readWombatNormFile <- function(fileName, path=NULL, quantSoft="(quant software not specified)", fasta=NULL, isLog2=TRUE, normalizeMeth="none", quantCol="abundance_", contamCol=NULL,
   pepCountCol=c("number_of_peptides"), read0asNA=TRUE, refLi=NULL, sampleNames=NULL,
   extrColNames=c("protein_group"), specPref=NULL,
-  remRev=TRUE, remConta=FALSE, separateAnnot=TRUE, gr=NULL, sdrf=NULL, suplAnnotFile=NULL, groupPref=list(lowNumberOfGroups=TRUE, chUnit=TRUE),
+  remRev=TRUE, remConta=FALSE, separateAnnot=TRUE, gr=NULL, sdrf=NULL, suplAnnotFile=NULL, groupPref=list(lowNumberOfGroups=TRUE, chUnit=TRUE, addSamplePrefix="s"),
   titGraph=NULL, wex=1.6, plotGraph=TRUE, silent=FALSE, debug=FALSE, callFrom=NULL) {
   ## prepare
   fxNa <- wrMisc::.composeCallName(callFrom, newNa="readWombatNormFile")
@@ -492,6 +493,19 @@ readWombatNormFile <- function(fileName, path=NULL, quantSoft="(quant software n
     if(any(chDes, na.rm=TRUE)) colnames(annot)[which(chDes)[1]] <- "ProteinName"     
     if(debug) {message(fxNa,"rWB9"); rWB9 <- list(path=path,chPa=chPa,tmp=tmp,extrColNames=extrColNames,chCol=chCol,quantCol=quantCol,abund=abund,chNum=chNum,
       annot=annot,refLi=refLi,remConta=remConta)}
+    
+    ## check for all-NA lines
+    isNA <- is.na(abund)
+    notAllNA <- 1:nrow(abund)
+    if(any(isNA)) {
+      notAllNA <- rowSums(!isNA) !=0
+      if(any(!notAllNA)) {
+        notAllNA <- which(notAllNA)
+        if(length(annot) !=0 && nrow(annot)==nrow(abund)) annot <- annot[notAllNA,, drop=FALSE]
+        if(length(counts) >0) counts <- counts[notAllNA,,]
+        abund <- abund[notAllNA,, drop=FALSE]
+      }
+    }      
 
     ## check for reference for normalization
     refLiIni <- refLi

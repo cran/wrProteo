@@ -7,7 +7,8 @@
 removeSampleInList(
   dat,
   remSamp,
-  listElem = c("raw", "quant", "counts", "sampleSetup"),
+  listElem = c("raw", "quant", "counts", "annot", "sampleSetup"),
+  rmAllNA = TRUE,
   silent = FALSE,
   debug = FALSE,
   callFrom = NULL
@@ -19,6 +20,8 @@ removeSampleInList(
 \item{remSamp}{(integer) column number to exclude}
 
 \item{listElem}{(character) names of list-elements where columns indicated with 'remSamp' should be removed}
+
+\item{rmAllNA}{(logical, length=1) allow re-checking if new reduced selection contains any all-NA elements}
 
 \item{silent}{(logical) suppress messages}
 

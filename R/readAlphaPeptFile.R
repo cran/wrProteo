@@ -54,6 +54,7 @@
 #'   May contain \code{lowNumberOfGroups=FALSE} for automatically choosing a rather elevated number of groups if possible (defaults to low number of groups, ie higher number of samples per group)
 #'   May contain \code{chUnit} (logical or character) to be passed to \code{readSampleMetaData()} for (optional) adjustig of unit-prefixes in meta-data group labels, in case multiple different unit-prefixes 
 #'   are used (eg '100pMol' and '1nMol').
+#'   The element \code{addSamplePrefix="s"} allows adding a specified prefix (here 's') when all sample-names look like numbers to prevent confusion with indexes
 #' @param plotGraph (logical) optional plot vioplot of initial and normalized data (using \code{normalizeMeth}); alternatively the argument may contain numeric details that will be passed to \code{layout} when plotting
 #' @param titGraph (character) custom title to plot of distribution of quantitation values
 #' @param wex (numeric)  relative expansion factor of the violin in plot
@@ -73,7 +74,7 @@
 readAlphaPeptFile <- function(fileName="results_proteins.csv", path=NULL, fasta=NULL, isLog2=FALSE, normalizeMeth="none", quantCol="_LFQ$", contamCol=NULL,
   read0asNA=TRUE, refLi=NULL, sampleNames=NULL,                                       # pepCountCol=c("number_of_peptides"), extrColNames=c("protein_group"),
   specPref=NULL, extrColNames=NULL,
-  remRev=TRUE, remConta=FALSE, separateAnnot=TRUE, gr=NULL, sdrf=NULL, suplAnnotFile=NULL, groupPref=list(lowNumberOfGroups=TRUE, chUnit=TRUE),
+  remRev=TRUE, remConta=FALSE, separateAnnot=TRUE, gr=NULL, sdrf=NULL, suplAnnotFile=NULL, groupPref=list(lowNumberOfGroups=TRUE, chUnit=TRUE, addSamplePrefix="s"),
   titGraph=NULL, wex=1.6, plotGraph=TRUE, silent=FALSE, debug=FALSE, callFrom=NULL) {
   ## prepare
   fxNa <- wrMisc::.composeCallName(callFrom, newNa="readAlphaPeptFile")
@@ -290,8 +291,8 @@ readAlphaPeptFile <- function(fileName="results_proteins.csv", path=NULL, fasta=
     if(debug) {message(fxNa,"rAP4e"); rAP4e <- list(paFi=paFi,path=path,chPa=chPa,tmp=tmp,counts=counts,
       quantCol=quantCol,abund=abund,chNum=chNum,annot=annot,remConta=remConta,specPref=specPref)}
 
-    ## remove Wombat contaminants
-   #useColumn <- wrMisc::naOmit(match(c("Accession","protein_group"), colnames(annot)))
+    ## remove contaminants
+    #useColumn <- wrMisc::naOmit(match(c("Accession","protein_group"), colnames(annot)))
     conLi <- grep("CON__[[:alnum:]]", annot[, if(ncol(annot) >1) wrMisc::naOmit(match(c("Accession","protein_group"), colnames(annot)))[1] else 1])
     if(remConta) {
       if(length(conLi) >0) {
@@ -391,6 +392,19 @@ readAlphaPeptFile <- function(fileName="results_proteins.csv", path=NULL, fasta=
     if(debug) {message(fxNa,"rAP9"); rAP9 <- list(path=path,chPa=chPa,tmp=tmp,chCol=chCol,quantCol=quantCol,abund=abund,chNum=chNum,
       annot=annot,refLi=refLi,remConta=remConta,normalizeMeth=normalizeMeth)}
 
+    ## check for all-NA lines
+    isNA <- is.na(abund)
+    notAllNA <- 1:nrow(abund)
+    if(any(isNA)) {
+      notAllNA <- rowSums(!isNA) !=0
+      if(any(!notAllNA)) {
+        notAllNA <- which(notAllNA)
+        if(length(annot) !=0 && nrow(annot)==nrow(abund)) annot <- annot[notAllNA,, drop=FALSE]
+        abund <- abund[notAllNA,, drop=FALSE]
+        #if(length(counts) >0) counts <- counts[notAllNA,,, drop=FALSE]
+      }
+    }	
+
     ## check for reference for normalization
     refLiIni <- refLi
     if(is.character(refLi) && length(refLi)==1) {  # try search content of refLi in SpecType
@@ -453,8 +467,8 @@ readAlphaPeptFile <- function(fileName="results_proteins.csv", path=NULL, fasta=
         if(any(isVe) >0) for(i in which(isVe)) setupSd[[i]] <- setupSd[[i]][nOrd] }
       gr <- gr[nOrd]
 
-      if(length(counts) >0 && length(dim(counts))==3) counts <- array(counts[,nOrd,], dim=c(nrow(counts), length(nOrd), dim(counts)[3]), 
-        dimnames=list(rownames(counts), colnames(counts)[nOrd], dimnames(counts)[[3]]))
+      if(length(counts) >0 && length(dim(counts))==3) counts <- array(counts[notAllNA, nOrd, ], dim=c(nrow(counts), length(nOrd), dim(counts)[3]), 
+        dimnames=list(rownames(counts)[notAllNA], colnames(counts)[nOrd], dimnames(counts)[[3]]))
       ## try re-adjusting levels
       tm1 <- sub("^[[:alpha:]]+( |_|-|\\.)+[[:alpha:]]+","", colnames(abund))  # remove heading text
       if(all(grepl("^[[:digit:]]", tm1))) {

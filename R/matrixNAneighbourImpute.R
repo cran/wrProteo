@@ -18,7 +18,37 @@
 #' while the same peptides/proteins may by correctly identified and quantified in other (replicate) samples.
 #' So, if a given protein/peptide gets properly quantified in some replicate samples but reported as \code{NA} in other replicate samples
 #' one may thus speculate that similar values (like in the successful quantifications) may have occored.
-#' Thus, imputation of \code{NA}-values may be done on the basis of \code{NA}-neighbours.
+#' Thus, imputation of \code{NA}-values may be done on the basis of \code{NA}-neighbours (see also vignette to this package).
+#' 
+#' Multiple different options for  \code{NA}-Imputation have been implemented : 
+#' 
+#' +) Custom mean and sd for normal distributed random data  : 'datQuant'
+#' 
+#' 'datQuant' with 2 values .. the custom mean is taken as avSd[1]'th quantile ( avSd[1] must be between 0 & 1) of all data and custom sd from avSd[2]
+#'  if(avSd[1]) is \code{NA} it will be set to custom 0.1
+#' 
+#' 'datQuant' with 3 values .. the custom mean is taken from avSd[3] and custom sd from avSd[2]
+#' 
+#' +) Methods absed on on \code{NA}-neighbours : 'medmode', 'mode1', 'mode2', 'mode3','modeadopt','informed'
+#' The concept of \code{NA}-neighbours is further described in the vignette for this package.
+#' 
+#' 'medmode' .. will use the lower value of the \code{NA}-neighbour-median and -mode as mean for normal distributed random data and avSd[2] as sd
+#' 
+#' 'mode1' .. will use the mode of all \code{NA}-neighbour-data as mean for normal distributed random data and avSd[2] as sd
+#' 
+#' 'mode2' .. will chjeck if >300 \code{NA}-neighbour-values exist from cases where et least 2 non-NA-measures exists.
+#'    If so, will use the 2NAèneighbour values for determining the mode to use as mean for normal distributed random data and avSd[2] as sd.
+#'   In tendecy the value used as mean may be slightly lower than the mode of all \code{NA}-neighbour-values. 
+#' 
+#' 'mode3' .. not available
+#' 
+#' 'informed' .. based on ide of using the mode \code{NA}-neighbour-median and as mean for normal distributed random data, 
+#'   but 
+#' 
+#' 
+#' 'medmode' .. will use the lower value of the \code{NA}-neighbour-median and -mode as mean for normal distributed random data
+#' 
+#' +) Perseus-like with width=0.3 & downshift=1.8 : 'perseus15'
 #'
 #' When extracting \code{NA}-neighbours, a slightly more focussed approach gets checked, too, the 2-\code{NA}-neighbours : In case a set of replicates for a given protein
 #' contains at least 2 non-\code{NA}-values (instead of just one) it will be considered as a (min) 2-\code{NA}-neighbour as well as regular \code{NA}-neighbour.
@@ -88,13 +118,30 @@ matrixNAneighbourImpute <- function(dat, gr, imputMethod="mode2", retnNA=TRUE, a
   if(datOK) { if(length(gr) != ncol(dat)) { datOK <- FALSE
     msg <- c("Number of columns of 'dat' must match length of 'gr'",tx1)}}
 
+  imputePerseus <- function(x, width=0.3, downshift=1.8, seedNo=NULL, finalImpute=TRUE, silent=FALSE, callFrom=NULL, debug=FALSE) {
+    ## modified from ChatGPT search (referring to https://www.nature.com/articles/nmeth.3901)
+    ## with .. proport factor for new sd 
+    ## downshift .. shift of distrib mean towards 0 (will be multiplied by sd of data, too)
+    ## finalImpute .. if TRUE return final imputed data, otherwise just the values for replacing NAs
+    fxNa <- wrMisc::.composeCallName(callFrom, newNa="imputePerseus")
+    isNA <- is.na(x)
+    if(any(isNA)) {
+      aver <- mean(x, na.rm=TRUE)
+      sdX <- stats::sd(x, na.rm=TRUE)
+      if(debug) message(fxNa," width=",width,"  downshift=",downshift,";   final mean.shift =",round(downshift*sdX,2),"  new sd=",round(width*sdX,2)) 
+      if(length(seedNo) ==1) set.seed(seedNo)   
+      randVa <- stats::rnorm( sum(isNA), mean = aver - downshift*sdX, sd = width*sdX) 
+      if(finalImpute) x[which(isNA)] <- randVa else x <- randVa
+      x }
+    x }
+
   if(datOK) {
     if(is.data.frame(dat)) dat <- as.matrix(dat)
     if(!is.factor(gr)) gr <- as.factor(gr)
     if(is.null(xLab)) xLab <- "Values"
     if(length(wrMisc::naOmit(imputMethod)) <1) { imputMethod <- "mode2"
       if(!silent) message(fxNa,"Invalid entry for 'imputMethod' setting to default")}
-    chMeth <- imputMethod %in% c("datQuant", "medmode", "mode1", "mode2", "mode3", "modeadopt","informed","none")
+    chMeth <- imputMethod %in% c("datQuant", "medmode", "mode1", "mode2", "mode3", "modeadopt","informed","perseus15","none")
     if(!chMeth) {
       if(!silent) message(fxNa,"Unknown method '",imputMethod,"' as entry for 'imputMethod', setting to default")
       imputMethod <- "mode2"}
@@ -108,9 +155,9 @@ matrixNAneighbourImpute <- function(dat, gr, imputMethod="mode2", retnNA=TRUE, a
       NAneighbour <- NAneigLst$NAneighbour
       if(debug) { message(fxNa,"   mn0a");  mn0a <- list(dat=dat,gr=gr,imputMethod=imputMethod,NAneigLst=NAneigLst,NAneighbour=NAneighbour,medMod=medMod)}
     } else { NAneighbour <- NAneigLst <- nNaNei <- medMod <- all.lm <- charAll <- NULL }    # initialize
-    if(length(seedNo) >1) { seedNo <- seedNo[1]
+    if(length(seedNo) > 1) { seedNo <- seedNo[1]
       if(!silent) message(fxNa,"Invalid entry for argument 'seedNo', it may be single integer or NULL, setting to NULL")}
-    if(length(seedNo) >0) if(any(is.na(seedNo), na.rm=TRUE)) seedNo <- NULL
+    if(length(seedNo) != 0 && !is.finite(seedNo)) seedNo <- NULL
     if(is.logical(plotHist)) { plotHist <- if(identical(TRUE, plotHist)) c("hist","quant","mode") else NULL}
 
     ## main
@@ -143,7 +190,8 @@ matrixNAneighbourImpute <- function(dat, gr, imputMethod="mode2", retnNA=TRUE, a
       } else { nNA <- sum(isNA)}
 
       nNaNei <- sapply(NAneighbour, length)
-      if(debug) {message(fxNa," mn3"); mn3 <- list(NAneighbour=NAneighbour,dat=dat,gr=gr,isNA=isNA,chNA=chNA,imputMethod=imputMethod,nNaNei=nNaNei)}
+      if(length(nNaNei) ==0) nNaNei <- 0
+      if(debug) {message(fxNa," imputMethod=",imputMethod,"   mn3"); mn3 <- list(NAneighbour=NAneighbour,dat=dat,gr=gr,isNA=isNA,chNA=chNA,imputMethod=imputMethod,nNaNei=nNaNei)}
 
       ## check if sufficient NAs for mode-based methods
       if(debug) message(fxNa,"Checking if sufficient NAs for mode-based methods")
@@ -161,12 +209,29 @@ matrixNAneighbourImpute <- function(dat, gr, imputMethod="mode2", retnNA=TRUE, a
       ## use 'medMod' as summary of random data generated
       ## choose method; always produce vector  'randVa' and 'msg'
          #save(dat,gr,imputMethod, randVa,medMod,NAneighbour,seedNo,isNA,chNA,NAneigLst, file="mn4a.RData")
+ 
+      if("perseus15" %in% imputMethod) { 
+        ## Perseus-like with : width=0.15, downshift=1.8
+        ## normalizes along groups
+        indL <- split(seq_along(gr), gr)
+        ma2 <- dat
+        ## treat data by each factor and place result in proper position  (efficient as long as rather few levels/groups of replicates)
+        for(g in names(indL)) {
+          ind <- indL[[g]]
+          ## do manipulation .. 
+          ma2[, ind] <- matrix( imputePerseus(as.numeric(dat[, ind, drop=FALSE]), width=0.15, downshift=1.8, seedNo=seedNo, callFrom=fxNa,silent=silent,debug=debug), nrow=nrow(dat))
+        }
+        if(debug) {message(fxNa," mn4p");  mn4p <- list(dat=dat,gr=gr,ma2=ma2,indL=indL,randVa=randVa,medMod=medMod, isNA=isNA,chNA=chNA,imputMethod=imputMethod,NAneigLst=NAneigLst,NAneighbour=NAneighbour)}
+        dat <- ma2
+        msg <- " Perseus-mode, width=0.15, downshift=1.8"
+      }
+      
       if("datQuant" %in% imputMethod) {   # quantile of data
         if(debug) message(fxNa,"Starting method 'datQuant'")
         if(length(avSd) >2 && !is.na(avSd[3])) {useQu <- avSd[3]} else {   # 3rd value (if specified) may be used as custom mean for normal distrib (instead of determining as xth quantile)
           if(is.na(avSd[1])) { avSd[1] <- 0.1           # check quantile value (ie where to check full data)
             if(!silent) message(fxNa," avSd not valid, using 10%quantile instead")}
-          useQu <- if(avSd[1] <1 && avSd[1] >0) stats::quantile(dat, avSd[1], na.rm=TRUE) else avSd[1]  
+          useQu <- if(avSd[1] <= 1 && avSd[1] >= 0) stats::quantile(dat, avSd[1], na.rm=TRUE) else avSd[1]  
         }
         if(length(seedNo) ==1) set.seed(seedNo)
         randVa <- signif(stats::rnorm(sum(isNA), useQu, avSd[2]), 5)
@@ -183,14 +248,13 @@ matrixNAneighbourImpute <- function(dat, gr, imputMethod="mode2", retnNA=TRUE, a
         msg <- paste("mean=",signif(min(medMod),4),"and sd=", signif(avSd[2],4))
       }
       if(any(c("mode1","mode3","informed") %in% imputMethod, na.rm=TRUE)) {      # global mode of all NA neighbours
-        if(debug) message(fxNa,"Prepare for methods 'mode1','mode2' and 'informed'")
-        if(length(medMod) <1 && sum(sapply(NAneighbour, length)) >0) {
-          medMod <- wrMisc::stableMode(unlist(NAneighbour), method="density",silent=silent,callFrom=fxNa)
-        } else {
-        }
+        if(debug) message(fxNa,"Prepare for methods 'mode1','mode3' and 'informed'")
+        if(length(medMod) <1 && sum(sapply(NAneighbour, length)) >0) {   # medMod my be given via NAneigLst$medMod 
+          medMod <- wrMisc::stableMode(unlist(NAneighbour), method="density", silent=silent,callFrom=fxNa)
+        } 
         if(length(seedNo) ==1) set.seed(seedNo)
-        randVa <- signif(stats::rnorm(sum(isNA), medMod, avSd[2]),5)
-        msg <- paste("mode=",signif(medMod,4),"and sd=", signif(avSd[2],4))  # correct ??
+        if(!"mode2" %in% imputMethod) randVa <- signif(stats::rnorm(sum(isNA), medMod, avSd[2]),5)
+        msg <- paste("mode=", signif(medMod,4), "and sd=", signif(avSd[2],4))  # correct ??
       }
       if(debug) {message(fxNa," mn5b") }
 
@@ -209,7 +273,6 @@ matrixNAneighbourImpute <- function(dat, gr, imputMethod="mode2", retnNA=TRUE, a
         NAli <- which(NAliCo >0 & NAliCo < ncol(dat))             # lines with NA but not all NA
         NAmin <- rep(NA, nrow(dat))
         if(debug) {message(fxNa," mn5c");  mn5c <- list()}
-
          if(length(NAli) >0) {
           ## prepare
           indC <- matrix(0, nrow=nrow(isNA), ncol=ncol(isNA))
@@ -230,8 +293,8 @@ matrixNAneighbourImpute <- function(dat, gr, imputMethod="mode2", retnNA=TRUE, a
           ##  apply min-informed cor
           randVa[useInd] <- randVa[useInd] +corF          # mean of imputed and non-biased rand Va
         }
-
       }
+      
       if("modeadopt" %in% tolower(imputMethod)) {   # flexible/adopt
         ## median and mode of NA-neighbours all/ by group :
         if(debug) {message(fxNa,"Starting method 'modeadopt'","  mn5d") }
@@ -243,7 +306,7 @@ matrixNAneighbourImpute <- function(dat, gr, imputMethod="mode2", retnNA=TRUE, a
         nRa <- as.integer(sub("n","", names(NAneighbour) ))
         if(length(all.lm) <1) all.lm <- stats::lm(a~n, data=data.frame(n=rep(nRa,nNaNei), a=unlist(NAneighbour)))
         pVaSlo <- summary(stats::aov(all.lm))[[1]][1,"Pr(>F)"]                  # not  < 0.05
-        if(pVaSlo < 0.1 & stats::coef(all.lm)[2] <0) {
+        if(pVaSlo < 0.1 && stats::coef(all.lm)[2] <0) {
           ## dynamic NA-substit depending on number of NAs per prot&repl
           prLev <- stats::predict(all.lm, new=data.frame(n=1:(max(nRa) +1)))
           ranOff <- prLev -charAll[1,1]                  # chose to subtract mode of all NA-neighbours (as reference)
@@ -263,14 +326,18 @@ matrixNAneighbourImpute <- function(dat, gr, imputMethod="mode2", retnNA=TRUE, a
 
       ## replace NAs
       if(debug) {message(fxNa," mn6"); mn6 <- list(dat=dat,datIni=datIni,gr=gr,randVa=randVa,medMod=medMod, isNA=isNA,chNA=chNA,imputMethod=imputMethod,NAneigLst=NAneigLst,NAneighbour=NAneighbour) }
-      if(!"none" %in% tolower(imputMethod)) dat[which(isNA)] <- randVa
-      chImp <- stats::quantile(datIni, c(0.05,0.15), na.rm=TRUE)
-      chImp <- c(mean(randVa, na.rm=TRUE) < chImp[1], mean(randVa, na.rm=TRUE) > chImp[2])
+      if(!grepl("^(perseus)|(none$)", tolower(imputMethod))) {  dat[which(isNA)] <- randVa[1:sum(isNA)] }  # use randVa to replace NAs - exept  'none' or Perseus (due to group-specific imput dat ias already modified), 
 
-      msg <- list(li1=c(" n.woNA=",sum(!isNA),", n.NA =",sum(isNA)),
-        li2=c("Imputing based on",paste0("'",imputMethod,"'"),"using",msg),
-        li3=if(any(chImp, na.rm=TRUE)) c("Note, mean for imputation is ",if(chImp[1]) "below 0.05 " else "above 0.15", "quantile !!") )
-      if(!silent) message(fxNa, paste(sapply(msg, paste, collapse=" "), collapse="\n    "))
+      if(grepl("^perseus", tolower(imputMethod))) { randVa <- as.numeric(dat[which(isNA)]) }
+
+      chImp <- stats::quantile(datIni, c(0.05,0.15), na.rm=TRUE)
+      if(!grepl("^none$", tolower(imputMethod))) {
+        chImp <- c(mean(randVa, na.rm=TRUE) < chImp[1], mean(randVa, na.rm=TRUE) > chImp[2]) 
+        msg <- list(li1=c(" n.woNA=",sum(!isNA),", n.NA =",sum(isNA)),
+          li2=c("Imputing based on",paste0("'",imputMethod,"'"),"using",msg),
+          li3=if(any(chImp, na.rm=TRUE)) c("Note, mean for imputation is ",if(chImp[1]) "below 0.05 " else "above 0.15", "quantile !!") )
+        if(!silent) message(fxNa, paste(sapply(msg, paste, collapse=" "), collapse="\n    "))
+      }
 
       ## FIGURE
       if("hist" %in% tolower(plotHist)) {
@@ -346,4 +413,4 @@ matrixNAneighbourImpute <- function(dat, gr, imputMethod="mode2", retnNA=TRUE, a
       if(inclLowValMod) list(data=dat, datImp=impDat)
   } }
   dat }
-  
+    

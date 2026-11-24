@@ -11,7 +11,8 @@
 #' via the argument \code{columnNa}. 
 #' Then, this content will be matched as identical match, so when combining data from different software special care should be taken !
 #' 
-#' Please note, that (at this point) the data from different series/objects will be joined as they are, ie without any additional normalization.
+#' Please note, that (at this point) this function does not yet optimally integrate / handle combining of further customized objects.
+#' The data from different series/objects will be joined as they are, ie without any additional normalization.
 #' It is up to the user to inspect the resulting data and to decide if and which type of normalization may be suitable !
 #' 
 #' Please do NOT try combining protein and peptide quntification data.
@@ -23,6 +24,7 @@
 #' @param NA.rm (logical) remove \code{NA}s
 #' @param listNa (character) names of key list-elemnts from \code{x} to be treated; the first one is used as pattern for the format of quantitation data, 
 #' ,  the last one for the annotation data
+#'   these names must be identical in all proteomics data-sets to be fused
 #' @param all (logical) union of intersect or merge should be performed between x, y and z
 #' @param textModif (character) Additional modifications to the identifiers from argument \code{columnNa}; 
 #'    so far intregrated: \code{rmPrecAA} for removing preceeding caps letters (amino-acids, eg [KR].AGVIFPVGR.[ML] => AGVIFPVGR) 
@@ -60,6 +62,7 @@ fuseProteomicsProjects <- function(x, y, z=NULL, columnNa="Accession", NA.rm=TRU
   if(isTRUE(debug)) { silent <- FALSE } else { debug <- FALSE }
   namesXY <- c(deparse(substitute(x)), deparse(substitute(y)), deparse(substitute(z)))
   out <- NULL
+  arr3dimB <- mat2dimB <- NULL
 
   if(length(x) <1) stop("Argument 'x' seems empty !")
   if(length(y) <1) stop("Argument 'y' seems empty !")
@@ -97,6 +100,8 @@ fuseProteomicsProjects <- function(x, y, z=NULL, columnNa="Accession", NA.rm=TRU
     annN <- lapply(annN, function(x) sub("[[:digit:]]+$","", x) ) }
   if(debug) {message(fxNa," fPL1 ++"); fPL1 <- list(x=x,y=y,z=z,columnNa=columnNa,listNa=listNa,shortNa=shortNa,annN=annN,textModif=textModif,all=all)} #xAnn=xAnn,xQua=xQua,yAnn=yAnn,yQua=yQua,  
 
+  ## function could benefit of re-write : systematic comparison of list-elements (possibly different length, different order); var types need different type of integration; need to redo/create sampleSetup (...init sdrf)
+
   ## combine redundant IDs ?
   chUni <- lapply(annN, duplicated)
   ##
@@ -124,13 +129,19 @@ fuseProteomicsProjects <- function(x, y, z=NULL, columnNa="Accession", NA.rm=TRU
     colNa <- lapply(rmRed, function(w) colnames(w[[listNa[1]]]))
     colInd <- cumsum(sapply(colNa, length))
     colInd <- cbind(beg=c(1, 1 +colInd[-length(colNa)]), end=colInd)    
+    if(debug) {message(fxNa," fPL2b"); fPL2b <- list(all=all,rmRed=rmRed,allID=allID,x=x,y=y,z=z,columnNa=columnNa,listNa=listNa,shortNa=shortNa,annN=annN,textModif=textModif,namesXY=namesXY,colNaAnn=colNaAnn,colNa=colNa,colInd=colInd)} #xAnn=xAnn,xQua=xQua,yAnn=yAnn
     
     ## fuse quantitative data (add columns)
     useLst <- which(sapply(rmRed, length) >0)       # which datasets contain data for fusing
     if(debug) {message(fxNa," fPL2c"); fPL2c <- list()} 
-    j <- 1
+    j <- 1            # is enumerator for 1st or 2nd i (ie useLst), typically redundant to i in loop
     for(i in useLst) {
-      if(j==1) { out <- rmRed[[i]]
+      # check dimensions of current data
+      dim2 <- lapply(rmRed[[i]], dim)
+      arr3dimB <- sapply(dim2, function(w) length(w) ==3 )     # all elements with 3 dims
+      mat2dimB <- sapply(dim2, function(w) length(w) ==2 )     # all elements with 2 dims
+      if(j==1) {    
+        out <- rmRed[[i]]
         dim2 <- lapply(out, dim)
         arr3dim <- sapply(dim2, function(w) if(length(w) ==3) all(w[1:2]==dim(rmRed[[i]][[listNa[1]]])) else FALSE )     # all elements with 3 dims & same nrow & ncol as listNa[1]
         mat2dim <- sapply(dim2, function(w) if(length(w) ==2) all(w[1:2]==dim(rmRed[[i]][[listNa[1]]])) else FALSE )     # all elements with 2 dims & same nrow & ncol as listNa[1]
@@ -138,14 +149,15 @@ fuseProteomicsProjects <- function(x, y, z=NULL, columnNa="Accession", NA.rm=TRU
         if(any(chAnn, na.rm=TRUE)) mat2dim[which(chAnn)] <- FALSE
         if(debug) {message(fxNa,"Matrix-type elements found for fusing : ",wrMisc::pasteC(names(out)[which(mat2dim)], quoteC="'")) 
           message(fxNa,"3-dim arrays elements found for fusing : ",wrMisc::pasteC(names(out)[which(arr3dim)], quoteC="'"))  }
-      if(debug) {message(fxNa," fPL2d  i=",i,"  j=",j); fPL2d <- list(all=all,rmRed=rmRed,allID=allID,x=x,y=y,z=z,out=out,columnNa=columnNa,listNa=listNa,shortNa=shortNa,annN=annN,textModif=textModif,namesXY=namesXY,useLst=useLst,colInd=colInd,colNa=colNa,arr3dim=arr3dim)
-      }       
-      ## fuse quantitative data (add columns)
-      if(sum(arr3dim) >0) for(k in which(arr3dim)) out[[k]] <- array(dim=c(length(allID), sum(sapply(colNa, length)), dim(rmRed[[i]][[k]])[3]), 
-        dimnames=list(allID, paste0(rep(namesXY,sapply(colNa, length)),".",unlist(colNa)), dimnames(rmRed[[i]][[k]])[[3]]))
-      if("notes" %in% names(out)) out$notes <- matrix(out$notes, ncol=1, dimnames=list(names(out$notes),namesXY[i]))
-      if("sampleSetup" %in% names(out)) out$sampleSetup <- list(out$sampleSetup$groups)           # very minimal fusion ... ($groups ONLY !!)
-      if("quantNotes" %in% names(out)) out$quantNotes <- list(out$quantNotes) }
+        if(debug) {message(fxNa," fPL2d  i=",i,"  j=",j); fPL2d <- list(all=all,rmRed=rmRed,allID=allID,x=x,y=y,z=z,out=out,columnNa=columnNa,listNa=listNa,shortNa=shortNa,annN=annN,textModif=textModif,namesXY=namesXY,useLst=useLst,colInd=colInd,colNa=colNa,arr3dim=arr3dim,i=i,j=j)
+        }       
+        ## fuse quantitative data (add columns)
+        if(sum(arr3dim) >0) for(k in which(arr3dim)) out[[k]] <- array(dim=c(length(allID), sum(sapply(colNa, length)), dim(rmRed[[i]][[k]])[3]), 
+          dimnames=list(allID, paste0(rep(namesXY,sapply(colNa, length)),".",unlist(colNa)), dimnames(rmRed[[i]][[k]])[[3]]))
+        if("notes" %in% names(out)) out$notes <- matrix(out$notes, ncol=1, dimnames=list(names(out$notes),namesXY[i]))
+        if("sampleSetup" %in% names(out)) out$sampleSetup <- list(out$sampleSetup$groups)           # very minimal fusion ... ($groups ONLY !!)
+        if("quantNotes" %in% names(out)) out$quantNotes <- list(out$quantNotes) 
+      } 
       ## prepare for fusing quantitative data (columns)
       if(j==1) { tmp <- matrix(NA_real_, nrow=length(allID), ncol=sum(sapply(colNa, length)), dimnames=list(allID, paste0(rep(namesXY,sapply(colNa, length)),".",unlist(colNa))))  ## initialize
         if(sum(mat2dim) >1) for(k in which(mat2dim))  out[[k]] <- tmp
@@ -157,24 +169,26 @@ fuseProteomicsProjects <- function(x, y, z=NULL, columnNa="Accession", NA.rm=TRU
       ## assign
       inLi <- wrMisc::naOmit(match(allID, rmRed[[i]][[listNa[length(listNa)]]][,columnNa[i]]))                # where current fits to allID
       if(debug) message(fxNa,"i=",i," extract ",length(inLi)," common out of current ",nrow(rmRed[[i]][[listNa[length(listNa)]]]),"")
+      if(debug) {message(fxNa," fPL3"); fPL3 <- list(out=out,all=all,rmRed=rmRed,allID=allID,x=x,y=y,z=z,columnNa=columnNa,listNa=listNa,colInd=colInd,shortNa=shortNa,annN=annN,textModif=textModif,namesXY=namesXY,inLi=inLi,mat2dim=mat2dim,useLst=useLst,i=i,j=j,arr3dimB=arr3dimB,mat2dimB=mat2dimB)} #xAnn=xAnn,xQua=xQua,yAnn=yAnn
       
-      for(k in which(mat2dim)) out[[k]][which(allID %in% rmRed[[i]][[listNa[length(listNa)]]][,columnNa[i]]), colInd[i,1]:colInd[i,2]] <- rmRed[[i]][[k]][ inLi, ]
+      for(k in which(mat2dim[1:length(mat2dimB)] & mat2dimB))  out[[k]][which(allID %in% rmRed[[i]][[listNa[length(listNa)]]][,columnNa[i]]), colInd[i,1]:colInd[i,2]] <- rmRed[[i]][[k]][ inLi, ]
       if(j==1) out[[listNa[length(listNa)]]] <- out[[listNa[length(listNa)]]][inLi, ]       # annotation
-
-      if(debug) {message(fxNa," fPL2e  i=",i,"  j=",j); fPL2e <- list()}
+  
+      if(debug) {message(fxNa," fPL3b  i=",i,"  j=",j); fPL3b <- list(out=out,all=all,rmRed=rmRed,allID=allID,x=x,y=y,z=z,columnNa=columnNa,listNa=listNa,colInd=colInd,shortNa=shortNa,annN=annN,textModif=textModif,namesXY=namesXY,inLi=inLi,mat2dim=mat2dim,useLst=useLst,i=i,j=j)}
       if(sum(arr3dim) >0) for(k in which(arr3dim)) if(j >1 && names(out)[k] %in% names(rmRed[[i]])) {   # possibly also check if name of 3rd dim is consistent ..
         if(length(dim(rmRed[[i]][[k]])) ==3) out[[k]][which(allID %in% rmRed[[i]][[listNa[length(listNa)]]][,columnNa[i]]), colInd[i,1]:colInd[i,2],] <- rmRed[[i]][[k]][ inLi,, ] }
-      
-
+        
+  
       ## also try fusing annotation data ?  
             
       ## fuse other (notes, sampleSetup, quantNotes)
-      if(debug) message(fxNa," fPL3a ")
+      if(debug) {message(fxNa," fPL3c"); fPL3c <- list(out=out,all=all,rmRed=rmRed,allID=allID,x=x,y=y,z=z,columnNa=columnNa,listNa=listNa,colInd=colInd,shortNa=shortNa,annN=annN,textModif=textModif,namesXY=namesXY,inLi=inLi,mat2dim=mat2dim,useLst=useLst,i=i,j=j)} #xAnn=xAnn,xQua=xQua,yAnn=yAnn
+      
       if(j >1 && "notes" %in% names(rmRed[[i]])) out$notes <- cbind(out$notes, unlist(rmRed[[i]]$notes)[match(rownames(out$notes), names(rmRed[[i]]$notes))])
       if(j >1 && "sampleSetup" %in% names(rmRed[[i]])) out$sampleSetup[[j]] <- rmRed[[i]]$sampleSetup$groups
-      if(j >1 && "quantNotes" %in% names(rmRed[[i]])) out$quantNotes[[j]] <- rmRed[[i]]$quantNotes
+      if(j >1 && "quantNotes" %in% names(rmRed[[i]])) {out$quantNotes <- as.list(out$quantNotes); out$quantNotes[[j]] <- rmRed[[i]]$quantNotes}
       j <- j +1      
-    }
+    }             # next i ...
   }
   out
 }

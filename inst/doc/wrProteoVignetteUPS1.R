@@ -32,9 +32,10 @@ packageVersion("wrProteo")
 ## ----metaData1, echo=TRUE-----------------------------------------------------
 ## Read meta-data from  github.com/bigbio/proteomics-metadata-standard/
 pxd001819meta <- readSdrf("PXD001819")
+gitOK <- length(pxd001819meta) != 0
 
 ## The concentration of the UPS1 spike-in proteins in the samples
-if(length(pxd001819meta) >0 && "characteristics.concentration.of." %in% colnames(pxd001819meta)) {     
+if(gitOK && "characteristics.concentration.of." %in% colnames(pxd001819meta)) {     
   UPSconc <- sort(unique(as.numeric(wrMisc::trimRedundText(pxd001819meta$characteristics.concentration.of.))))  # trim to get to 'essential' info
   #old#UPSconc <- sort(unique(as.numeric(wrMisc::trimRedundText(pxd001819meta$characristics.spiked.compound.))))  # trim to get to 'essential' info
 } else {
@@ -105,11 +106,12 @@ plotMultRegrPar <- function(dat, methInd, tit=NULL, useColumn=c("logp","slope","
 ## ----readMaxQuant, fig.height=8, fig.width=9.5, fig.align="center", echo=TRUE----
 path1 <- system.file("extdata", package="wrProteo")
 fiNaMQ <- "proteinGroups.txt.gz"
+sdrfFi <- "PXD001819.sdrf.tsv.gz"
 
 ## We need to define the setup of species
 specPrefMQ <- list(conta=contaInf[2], matrix=paste0("OS=",matrixType2), spike=spikeType, sampleNames="sdrf") #fasta=fastaFi, 
 dataMQ <- readMaxQuantFile(file=fiNaMQ, path=path1, refLi="mainSpe", specPref=specPrefMQ, 
-  sdrf=c(sdrfNa,"max",sdrfOrder=TRUE,skipCol=1), suplAnnotFile=TRUE, plotGraph=FALSE, silent=TRUE)   # , refLi=useRefLi
+  sdrf=c(if(gitOK) sdrfNa else file.path(path1,sdrfFi), "max", sdrfOrder=TRUE, skipCol=1), suplAnnotFile=TRUE, plotGraph=FALSE, silent=TRUE)   # , refLi=useRefLi
 
 ## ----readMaxQuant2, fig.height=8, fig.width=9.5, fig.align="center", echo=TRUE----
 ## The number of lines and colums
@@ -122,9 +124,11 @@ table(dataMQ$annot[,"Species"], useNA="always")
 ## ----readProteomeDiscoverer1, fig.height=8, fig.width=9.5, fig.align="center", echo=TRUE----
 path1 <- system.file("extdata", package="wrProteo")
 fiNaPd <- "pxd001819_PD24_Proteins.txt.gz"
+sdrfFi <- "PXD001819.sdrf.tsv.gz"
 ## Next, we define the setup of species
 specPrefPD <- list(conta=contaInf[1], mainSpecies=matrixType2, spike=spikeType, sampleNames="sdrf", lowNumberOfGroups=FALSE)   # fasta=fastaFi,
-dataPD <- readProteomeDiscovererFile(file=fiNaPd, path=path1,  refLi="mainSpe", specPref=specPrefPD, sdrf=c(sdrfNa,"max",sdrfOrder=TRUE,skipCol=1), suplAnnotFile=TRUE, plotGraph=FALSE, silent=TRUE)   # refLi=useRefLi
+dataPD <- readProteomeDiscovererFile(file=fiNaPd, path=path1,  refLi="mainSpe", specPref=specPrefPD, 
+  sdrf=c(if(gitOK) sdrfNa else file.path(path1,sdrfFi), "max", sdrfOrder=TRUE, skipCol=1), suplAnnotFile=TRUE, plotGraph=FALSE, silent=TRUE)   # refLi=useRefLi
 
 ## ----readProteomeDiscoverer2, fig.height=8, fig.width=9.5, fig.align="center", echo=TRUE----
 ## The number of lines and colums
@@ -139,7 +143,8 @@ path1 <- system.file("extdata", package="wrProteo")
 fiNaPl <- "pxd001819_PL.xlsx"
 
 specPrefPL <- list(conta=contaInf[1], mainSpecies=matrixType2, spike=spikeType, sampleNames="sdrf")   # fasta=fastaFi,    # same as PL
-dataPL <- readProlineFile(file=fiNaPl, path=path1, specPref=specPrefPL, sdrf=c(sdrfNa,"max",sdrfOrder=TRUE,skipCol=1), suplAnnotFile=TRUE, plotGraph=FALSE, silent=TRUE)   # refLi=useRefLi
+dataPL <- readProlineFile(file=fiNaPl, path=path1, specPref=specPrefPL, 
+  sdrf=c(if(gitOK) sdrfNa else file.path(path1,sdrfFi), "max", sdrfOrder=TRUE, skipCol=1), suplAnnotFile=TRUE, plotGraph=FALSE, silent=TRUE)   # refLi=useRefLi
 
 
 ## ----readProlineInfo, fig.height=8, fig.width=9.5, fig.align="center", echo=TRUE----
@@ -208,13 +213,13 @@ tabSumNA <- rbind(PD=sumNAperGroup(dataPD$raw, grp9), MQ=sumNAperGroup(dataMQ$ra
 kable(tabSumNA, caption="Number of NAs per group of samples", align="r")
 
 ## ----testProteomeDiscoverer, echo=TRUE----------------------------------------
-testPD <- testRobustToNAimputation(dataPD, imputMethod="informed")     # ProteomeDiscoverer
+testPD <- testRobustToNAimputation(dataPD, imputMethod="mode2")     # ProteomeDiscoverer       #old imputMethod="informed"
 
 ## ----testMaxQuant, echo=TRUE--------------------------------------------------
-testMQ <- testRobustToNAimputation(dataMQ, imputMethod="informed")      # MaxQuant , ok
+testMQ <- testRobustToNAimputation(dataMQ, imputMethod="mode2")      # MaxQuant , ok
 
 ## ----testProline, echo=TRUE---------------------------------------------------
-testPL <- testRobustToNAimputation(dataPL, imputMethod="informed")      # Proline
+testPL <- testRobustToNAimputation(dataPL, imputMethod="mode2")      # Proline
 
 ## ----testReorganize1, echo=TRUE-----------------------------------------------
 dataPD$datImp <- testPD$datImp       # recuperate imputeded data to main data-object

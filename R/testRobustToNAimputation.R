@@ -46,7 +46,7 @@
 #' @param plotHist (logical) additional histogram of original, imputed and resultant distribution (made using \code{\link{matrixNAneighbourImpute}} )
 #' @param xLab (character) custom x-axis label 
 #' @param tit (character) custom title
-#' @param imputMethod (character) choose the imputation method (may be 'mode2'(default), 'mode1', 'datQuant', 'modeAdopt', 'informed' or 'none', for details see \code{\link{matrixNAneighbourImpute}} )
+#' @param imputMethod (character) choose the imputation method (may be 'mode2'(default), 'mode1', 'datQuant', 'modeAdopt', 'perseus15', 'informed' or 'none', for details see \code{\link{matrixNAneighbourImpute}} )
 #' @param seedNo (integer) seed-value for normal random values
 #' @param multCorMeth (character) define which method(s) for correction of multipl testing should be run (for choice : 'BH','lfdr','BY','tValTab', choosing several is possible)
 #' @param nLoop (integer) number of runs of independent \code{NA}-imputation
@@ -61,8 +61,8 @@
 #' @return This function returns a limma-type S3 object of class 'MArrayLM' (which can be accessed lika a list); multiple results of testing or multiple testing correction types may get included ('p.value','FDR','BY','lfdr' or 'ROTS.BH')
 #' @seealso NA-imputation via \code{\link{matrixNAneighbourImpute}}, modereated t-test without NA-imputation \code{\link[wrMisc]{moderTest2grp}}, calculating lfdr \code{\link[wrMisc]{pVal2lfdr}}, \code{eBayes} in Bioconductor package \href{https://bioconductor.org/packages/release/bioc/html/limma.html}{limma}, \code{\link[stats]{t.test}},\code{ROTS} of Bioconductor package \href{https://bioconductor.org/packages/release/bioc/html/ROTS.html}{ROTS}   
 #' @examples
-#' set.seed(2015); rand1 <- round(runif(600) +rnorm(600,1,2),3)
-#' dat1 <- matrix(rand1,ncol=6) + matrix(rep((1:100)/20,6),ncol=6)
+#' set.seed(2015); rand1 <- round(runif(600) + rnorm(600,1,2),3)
+#' dat1 <- matrix(rand1, ncol=6) + matrix(rep((1:100)/20, 6), ncol=6)
 #' dat1[13:16,1:3] <- dat1[13:16,1:3] +2      # raise lines 13:16 
 #' dat1[19:20,1:3] <- dat1[19:20,1:3] +3      # raise lines 19:20
 #' dat1[15:18,4:6] <- dat1[15:18,4:6] +1.4    # raise lines 15:18 
@@ -70,6 +70,7 @@
 #' ## normalize data
 #' boxplot(dat1, main="Data Before Normalization", las=1)
 #' dat1 <- wrMisc::normalizeThis(as.matrix(dat1), meth="median")
+#' 
 #' ## designate replicate relationships in samples ...  
 #' grp1 <- gl(2, 3, labels=LETTERS[1:2])                   
 #' ## moderated t-test with repeated imputations (may take >10 sec, >60 sec if ROTSn >0 !) 
@@ -98,12 +99,53 @@ testRobustToNAimputation <- function(dat, gr=NULL, useComparison=NULL, annot=NUL
   msg <- sampleSetup <- sep1 <- useComparisonNa <- pwIndex <- out <- NULL
   grIni <- gr
 
+  asShortNa <- function(txt) {
+    ## convert txt into short upper (use as short names), if possible with starting letter (as caps), in case of multiple starting with same letter replace by other character
+    ## if less than 27 (different) elements reduce all to single letter, otherwise as 2-letter (caps) combinations (ie max 676)
+    ## note  : NO upper/lower distinction
+    ## returns vector with shortened text (and initial text as names) try as single/short names ( single letter/char  or double if not possible as single)
+    ## move to wrMisc ?
+    # example# txt1 <- c("BB","CC","GHJ","C3","C3H")
+    # txt2 <- c("BB","CC","GHJ",paste0("C",1:26))
+    # asShortNa(txt1); asShortNa(txt2)
+    fxNa <- "asShortNa"
+    ## make unique
+    chN <- duplicated(txt, fromLast=FALSE)
+    if(any(chN)) { txtIni <- txt
+      txt <-  txt[which(!chN)]       # make txt unique !
+    } else txtIni <- NULL
+    ## check if multiple with same start (ie short version)
+    leNa <- 1 + (length(txt) >26)
+    txtN <- toupper(substr(txt, 1, leNa))   # force to upper case
+    chN <- duplicated(txtN, fromLast=FALSE)
+    if(any(chN)) {
+      ## multiple with same start; need to create new short 'versions'
+      hasDu <- chN | duplicated(txtN, fromLast=TRUE)
+      iniDu <- txtN[which(hasDu)]
+      useLe <- if(leNa == 1) LETTERS else paste0(rep(LETTERS, each=26), rep(LETTERS, 26))
+      newLET <- !(useLe %in% txtN )        # which letters have (not) been used so far
+      ## check if sufficient (single) letters avail
+      if(sum(newLET) >= sum(hasDu) ) {
+        txtN[which(hasDu)] <- rev(rev(useLe[which(newLET)]) [1:sum(hasDu)])
+      } else {
+        stop(fxNa,"UNABLE to replace names as short names")   
+      }     
+    }
+    names(txtN) <- txt           
+    if(is.null(txtIni)) txtN else {
+      ## in case of replicated values in initial txt, expand to initial order&length
+      txtN <- txtN[match(txtIni, txt)]
+      names(txtN) <- txtIni
+      txtN
+    }                      
+  }
+
   ## (default) parameters
-  param1 <- if(length(param) ==0 || !is.list(param)) list(filter=list(abundThr=0.02, maxGrpMiss=1, ratMaxNA=0.8, minSpeNo=1, minTotNo=2), 
-    NAimpute=list(avSd=c(0.15,0.5), imputMethod="mode2"), stat=list(nLoop=nLoop, pwSep=pwSep,seedNo=seedNo)) else param
+  param1 <- if(length(param) ==0 || !is.list(param)) list(filter=list(abundThr=0.01, maxGrpMiss=1, ratMaxNA=0.5, minSpeNo=1, minTotNo=2), 
+    NAimpute=list(avSd=c(0.15, 0.5), imputMethod="mode2"), stat=list(nLoop=nLoop, pwSep=pwSep,seedNo=seedNo)) else param
   if(length(imputMethod) ==1 && !is.na(imputMethod)) {
     param1$NAimpute$imputMethod <- imputMethod
-    if(!silent) message(fxNa,"Note : Custom defined 'imputMethod' will be used")}  
+    if(!silent) message(fxNa,"Note : Custom defined 'imputMethod' (",imputMethod,") will be used")}  
 
   ## start testing input, see if is list or MArrayLM
   if(datOK >0 && is.list(dat)) { if(all(c("quant","annot") %in% names(dat))) {
@@ -111,8 +153,9 @@ testRobustToNAimputation <- function(dat, gr=NULL, useComparison=NULL, annot=NUL
     if(debug) {message(fxNa,"  tRN1"); tRN1 <- list(dat=dat, gr=gr,useComparison=useComparison,annot=annot,retnNA=retnNA,avSd=avSd,pwSep=pwSep )}   # dat=dat,
      
     if("sampleSetup" %in% names(dat) && length(gr) <1) {
+      ## retreive groups of replicates 
       gr <- if("groups" %in% names(dat$sampleSetup)) dat$sampleSetup$groups else dat$sampleSetup$level
-      ## rather use names instead of index
+      ## rather use names instead of index  (in case only $level was found)
       if(all(is.integer(gr)) && all(nchar(names(gr)) > 0)) { 
         gr <- names(gr)
         names(gr) <- as.character(grIni)
@@ -122,11 +165,15 @@ testRobustToNAimputation <- function(dat, gr=NULL, useComparison=NULL, annot=NUL
     } else grIni <- gr
     if(debug) {message(fxNa," .. tRN1c"); tRN1c <- list(dat=dat, gr=gr,grIni=grIni,useComparison=useComparison,sampleSetup=sampleSetup,annot=annot,retnNA=retnNA,avSd=avSd,pwSep=pwSep )}
     
-    if("sampleSetup" %in% names(dat)) {       # retreive useComparison from dat$sampleSetup (if available)
+    if("sampleSetup" %in% names(dat)) {       # retrieve useComparison from dat$sampleSetup (if available)
       sampleSetup <- dat$sampleSetup
-      if(length(pwSep) ==0 && "sep" %in% names(sampleSetup)) sep1 <- sampleSetup$sep  #else 
+      if(length(pwSep) ==0 && "sep" %in% names(sampleSetup)) sep1 <- pwSep <- sampleSetup$sep  #else 
       if(length(useComparison) ==0 && "compareTo" %in% names(sampleSetup) && all(dim(sampleSetup$compareTo) > c(0,1)) ) {
-        useComparison <- sampleSetup$compareTo   # as matrix
+        useComparison <- sampleSetup$compareTo     # should be matrix
+        ## note : useComparison may not contain rownames yet 
+        if(length(dim(useComparison)) ==2 && is.null(rownames(useComparison))) {
+          rownames(useComparison) <- paste(useComparison[,1], useComparison[,2], sep=pwSep)
+        }
       }  
       if(debug) message(fxNa,"sampleSetup$compareTo provided in 'dat' - using all ",nrow(useComparison)," comparisons")
     }    
@@ -142,16 +189,16 @@ testRobustToNAimputation <- function(dat, gr=NULL, useComparison=NULL, annot=NUL
   if(datOK) {
     ## pairwise separator : priority to param1$stat$pwSep, otherwise check for argument pwSep (which may have been taken from dat$setup)
     if(length(param1$stat$pwSep)==1) {
-      sep1 <- if(grepl("^(split)|(combine)[[:digit:]]{0,1}$", pwSep)) wrMisc::pwSeparatorList(param1$stat$pwSep) else param1$stat$pwSep     
-      sampleSetup$sep <- sep1 <- wrMisc::getPWseparator(compNames=NULL, grp=gr, potSep=sep1, includeGrp=FALSE, silent=silent, debug=debug, callFrom=fxNa)
-      ## possibly need to update  useComparison & sampleSetup$compareTo ?
+      sep1 <- if(grepl("^(split)|(combine)[[:digit:]]{0,1}$", pwSep)) wrMisc::pwSeparatorList(param1$stat$pwSep) else param1$stat$pwSep    # (automatic search) establish candidates 
+      sampleSetup$sep <- sep1 <- wrMisc::getPWseparator(compNames=NULL, grp=gr, potSep=sep1, includeGrp=FALSE, silent=silent, debug=debug, callFrom=fxNa)      
     } else {
       if(length(pwSep) !=0) {
+        ## something was given with argument from this function (may be shortcut to automatic search)
         sep1 <- if(length(pwSep)==1 && grepl("^(split)|(combine)[[:digit:]]{0,1}$", pwSep)) {    # recognize special terms ('combine1' or 'split1') for custom collections
           wrMisc::pwSeparatorList(pwSep) } else pwSep
-        sampleSetup$sep <- sep1 <- wrMisc::getPWseparator(compNames=NULL, grp=gr, potSep=sep1, includeGrp=FALSE, silent=silent, debug=debug, callFrom=fxNa)
+        sampleSetup$sep <- sep1 <- wrMisc::getPWseparator(compNames=NULL, grp=gr, potSep=sep1, includeGrp=FALSE, silent=silent, debug=debug, callFrom=fxNa) # add'l check 
       } else {
-        ## default/standard prepare sep1 (for later use)
+        ## default/standard prepare sep1 
         sep1 <- try(wrMisc::getPWseparator(compNames=NULL, grp=gr, potSep=wrMisc::pwSeparatorList(type="combine1", silent=!silent, debug=debug, callFrom=fxNa), silent=!debug, callFrom=fxNa,debug=debug), silent=TRUE)
         if(inherits(sep1, "try-error") || length(sep1)==0) sep1 <- wrMisc::findHeadAndTail(gr, useComparison, silent=silent, debug=debug,callFrom=fxNa) 
         sampleSetup$sep <- sep1
@@ -160,7 +207,14 @@ testRobustToNAimputation <- function(dat, gr=NULL, useComparison=NULL, annot=NUL
           if(debug) message(fxNa,"Override 'sep' given from annot by '",sep1,"'")}
       }
     }
-    if(debug) {message(fxNa," .. tRN1d"); tRN1d <- list(dat=dat, gr=gr,grIni=grIni,useComparison=useComparison,sampleSetup=sampleSetup,annot=annot,retnNA=retnNA,avSd=avSd,pwSep=pwSep )}
+    ## short Group Names
+    if(length(sampleSetup$shortGrpNa) ==0) {
+      sampleSetup$shortGrpNa <- asShortNa(sampleSetup$groups)
+    } 
+
+    if(length(useComparison) !=0 && length(dim(useComparison))==2) rownames(useComparison) <- paste(useComparison[,1], useComparison[,2], sep=sep1) ## possibly need to update  useComparison & sampleSetup$compareTo ?
+    if(length(sampleSetup$compareTo) !=0 && length(dim(sampleSetup$compareTo))==2) rownames(sampleSetup$compareTo) <- paste(useComparison[,1], useComparison[,2], sep=sep1) ## possibly need to update  useComparison & sampleSetup$compareTo ?
+        if(debug) {message(fxNa," .. tRN1d"); tRN1d <- list(dat=dat, gr=gr,grIni=grIni,useComparison=useComparison,sampleSetup=sampleSetup,annot=annot,retnNA=retnNA,avSd=avSd,pwSep=pwSep,sep1=sep1 )}
 
     ## check main dat (not list-element any more)
     if(is.data.frame(dat)) dat <- as.matrix(dat)
@@ -183,7 +237,7 @@ testRobustToNAimputation <- function(dat, gr=NULL, useComparison=NULL, annot=NUL
       multCorMeth <- if(multCorMeth >1) c("lfdr", ROTSn=as.integer(multCorMeth), "means") else "lfdr"}
     
     if("ROTSn" %in% names(multCorMeth)) { ROTSn <- try(as.integer(multCorMeth["ROTSn"]), silent=TRUE)
-      if(inherits(ROTSn, "try-error")) {ROTSn <- NULL; pwIndex <- NULL }} 
+      if(inherits(ROTSn, "try-error")) { ROTSn <- NULL; pwIndex <- NULL }} 
   
     if("lfdr" %in% multCorMeth) { lfdrInclude <- TRUE
     } else if("lfdr" %in% names(multCorMeth)) { lfdrInclude <- try(as.logical(multCorMeth["lfdr"]), silent=TRUE)
@@ -197,19 +251,19 @@ testRobustToNAimputation <- function(dat, gr=NULL, useComparison=NULL, annot=NUL
       if(!silent) message(fxNa,"Using deprecated 'avSdH' as substitute of 'avSd', please adopt your code to use 'avSd' !!")
     } else if(length(avSdH) >1 && !silent) message(fxNa,"Argument 'avSdH' has been deprecated, 'avSd' is used instead")
     
-    if(length(seedNo) >0) seedNo <- as.integer(seedNo)[1]
+    if(length(seedNo) >0) seedNo <- try(as.integer(seedNo), silent=TRUE)           # further check inside matrixNAneighbourImpute()
 
     ## main
     isNA <- is.na(dat)
     chNA <- any(isNA)
-    nNAmat <- matrix(0, nrow=nrow(dat), ncol=length(levels(gr)), dimnames=list(NULL,levels(gr)))
+    nNAmat <- matrix(0, nrow=nrow(dat), ncol=length(levels(gr)), dimnames=list(NULL, levels(gr)))
 
     ## 1st pass
     if(debug) {message(fxNa,"imputMethod= ",imputMethod,"  tRN1e"); tRN1e <- list(dat=dat,datOK=datOK, gr=gr,grIni=grIni,useComparison=useComparison,annot=annot,retnNA=retnNA,avSd=avSd,useComparisonNa=useComparisonNa,sep1=sep1,imputMethod=imputMethod )}
     
     ## create useComparisonNa as internal reference for comparison : matrix of 2 cols (names of gr/levels), rownames as compiled names
     if(length(useComparison) ==0) {
-      useComparisonNa <- t(utils::combn(levels(gr), 2))
+      useComparisonNa <- t(utils::combn(levels(gr), 2))   # prepare for all comparisons possible
       dimnames(useComparisonNa) <- list(paste0(useComparisonNa[,1], sep1, useComparisonNa[,2]), c("samp","ref"))
       pwIndex <- matrix(match(useComparisonNa, wrMisc::naOmit(unique(as.character(gr)))), ncol=2, dimnames=dimnames(useComparisonNa))   # refers to unique(gr) and NOT to levels(gr) !!
       #useCompRef <- wrMisc::indexGroupsFromPW(compNames=rownames(useComparisonNa), grp=gr)   # pwComb
@@ -223,17 +277,18 @@ testRobustToNAimputation <- function(dat, gr=NULL, useComparison=NULL, annot=NUL
 
     ## recuperate parameters from/as batch
     abundThre <- param1$filter$abundThr
-    if(length(abundThre) !=1 || isTRUE(abundThre)) abundThre <- 0.02                      # special case: default 0.02 quantile
+    if(length(abundThre) !=1 || isTRUE(abundThre)) abundThre <- 0.01                      # special case: default 0.01 quantile
     if(length(abundThre) ==1 && is.numeric(abundThre) && abundThre <1) abundThre <- stats::quantile(if(is.list(dat)) dat$quant else dat, abundThre, na.rm=TRUE)
-    minSpeNo <- if(length(param1$filter$minSpeNo)==1 && is.numeric(param1$filter$minSpeNo) && param1$filter$minSpeNo >=0) param1$filter$minSpeNo else 1
-    minTotNo <- if(length(param1$filter$minTotNo)==1 && is.numeric(param1$filter$minTotNo) && param1$filter$minTotNo >=0) param1$filter$minTotNo else 2
-    maxGrpMiss <- if(length(param1$filter$maxGrpMiss)==1 && is.numeric(param1$filter$maxGrpMiss) && param1$filter$maxGrpMiss >=0) param1$filter$maxGrpMiss else 1
-    ratMaxNA <- if(length(param1$filter$ratMaxNA)==1 && is.numeric(param1$filter$ratMaxNA) && param1$filter$ratMaxNA <=1) param1$filter$ratMaxNA else 1
+    minSpeNo <- if(length(param1$filter$minSpeNo)==1 && is.numeric(param1$filter$minSpeNo) && param1$filter$minSpeNo >=0) param1$filter$minSpeNo else 0
+    minTotNo <- if(length(param1$filter$minTotNo)==1 && is.numeric(param1$filter$minTotNo) && param1$filter$minTotNo >=0) param1$filter$minTotNo else 0   # used ??
+    maxGrpMiss <- if(length(param1$filter$maxGrpMiss)==1 && is.numeric(param1$filter$maxGrpMiss) && param1$filter$maxGrpMiss >=0) param1$filter$maxGrpMiss else 999    # when not given/valid set to allowing all NAs (no stringency)
+    ratMaxNA <- if(length(param1$filter$ratMaxNA)==1 && is.numeric(param1$filter$ratMaxNA) && param1$filter$ratMaxNA <=1) param1$filter$ratMaxNA else 1                # when not given/valid set to allowing all NAs (no stringency)
+    ratMaxTotNA <- if(length(param1$filter$ratMaxTotNA)==1 && is.numeric(param1$filter$ratMaxTotNA) && param1$filter$ratMaxTotNA <=1) param1$filter$ratMaxTotNA else NULL  # when not given/valid set to NULL => ignore
     if(length(param1$NAimpute$avSd)==2 && is.numeric(param1$NAimpute$avSd) && all(param1$NAimpute$avSd >= 0)) avSd <- param1$NAimpute$avSd   # overrides argument !
     
     imputMethod <- if(length(param1$NAimpute$imputMethod)==1 && !is.na(param1$NAimpute$imputMethod)) param1$NAimpute$imputMethod else "mode2"
     #if(length(param1$stat$lfdr)==1 && is.logical(param1$stat$lfdr) && !is.na(param1$stat$lfdr)) imputMethod <- param1$stat$lfdr   # overrides argument !
-    if(length(param1$stat$pwSep)==1 && is.character(param1$stat$pwSep) && !is.na(param1$stat$pwSep)) pwSep <- param1$stat$pwSep   # overrides argument !
+    if(length(param1$stat$pwSep)==1 && is.character(param1$stat$pwSep) && !is.na(param1$stat$pwSep)) pwSep <- param1$stat$pwSep    # overrides argument !
     if(debug) {message(fxNa,"imputMethod= ",imputMethod,"  tRN1f"); tRN1f <- list(dat=dat,datOK=datOK, gr=gr,grIni=grIni,useComparison=useComparison,useComparisonNa=useComparisonNa,pwIndex=pwIndex,annot=annot,retnNA=retnNA,avSd=avSd,sep1=sep1,imputMethod=imputMethod,plotHist=plotHist, xLab=xLab, tit=tit )}
     
     #?## if(is.null(names(useComparisonNa)) && length(useComparisonNa) <= 676)   # only needed for older wrMisc::convPairwiseSetup
@@ -275,6 +330,7 @@ testRobustToNAimputation <- function(dat, gr=NULL, useComparison=NULL, annot=NUL
 
     out <- suppressWarnings(wrMisc::moderTestXgrp(datFi$data, grp=gr, useComparison=useComparisonNa, limmaOutput=TRUE, addResults=multCorMeth, sep=pwSep, silent=silent, debug=debug, callFrom=fxNa))   # can't do question specific filtering w/o explicit loop
     pValColNa <- colnames(out$p.value)    # colnames for later use
+    if(is.null(out$setup$shortGrpNa)) out$setup$shortGrpNa <- asShortNa(unique(out$setup$grp))
     if(debug) {message(fxNa," tRN3"); tRN3 <- list(dat=dat,gr=gr,datFi=datFi,multCorMeth=multCorMeth,datI=datI,out=out,useComparison=useComparison,useComparisonNa=useComparisonNa,sep1=sep1,chNA=chNA,ROTSn=ROTSn,nLoop=nLoop)}
   
     chFDR <- names(out) =="FDR"
@@ -355,7 +411,7 @@ testRobustToNAimputation <- function(dat, gr=NULL, useComparison=NULL, annot=NUL
         colnames(pValTab) <- pValColNa
         out$datImp <- as.matrix(apply(datIm, 1:2, mean, na.rm=TRUE))
       } else out$datImp <- datIm
-      if(debug) { message(fxNa,"tRN7a"); tRN7 <- list(out=out,datFi=datFi,annot=annot,dat=dat,gr=gr,retnNA=retnNA, useComparison=useComparison,useComparisonNa=useComparisonNa,comp=comp,avSd=avSd,datI=datI,multCorMeth=multCorMeth, pValTab=pValTab,datIm=datIm,nLoop=nLoop,useComparison=useComparison,sep1=sep1,pValColNa=pValColNa )  }
+      if(debug) { message(fxNa,"tRN7a"); tRN7a <- list(out=out,datFi=datFi,annot=annot,dat=dat,gr=gr,retnNA=retnNA, useComparison=useComparison,useComparisonNa=useComparisonNa,comp=comp,avSd=avSd,datI=datI,multCorMeth=multCorMeth, pValTab=pValTab,datIm=datIm,nLoop=nLoop,useComparison=useComparison,sep1=sep1,pValColNa=pValColNa )  }
       
       ## prepepare for adjusting to custom useComparison : adjCol gives index to use from complete combinatorics 
       adjCol <- match(rownames(useComparisonNa), colnames(datFi$filt))
@@ -396,7 +452,7 @@ testRobustToNAimputation <- function(dat, gr=NULL, useComparison=NULL, annot=NUL
       filtZ <- which(!datFi$filt, arr.ind=TRUE)     
       if(any(!datFi$filt, na.rm=TRUE)) out$p.value[filtZ] <- out$t[filtZ] <- NA     # need to integrate filtering
     }  
-
+    ## finished repetitive testing
     
     out$annot <- annot
     out$filter <- datFi$filt[ , adjCol, drop=FALSE]
@@ -406,9 +462,15 @@ testRobustToNAimputation <- function(dat, gr=NULL, useComparison=NULL, annot=NUL
     ## update dimnames of out$datImp
     dimnames(out$datImp) <- list(if(is.null(rownames(out$lods))) rownames(out$annot) else rownames(out$lods), colnames(dat))
     rownames(out$t) <- rownames(out$p.value) <- rownames(out$datImp)
-    ## integrate column specific filtering
-    #if(any(!datFi$filt, na.rm=TRUE)) out$p.value[which(!datFi$filt)] <- NA   # problem
     
+    ## complet  $setup
+    if(is.null(out$setup$sampleNames)) out$setup$sampleNames <-  sampleSetup$sampleNames
+    if(is.null(out$setup$grp)) out$setup$grp <- sampleSetup$groups
+    ## NOTE : here it is called $setup but in imported data it is $sampleSetup   (sdjust ??)
+
+    ## integrate column specific filtering
+    #if(any(!datFi$filt, na.rm=TRUE)) out$p.value[which(!datFi$filt)] <- NA   # problem    
+
     if(lfdrInclude) { out$lfdr <- as.matrix(suppressWarnings(apply(out$p.value, 2, function(x) suppressWarnings(wrMisc::pVal2lfdr(x, callFrom=fxNa)))))
       dimnames(out$lfdr) <- list(rownames(out$lods), if(length(dim(useComparisonNa))==2) rownames(useComparisonNa) else colnames(out$contrasts))
       if("noLimma" %in% multCorMeth) out$simple.lfdr <- if(ncol(out$simple.p.value) >1) as.matrix(apply(out$simple.p.value, 2, function(x) suppressWarnings(wrMisc::pVal2lfdr(x, callFrom=fxNa)))) else suppressWarnings(wrMisc::pVal2lfdr(out$simple.p.value))

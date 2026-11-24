@@ -25,7 +25,7 @@ readProlineFile(
   gr = NULL,
   sdrf = NULL,
   suplAnnotFile = TRUE,
-  groupPref = list(lowNumberOfGroups = TRUE, chUnit = TRUE),
+  groupPref = list(lowNumberOfGroups = TRUE, chUnit = TRUE, addSamplePrefix = "s"),
   silent = FALSE,
   callFrom = NULL,
   debug = FALSE
@@ -81,7 +81,8 @@ if \code{character} the respective file-name (relative or absolute path)}
 \item{groupPref}{(list) additional parameters for interpreting meta-data to identify structure of groups (replicates), will be passed to \code{readSampleMetaData}.
 May contain \code{lowNumberOfGroups=FALSE} for automatically choosing a rather elevated number of groups if possible (defaults to low number of groups, ie higher number of samples per group)
 May contain \code{chUnit} (logical or character) to be passed to \code{readSampleMetaData()} for (optional) adjustig of unit-prefixes in meta-data group labels, in case multiple different unit-prefixes 
-are used (eg '100pMol' and '1nMol').}
+are used (eg '100pMol' and '1nMol').
+The element \code{addSamplePrefix="s"} allows adding a specified prefix (here 's') when all sample-names look like numbers to prevent confusion with indexes}
 
 \item{silent}{(logical) suppress messages}
 

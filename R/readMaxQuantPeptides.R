@@ -64,6 +64,7 @@
 #'   May contain \code{lowNumberOfGroups=FALSE} for automatically choosing a rather elevated number of groups if possible (defaults to low number of groups, ie higher number of samples per group)
 #'   May contain \code{chUnit} (logical or character) to be passed to \code{readSampleMetaData()} for (optional) adjustig of unit-prefixes in meta-data group labels, in case multiple different unit-prefixes 
 #'   are used (eg '100pMol' and '1nMol').
+#'   The element \code{addSamplePrefix="s"} allows adding a specified prefix (here 's') when all sample-names look like numbers to prevent confusion with indexes
 #' @param plotGraph (logical) optional plot vioplot of initial and normalized data (using \code{normalizeMeth}); alternatively the argument may contain numeric details that will be passed to \code{layout} when plotting
 #' @param titGraph (character) custom title to plot
 #' @param wex (numeric)  relative expansion factor of the violin in plot
@@ -86,7 +87,7 @@ readMaxQuantPeptides <- function(path, fileName="peptides.txt", normalizeMeth="m
   pepCountCol="Experiment", refLi=NULL,  sampleNames=NULL,
   extrColNames=c("Sequence","Proteins","Leading.razor.protein","Start.position","End.position","Mass","Missed.cleavages","Unique..Groups.","Unique..Proteins.","Charges"),
   specPref=c(conta="conta|CON_|LYSC_CHICK", mainSpecies="HUMAN"),
-  remRev=TRUE, remConta=FALSE, separateAnnot=TRUE, gr=NULL, sdrf=NULL, suplAnnotFile=NULL, groupPref=list(lowNumberOfGroups=TRUE, chUnit=TRUE),
+  remRev=TRUE, remConta=FALSE, separateAnnot=TRUE, gr=NULL, sdrf=NULL, suplAnnotFile=NULL, groupPref=list(lowNumberOfGroups=TRUE, chUnit=TRUE, addSamplePrefix="s"),
   titGraph=NULL, wex=1.6, plotGraph=TRUE, silent=FALSE, debug=FALSE, callFrom=NULL) {
   ## prepare
   fxNa <- wrMisc::.composeCallName(callFrom, newNa="readMaxQuantPeptides")
@@ -269,7 +270,7 @@ readMaxQuantPeptides <- function(path, fileName="peptides.txt", normalizeMeth="m
         annot <- annot[-conLi,]
         abund <- abund[-conLi,]
         specMQ <- specMQ[-conLi]       # needed ??
-        counts <- if(length(dim(counts))==3) counts[-conLi,,] else counts[-conLi,,]
+        counts <- if(length(dim(counts))==3) counts[-conLi,,, drop=FALSE] else counts[-conLi,, drop=FALSE]
         if(debug) message(fxNa,"Removing ",length(conLi)," instances of MaxQuant-contaminants to final ",nrow(annot)," lines/IDs")} }
     if(debug) {message(fxNa,"rMQP7b"); rMQP7b <- list(path=path,chPa=chPa,tmp=tmp,extrColNames=extrColNames,chCol=chCol,chRazProCol=chRazProCol,counts=counts,specPref=specPref,
       chRev=chRev,quantCol=quantCol,abund=abund,chNum=chNum,ch2=ch2,annot=annot,remConta=remConta,specPref=specPref,useProCo=useProCo)}
@@ -369,7 +370,7 @@ readMaxQuantPeptides <- function(path, fileName="peptides.txt", normalizeMeth="m
     refLiIni <- refLi
     if(is.character(refLi) && length(refLi)==1) {  # try search content of refLi in SpecType
       refLi <- which(annot[,"SpecType"]==refLi)
-      if(length(refLi) ==0 && refLiIni=="mainSpe") refLi <- which(annot[,"SpecType"]=="mainSpecies")   # also allow 'mainSpecies'
+      if(length(refLi) ==0 && any(c("mainSpe","mainSpecies") %in% refLiIni)) refLi <- which(annot[,"SpecType"]=="mainSpecies")   # also allow 'mainSpecies'
       if(length(refLi) ==0) { refLi <- 1:nrow(abund)
         if(!silent) message(fxNa,"Could not find any proteins matching argument 'refLi=",refLiIni,"', ignoring ...")
       } else {

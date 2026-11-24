@@ -47,6 +47,7 @@
 #'   May contain \code{lowNumberOfGroups=FALSE} for automatically choosing a rather elevated number of groups if possible (defaults to low number of groups, ie higher number of samples per group)
 #'   May contain \code{chUnit} (logical or character) to be passed to \code{readSampleMetaData()} for (optional) adjustig of unit-prefixes in meta-data group labels, in case multiple different unit-prefixes 
 #'   are used (eg '100pMol' and '1nMol').
+#'   The element \code{addSamplePrefix="s"} allows adding a specified prefix (here 's') when all sample-names look like numbers to prevent confusion with indexes
 #' @param silent (logical) suppress messages
 #' @param callFrom (character) allow easier tracking of messages produced
 #' @param debug (logical) display additional messages for debugging
@@ -62,7 +63,7 @@ readProlineFile <- function(fileName, path=NULL, normalizeMeth="median", logConv
   annotCol=c("accession","description","is_validated","protein_set_score","X.peptides","X.specific_peptides"), remStrainNo=TRUE,
   pepCountCol=c("^psm_count_","^peptides_count_"), trimColnames=FALSE, refLi=NULL, separateAnnot=TRUE, plotGraph=TRUE, titGraph=NULL,
   wex=2, specPref=c(conta="_conta\\|", mainSpecies="OS=Homo sapiens"), gr=NULL, sdrf=NULL, suplAnnotFile=TRUE, 
-  groupPref=list(lowNumberOfGroups=TRUE, chUnit=TRUE), silent=FALSE, callFrom=NULL, debug=FALSE) {
+  groupPref=list(lowNumberOfGroups=TRUE, chUnit=TRUE, addSamplePrefix="s"), silent=FALSE, callFrom=NULL, debug=FALSE) {
   ## 'quantCol', 'annotCol' (character) exact col-names or if length=1 pattern to search among col-names for $quant or $annot
   fxNa <- wrMisc::.composeCallName(callFrom, newNa="readProlineFile")
   oparMar <- if(plotGraph) graphics::par("mar") else NULL       # only if figure might be drawn
@@ -271,7 +272,7 @@ readProlineFile <- function(fileName, path=NULL, normalizeMeth="median", logConv
       abund <- as.matrix(out[,quantCol2]) }                    # abundance val
     ## peptide counts
     if(length(pepCountCol) >1) { supCol <- lapply(pepCountCol, grep, colnames(out))
-      chLe <- sapply(supCol,length)
+      chLe <- sapply(supCol, length)
       chLe <- chLe==ncol(abund)
       if(any(chLe)) { pepCount <- array(dim=c(nrow(out), ncol(abund), sum(chLe)),
         dimnames=list(rowNa, colnames(abund), sub("\\^peptides_count","NoOfPeptides",sub("\\^psm_count","PSM",sub("_$","",pepCountCol)))[which(chLe)]))
@@ -284,7 +285,19 @@ readProlineFile <- function(fileName, path=NULL, normalizeMeth="median", logConv
     chNum <- is.numeric(abund)
     if(!chNum) {abund <- apply(out[,quantCol2], 2, wrMisc::convToNum, convert="allChar", silent=silent, callFrom=fxNa)}
     rownames(abund) <- rowNa
-    ##
+    ## check for all-NA lines
+    isNA <- is.na(abund)
+    notAllNA <- 1:nrow(abund)
+    if(any(isNA)) {
+      notAllNA <- rowSums(!isNA) !=0
+      if(any(!notAllNA)) {
+        notAllNA <- which(notAllNA)
+        if(length(annot) !=0 && nrow(annot)==nrow(abund)) annot <- annot[notAllNA,, drop=FALSE]
+        if(length(pepCount) >0) pepCount <- pepCount[notAllNA,,]
+        abund <- abund[notAllNA,, drop=FALSE]
+      }
+    }
+    
     ## Custom (alternative) colnames
     if(identical("sdrf",sampleNames)) {specPref$sampleNames <- sampleNames; sampleNames <- NULL}
     if(length(sampleNames) ==ncol(abund)) {
@@ -305,7 +318,7 @@ readProlineFile <- function(fileName, path=NULL, normalizeMeth="median", logConv
     refLiIni <- refLi
     if(is.character(refLi) && length(refLi)==1) {  # try search content of refLi in SpecType
       refLi <- which(annot[,"SpecType"]==refLi)
-      if(length(refLi) ==0 && refLiIni=="mainSpe") refLi <- which(annot[,"SpecType"]=="mainSpecies")   # also allow 'mainSpecies'
+      if(length(refLi) ==0 && any(c("mainSpe","mainSpecies") %in% refLiIni)) refLi <- which(annot[,"SpecType"]=="mainSpecies")   # also allow 'mainSpecies'
       if(length(refLi) ==0) { refLi <- 1:nrow(abund)
         if(!silent) message(fxNa,"Could not find any proteins matching argument 'refLi=",refLiIni,"', ignoring ...")
       } else {

@@ -69,7 +69,7 @@ summarizeForROC <- function(test, useComp=1, tyThr="BH", thr=NULL, columnTest=NU
   if(!"annot" %in% names(test)) stop(fxNa,"test$annot is needed to map content of 'spec'")
   chLst <- tyThr %in% names(test)
   if(any(!chLst, na.rm=TRUE)) stop(fxNa,"Don't know what kind of test-results to use.  Can't find element '",tyThr[!chLst],"' in elements of 'test' !!")
-  if(length(dim(test[[tyThr]])) !=2) stop(fxNa,"Can't find data.frame or matrix as list-elment '",annotCol,"' in 'test'")
+  if(length(dim(test[[tyThr]])) !=2) stop(fxNa,"Can't find data.frame or matrix as list-element '",annotCol,"' in 'test'")
   if(length(annotCol) <1) stop(fxNa,"Argument 'annotCol' must be specified (should be name of column of 'test$annot' to check for species from argument 'spec')")
   if(length(spec) <1) stop(fxNa,"Argument 'spec' must be specified (should contain species names present in tst$annot$",annotCol,")")
   if(is.numeric(useComp)) { msg <- "Argument 'useComp' points to comparison not existing, resetting to 1"

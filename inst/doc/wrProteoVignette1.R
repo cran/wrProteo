@@ -192,6 +192,8 @@ summary(dataPD2$quant)
 path1 <- system.file("extdata", package="wrProteo")
 dataMQ <- readMaxQuantFile(path1, specPref=NULL, normalizeMeth="median", plotGraph=FALSE)
 dataMC <- readMassChroQFile(path1, file="tinyMC.RData", tit="Tiny MassChroq Example", plotGraph=FALSE)
+dim(dataMQ$quant)
+dim(dataMC$quant)
 dataFused <- fuseProteomicsProjects(dataMQ, dataMC)
 str(dataFused$quant)
 

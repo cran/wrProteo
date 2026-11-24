@@ -46,6 +46,7 @@
 #'   May contain \code{lowNumberOfGroups=FALSE} for automatically choosing a rather elevated number of groups if possible (defaults to low number of groups, ie higher number of samples per group)
 #'   May contain \code{chUnit} (logical or character) to be passed to \code{readSampleMetaData()} for (optional) adjustig of unit-prefixes in meta-data group labels, in case multiple different unit-prefixes 
 #'   are used (eg '100pMol' and '1nMol').
+#'   The element \code{addSamplePrefix="s"} allows adding a specified prefix (here 's') when all sample-names look like numbers to prevent confusion with indexes
 #' @param plotGraph (logical or integer) optional plot of type vioplot of initial and normalized data (using \code{normalizeMeth}); if integer, it will be passed to \code{layout} when plotting
 #' @param titGraph (character) custom title to plot of distribution of quantitation values
 #' @param wex (integer) relative expansion factor of the violin-plot (will be passed to \code{\link[wrGraph]{vioplotW}})
@@ -64,7 +65,7 @@
 #' @export
 readProteomeDiscovererFile <- function(fileName, path=NULL, normalizeMeth="median", sampleNames=NULL, read0asNA=TRUE, quantCol="^Abundance", annotCol=NULL, contamCol="Contaminant",
   refLi=NULL, separateAnnot=TRUE, FDRCol=list(c("^Protein.FDR.Confidence","High"), c("^Found.in.Sample.","High")), gr=NULL, sdrf=NULL, suplAnnotFile=TRUE,
-  groupPref=list(lowNumberOfGroups=TRUE, chUnit=TRUE), specPref=c(conta="CON_|LYSC_CHICK", mainSpecies="OS=Homo sapiens"), plotGraph=TRUE, wex=1.6, titGraph="Proteome Discoverer",
+  groupPref=list(lowNumberOfGroups=TRUE, chUnit=TRUE, addSamplePrefix="s"), specPref=c(conta="CON_|LYSC_CHICK", mainSpecies="OS=Homo sapiens"), plotGraph=TRUE, wex=1.6, titGraph="Proteome Discoverer",
   silent=FALSE, debug=FALSE, callFrom=NULL) {
   ## read ProteomeDiscoverer exported txt
   fxNa <- wrMisc::.composeCallName(callFrom, newNa="readProteomeDiscovererFile")
@@ -188,7 +189,7 @@ readProteomeDiscovererFile <- function(fileName, path=NULL, normalizeMeth="media
       if(sum(is.na(chSupCol)) < length(annotCol) -2) annot <- cbind(annot, tmp[,wrMisc::naOmit(chSupCol)])
       if(!silent) message(fxNa,"Adding supl annotation-columns ",wrMisc::pasteC(annotCol[wrMisc::naOmit(chSupCol)], quoteC="'")) }
     ## note 'EntryName' (eg 'UBE2C_HUMAN' not avail in PD !!)
-    ## note 'GeneName' (eg 'UBE2C' can be extracted out of 'Description' after GN=
+    ## note 'GeneName' (eg 'UBE2C') can (also) get extracted out of 'Description' after GN=
     ## extract GN
     if(debug) { message(fxNa,"rpd1c "); rpd1c <- list(tmp=tmp,paFi=paFi,annotCol=annotCol,fileName=fileName, annot=annot,GNco=GNco)  }
 
@@ -263,8 +264,8 @@ readProteomeDiscovererFile <- function(fileName, path=NULL, normalizeMeth="media
       if(length(filt1)==0) {
         warning(fxNa,"All lines will be removed based on contaminant-filter (column '",contamCol,"') - TROUBLE AHEAD ?")
       } else if(!silent) message(fxNa,"Note : ",nrow(tmp) - length(filt1)," contaminant protein(s)/peptide(s) will be removed, ",length(filt1)," remain")
-      tmp <- tmp[filt1,]
-      annot <- annot[filt1,]
+      tmp <- tmp[filt1,, drop=FALSE]
+      annot <- annot[filt1,, drop=FALSE]
     }
     if(debug) {message(fxNa,"rpd6b ..  "); rpd6b <- list()}
 
@@ -376,6 +377,19 @@ readProteomeDiscovererFile <- function(fileName, path=NULL, normalizeMeth="media
     colnames(abund) <- sub("^Abundances\\.Normalized\\._{0,1}|^abundances\\.Normalized\\._{0,1}|^Abundances{0,1}_{0,1}|^abundances{0,1}_{0,1}","",colnames(abund))
     chNum <- is.numeric(abund)
     if(!chNum) {abund <- apply(tmp[,quantCol], 2, wrMisc::convToNum, convert="allChar", silent=silent, callFrom=fxNa)}
+    ## check for all-NA lines
+    isNA <- is.na(abund)
+    notAllNA <- 1:nrow(abund)
+    if(any(isNA)) {
+      notAllNA <- rowSums(!isNA) !=0
+      if(any(!notAllNA)) {
+        notAllNA <- which(notAllNA)
+        if(length(annot) !=0 && nrow(annot)==nrow(abund)) annot <- annot[notAllNA,, drop=FALSE]
+        tmp <- tmp[notAllNA,, drop=FALSE]
+        #if(length(counts) >0) counts <- counts[notAllNA,,, drop=FALSE]
+        abund <- abund[notAllNA,, drop=FALSE]
+      }
+    }    
 
     ## remove heading 'X..' from headers (only if header won't get duplicated
     chXCol <- grep("^X\\.\\.",colnames(annot))
@@ -413,7 +427,7 @@ readProteomeDiscovererFile <- function(fileName, path=NULL, normalizeMeth="media
       if(length(chFDR) >0) {
         i <- 1              # so far just use 1st instance matching
         searchFor <- FDRCol[[which(sapply(FDRCol, function(x) x[1]) %in% names(chFDR)[i])]]
-        filtFdrHi <- tmp[,chFDR[[i]]] == searchFor[2]  # find occurances of best tag 'High'
+        filtFdrHi <- tmp[, chFDR[[i]]] == searchFor[2]  # find occurances of best tag 'High'
         roSu <- rowSums(filtFdrHi) <1
         if(all(roSu) && !silent) message(fxNa,"NONE of the lines/proteins had any '",searchFor[1],"' in column(s) '",searchFor[2],"' !!  This is probably not a good filtering-parameter, ignoring")
         if(any(roSu, na.rm=TRUE) && !all(roSu)) { if(!silent) message(fxNa,"Removing ",sum(roSu)," lines/proteins without ANY '",searchFor[2],"' in columns '",searchFor[1],"'")
@@ -424,7 +438,9 @@ readProteomeDiscovererFile <- function(fileName, path=NULL, normalizeMeth="media
           tmp <- tmp[rmLi,] }
       }
     }
-    if(debug) { message(fxNa,"rpd11 .. length(FDRCol) ",length(FDRCol),"   dim annot ",nrow(annot)," and ",ncol(annot))}
+    if(debug) { message(fxNa,"rpd11 .. length(FDRCol) ",length(FDRCol),"   dim annot ",nrow(annot)," and ",ncol(annot))
+      rpd11 <- list(annot=annot,tmp=tmp,abund=abund,sampleNames=sampleNames,normalizeMeth=normalizeMeth,specPref=specPref,annotCol=annotCol,refLi=refLi,Rfriendly=Rfriendly,contamCol=contamCol,PSMCol=PSMCol,PepCol=PepCol,infoDat=infoDat,contamFilter=contamFilter)}  #counts=counts
+      message(fxNa,"rpd11a")
 
     ## rownames : check if Accession is unique
     chAc <- duplicated(annot[,"Accession"], fromLast=FALSE)
@@ -442,7 +458,7 @@ readProteomeDiscovererFile <- function(fileName, path=NULL, normalizeMeth="media
       if(contamFilter) {                # ready to correct (if possible) duplicated 'Accession' entries
         ## elaborate procedure for removing duplicate Accession lines : 'fuse' annot where no NA & use quantification-line with fewest NAs
         ## need to separate all groups of repeated IDs & treat separately
-        annot <- cbind(annot, rowNo=1:nrow(tmp))
+        annot <- cbind(annot, rowNo=1:nrow(annot))
         duplAc <- unique(annot[which(chAc), "Accession"])
         ## need to remove duplicated lines which are not marked as Contaminant="True"
         chAc2 <- duplicated(annot[,"Accession"], fromLast=TRUE)
@@ -460,8 +476,8 @@ readProteomeDiscovererFile <- function(fileName, path=NULL, normalizeMeth="media
           useLi <- apply(0 +is.na(x),2,which.min)
           if(any(useLi >1, na.rm=TRUE)) for(i in 2:max(useLi)) annot[as.integer(x[1,"iniIndex"]),which(useLi==i)] <- annot[as.integer(x[i,"iniIndex"]),which(useLi==i)]
         }
-        if(length(rmAnnot) >0) {annot <- annot[-rmAnnot,]; tmp <- tmp[-rmAnnot,]
-          abund <- abund[-rmAbund,]
+        if(length(rmAnnot) >0) {annot <- annot[-rmAnnot,, drop=FALSE]; tmp <- tmp[-rmAnnot,, drop=FALSE]        # tmp still needed ??
+          abund <- abund[-rmAbund,, drop=FALSE]
           if(!silent) message(fxNa,"Removing ",length(rmAnnot)," lines due to duplicated Accessions (typically due to contaminants)")
         }
         annot <- annot[,-ncol(annot) +(1:0)]                  # remove extra columns (ie "iniIndex","nNA")
@@ -473,7 +489,7 @@ readProteomeDiscovererFile <- function(fileName, path=NULL, normalizeMeth="media
     ## Now we are ready to add unique rownames
     if(any(chAc, na.rm=TRUE)) {
       if(!silent) message(fxNa,sum(chAc)," (out of ",length(chAc),") cases of duplicated 'Accession' exist, adding extensions for use as rownames")
-      rownames(tmp) <- rownames(annot) <- wrMisc::correctToUnique(annot[,"Accession"], sep="_", atEnd=TRUE, callFrom=fxNa)
+      rownames(annot) <- wrMisc::correctToUnique(annot[,"Accession"], sep="_", atEnd=TRUE, callFrom=fxNa)          #rownames(tmp) <- 
     } else rownames(abund) <- rownames(annot) <- annot[,"Accession"]
 
     ## optional/additional counting results (PSM, no of peptides)
@@ -481,7 +497,7 @@ readProteomeDiscovererFile <- function(fileName, path=NULL, normalizeMeth="media
     PepCol <- if(length(PepCol) ==1) grep(PepCol, colnames(tmp)) else NULL
     usTy <- c("PSM","NoOfPeptides")[which(c(length(PSMCol), length(PepCol)) ==ncol(abund))]
     if(length(usTy) >0) {
-      counts <- array(NA,dim=c(nrow(abund), ncol(abund), min(1, length(usTy))), dimnames=list(rownames(abund), colnames(abund),usTy))
+      counts <- array(NA, dim=c(nrow(abund), ncol(abund), min(1, length(usTy))), dimnames=list(rownames(abund), colnames(abund),usTy))
       if("PSM" %in% usTy) counts[,,"PSM"] <- as.matrix(tmp[,PSMCol])
       if("NoOfPeptides" %in% usTy) counts[,,"NoOfPeptides"] <- as.matrix(tmp[,PepCol])
     } else counts <- NULL
@@ -491,7 +507,7 @@ readProteomeDiscovererFile <- function(fileName, path=NULL, normalizeMeth="media
     refLiIni <- refLi
     if(is.character(refLi) && length(refLi)==1) {  # try search content of refLi in SpecType
       refLi <- which(annot[,"SpecType"]==refLi)
-      if(length(refLi) ==0 && refLiIni=="mainSpe") refLi <- which(annot[,"SpecType"]=="mainSpecies")   # also allow 'mainSpecies'
+      if(length(refLi) ==0 && any(c("mainSpe","mainSpecies") %in% refLiIni)) refLi <- which(annot[,"SpecType"]=="mainSpecies")   # also allow 'mainSpecies'
       if(length(refLi) ==0) { refLi <- 1:nrow(abund)
         if(!silent) message(fxNa,"Could not find any proteins matching argument 'refLi=",refLiIni,"', ignoring ...")
       } else {
@@ -820,8 +836,11 @@ readProteomeDiscovererFile <- function(fileName, path=NULL, normalizeMeth="media
 #' @param figMarg (numeric, length=4) custom figure margins (will be passed to \code{\link[graphics]{par}}), defaults to c(3.5, 3.5, 3, 1)
 #' @param col (character) custom colors (length must match number of columns)
 #' @param tit (character) custom title
+#' @param dispNcex (numeric or logical) size of text for display of n of numeric values per series of data; default \code{dispN=0.7}; 
+#'   if \code{dispN=FAlSE} or \code{dispN=0} n will not be displayed
 #' @param las (integer) indicate orientation of text in axes
 #' @param cexAxis (numeric) size of numeric axis labels as cex-expansion factor (see also \code{\link[graphics]{par}})
+#' @param cexMain (numeric) size of title as cex-expansion factor (see also \code{\link[graphics]{par}})
 #' @param nameSer (character) custom label for data-sets or columns (length must match number of data-sets)
 #' @param cexNameSer (numeric) size of individual data-series labels as cex-expansion factor (see also \code{\link[graphics]{par}})
 #' @param silent (logical) suppress messages
@@ -834,7 +853,8 @@ readProteomeDiscovererFile <- function(fileName, path=NULL, normalizeMeth="media
 #'   "li",1:100,sep=""), paste(rep(LETTERS[1:3],c(3,3,2)),letters[18:25],sep="")))
 #' .plotQuantDistr(datT8, quant=NULL, refLi=NULL, tit="Synthetic Data Distribution")                                
 #' @export
-.plotQuantDistr <- function(abund, quant, custLay=NULL, normalizeMeth=NULL, softNa=NULL, refLi=NULL, refLiIni=NULL, notLogAbund=NA, figMarg=c(3.5, 3.5, 3, 1), col="rainbow", tit=NULL, las=NULL, cexAxis=0.8, nameSer=NULL, cexNameSer=NULL, silent=FALSE, callFrom=NULL, debug=FALSE) {
+.plotQuantDistr <- function(abund, quant, custLay=NULL, normalizeMeth=NULL, softNa=NULL, refLi=NULL, refLiIni=NULL, notLogAbund=NA, figMarg=c(3.5, 3.5, 3, 1), 
+  col="rainbow", tit=NULL, dispNcex=0.7, las=NULL, cexAxis=0.8, cexMain=NULL, nameSer=NULL, cexNameSer=NULL, silent=FALSE, callFrom=NULL, debug=FALSE) {
   ## generic plotting of densirt distribution for quantitation import-functions
   ## assume 'abund' (raw, non-normalized) and 'quant' (final normalized) to be valid matrix of data.frame !!
   ## 'custLay' ..(matrix) for layout()
@@ -856,6 +876,9 @@ readProteomeDiscovererFile <- function(fileName, path=NULL, normalizeMeth="media
     if(identical(quant, abund) || identical(quant, log2(abund))) { abundQuantRed <- TRUE  
       if(debug) message(fxNa,"No need for 2nd plot, 'abund' and 'quant' are identical ..") }  
   }
+
+  if(is.null(cexAxis)) cexAxis <- graphics::par("cex.axis") 
+  if(is.null(cexMain)) cexMain <- graphics::par("cex.main") 
       
   if(length(custLay) >0) graphics::layout(custLay) else {
     if(!any(c("none","not") %in% normalizeMeth) && (length(abund) >0 && length(quant) >0) && !abundQuantRed) { ch1 <- try(graphics::layout(1:2), silent=TRUE)
@@ -899,15 +922,15 @@ readProteomeDiscovererFile <- function(fileName, path=NULL, normalizeMeth="media
   colNa <- if(length(abund) >0) colnames(abund) else colnames(quant)
   if(length(colNa) >0) {
     ncharAx <- stats::quantile(nchar(colNa), c(0.5,0.9), na.rm=TRUE)
-    if(length(cexNameSer) !=1 || any(is.na(cexNameSer))) cexNameSer <- sort(round( c(7/ncharAx[2], 1.9/log(length(colNa)), 1, 0.48), 2))[2]     # adjust cex series-names to length and ncol
+    if(length(cexNameSer) !=1 || any(is.na(cexNameSer))) cexNameSer <- sort(round( c(min(5.6/ncharAx[2], 1.9/log(length(colNa)), na.rm=TRUE), 1, 0.46), 2))[2]     # adjust cex series-names to length and ncol
     suplLineA <- if(length(abund) >0) {.findSuplLi(if(isTRUE(notLogAbund)) log2(abund) else abund)} else NA
     suplLineQ <- if(length(quant) >0)  .findSuplLi(quant) else NA
-
   } else { ncharAx <- cexNameSer <- suplLineA <- suplLineQ <- NA
     if(debug) message(fxNa," Note : BOTH 'abund' and 'quant' are EMPTY - NOTHING TO PLOT")}  
   
   ## check axis cex
-  if(debug) { message(fxNa,"pQD2 .. misPa ", wrMisc::pasteC(misPa,quoteC="'"),";  abund is linear ",notLogAbund); pQD2 <- list(abund=abund,quant=quant,custLay=custLay,normalizeMeth=normalizeMeth,softNa=softNa,refLi=refLi,tit=tit,titQ=titQ,suplLineA=suplLineA,suplLineQ=suplLineQ,ncharAx=ncharAx) }
+  if(debug) { message(fxNa,"pQD2 .. misPa ", wrMisc::pasteC(misPa,quoteC="'"),";  abund is linear ",notLogAbund); 
+    pQD2 <- list(abund=abund,quant=quant,custLay=custLay,normalizeMeth=normalizeMeth,softNa=softNa,refLi=refLi,tit=tit,titQ=titQ,suplLineA=suplLineA,suplLineQ=suplLineQ,ncharAx=ncharAx,cexNameSer=cexNameSer) }
   
   chNeg <- sum(abund <0, na.rm=TRUE)
   if(chNeg >0 && notLogAbund) { notLogAbund <- FALSE
@@ -917,7 +940,7 @@ readProteomeDiscovererFile <- function(fileName, path=NULL, normalizeMeth="media
     if(!silent) message(fxNa,"Please install package(s) ", wrMisc::pasteC(usePa[which(misPa)])," from CRAN for drawing vioplots")
     if(length(abund) >0) {
       ## wrGraph not available : simple boxplot
-      ch1 <- try(graphics::boxplot(if(isTRUE(notLogAbund)) suppressWarnings(log2(abund)) else abund, main=titQ, las=1, outline=FALSE), silent=TRUE)
+      ch1 <- try(graphics::boxplot(if(isTRUE(notLogAbund)) suppressWarnings(log2(abund)) else abund, main=titQ, las=1, cex.main=cexMain, outline=FALSE), silent=TRUE)
       if(inherits(ch1, "try-error")) {plotGraph <- FALSE; if(!silent) message(fxNa,"UNABLE to draw boxplot of distribution !!  ", sub("^Error in",":",ch1))} else {
         graphics::abline(h=suplLineA, lty=2, col=grDevices::grey(0.6))} }
 
@@ -925,16 +948,18 @@ readProteomeDiscovererFile <- function(fileName, path=NULL, normalizeMeth="media
     if(length(quant) >0 && !abundQuantRed) {      
       if(any(c("none","not") %in% normalizeMeth) || length(quant) <0) {
         if(debug) {message(fxNa,"pQD3 .. dim quant: ", nrow(quant)," li and  ",ncol(quant)," cols; colnames : ",wrMisc::pasteC(colnames(quant))," ")}
-        ch1 <- try(graphics::boxplot(quant, main=paste0(tit,"  ( ",normalizeMeth,"-normalized",titSu,")"), las=1, outline=FALSE), silent=TRUE)
+        ch1 <- try(graphics::boxplot(quant, main=paste0(tit,"  ( ",normalizeMeth,"-normalized",titSu,")"), las=1, cex.main=cexMain, outline=FALSE), silent=TRUE)
         if(inherits(ch1, "try-error")) if(!silent) message(fxNa,"UNABLE to draw boxplot of normalized distribution !!  ", sub("^Error in",":",ch1)) else {
           graphics::abline(h=suplLineQ, lty=2, col=grDevices::grey(0.6)) } } }
 
   } else {                                            # wrGraph and sm are available
     if(debug) { message(fxNa,"pQD4  draw vioplotW ,  abund is linear ",notLogAbund); pQD4 <- list(abund=abund,quant=quant,tit=tit,normalizeMeth=normalizeMeth,softNa=softNa,refLi=refLi,titQ=titQ,notLogAbund=notLogAbund,titSu=titSu,las=las, cexAxis=cexAxis, nameSer=nameSer, cexNameSer=cexNameSer,notLogAbund=notLogAbund,abundQuantRed=abundQuantRed ) }
-    if(length(abund) >0) {       
+    if(length(abund) >0) { 
+      #cexNameSer <- NULL   # go for automatic size adjsutment from wrGraph::vioplotW()
       if(length(chNeg) <1) abund <- suppressWarnings(log2(abund))           #  presume as true 'raw', ie  NOT log2
       if(debug) message(fxNa," Try 1st Vioplot ,  is linear abundance data ",notLogAbund,",  cexNameSer ",cexNameSer)
-      ch1 <- try(wrGraph::vioplotW(if(isTRUE(notLogAbund)) log2(abund) else abund, tit=titQ, wex=NULL, las=las, cexAxis=cexAxis, nameSer=nameSer, cexNameSer=cexNameSer, col=col, horizontal=FALSE, silent=debug, debug=debug, callFrom=fxNa), silent=TRUE)
+      ch1 <- try(wrGraph::vioplotW(if(isTRUE(notLogAbund)) log2(abund) else abund, tit=titQ, wex=NULL, las=las, cexAxis=cexAxis, nameSer=nameSer, cexLab=cexNameSer, 
+        col=col, horizontal=FALSE, cexMain=cexMain, silent=debug, debug=debug, callFrom=fxNa), silent=TRUE)
       if(inherits(ch1, "try-error")) {plotGraph <- FALSE; if(!silent) message(fxNa,"UNABLE to plot vioplotW !!  ", sub("^Error in",":",ch1))
       } else graphics::abline(h=suplLineA, lty=2, col=grDevices::grey(0.6))
     }
@@ -943,7 +968,8 @@ readProteomeDiscovererFile <- function(fileName, path=NULL, normalizeMeth="media
       if(debug) {message(fxNa,"pQD5  draw norm/quant as vioplotW() ", length(quant) >0)}
       tit1 <- if(length(normalizeMeth) ==1) paste(tit,", ",normalizeMeth,"-normalized",titSu) else paste(tit,", ",titSu)
       if(debug) message(fxNa," Try 2nd Vioplot ")
-      ch1 <- try(wrGraph::vioplotW(quant, tit=tit1, wex=NULL, las=las, cexAxis=cexAxis, nameSer=nameSer, cexNameSer=cexNameSer, col=col, horizontal=FALSE, silent=debug, debug=debug,callFrom=fxNa), silent=TRUE)
+      ch1 <- try(wrGraph::vioplotW(quant, tit=tit1, wex=NULL, las=las, cexAxis=cexAxis, nameSer=nameSer, cexLab=cexNameSer, 
+        col=col, horizontal=FALSE, cexMain=cexMain, dispNcex=dispNcex, silent=debug, debug=debug,callFrom=fxNa), silent=TRUE)
       if(inherits(ch1, "try-error")) { if(!silent) message(fxNa,"UNABLE to plot vioplotW for normalized data !!  ", sub("^Error in",":",ch1))
       } else graphics::abline(h=suplLineQ, lty=2, col=grDevices::grey(0.6))
     }
@@ -1287,7 +1313,6 @@ readProteomeDiscovererFile <- function(fileName, path=NULL, normalizeMeth="media
 }
 
 
-
 #' Get Matrix With UniProt Abbreviations For Selected Species As Well As Simple Names
 #'
 #' This (low-level) function allows accessing matrix with UniProt abbreviations for species frequently used in research.
@@ -1301,30 +1326,51 @@ readProteomeDiscovererFile <- function(fileName, path=NULL, normalizeMeth="media
 .commonSpecies <- function() {
   ## matrix with UniProt abbreviations for common species
   ## also https://www.ncbi.nlm.nih.gov/gdv 
-  cbind(ext=c("_HUMAN","_CHIMP","_MOUSE","_RAT","_PIG","_CAVPO",
+  cbind(ext =c("_HUMAN","_CHIMP","_MOUSE","_RAT","_PIG","_CAVPO",
       "_BOVIN","_RABIT", "_SHEEP", "_HORSE","_CANLF","_FELCA",
-      "_CHICK", 
-      "_CAEEL", "_DROME","_AEDAL", "_DANRE",
+      "_MACMU","_MESAU", "_CHICK",       
+      "_CAEEL", "_DROME","_DROSI","_ANOGA","_XENTR","_ORYLA",
+      "_AEDAL", "_DANRE",
       "_XENLA","_AMBME", 
       "_ARATH","_SOLTU","_BETVV", "_CANEN",  
-      "_YEAST", "_ECOLI","_MYCTU", 
+      "_MAIZE","_ORYSI","_WHEAT","_SOYBN",
+      "_YEAST","_SCHPO", "_ECOLI","_MYCTU", "_BACSU",
+      "_PSEAI","_CAUVI","_CHLRE",
       "_9HIV1","_HBV","_HCV1","_9INFA","_9INFB"),
-    name=c("Homo sapiens","Pan troglodytes", "Mus muscullus","Rattus norvegicus","Sus scrofa","Cavia porcellus",
+    name =c("Homo sapiens","Pan troglodytes", "Mus musculus","Rattus norvegicus","Sus scrofa","Cavia porcellus",
       "Bos taurus","Oryctolagus cuniculus","Ovis aries", "Equus caballus","Canis lupus familiaris","Felis catus",
-      "Gallus gallus", 
-      "Caenorhabditis elegans","Drosophila melanogaster","Aedes albopictus","Danio rerio", 
+      "Macaca mulatta","Mesocricetus auratus", "Gallus gallus",       
+      "Caenorhabditis elegans","Drosophila melanogaster","Drosophila simulans","Anopheles gambiae", "Xenopus tropicalis", "Oryzias latipes", 
+      "Aedes albopictus","Danio rerio", 
       "Xenopus laevis","Ambystoma mexicanum",
-      "Arabidopsis thaliana","Solanum tuberosum","Beta vulgaris", "Canavalia ensiformis",  
-      "Saccharomyces cerevisiae",  "Escherichia coli", "Mycobacterium tuberculosis",
+      "Arabidopsis thaliana","Solanum tuberosum","Beta vulgaris", "Canavalia ensiformis", 
+      "Zea mays", "Oryza sativa", "Triticum aestivum", "Glycine max",        
+      "Saccharomyces cerevisiae","Schizosaccharomyces pombe", "Escherichia coli", "Mycobacterium tuberculosis","Bacillus subtilis", 
+      "Pseudomonas aeruginosa","Caulobacter crescentus","Chlamydomonas reinhardtii",
       "Human immunodeficiency virus 1","Hepatitis B virus","Hepatitis C virus genotype 1a (isolate 1)","Influenza A virus","Influenza B virus"),
     simple=c("Human","Chimpanzee", "Mouse","Rat","Pig","Guinea pigs", 
       "Cow","Rabit", "Sheep","Horse","Dog","Cat",
-      "Chicken", 
-      "CElegans","Droso","Asian tiger mosquito","Zebrafish",
+      "Rhesus macaque","Golden hamster", "Chicken",       
+      "CElegans","Droso", "Fruit fly", "African malaria mosquito","Western clawed frog","Japanese medaka", 
+      "Asian tiger mosquito","Zebrafish",
       "Frog","Axolotl",  
       "Arabidopsis","Potato","Sugar beet", "Jackbean",
-      "Yeast","Ecoli","Mtuberculosis",
-      "HIV-1","HBV","HCV","IAV","IBV")  )
+      "Maize", "Rice", "Bread wheat", "Soybean",       
+      "Yeast","Fission yeast", "Ecoli","Mtuberculosis","Bacillus subtilis", 
+      "Pseudomonas aeruginosa", "Caulobacter crescentus", "Green alga", 
+      "HIV-1","HBV","HCV","IAV","IBV"),
+    NCBItaxID =c(Hs=9606, 9598, 10090, 10116, 9823, 10141,       # Hs etc
+      Bt=9913, 9986, 9940, 9796, 9615, 9685,                     # B taurus etc
+      Rm=9544,  10036, 9031,                                     # R macaque .. G gallus
+      Ce=6239, 7227, 7240, 7165, 8364, 8090,                     # C elegans etc
+      Aa=7160, 7955,       
+      Xl=8355, 8296,                                             # X laevis
+      At=3702, 4113, 161934, 3824,                               # A thaliana
+      Zm=4577, 4530, 4565, 3847,
+      Sc=4932, 4896, 562, 1773, 1423,                            # S cerev etc
+      Pa=287, 155892, 3055,              
+      11676, 10407, 31647, 11320, 11319)                         # HIV etc
+  )
 }
   
     

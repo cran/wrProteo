@@ -35,6 +35,7 @@
 #'   May contain \code{lowNumberOfGroups=FALSE} for automatically choosing a rather elevated number of groups if possible (defaults to low number of groups, ie higher number of samples per group)
 #'   May contain \code{chUnit} (logical or character) to be passed to \code{readSampleMetaData()} for (optional) adjustig of unit-prefixes in meta-data group labels, in case multiple different unit-prefixes 
 #'   are used (eg '100pMol' and '1nMol').
+#'   The element \code{addSamplePrefix="s"} allows adding a specified prefix (here 's') when all sample-names look like numbers to prevent confusion with indexes
 #' @param plotGraph (logical or integer) optional plot of type vioplot of initial and normalized data (using \code{normalizeMeth}); if integer, it will be passed to \code{layout} when plotting
 #' @param titGraph (character) custom title to plot of distribution of quantitation values
 #' @param silent (logical) suppress messages
@@ -54,7 +55,7 @@
 #' @export
 readFragpipeFile <- function(fileName, path=NULL, normalizeMeth="median", sampleNames=NULL, read0asNA=TRUE, quantCol="Intensity$",
   annotCol=NULL,  refLi=NULL, separateAnnot=TRUE, FDRCol=list("Protein.Probability", lim=0.99),    # contamCol="Contaminant",
-  groupPref=list(lowNumberOfGroups=TRUE, chUnit=TRUE), plotGraph=TRUE, titGraph="FragPipe", wex=1.6, specPref=c(conta="CON_|LYSC_CHICK", mainSpecies="OS=Homo sapiens"),
+  groupPref=list(lowNumberOfGroups=TRUE, chUnit=TRUE, addSamplePrefix="s"), plotGraph=TRUE, titGraph="FragPipe", wex=1.6, specPref=c(conta="CON_|LYSC_CHICK", mainSpecies="OS=Homo sapiens"),
   gr=NULL, sdrf=NULL, suplAnnotFile=FALSE, silent=FALSE, debug=FALSE, callFrom=NULL) {
 
   ## read Fragpipe exported txt
@@ -68,7 +69,7 @@ readFragpipeFile <- function(fileName, path=NULL, normalizeMeth="median", sample
   if(isTRUE(debug)) { silent <- FALSE } else { debug <- FALSE }
   excluCol <- "^Abundances.Count"   # exclude this from quantifications columns
   cleanDescription <- TRUE          # clean 'Description' for artifacts of truncated text (tailing ';' etc)
-  infoDat <- infoFi <- setupSd <- parametersD <- NULL        # initialize
+  infoDat <- infoFi <- setupSd <- parametersD <- NULL        # initialize  counts
 
   ## check if path & file exist
   if(!grepl("\\.tsv$|\\.tsv\\.gz$", fileName)) message(fxNa,"Trouble ahead, expecting tabulated text file (the file'",fileName,"' might not be right format) !!")
@@ -247,6 +248,19 @@ readFragpipeFile <- function(fileName, path=NULL, normalizeMeth="median", sample
     if(debug) { message(fxNa,"rfp8 .. dim abund ",nrow(abund)," and ",ncol(abund)) ; rfp8 <- list(abund=abund,sampleNames=sampleNames,annot=annot,tmp=tmp,annot=annot,specPref=specPref)}
 
     ## check & clean abundances
+    ## check for all-NA lines
+    isNA <- is.na(abund)
+    notAllNA <- 1:nrow(abund)
+    if(any(isNA)) {
+      notAllNA <- rowSums(!isNA) !=0
+      if(any(!notAllNA)) {
+        notAllNA <- which(notAllNA)
+        if(length(annot) !=0 && nrow(annot)==nrow(abund)) annot <- annot[notAllNA,, drop=FALSE]
+        #if(length(counts) >0) counts <- counts[notAllNA,,, drop=FALSE]
+        abund <- abund[notAllNA,, drop=FALSE]
+        tmp <- tmp[notAllNA,, drop=FALSE]
+      }
+    }
 
     ## add custom sample names (if provided)
     if(length(sampleNames) ==ncol(abund) && ncol(abund) >0) {
@@ -291,8 +305,8 @@ readFragpipeFile <- function(fileName, path=NULL, normalizeMeth="median", sample
     if(length(PepExl) >0) PepCol <- PepCol[-which(PepCol %in% PepExl)]
     if(any(c(length(PSMCol), length(PepCol)) >0)) {
       counts <- array(NA, dim=c(nrow(abund), ncol(abund), length(usTy)), dimnames=list(rownames(abund),colnames(abund), usTy))
-      if(length(PSMCol) >0) counts[,,"PSM"] <- as.matrix(tmp[,PSMCol])
-      if(length(PepCol) >0) counts[,,"UniquePeptides"] <- as.matrix(tmp[,PepCol])
+      if(length(PSMCol) >0) counts[,,"PSM"] <- as.matrix(tmp[, PSMCol])
+      if(length(PepCol) >0) counts[,, "UniquePeptides"] <- as.matrix(tmp[, PepCol])
     } else counts <- NULL
     if(debug) {message(fxNa,"rfp12 .. ");
       rfp12 <- list(tmp=tmp,abund=abund,annot=annot,sdrf=sdrf, fileName=fileName,path=path,paFi=paFi,normalizeMeth=normalizeMeth,sampleNames=sampleNames,
@@ -307,7 +321,7 @@ readFragpipeFile <- function(fileName, path=NULL, normalizeMeth="median", sample
     refLiIni <- refLi
     if(is.character(refLi) && length(refLi)==1) {  # try search content of refLi in SpecType
       refLi <- which(annot[,"SpecType"]==refLi)
-      if(length(refLi) ==0 && refLiIni=="mainSpe") refLi <- which(annot[,"SpecType"]=="mainSpecies")   # also allow 'mainSpecies'
+      if(length(refLi) ==0 && any(c("mainSpe","mainSpecies") %in% refLiIni)) refLi <- which(annot[,"SpecType"]=="mainSpecies")   # also allow 'mainSpecies'
       if(length(refLi) ==0) { refLi <- 1:nrow(abund)
         if(!silent) message(fxNa,"Could not find any proteins matching argument 'refLi=",refLiIni,"', ignoring ...")
       } else {

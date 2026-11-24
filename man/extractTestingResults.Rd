@@ -37,12 +37,13 @@ extractTestingResults(
 
 \item{annotCol}{(character) column-names from the annotation to be included}
 
-\item{nSign}{(integer) number of significant digits whe returning results}
+\item{nSign}{(integer) number of significant digits whe returning results (if of length=2, the 1st will be used for FDR and the 2nd for logFC & group-averages)}
 
 \item{outTy}{(character) additional groups of columns to add ("allMeans", "all" or "slim") in addition;
 if \code{outTy="slim"} only the FDR- and FC-columns directly concerned will be extracted/displayed, column-names will be trimmed to max 26 characters;
 if \code{outTy="slim2"} only the FDR- and FC-columns directly concerned will be extracted/displayed, FDR- and FC- columns will have generic names (without indicating the comparison), all text will be trimmed to max 38 characters;
-if \code{outTy="slim3"} like slim2 but without ProteinName}
+if \code{outTy="slim3"} like slim2 but without ProteinName
+if \code{outTy="slim4"} like slim2 but using for pair-wise comparisons '_vs_' (or '__vs__' if '-' or '_' appear in groups) and limiting multi-ID identifications to 1st and 2nd}
 
 \item{sep}{(character of length=1 or \code{NULL}) custom choice for separator for column-names of pairwise comparisons, otherwise based on \code{stat} or (if \code{outTy="slim3"} or \code{outTy="slim4"}) '_vs_' (or '__vs__' if '-' or '_' appear in groups)}
 
@@ -87,7 +88,7 @@ while default \code{outTy='allMeans'} gives a compromise for the number of colum
 \examples{
 grp <- factor(rep(LETTERS[4:2],c(2,3,3)))
 set.seed(2017); t8 <- matrix(round(rnorm(208*8,10,0.4),2), ncol=8,
-  dimnames=list(paste(letters[],rep(1:8,each=26),sep=""), paste(grp,c(1:2,1:3,1:3),sep="")))
+  dimnames=list(paste0(letters[], rep(1:8,each=26)), paste0(grp, c(1:2,1:3,1:3))))
 t8[3:6,1:2] <- t8[3:6,1:2] +3                    # augment lines 3:6 (c-f) 
 t8[5:8,c(1:2,6:8)] <- t8[5:8,c(1:2,6:8)] -1.5    # lower lines 
 t8[6:7,3:5] <- t8[6:7,3:5] +2.2                  # augment lines 
@@ -103,5 +104,6 @@ extractTestingResults(test8, outTy="all")
 extractTestingResults(test8, outTy="slim")
 }
 \seealso{
-\code{\link{testRobustToNAimputation}}, \code{\link[wrMisc]{moderTestXgrp}} or \code{\link[wrMisc]{moderTest2grp}}
+\code{\link{testRobustToNAimputation}}, \code{\link[wrMisc]{moderTestXgrp}} or \code{\link[wrMisc]{moderTest2grp}},
+  for searching PPI-networks \code{prepareStringNetw}, \code{plotStringNetw} from future package for networks
 }

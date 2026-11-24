@@ -9,10 +9,9 @@
   delim = "|",
   databaseSign = c("sp", "tr", "generic", "conta", "synt", "gi"),
   UniprSep = c("OS=", "OX=", "GN=", "PE=", "SV="),
-  asList = FALSE,
   silent = FALSE,
-  callFrom = NULL,
-  debug = FALSE
+  debug = FALSE,
+  callFrom = NULL
 )
 }
 \arguments{
@@ -25,21 +24,20 @@
 \item{UniprSep}{(character) separators for further separating entry-fields if \code{tableOut=TRUE}; with these delimeter fields a space is assumed in addition to the separators;
 see also \href{https://www.uniprot.org/help/fasta-headers}{UniProt-FASTA-headers}}
 
-\item{asList}{(logical) if \code{asList=TRUE},the function returns a list with two matrixes, one for primary parsing and 
-another matrix for further parsing (using \code{UniprSep}), otherwise all will be combined in single matrix}
-
 \item{silent}{(logical) suppress messages}
 
-\item{callFrom}{(character) allows easier tracking of messages produced}
-
 \item{debug}{(logical) supplemental messages for debugging}
+
+\item{callFrom}{(character) allows easier tracking of messages produced}
 }
 \value{
-This function returns (depending on argument \code{asList}) a)  a matrix with columns: 'db','uniqueIdentifier','entryName','proteinName' and further columns depending on argument \code{UniprSep}
-  of b) a list with matrix of primary parsing (argument \code{delim}) and matrix from further parsing (argument \code{UniprSep})
+This function returns a matrix with columns: 'db','uniqueIdentifier','entryName','proteinName' and further columns depending on argument \code{UniprSep}
 }
 \description{
 Parse fasta header (from \href{https://www.uniprot.org}{UniProt}) to extract different annotation fields
+}
+\details{
+Expecting complete or partial of : >db|UniqueIdentifier|EntryName ProteinName OS=OrganismName OX=OrganismIdentifier [GN=GeneName ]PE=ProteinExistence SV=SequenceVersion
 }
 \examples{
 .parseFastaHeader(">sp|P00760|TRY1_BOVIN Serine protease 1 OS=Bos taurus OX=9913 GN=PRSS1 PE=1")

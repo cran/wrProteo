@@ -32,7 +32,8 @@ fuseProteomicsProjects(
 \item{NA.rm}{(logical) remove \code{NA}s}
 
 \item{listNa}{(character) names of key list-elemnts from \code{x} to be treated; the first one is used as pattern for the format of quantitation data, 
-,  the last one for the annotation data}
+,  the last one for the annotation data
+  these names must be identical in all proteomics data-sets to be fused}
 
 \item{all}{(logical) union of intersect or merge should be performed between x, y and z}
 
@@ -67,7 +68,8 @@ doing damage to the later biological interpretation ! The user may specify for e
 via the argument \code{columnNa}. 
 Then, this content will be matched as identical match, so when combining data from different software special care should be taken !
 
-Please note, that (at this point) the data from different series/objects will be joined as they are, ie without any additional normalization.
+Please note, that (at this point) this function does not yet optimally integrate / handle combining of further customized objects.
+The data from different series/objects will be joined as they are, ie without any additional normalization.
 It is up to the user to inspect the resulting data and to decide if and which type of normalization may be suitable !
 
 Please do NOT try combining protein and peptide quntification data.

@@ -58,6 +58,7 @@
 #'     \code{(gr="sdrf")} (global mining of sdrf), 
 #'     \code{(gr="sdrf$thisColumn")} (specific column of sdrf, if notg present will fall back to global mining of sdrf),
 #'     or \code{(gr="colnames")} to force grouping based on colnames from main data (after stripping terminal nominators) 
+#'   The element \code{addSamplePrefix="s"} allows adding a specified prefix (here 's') when all sample-names look like numbers to prevent confusion with indexes
 #' 
 #'   May contain \code{lowNumberOfGroups=FALSE} for automatically choosing a rather elevated number of groups if possible (defaults to low number of groups, ie higher number of samples per group)
 #'   May contain \code{chUnit} (logical or character) to be passed to \code{readSampleMetaData()} for (optional) adjustig of unit-prefixes in meta-data group labels, in case multiple different unit-prefixes 
@@ -83,7 +84,7 @@
 readMaxQuantFile <- function(path, fileName="proteinGroups.txt", normalizeMeth="median", quantCol="LFQ.intensity", contamCol="Potential.contaminant",
   pepCountCol=c("Razor + unique peptides","Unique peptides","MS.MS.count"), read0asNA=TRUE, refLi=NULL, sampleNames=NULL,
   extrColNames=c("Majority.protein.IDs","Fasta.headers","Number.of.proteins"), specPref=c(conta="conta|CON_|LYSC_CHICK", mainSpecies="OS=Homo sapiens"),
-  remRev=TRUE, remConta=FALSE, separateAnnot=TRUE, gr=NULL, sdrf=NULL, suplAnnotFile=NULL, groupPref=list(lowNumberOfGroups=TRUE, chUnit=TRUE),
+  remRev=TRUE, remConta=FALSE, separateAnnot=TRUE, gr=NULL, sdrf=NULL, suplAnnotFile=NULL, groupPref=list(lowNumberOfGroups=TRUE, chUnit=TRUE, addSamplePrefix="s"),
   titGraph=NULL, wex=1.6, plotGraph=TRUE, silent=FALSE, debug=FALSE, callFrom=NULL) {
   ## prepare
   fxNa <- wrMisc::.composeCallName(callFrom, newNa="readMaxQuantFile")
@@ -234,7 +235,7 @@ readMaxQuantFile <- function(path, fileName="proteinGroups.txt", normalizeMeth="
         annot <- annot[-conLi,]
         abund <- abund[-conLi,]
         #specMQ <- specMQ[-conLi]
-        counts <- if(length(dim(counts))==3) counts[-conLi,,] else counts[-conLi,,]
+        counts <- if(length(dim(counts))==3) counts[-conLi,,, drop=FALSE] else counts[-conLi,, drop=FALSE]
         if(debug) message(fxNa,"Removing ",length(conLi)," instances of MaxQuant-contaminants to final ",nrow(annot)," lines/IDs")} }
     if(debug) {message(fxNa,"rMQ5a"); rMQ5a <- list(path=path,chPa=chPa,tmp=tmp,extrColNames=extrColNames,chCol=chCol,chMajProCol=chMajProCol,counts=counts,
       chRev=chRev,quantCol=quantCol,abund=abund,chNum=chNum,ch2=ch2,annot=annot,remConta=remConta,specPref=specPref)}
@@ -408,18 +409,45 @@ readMaxQuantFile <- function(path, fileName="proteinGroups.txt", normalizeMeth="
     chDes <- colnames(annot) =="Description"
     if(any(chDes, na.rm=TRUE)) colnames(annot)[which(chDes)[1]] <- "ProteinName"     
 
+    ## check & complete GeneName
+    chGnNA <- is.na(annot[,"GeneName"]) & !is.na(annot[,"Fasta.headers"])
+    chGnNA <- chGnNA & nchar(annot[,"Fasta.headers"]) >2
+    if(any(chGnNA)) {
+      chGnNA <- which(chGnNA)
+      hasGN <- grepl(" GN=([A-Z]|[a-z])[[:alnum:]]+( |$)", annot[chGnNA,"Fasta.headers"])
+      if(any(hasGN)) {
+        hasGN <- chGnNA[which(hasGN)]
+        annot[hasGN,"GeneName"] <- sub(" [A-Z]{2}=.+","", sub("^.+ GN=","", annot[hasGN,"Fasta.headers"]))
+      }
+    }
     
     if(!silent) message(fxNa,"Use column '",colnames(annot)[which.min(chAn)],"' as identifyer (has fewest, ie ",chAn[which.min(chAn)]," duplicated entries) as rownames")
     rownames(abund) <- rownames(annot) <- if(any(chAn==0)) annot[,which(chAn==0)[1]] else wrMisc::correctToUnique(annot[,which.min(chAn)], callFrom=fxNa)
     if(length(counts) >0) rownames(counts) <- rownames(annot)
     if(debug) {message(fxNa,"rMQ9"); rMQ9 <- list(path=path,chPa=chPa,tmp=tmp,extrColNames=extrColNames,chCol=chCol,chMajProCol=chMajProCol,chRev=chRev,quantCol=quantCol,abund=abund,chNum=chNum,ch2=ch2,
-      annot=annot,chLe=chLe,MQan2=MQan2,MQan3=MQan3,refLi=refLi,contam=contam,GNLi=GNLi,remConta=remConta)}
+      annot=annot,chLe=chLe,MQan2=MQan2,MQan3=MQan3,refLi=refLi,normalizeMeth=normalizeMeth,counts=counts,contam=contam,GNLi=GNLi,remConta=remConta)}
+
+    ## check for all-NA lines
+    isNA <- is.na(abund)
+    notAllNA <- 1:nrow(abund)
+    if(any(isNA)) {
+      notAllNA <- rowSums(!isNA) !=0
+      if(any(!notAllNA)) {
+        notAllNA <- which(notAllNA)
+        if(length(annot) !=0 && nrow(annot)==nrow(abund)) annot <- annot[notAllNA,, drop=FALSE]
+        if(length(counts) >0) counts <- if(length(dim(counts))==2) counts[notAllNA,, drop=FALSE] else  counts[notAllNA,,, drop=FALSE]
+        abund <- abund[notAllNA,, drop=FALSE]
+      }
+    }
+    if(debug) {message(fxNa,"rMQ9b"); rMQ9b <- list(path=path,chPa=chPa,tmp=tmp,extrColNames=extrColNames,chCol=chCol,chMajProCol=chMajProCol,chRev=chRev,quantCol=quantCol,abund=abund,chNum=chNum,ch2=ch2,
+      annot=annot,chLe=chLe,notAllNA=notAllNA,MQan2=MQan2,MQan3=MQan3,refLi=refLi,normalizeMeth=normalizeMeth,counts=counts,contam=contam,GNLi=GNLi,remConta=remConta)}
+
 
     ## check for reference for normalization
     refLiIni <- refLi
     if(is.character(refLi) && length(refLi)==1) {  # try search content of refLi in SpecType
       refLi <- which(annot[,"SpecType"]==refLi)
-      if(length(refLi) ==0 && refLiIni=="mainSpe") refLi <- which(annot[,"SpecType"]=="mainSpecies")   # also allow 'mainSpecies'
+      if(length(refLi) ==0 && any(c("mainSpe","mainSpecies") %in% refLiIni)) refLi <- which(annot[,"SpecType"]=="mainSpecies")   # also allow 'mainSpecies'
       if(length(refLi) ==0) { refLi <- 1:nrow(abund)
         if(!silent) message(fxNa,"Could not find any proteins matching argument 'refLi=",refLiIni,"', ignoring ...")
       } else {
@@ -430,7 +458,7 @@ readMaxQuantFile <- function(path, fileName="proteinGroups.txt", normalizeMeth="
     if(inherits(quant, "try-error")) { warning(fxNa,"PROBLEMS ahead : UNABLE TO NORMALIZE as log2-data !!") }
 
     if(debug) {message(fxNa,"rMQ10"); rMQ10 <- list(path=path,chPa=chPa,tmp=tmp,extrColNames=extrColNames,chCol=chCol,chMajProCol=chMajProCol,chRev=chRev,quantCol=quantCol,abund=abund,chNum=chNum,ch2=ch2,
-      quant=quant,annot=annot,sampleNames=sampleNames,sdrf=sdrf,gr=gr,specPref=specPref,groupPref=groupPref,suplAnnotFile=suplAnnotFile,chLe=chLe,MQan2=MQan2,MQan3=MQan3,contam=contam,GNLi=GNLi,remConta=remConta)}
+      quant=quant,annot=annot,sampleNames=sampleNames,normalizeMeth=normalizeMeth, refLi=refLi,sdrf=sdrf,gr=gr,specPref=specPref,groupPref=groupPref,suplAnnotFile=suplAnnotFile,notAllNA=notAllNA,chLe=chLe,MQan2=MQan2,MQan3=MQan3,contam=contam,GNLi=GNLi,remConta=remConta)}
 
 
     ### GROUPING OF REPLICATES AND SAMPLE META-DATA  (modif 25sep24)

@@ -35,6 +35,7 @@
 #'   May contain \code{lowNumberOfGroups=FALSE} for automatically choosing a rather elevated number of groups if possible (defaults to low number of groups, ie higher number of samples per group).
 #'   A vector of custom sample-names may be provided via \code{sampleNames=...} (must be of correct length);
 #'   if contains \code{sampleNames="sdrf"} sample-names will be used from trimmed file-names out of sdrf.
+#'   The element \code{addSamplePrefix="s"} allows adding a specified prefix (here 's') when all sample-names look like numbers to prevent confusion with indexes
 #' @param chUnit (logical or character) optional adjustig of group-labels from sample meta-data in case multipl different unit-prefixes are used to single common prefix 
 #'   (eg adjust '100pMol' and '1nMol' to '100pMol' and '1000pMol') for better downstream analysis. This option will call \code{\link[wrMisc]{adjustUnitPrefix}} and \code{\link[wrMisc]{checkUnitPrefix}} from package \code{wrMisc}
 #'   If \code{character} exatecly this/these unit-names will be searched in sample-names and checked if multiple different decimal prefixes are used; 
@@ -49,15 +50,24 @@
 #'  If all entries are invalid or entries do not pass the tests, this functions returns an empty \code{list}.
 #' @seealso This function is used internally by \code{\link{readMaxQuantFile}},\code{/link{readProteomeDiscovererFile}} etc; uses \code{\link{readSdrf}} for reading sdrf-files, \code{\link[wrMisc]{replicateStructure}} for mining annotation columns
 #' @examples
+#' ## read sdrf from https://github.com/bigbio/sdrf-annotated-datasets/
 #' sdrf001819Setup <- readSampleMetaData(quantMeth=NA, sdrf="PXD001819")
 #' str(sdrf001819Setup)
 #'
+#' ## read from local file
+#' path1 <- system.file("extdata", package="wrProteo")
+#' sdrfFi <- "PXD001819.sdrf.tsv.gz"
+#' sdrf001819Setup <- readSampleMetaData(quantMeth=NA, sdrf=file.path(path1, sdrfFi))
+#' str(sdrf001819Setup)
+#' 
 #' @export
-readSampleMetaData <- function(quantMeth, sdrf=NULL, suplAnnotFile=NULL, path=".", abund=NULL, groupPref=list(lowNumberOfGroups=TRUE, sampleNames=NULL, gr=NULL), chUnit=TRUE, silent=FALSE, debug=FALSE, callFrom=NULL)  {
+readSampleMetaData <- function(quantMeth, sdrf=NULL, suplAnnotFile=NULL, path=".", abund=NULL, groupPref=list(lowNumberOfGroups=TRUE, sampleNames=NULL, gr=NULL, addSamplePrefix="s" ), chUnit=TRUE, silent=FALSE, debug=FALSE, callFrom=NULL)  {
   ##  sdrf..()
   ##  suplAnnotFile..(character or logical)
   ##  quantMeth..(character)
   ##  abund..(matrix or data.frame) column-names will be used to comapre & align sample meta-data)
+
+        #  addSamplePrefix <- "s"  # prefix to add to sampleNames when names look like (integer) numbers (may get confused as/with index)
 
   #### CONTENT
   ## 1.1 SOFTWARE specific META-DATA .. read additional annotation & documentation files
@@ -186,6 +196,48 @@ readSampleMetaData <- function(quantMeth, sdrf=NULL, suplAnnotFile=NULL, path=".
           if(i %in% colnames(sdr1) && i %in% colnames(sdr2)  && sum(duplicated(sdr1[,i])) <1 && length(out) <1) {out <- match(sdr1[,i], sdr2[,i]); break }
         }
         out }
+
+
+  asShortNa <- function(txt) {
+    ## convert txt into short upper (use as short names), if possible with starting letter (as caps), in case of multiple starting with same letter replace by other character
+    ## if less than 27 (different) elements reduce all to single letter, otherwise as 2-letter (caps) combinations (ie max 676)
+    ## note  : NO upper/lower distinction
+    ## returns vector with shortened text (and initial text as names) try as single/short names ( single letter/char  or double if not possible as single)
+    ## move to wrMisc ?
+    # example# txt1 <- c("BB","CC","GHJ","C3","C3H")
+    # txt2 <- c("BB","CC","GHJ",paste0("C",1:26))
+    # asShortNa(txt1); asShortNa(txt2)
+    fxNa <- "asShortNa"
+    ## make unique
+    chN <- duplicated(txt, fromLast=FALSE)
+    if(any(chN)) { txtIni <- txt
+      txt <-  txt[which(!chN)]       # make txt unique !
+    } else txtIni <- NULL
+    ## check if multiple with same start (ie short version)
+    leNa <- 1 + (length(txt) >26)
+    txtN <- toupper(substr(txt, 1, leNa))   # force to upper case
+    chN <- duplicated(txtN, fromLast=FALSE)
+    if(any(chN)) {
+      ## multiple with same start; need to create new short 'versions'
+      hasDu <- chN | duplicated(txtN, fromLast=TRUE)
+      iniDu <- txtN[which(hasDu)]
+      useLe <- if(leNa == 1) LETTERS else paste0(rep(LETTERS, each=26), rep(LETTERS, 26))
+      newLET <- !(useLe %in% txtN )        # which letters have (not) been used so far
+      ## check if sufficient (single) letters avail
+      if(sum(newLET) >= sum(hasDu) ) {
+        txtN[which(hasDu)] <- rev(rev(useLe[which(newLET)]) [1:sum(hasDu)])
+      } else {
+        stop(fxNa,"UNABLE to replace names as short names")   
+      }     
+    }
+    names(txtN) <- txt           
+    if(is.null(txtIni)) txtN else {
+      ## in case of replicated values in initial txt, expand to initial order&length
+      txtN <- txtN[match(txtIni, txt)]
+      names(txtN) <- txtIni
+      txtN
+    }                      
+  }
   ## end suppl fx  
   
 
@@ -859,7 +911,12 @@ readSampleMetaData <- function(quantMeth, sdrf=NULL, suplAnnotFile=NULL, path=".
           }          
           setupSd$fullSampleNames <- setupSd$sampleNames          
           setupSd$sdrfSampleNames <- setupSd$sampleNames <- wrMisc::rmSharedWords(setupSd$sampleNames, sep=c("_","-",",",".","=",";"), callFrom=fxNa, silent=!debug)
-          #if(!identical(sdrfDat[,useSdrfCol], setupSd$sampleNames)) setupSd$fullSampleNames <- sdrfDat[,useSdrfCol]
+
+          ## optional check is sampleNames resemble integer values (may get confused as/with index) : add addSamplePrefix as prefix
+          if(length(groupPref$addSamplePrefix) !=0 && all(grepl("^[0-9]+$", setupSd$sampleNames))) {
+            setupSd$sdrfSampleNames <- setupSd$sampleNames <- paste0(groupPref$addSamplePrefix[1], setupSd$sampleNames)
+          } 
+
           
         } else avoidCol <- unlist(lapply(tolower(nonUsefulColNa), grep, tolower(colnames(sdrfDat))))
         if(debug) { message(fxNa,"rSM6dC  dim sdrfDat ",nrow(sdrfDat)," ",ncol(sdrfDat)); rSM6dC <- list(sdrf=sdrf,sdrfDat=sdrfDat,sdrfDatIni=sdrfDatIni,useSdrfCol=useSdrfCol,abund=abund,suplAnnotFile=suplAnnotFile,quantMeth=quantMeth,groupPref=groupPref, avoidCol=avoidCol,nonUsefulColNa=nonUsefulColNa, summaryD=summaryD,parametersD=parametersD,syncColumns=syncColumns,iniSdrfOrder=iniSdrfOrder,setupSd=setupSd,defUnits=defUnits,chUnit=chUnit,avoidCol=avoidCol,grp=grp,refNSamp=refNSamp) }
@@ -1110,12 +1167,13 @@ readSampleMetaData <- function(quantMeth, sdrf=NULL, suplAnnotFile=NULL, path=".
           chCompCol <- grepl("^compareto( |_){0,1}[[:digit:]]* *$", colnames(sdrfDatIni))     ## define pattern for recognizing multiple compareTo columns
           if(any(chCompCol)) {       # colnames(sdrfDat) is already all lower case
             #ch1 <- c(gr=sum(sdrfDat$compareto %in% setupSd$groups, na.rm=TRUE), lev=sum(sdrfDat$compareto %in% setupSd$level, na.rm=TRUE))
-            compDat <- as.matrix(sdrfDatIni[,which(chCompCol)])
+            compDat <- as.matrix(sdrfDatIni[, which(chCompCol)])
             ch1 <- c(gr=sum(compDat %in% setupSd$groups, na.rm=TRUE), lev=sum(compDat %in% setupSd$level, na.rm=TRUE))   # check if group-names or level-numbers fit better
             
             if(any(ch1 >0)) {
               if(ch1[1] >= ch1[2]) {
-                setupSd$compareTo <- if(sum(chCompCol)==1) cbind(samp=setupSd$groups, ref=compDat) else cbind(samp=rep(setupSd$groups, sum(chCompCol)), ref=as.character(compDat)) 
+                setupSd$compareTo <- if(sum(chCompCol)==1) cbind(samp=setupSd$groups, ref=as.character(compDat)) else cbind(samp=rep(setupSd$groups, sum(chCompCol)), ref=as.character(compDat)) 
+                #colnames(setupSd$compareTo) <- c("samp", "ref")  # just in case...
               }   ## ??? still need to convert names of levels to names of groups ???
             } else if(debug) message(fxNa, "Bizzare: Found 'compareTo' specified in groupPref, but not matching to colnames of sdrfDat !") }
         }
@@ -1126,21 +1184,51 @@ readSampleMetaData <- function(quantMeth, sdrf=NULL, suplAnnotFile=NULL, path=".
           ch1 <- paste(setupSd$compareTo[,1], setupSd$compareTo[,2], sep="__")
           ch2 <- duplicated(ch1) | (rowSums(is.na(setupSd$compareTo) | setupSd$compareTo %in% "" ) >0)
           if(any(ch2)) setupSd$compareTo <- setupSd$compareTo[-which(ch2), 1:2, drop=FALSE]
+          msg <- character()
 
           ## check if fitting setupSd, remove any lines/comparisons not matching setupSd$groups
           ch3 <- setupSd$compareTo %in% unique(setupSd$groups)
-          if(any(!ch3)) { message(fxNa, " ++ IMPORTANT ++  REMOVING ",sum(!ch3)," groups/elements of matrix defining which groups to compare (setupSd$compareTo) since NOT PRESENT in setupSd$groups (",
-            wrMisc::pasteC(as.character(setupSd$compareTo)[which(ch3)], quoteC="'"),")")            
-            rmLi <- sort(unlist(sapply(setupSd$compareTo[which(!ch3)], function(x) which(setupSd$compareTo==x, arr.ind=TRUE)[1])))
-            setupSd$compareTo <- setupSd$compareTo[-rmLi,, drop=FALSE]
-            if(length(setupSd$compareTo) !=0 && is.numeric(setupSd$compareTo)) {     # force to character content (fix problem when group-names are given by numbers)
-              xDim <- dim(setupSd$compareTo)
-              xDimNa <- dimnames(setupSd$compareTo)
-              setupSd$compareTo <- matrix(as.character(setupSd$compareTo), nrow=xDim[1], dimnames=xDimNa)
-            }
+          rownames(setupSd$compareTo) <- NULL      # necessary ? (rownames are not unique, not useful anyway)
+          if(any(!ch3)) {
+            goodLi <- cbind(samp=setupSd$compareTo[,1] %in% setupSd$groups, ref=setupSd$compareTo[,2] %in% setupSd$groups) 
+            if(any(!goodLi)) {
+              ## inspect 'bad' elements
+              badEl <- unique(setupSd$compareTo[which(!goodLi)])
+              if(any(! badEl %in% c("",".","_"," ","'","' "))) {
+                msg2 <- paste("Removing ",length(badEl),
+                  " groups/elements of matrix defining which groups to compare (setupSd$compareTo) since NOT PRESENT in setupSd$groups (",
+                  wrMisc::pasteC(badEl, quoteC="'"), ")")
+                if(!silent) message(fxNa, " ++ IMPORTANT ++ ", msg2)
+                msg <- c(msg, msg2)  
+              }
+              setupSd$compareTo <- setupSd$compareTo[which(rowSums(goodLi) ==2), , drop=FALSE]
+            }                     
           }
           ## check for min number of replicates 
-
+          if(length(setupSd$compareTo) !=0) {
+            nRepl <- apply(setupSd$compareTo, 1, function(x) c(sum(setupSd$groups %in% x[1]), sum(setupSd$groups %in% x[2])))
+            if(length(dim(nRepl)) !=2) nRepl <- matrix(nRepl, ncol=2)
+            ## remove comparisons without replicates
+            chRepl <- colSums(nRepl) <3
+            if(any(chRepl)) {
+              msg2 <- paste("Removing",sum(chRepl),"out of",nrow(nRepl),"pairwise comparisons without sufficient replicates !")
+              if(!silent) message(fxNa, " ++ IMPORTANT ++ ", msg2)
+              msg <- c(msg, msg2)
+              setupSd$compareTo <- setupSd$compareTo[which(!chRepl), , drop=FALSE]
+              nRepl <- nRepl[, which(!chRepl) , drop=FALSE]
+            }
+          }
+          ## define shortGrpNa
+          if(length(setupSd$compareTo) !=0) {
+            shortNa <- asShortNa(unique(setupSd$groups))
+            ## use groups used primarily for attibuting short names
+            pwUsed <- unique(setupSd$groups) %in% unique(as.character(setupSd$compareTo))
+            if(any(!pwUsed)) {
+              shortNa <- asShortNa(c(unique(setupSd$groups)[which(pwUsed)], unique(setupSd$groups)[which(!pwUsed)]) )  # run non-used at end to keep intuitive short for groups pw-used
+              shortNa <- shortNa[match(unique(setupSd$groups), names(shortNa))]     # adj order
+            }
+            setupSd$shortGrpNa <- shortNa
+          }  
 
 
         } else {

@@ -36,6 +36,7 @@
 #'   May contain \code{lowNumberOfGroups=FALSE} for automatically choosing a rather elevated number of groups if possible (defaults to low number of groups, ie higher number of samples per group)
 #'   May contain \code{chUnit} (logical or character) to be passed to \code{readSampleMetaData()} for (optional) adjustig of unit-prefixes in meta-data group labels, in case multiple different unit-prefixes 
 #'   are used (eg '100pMol' and '1nMol').
+#'   The element \code{addSamplePrefix="s"} allows adding a specified prefix (here 's') when all sample-names look like numbers to prevent confusion with indexes
 #' @param plotGraph (logical or integer) optional plot of type vioplot of initial and normalized data (using \code{normalizeMeth}); if integer, it will be passed to \code{layout} when plotting
 #' @param titGraph (character) custom title to plot of distribution of quantitation values
 #' @param silent (logical) suppress messages
@@ -55,7 +56,7 @@
 #' @export
 readDiaNNFile <- function(fileName, path=NULL, normalizeMeth="median", sampleNames=NULL, read0asNA=TRUE, quantCol="\\.raw$",
   annotCol=NULL,  refLi=NULL, separateAnnot=TRUE, FDRCol=NULL,   
-  groupPref=list(lowNumberOfGroups=TRUE, chUnit=TRUE), plotGraph=TRUE, titGraph="DiaNN", wex=1.6, specPref=c(conta="CON_|LYSC_CHICK", mainSpecies="OS=Homo sapiens"),
+  groupPref=list(lowNumberOfGroups=TRUE, chUnit=TRUE, addSamplePrefix="s"), plotGraph=TRUE, titGraph="DiaNN", wex=1.6, specPref=c(conta="CON_|LYSC_CHICK", mainSpecies="OS=Homo sapiens"),
   gr=NULL, sdrf=NULL, suplAnnotFile=FALSE, silent=FALSE, debug=FALSE, callFrom=NULL) {
 
   ## read DiaNN exported txt
@@ -71,8 +72,8 @@ readDiaNNFile <- function(fileName, path=NULL, normalizeMeth="median", sampleNam
   if(any(!chPa)) stop("package(s) '",paste(reqPa[which(!chPa)], collapse="','"),"' not found ! Please install first from CRAN")
   if(!isTRUE(silent)) silent <- FALSE
   if(isTRUE(debug)) silent <- FALSE else debug <- FALSE
-         ##excluCol <- "^Abundances.Count"   # exclude this from quantifications columns
-  cleanDescription <- TRUE          # clean 'Description' for artifacts of truncated text (tailing ';' etc)
+         ##excluCol <- "^Abundances.Count"   # exclude this from quantifications columns     counts
+  cleanDescription <- TRUE          # clean 'Description' for artifacts of truncated text (tailing ';' etc) 
   infoDat <- infoFi <- setupSd <- parametersD <- annot <- NULL        # initialize
 
   ## check if path & (tsv) file exist  (set paFi, if bad -> error)
@@ -137,8 +138,7 @@ readDiaNNFile <- function(fileName, path=NULL, normalizeMeth="median", sampleNam
     ## clean 'Description' entries: remove tailing punctuation or open brackets (ie not closed) at end of (truncated) fasta header - applicable ?
     if(debug) {message(fxNa,"rdn6d ..  "); rdn6d <- list(annot=annot,tmp=tmp,specPref=specPref,annotCol=annotCol)}
 
-
-    ## look f tags from  specPref
+    ## look for tags from  specPref
     if(length(specPref) !=0 && length(annot) !=0) {
       ## set annot[,"specPref"] according to specPref
       annot <- .extrSpecPref(specPref, annot, silent=silent, debug=debug, callFrom=fxNa)
@@ -175,7 +175,22 @@ readDiaNNFile <- function(fileName, path=NULL, normalizeMeth="median", sampleNam
     rownames(abund) <- annot[,"EntryName"]
     if(debug) { message(fxNa,"rdn8 .. dim abund ",nrow(abund)," and ",ncol(abund)) }
 
+    counts <- NULL
+
     ## check & clean abundances
+    ## check for all-NA lines
+    isNA <- is.na(abund)
+    notAllNA <- 1:nrow(abund)
+    if(any(isNA)) {
+      notAllNA <- rowSums(!isNA) !=0
+      if(any(!notAllNA)) {
+        notAllNA <- which(notAllNA)
+        if(length(annot) !=0 && nrow(annot)==nrow(abund)) annot <- annot[notAllNA,, drop=FALSE]
+        abund <- abund[notAllNA,, drop=FALSE]
+        # no need to adjust tmp or counts
+      }
+    }
+
     ## add custom sample names (if provided)
     if(length(sampleNames) ==ncol(abund) && ncol(abund) >0) {
       if(debug) { message(fxNa,"Valid 'sampleNames' were provided   rdn8b") }
@@ -184,7 +199,6 @@ readDiaNNFile <- function(fileName, path=NULL, normalizeMeth="median", sampleNam
         sampleNames <- wrMisc::correctToUnique(sampleNames, callFrom=fxNa) }
       colnames(abund) <- sampleNames
     }
-    counts <- NULL
     if(debug) { message(fxNa,"rdn8c")}
 
     ## (optional) filter by FDR  (so far use 1st of list where matches are found from argument FDRCol) - not applicable ?
@@ -192,19 +206,71 @@ readDiaNNFile <- function(fileName, path=NULL, normalizeMeth="median", sampleNam
     if(debug) {message(fxNa,"rdn12 .. ");
       rdn12 <- list(tmp=tmp,abund=abund,annot=annot,sdrf=sdrf, fileName=fileName,path=path,paFi=paFi,normalizeMeth=normalizeMeth,sampleNames=sampleNames,
             refLi=refLi,specPref=specPref,read0asNA=read0asNA,quantCol=quantCol,annotCol=annotCol,refLi=refLi,separateAnnot=separateAnnot,FDRCol=FDRCol,gr=gr) }
+            
+    ## extract conta out of 'Description'
+    chConta <- grep(" \\(conta\\) *$", annot[,"ProteinName"])
+    if(length(chConta) !=0) {
+      annot[chConta, "Contam"] <- TRUE
+    }
+
+            
 
     ## correct colnames from 'Pathabc.raw' to 'abc'
     colnames(abund) <- wrMisc::.trimLeft(sub("\\.raw$|\\.RAW$","", colnames(abund)), silent=silent, debug=debug, callFrom=fxNa)
 
     ## check for reference for normalization
     refLiIni <- refLi
+    #normalizeMethIni <- normalizeMeth      # needed ?
+    
+    if(grepl("MainSpc", normalizeMeth) && length(refLi) ==0) {
+      if(length(annot) !=0 && "Species" %in% colnames(annot)) {
+        ## need to identify main species & shuffle to 'refLi' (will be indexed in next block)
+        spcTab <- table(annot[,"Species"])
+        if(length(spcTab) !=0) {
+          if(length(spcTab) ==1) {
+            refLi <- names(spcTab)
+          } else refLi <- names(sort(spcTab, decreasing=TRUE))[1]
+        }        
+      }
+      ## 
+      if(length(refLi) ==0) {
+        message(fxNa,"Failed to identify main species from argument 'normalizeMeth' ignoring")
+      }
+      normalizeMeth <- tolower(sub("MainSpc","", normalizeMeth))
+    }
+
     if(is.character(refLi) && length(refLi)==1) {  # try search content of refLi in SpecType
-      refLi <- which(annot[,"SpecType"]==refLi)
-      if(length(refLi) ==0 && refLiIni=="mainSpe") refLi <- which(annot[,"SpecType"]=="mainSpecies")   # also allow 'mainSpecies'
+      if(any(c("SpecType","Species") %in% colnames(annot))) {
+        ch1 <- c(refLi %in% annot[,"SpecType"], refLi %in% annot[,"Species"])
+        if(isTRUE(ch1[1])) {              # search in SpecType
+          refLi <- which(annot[,"SpecType"] == refLi)
+          if(length(refLi) ==0 && any(c("mainSpe","mainSpecies") %in% refLiIni)) { refLi <- which(annot[,"SpecType"]=="mainSpecies")   # also allow 'mainSpecies'
+        } else if(isTRUE(ch1[2])) {       # search in "Species"
+          refLi <- which(annot[,"Species"] == refLi) }
+      } }     
       if(length(refLi) ==0) { refLi <- 1:nrow(abund)
         if(!silent) message(fxNa,"Could not find any proteins matching argument 'refLi=",refLiIni,"', ignoring ...")
       } else {
-        if(!silent) message(fxNa,"Normalize using (custom) subset of ",length(refLi)," lines specified as '",refLiIni,"'")}}    # may be "mainSpe"
+        if(!silent) message(fxNa,"Normalize using (custom) subset of ",length(refLi)," lines specified as '",refLiIni,"'") }    # may be "mainSpe"
+    }
+
+    ## (option) exclude all Contam from complete data
+    if("removeConta" %in% names(specPref) !=0 && isTRUE(specPref$removeConta) && any(as.logical(annot[, "Contam"]), na.rm=TRUE)) {
+      rmLi <- which(as.logical(annot[, "Contam"]))
+      iniNProt <- nrow(annot)
+      if(length(rmLi) < iniNProt) {
+        annot <- annot[-rmLi, , drop=FALSE]
+        abund <- abund[-rmLi, , drop=FALSE]
+        if(length(refLi) >1 && is.numeric(refLi)) refLi <- refLi[-which(refLi %in% rmLi)]}
+    }
+
+    ## exclude contam from refLi
+    if(!all(is.na(annot[, "Contam"])) && any(as.logical(annot[, "Contam"]), na.rm=TRUE)) { 
+      ch1 <- (if(length(refLi)==0) 1:nrow(annot) else refLi) %in% which(as.logical(annot[, "Contam"]))
+      if(any(ch1, na.rm=TRUE)) {
+        if(all(which(as.logical(annot[, "Contam"])) %in% refLi)) {
+          message(fxNa,"NOTE : ALL LINES seem marked as CONTAMINANTS !!  (can't exclude all for normalization)")
+        } else refLi <- refLi[-which(ch1)] }}
 
     ## set 0 values to NA (avoid -Inf at log2)
     if(!isFALSE(read0asNA)) { ch0 <- abund ==0
@@ -215,18 +281,27 @@ readDiaNNFile <- function(fileName, path=NULL, normalizeMeth="median", sampleNam
     if(debug) { message(fxNa,"rdn13 .. dim quant: ", nrow(quant)," li and  ",ncol(quant)," cols; colnames : ",wrMisc::pasteC(colnames(quant))," ")
       rdn13 <- list(tmp=tmp,quant=quant,abund=abund,annot=annot,sdrf=sdrf, fileName=fileName,path=path,paFi=paFi,normalizeMeth=normalizeMeth,sampleNames=sampleNames,groupPref=groupPref,
             refLi=refLi,refLiIni=refLiIni,specPref=specPref,read0asNA=read0asNA,quantCol=quantCol,annotCol=annotCol,separateAnnot=separateAnnot,FDRCol=FDRCol,gr=gr,silent=silent,debug=debug) }
-
+    if(inherits(quant, "try-error")) {
+      datOK <- FALSE
+      warning(fxNa,"Problem when trying to normalize data ! (abondon data import)")
+    }
+  }
+  if(datOK) {   
     ### GROUPING OF REPLICATES AND SAMPLE META-DATA
     if(length(suplAnnotFile) >0 || length(sdrf) >0) {
       if(length(sampleNames) %in% c(1, ncol(abund))) groupPref$sampleNames <- sampleNames
       if(length(gr) %in% c(1, ncol(abund))) groupPref$gr <- gr
       setupSd <- readSampleMetaData(sdrf=sdrf, suplAnnotFile=suplAnnotFile, quantMeth="DN", path=path, abund=utils::head(quant), chUnit=isTRUE(groupPref$chUnit), groupPref=groupPref, silent=silent, debug=debug, callFrom=fxNa)
     }
-    if(debug) {message(fxNa,"rdn13b .."); rdn13b <- list()}
+    if(debug) {message(fxNa,"rdn13a .."); rdn13a <- list()}
 
 
     ## finish groups of replicates & annotation setupSd
     setupSd <- .checkSetupGroups(abund=abund, setupSd=setupSd, gr=gr, sampleNames=sampleNames, quantMeth="DN", silent=silent, debug=debug, callFrom=fxNa)
+    if(debug) { message(fxNa,"rdn13b ")
+      rdn13b <- list(tmp=tmp,quant=quant,abund=abund,annot=annot,sdrf=sdrf, fileName=fileName,path=path,paFi=paFi,normalizeMeth=normalizeMeth,sampleNames=sampleNames,groupPref=groupPref,
+            refLi=refLi,refLiIni=refLiIni,specPref=specPref,read0asNA=read0asNA,quantCol=quantCol,annotCol=annotCol,separateAnnot=separateAnnot,FDRCol=FDRCol,gr=gr,
+            setupSd=setupSd, silent=silent,debug=debug) }
 
     ## option : set order of samples as sdrf
     if("sdrfOrder" %in% names(sdrf) && isTRUE(as.logical(sdrf["sdrfOrder"])) && length(setupSd$iniSdrfOrder)==ncol(abund) && ncol(abund) >1) {  # set order according to sdrf (only if >1 samples)
@@ -246,8 +321,9 @@ readDiaNNFile <- function(fileName, path=NULL, normalizeMeth="median", sampleNam
         if(any(isVe) >0) for(i in which(isVe)) setupSd[[i]] <- setupSd[[i]][nOrd] }
       gr <- gr[nOrd]
 
-      if(length(counts) >0 && length(dim(counts))==3) counts <- array(counts[,nOrd,], dim=c(nrow(counts), length(nOrd), dim(counts)[3]), 
-        dimnames=list(rownames(counts), colnames(counts)[nOrd], dimnames(counts)[[3]]))
+      ## note : counts are not available in DiaNN !
+      #if(length(counts) >0 && length(dim(counts))==3) counts <- array(counts[,nOrd,], dim=c(nrow(counts), length(nOrd), dim(counts)[3]), 
+      #  dimnames=list(rownames(counts), colnames(counts)[nOrd], dimnames(counts)[[3]]))
       ## try re-adjusting levels
       tm1 <- sub("^[[:alpha:]]+( |_|-|\\.)+[[:alpha:]]+","", colnames(abund))  # remove heading text
       if(all(grepl("^[[:digit:]]", tm1))) {
@@ -287,4 +363,5 @@ readDiaNNFile <- function(fileName, path=NULL, normalizeMeth="median", sampleNam
     ## final output
     if(isTRUE(separateAnnot)) list(raw=abund, quant=quant, annot=annot, counts=counts, sampleSetup=setupSd, quantNotes=parametersD, notes=notes) else data.frame(quant,annot) }
 }
- 
+  
+   

@@ -29,8 +29,9 @@
 #' @param colTotNa (character) column name for total peptide count 
 #' @param minSpeNo (integer) minimum number of specific peptides for maintaining proteins
 #' @param minTotNo (integer) minimum total ie max razor number of peptides
-#' @param maxGrpMiss (numeric) passd to \code{\link[wrMisc]{presenceFilt}} : at least 1 group has not more than this number of NAs (otherwise marke line as bad)
-#' @param ratMaxNA (numeric) passd to \code{\link[wrMisc]{presenceFilt}} : at least 1 group below this content of \code{NA} values
+#' @param maxGrpMiss (numeric) passd to \code{\link[wrMisc]{presenceFilt}} : at least 1 group has equal or less n NAs ;; at least 1 group has not more than this number of NAs (otherwise marke line as bad)
+#' @param ratMaxNA (numeric) passd to \code{\link[wrMisc]{presenceFilt}} : at least 1 group has equal or less percent NAs ;; at least 1 group below this content of \code{NA} values
+#' @param ratMaxTotNA (default NULL, numeric) passd to \code{\link[wrMisc]{presenceFilt}} : max ration of NAs in all samples per protein
 #' @param silent (logical) suppress messages
 #' @param debug (logical) additional messages for debugging
 #' @param callFrom (character) allows easier tracking of messages produced
@@ -45,6 +46,7 @@
 #' datT6[which(datT6 < 11 & datT6 > 10.5)] <- NA
 #' datT6[which(datT6 < 6 & datT6 > 5)] <- NA
 #' datT6[which(datT6 < 4.6 & datT6 > 4)] <- NA
+#' datT6[8,1:3] <- NA
 #' datT6b <- matrixNAneighbourImpute(datT6, gr=gl(2,3))
 #' datT6c <- combineMultFilterNAimput(datT6, datT6b, grp=gl(2,3), abundThr=2)
 #' head(datT6c$filt)
@@ -53,11 +55,12 @@
 #' datT6d <- combineMultFilterNAimput(datT6, datT6b, grp=gr2, useCom="B-A", abundThr=2)
 #' head(datT6d$filt)
 #' @export
-combineMultFilterNAimput <- function(dat, imputed, grp, useComparison="all", experSetup=NULL, annDat=NULL, abundThr=NULL, colRazNa=NULL, colTotNa=NULL, minSpeNo=1, minTotNo=2, maxGrpMiss=1, ratMaxNA=0.8, silent=FALSE,debug=FALSE,callFrom=NULL){
+combineMultFilterNAimput <- function(dat, imputed, grp, useComparison="all", experSetup=NULL, annDat=NULL, abundThr=NULL, colRazNa=NULL, colTotNa=NULL,
+  minSpeNo=1, minTotNo=2, maxGrpMiss=9, ratMaxNA=0.5, ratMaxTotNA=NULL, silent=FALSE,debug=FALSE,callFrom=NULL){
   fxNa <- wrMisc::.composeCallName(callFrom, newNa="combineMultFilterNAimput")
   if(!isTRUE(silent)) silent <- FALSE
   if(isTRUE(debug)) { silent <- FALSE } else { debug <- FALSE }
-  pwComb <- pwIndex <- pwGrpNa <- sep1 <- NULL
+  pwComb <- pwIndex <- pwGrpNa <- sep1 <- datFi <- NULL
   ## checks
   if(length(dat)==0 || length(dim(dat)) !=2 || any(dim(dat) < c(1,2))) stop(fxNa,"Invalid input for argument 'dat' : Must be matrix or data.frame with min 2 columns !")
   #if(length(imputed) >0 && is.list(imputed) && "data" %in% names(imputed)) imputed <- imputed$data
@@ -76,6 +79,7 @@ combineMultFilterNAimput <- function(dat, imputed, grp, useComparison="all", exp
   }  
   if(debug) {message(fxNa,"cMF0b");  cMF0b <- list(useComparison=useComparison, grp=grp, experSetup=experSetup, sep1=sep1)}
   
+  ## extract/define pairwise setup
   if(length(experSetup)==0) {
     experSetup <- wrMisc::convPairwiseSetup(useComparison=useComparison, grp=grp, experSetup=experSetup, sep=sep1, silent=silent, debug=debug, callFrom=fxNa)
     ## note $grp from convPairwiseSetup() not useful (is rather levels(grp) )
@@ -93,9 +97,24 @@ combineMultFilterNAimput <- function(dat, imputed, grp, useComparison="all", exp
   if(debug) {message(fxNa,"cMF0d");  cMF0d <- list(useComparison=useComparison, grp=grp, experSetup=experSetup, sep1=sep1)}
   grpNa <- wrMisc::naOmit(unique(sort(grp)))
   
-  if(length(sep1)==0) sep1 <- wrMisc::getPWseparator(grp=grp, silent=silent, debug=debug, callFrom=fxNa) 
-  if(length(useComparison)==0) useComparison <- paste(pwGrpNa[,1], pwGrpNa[,2], sep=sep1)
-  if(debug) {message(fxNa,"cMF0e"); cMF0e <- list(dat=dat,imputed=imputed,grp=grp,useComparison=useComparison,experSetup=experSetup,annDat=annDat,abundThr=abundThr,pwComb=pwComb,sep1=sep1)} 
+  if(length(sep1) ==0) sep1 <- wrMisc::getPWseparator(grp=grp, silent=silent, debug=debug, callFrom=fxNa) 
+  if(length(useComparison) ==0) useComparison <- paste(pwGrpNa[,1], pwGrpNa[,2], sep=sep1)  # default compare 1st & 2nd (alphabet soted) group
+
+  ## extract & check of pwComb
+  if(length(useComparison) !=0 && length(dim(useComparison))==2 && ncol(useComparison)==2) {
+    pwComb <- if(is.numeric(useComparison)) experSetup$pwGrpNa else useComparison }
+  if(length(pwComb)==0 || ncol(pwComb) !=2) {
+    pwComb <- experSetup$pwGrpNa
+    if(all(is.na(pwComb))) warning(fxNa,"PROBLEM : All 'experSetup$pwGrpNa' are NA !!")
+    if(length(dim(pwComb)) !=2) pwComb <- matrix(pwComb, byrow=TRUE, ncol=2)
+    if(is.numeric(pwComb)) warning(fxNa,"PROBLEM : Expecting 'experSetup$pwGrpNa' as matrix of group-names (character) anf NOT as index !!")
+    ## possibly check that pwComb appears in grp 
+    #pwComb <- experSetup$pwGrpIndex
+  }
+  
+  if(debug) {message(fxNa,"cMF0e"); cMF0e <- list(dat=dat,imputed=imputed,grp=grp,useComparison=useComparison,experSetup=experSetup,annDat=annDat,abundThr=abundThr,pwComb=pwComb,sep1=sep1,maxGrpMiss=maxGrpMiss,ratMaxNA=ratMaxNA)} 
+  
+  
   datFi <- try(wrMisc::presenceFilt(dat, grp=grp, useComparison=useComparison, maxGrpMiss=maxGrpMiss, ratMaxNA=ratMaxNA, sep=sep1, silent=silent, debug=debug,callFrom=fxNa), silent=TRUE)
 
   if(inherits(datFi, "try-error")) stop(fxNa,"Failed to run presenceFilt")
@@ -104,19 +123,14 @@ combineMultFilterNAimput <- function(dat, imputed, grp, useComparison="all", exp
   #if(ncol(useComparison)) 
   if(debug) {message(fxNa,"cMF0f   at presenceFilt:  ",paste(colSums(datFi), collapse=" "),"  out of ",nrow(dat)); cMF0f <- list(dat=dat,imputed=imputed,grp=grp,useComparison=useComparison,colRazNa=colRazNa,datFi=datFi,pwComb=pwComb,experSetup=experSetup)}
   
+  ## F1) filter  for max no of peptides (from $annot)
   if(length(colRazNa) >0 && length(annDat) >0) {
     razFilt <- razorNoFilter(annot=annDat, totNa=colTotNa, minRazNa=colRazNa, minSpeNo=minSpeNo, minTotNo=minTotNo, silent=silent, debug=debug, callFrom=fxNa)
     datFi[which(!razFilt),] <- rep(FALSE, ncol(datFi)) 
     if(debug) message(fxNa,"cMF0g   at razorNoFilter: ",paste(colSums(datFi), collapse=" "))    
   }
 
-  if(length(pwComb)==0 || ncol(pwComb) !=2) {
-    pwComb <- experSetup$pwGrpNa
-    if(length(dim(pwComb)) !=2) pwComb <- matrix(pwComb, byrow=TRUE, ncol=2)
-    #pwComb <- experSetup$pwGrpIndex
-  }
-  
-  ## filter mostly low abundance (using imputed), see also .filterMinAv
+  ## F2) filter mostly low abundance (using imputed), see also .filterMinAv
   grpMeans <- wrMisc::rowGrpMeans(imputed$data, grp)
   if(debug) {message(fxNa,"cMF1"); cMF1 <- list(dat=dat,imputed=imputed,grpMeans=grpMeans,datFi=datFi,grp=grp,useComparison=useComparison,experSetup=experSetup,annDat=annDat,abundThr=abundThr,pwComb=pwComb)}
   if(any(!(colnames(grpMeans) == colnames(imputed$nNA))) && !silent) message(fxNa,"Problem with order of columns of imputed$nNA !?")
@@ -134,30 +148,87 @@ combineMultFilterNAimput <- function(dat, imputed, grp, useComparison="all", exp
   
   
   if(debug) {message(fxNa,"cMF2"); cMF2 <- list(dat=dat,imputed=imputed,grp=grp,useComparison=useComparison,experSetup=experSetup,annDat=annDat,abundThr=abundThr,pwComb=pwComb,grpNa=grpNa,grpMeans=grpMeans)}
+  ## F3) low abundance filter
+  if(length(abundThr)==1 && !is.na(abundThr)) {
+    abundbyGrp2 <- grpMeans >= abundThr      # init passing min abund
+    filtAbundByGrp <- apply(pwComb, 1, function(x) {rowSums(abundbyGrp2[, which(colnames(grpMeans) %in% x), drop=FALSE]) != 0})
+  } else filtAbundByGrp <- matrix(TRUE, ncol=ncol(pwComb), nrow=nrow(grpMeans))
   
-  if(length(abundThr)==1 && is.numeric(abundThr)) {
-    for(i in 1:nrow(pwComb)) {                                                # loop along all pair-wise questions => (update filter) datFi
-      chLi <- all(grpMeans[,if(is.numeric(pwComb)) pwComb[i,] else grpNa[match(pwComb[i,], grpNa)]] < abundThr)
-      if(any(chLi)) datFi[which(chLi), i] <- FALSE }
-    if(debug) message(fxNa,"cMF2b   at abundanceFilt: ",paste(colSums(datFi), collapse=" ")) }
-  ## check if set of mostly imputed data higher than measured -> filter
-  ## number of NAs per line & group
+
+  # if(length(abundThr)==1 && is.numeric(abundThr)) {
+  #   for(i in 1:nrow(pwComb)) {                                                # loop along all pair-wise questions => (update filter) datFi
+  #     chLi <- all(grpMeans[ , if(is.numeric(pwComb)) pwComb[i,] else grpNa[match(pwComb[i,], grpNa)]] < abundThr)
+  #     if(any(chLi, na.rm=TRUE)) datFi[which(chLi), i] <- FALSE }
+  #   if(debug) message(fxNa,"cMF2b   at abundanceFilt: ",paste(colSums(datFi), collapse=" ")) }
+
+  ## F4) future option - check if set of mostly imputed data higher than measured -> filter
+  ## F5a) number of NAs per line & group
   nNAbyGroup <- wrMisc::rowGrpNA(dat, grp)
-  if(debug) {message(fxNa,"cMF3"); cMF3 <- list(dat=dat,datFi=datFi,grpMeans=grpMeans,imputed=imputed,grp=grp,useComparison=useComparison,experSetup=experSetup,annDat=annDat,abundThr=abundThr,pwComb=pwComb,nNAbyGroup=nNAbyGroup,grpNa=grpNa)}
-  
   tabGrp <- table(grp)
-  for(i in 1:nrow(pwComb)) {
-    critNAGrp <- tabGrp[if(is.numeric(pwComb)) pwComb[i,] else grpNa[match(pwComb[i,], grpNa)]]
-    critNAGrp <- critNAGrp/2 -0.1  
-      #re-check ?# potentially filter when min 50% of data NA
-    #chLi <- nNAbyGroup[,pwComb[i,]] > matrix(rep(critNAGrp, each=nrow(grpMeans)), ncol=2)   # use imputed$nNA; return T when need to filter
-    chLi <- nNAbyGroup[,if(is.numeric(pwComb)) pwComb[i,] else grpNa[match(pwComb[i,], grpNa)]] > matrix(rep(critNAGrp, each=nrow(grpMeans)), ncol=2)   # use imputed$nNA; return T when need to filter
-    if(any(chLi)) {
-      chLi2 <- cbind(chLi[,1] & grpMeans[,if(is.numeric(pwComb)) pwComb[i,] else grpNa[match(pwComb[i,], grpNa)]] > grpMeans[,if(is.numeric(pwComb)) pwComb[i,] else grpNa[match(pwComb[i,], grpNa)]], chLi[,2] & grpMeans[,if(is.numeric(pwComb)) pwComb[i,] else grpNa[match(pwComb[i,], grpNa)]] > grpMeans[,if(is.numeric(pwComb)) pwComb[i,] else grpNa[match(pwComb[i,], grpNa)]]) # is T if bad
-      datFi[,i] <- datFi[,i] & !chLi[,1] & !chLi[,2] }
-  }                
-  if(debug) message(fxNa,"   at NA > mean:   ",wrMisc::pasteC(colSums(datFi)))    
-  imputed$filt <- datFi
+  if(debug) {message(fxNa,"cMF3"); cMF3 <- list(dat=dat,datFi=datFi,grpMeans=grpMeans,imputed=imputed,grp=grp,useComparison=useComparison,experSetup=experSetup,annDat=annDat,abundThr=abundThr,maxGrpMiss=maxGrpMiss,ratMaxNA=ratMaxNA,pwComb=pwComb,nNAbyGroup=nNAbyGroup,grpNa=grpNa,filtAbundByGrp=filtAbundByGrp)}  
+
+  ## F5b) min nNA & %NA by pw question
+  nNAbyGrp2 <- sapply(unique(as.character(pwComb)), function(x) rowSums(is.na(dat[, which(grp %in% x), drop=FALSE])))     # no of NAs in groups used in pw questions
+  percNAbyGrp2 <- nNAbyGrp2/ matrix( rep(table(grp)[colnames(nNAbyGrp2)], each=nrow(nNAbyGrp2)), nrow=nrow(nNAbyGrp2))  # initial just %NA per group
+
+  minnNAbyGrp <- apply(pwComb, 1, function(x) {aa <- nNAbyGrp2[, which(colnames(nNAbyGrp2) %in% x), drop=FALSE]; pmin(aa[, 1], aa[, 2])})            # observed min NA count  by pw group
+  minpercNAbyGrp <- apply(pwComb, 1, function(x) {aa <- percNAbyGrp2[, which(colnames(percNAbyGrp2) %in% x), drop=FALSE]; pmin(aa[, 1], aa[, 2])})   # observed min NA%  by pw group
+  ## apply thrsh  (T means to)   maxGrpMiss=2;  ratMaxNA=0.5   .. at least one pw group with 50% data AND at least one group with no more than 2 missing
+
+  ## F6) combine filtering 
+  imputed$filt <- minnNAbyGrp <= maxGrpMiss & minpercNAbyGrp <= ratMaxNA 
+
+
+  ## F7) Combine: add abundance filter
+  if(length(filtAbundByGrp) !=0 && !all(filtAbundByGrp)) imputed$filt <- imputed$filt & filtAbundByGrp
+  
+  ## F8)  combine with optional total %NA (PAIRWISE) => allow removing lines with NAs
+  if(length(ratMaxTotNA) ==1 && is.finite(ratMaxTotNA) && ratMaxTotNA >= 0) {
+    ## need  maxnNAbyGrp
+    maxnNAbyGrp <- apply(pwComb, 1, function(x) {aa <- nNAbyGrp2[, which(colnames(nNAbyGrp2) %in% x), drop=FALSE]; pmax(aa[, 1], aa[, 2])})            # observed min NA count  by pw group
+    imputed$filt <- imputed$filt & maxnNAbyGrp ==ratMaxTotNA 
+  }
+  
+  ## F8b) combine with optional total %NA  => allow removing ALL lines with ANY NAs (even for pw comparisons where all data present)
+  #if(length(ratMaxTotNA) ==1 && is.finite(ratMaxTotNA) && ratMaxTotNA >= 0) imputed$filt <- imputed$filt & (rowSums(is.na(dat))/ ncol(dat) <= ratMaxTotNA)
+  
+
+  # ## filter for each pw question
+  # for(i in 1:nrow(pwComb)) {
+  #   critNAGrp <- tabGrp[if(is.numeric(pwComb)) pwComb[i,] else grpNa[match(pwComb[i,], grpNa)]]
+    
+  #   nNAbyGrp2 <- nNAbyGroup[,if(is.numeric(pwComb)) pwComb[i,] else grpNa[match(pwComb[i,], grpNa)]]  # limit to groups used
+  #   percNAbyGrp2 <- nNAbyGrp2/ matrix( rep(table(grp)[colnames(nNAbyGrp2)], each=nrow(nNAbyGrp2)), nrow=nrow(nNAbyGrp2))
+
+  #       minNNA2 <- do.call(pmin, as.data.frame(nNAbyGrp2))    # presumed faster than apply
+  #       minPercNA2 <- do.call(pmin, as.data.frame(percNAbyGrp2))
+
+  #   ## filter for min NA count (ie at least 1 group at this level)
+  #   ## argumnet : maxGrpMiss .. at least 1 group has equal or less n NAs ... (numeric) passd to \code{\link[wrMisc]{presenceFilt}} : at least 1 group has not more than this number of NAs (otherwise marke line as bad)
+  #   minNNA3 <- apply(pwComb, 1,  function(x) do.call(pmin, as.data.frame(nNAbyGrp2[,match(x, grpNa)])) <= maxGrpMiss )
+
+
+  #   ## filter for min NA percentage (ie at least 1 group at this level)
+  #   ## argumnet : ratMaxNA .. at least 1 group has equal or less percent NAs
+  #   minNNA3 <- apply(pwComb, 1,  function(x) do.call(pmin, as.data.frame(percNAbyGrp2[,match(x, grpNa)])) <= ratMaxNA )   # each pw comp in new column, TRUE => use
+
+  #   ## comnine
+  #   filtMinNA <- minNNA3 & minNNA3
+
+  #   #old# critNAGrp <- critNAGrp/2 -0.1
+  #   critNAGrp <- critNAGrp/2 -0.1
+  
+
+  #     #re-check ?# potentially filter when min 50% of data NA
+  #   #chLi <- nNAbyGroup[,pwComb[i,]] > matrix(rep(critNAGrp, each=nrow(grpMeans)), ncol=2)   # use imputed$nNA; return T when need to filter
+  #   ## check if any line & grp is exceeding its critNAGrp
+  #   chLi <- nNAbyGroup[,if(is.numeric(pwComb)) pwComb[i,] else grpNa[match(pwComb[i,], grpNa)]] > matrix(rep(critNAGrp, each=nrow(grpMeans)), ncol=2)   # use imputed$nNA; return T when need to filter
+  #   if(any(chLi)) {
+  #     chLi2 <- cbind(chLi[,1] & grpMeans[,if(is.numeric(pwComb)) pwComb[i,] else grpNa[match(pwComb[i,], grpNa)]] > grpMeans[,if(is.numeric(pwComb)) pwComb[i,] else grpNa[match(pwComb[i,], grpNa)]], chLi[,2] & grpMeans[,if(is.numeric(pwComb)) pwComb[i,] else grpNa[match(pwComb[i,], grpNa)]] > grpMeans[,if(is.numeric(pwComb)) pwComb[i,] else grpNa[match(pwComb[i,], grpNa)]]) # is T if bad
+  #     datFi[,i] <- datFi[,i] & !chLi[,1] & !chLi[,2] }
+  # }                
+  # if(debug) message(fxNa,"   at NA > mean:   ",wrMisc::pasteC(colSums(datFi)))    
+  # imputed$filt <- datFi
   if(!is.null(annDat)) imputed$annot <- annDat    
   imputed }
           

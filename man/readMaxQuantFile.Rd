@@ -22,7 +22,7 @@ readMaxQuantFile(
   gr = NULL,
   sdrf = NULL,
   suplAnnotFile = NULL,
-  groupPref = list(lowNumberOfGroups = TRUE, chUnit = TRUE),
+  groupPref = list(lowNumberOfGroups = TRUE, chUnit = TRUE, addSamplePrefix = "s"),
   titGraph = NULL,
   wex = 1.6,
   plotGraph = TRUE,
@@ -77,6 +77,7 @@ if \code{character} the respective file-names (relative ro absolute path), 1st i
     \code{(gr="sdrf")} (global mining of sdrf), 
     \code{(gr="sdrf$thisColumn")} (specific column of sdrf, if notg present will fall back to global mining of sdrf),
     or \code{(gr="colnames")} to force grouping based on colnames from main data (after stripping terminal nominators) 
+  The element \code{addSamplePrefix="s"} allows adding a specified prefix (here 's') when all sample-names look like numbers to prevent confusion with indexes
 
   May contain \code{lowNumberOfGroups=FALSE} for automatically choosing a rather elevated number of groups if possible (defaults to low number of groups, ie higher number of samples per group)
   May contain \code{chUnit} (logical or character) to be passed to \code{readSampleMetaData()} for (optional) adjustig of unit-prefixes in meta-data group labels, in case multiple different unit-prefixes 

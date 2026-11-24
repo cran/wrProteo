@@ -37,6 +37,7 @@
 #'   May contain \code{lowNumberOfGroups=FALSE} for automatically choosing a rather elevated number of groups if possible (defaults to low number of groups, ie higher number of samples per group)
 #'   May contain \code{chUnit} (logical or character) to be passed to \code{readSampleMetaData()} for (optional) adjustig of unit-prefixes in meta-data group labels, in case multiple different unit-prefixes 
 #'   are used (eg '100pMol' and '1nMol').
+#'   The element \code{addSamplePrefix="s"} allows adding a specified prefix (here 's') when all sample-names look like numbers to prevent confusion with indexes
 #' @param plotGraph (logical) optional plot of type vioplot of initial and normalized data (using \code{normalizeMeth}); if integer, it will be passed to \code{layout} when plotting
 #' @param silent (logical) suppress messages
 #' @param debug (logical) additional messages for debugging
@@ -50,7 +51,7 @@
 #' @export
 readMassChroQFile <- function(fileName, path=NULL, normalizeMeth="median", sampleNames=NULL, refLi=NULL, separateAnnot=TRUE, titGraph="MassChroQ", wex=NULL,
   specPref=c(conta="CON_|LYSC_CHICK", mainSpecies="OS=Homo sapiens"), gr=NULL, sdrf=NULL, suplAnnotFile=FALSE,
-  groupPref=list(lowNumberOfGroups=TRUE, chUnit=TRUE), plotGraph=TRUE, silent=FALSE, debug=FALSE, callFrom=NULL) {
+  groupPref=list(lowNumberOfGroups=TRUE, chUnit=TRUE, addSamplePrefix="s"), plotGraph=TRUE, silent=FALSE, debug=FALSE, callFrom=NULL) {
   ## read MassChroQ (pre-)treated data
   fxNa <- wrMisc::.composeCallName(callFrom, newNa="readMassChroQFile")
 
@@ -123,17 +124,32 @@ readMassChroQFile <- function(fileName, path=NULL, normalizeMeth="median", sampl
   if(length(sampleNames) >0) if(length(sampleNames)==ncol(tmp)) colnames(tmp) <- sampleNames else message(fxNa,"invalid entry of 'sampleNames' (incorrect length)")
   
   ## check for reference for normalization
-    refLiIni <- refLi
-    if(is.character(refLi) && length(refLi)==1) {  # try search content of refLi in SpecType
-      refLi <- which(annot[,"SpecType"]==refLi)
-      if(length(refLi) ==0 && refLiIni=="mainSpe") refLi <- which(annot[,"SpecType"]=="mainSpecies")   # also allow 'mainSpecies'
-      if(length(refLi) ==0) { refLi <- 1:nrow(abund)
-        if(!silent) message(fxNa,"Could not find any proteins matching argument 'refLi=",refLiIni,"', ignoring ...")
-      } else {
-        if(!silent) message(fxNa,"Normalize using (custom) subset of ",length(refLi)," lines specified as '",refLiIni,"'")}}    # may be "mainSpe"
+  refLiIni <- refLi
+  if(is.character(refLi) && length(refLi)==1) {  # try search content of refLi in SpecType
+    refLi <- which(annot[,"SpecType"]==refLi)
+    if(length(refLi) ==0 && refLiIni=="mainSpe") refLi <- which(annot[,"SpecType"]=="mainSpecies")   # also allow 'mainSpecies'
+    if(length(refLi) ==0) { refLi <- 1:nrow(abund)
+      if(!silent) message(fxNa,"Could not find any proteins matching argument 'refLi=",refLiIni,"', ignoring ...")
+    } else {
+      if(!silent) message(fxNa,"Normalize using (custom) subset of ",length(refLi)," lines specified as '",refLiIni,"'")}}    # may be "mainSpe"
+
+  ## start extracting abund
+  abund <- if(!is.matrix(tmp)) as.matrix(tmp) else tmp
+
+  ## check for all-NA lines
+  isNA <- is.na(abund)
+  notAllNA <- 1:nrow(abund)
+  if(any(isNA)) {
+    notAllNA <- rowSums(!isNA) !=0
+    if(any(!notAllNA)) {
+      notAllNA <- which(notAllNA)
+      if(length(annot) !=0 && nrow(annot)==nrow(abund)) annot <- annot[,, drop=FALSE]
+      #if(length(counts) >0) counts <- counts[notAllNA,,, drop=FALSE]
+      abund <- abund[notAllNA,, drop=FALSE]
+    }
+  }  
 
   ## normalize
-  abund <- if(!is.matrix(tmp)) as.matrix(tmp) else tmp
   quant <- wrMisc::normalizeThis(abund, method=normalizeMeth, mode="additive", refLines=refLi, callFrom=fxNa)       #
   if(debug) {message(fxNa,"mc4")}
 
@@ -166,8 +182,8 @@ readMassChroQFile <- function(fileName, path=NULL, normalizeMeth="median", sampl
         if(any(isVe) >0) for(i in which(isVe)) setupSd[[i]] <- setupSd[[i]][nOrd] }
       gr <- gr[nOrd]
 
-      if(length(counts) >0 && length(dim(counts))==3) counts <- array(counts[,nOrd,], dim=c(nrow(counts), length(nOrd), dim(counts)[3]), 
-        dimnames=list(rownames(counts), colnames(counts)[nOrd], dimnames(counts)[[3]]))
+      #if(length(counts) >0 && length(dim(counts))==3) counts <- array(counts[,nOrd,], dim=c(nrow(counts), length(nOrd), dim(counts)[3]), 
+      #  dimnames=list(rownames(counts), colnames(counts)[nOrd], dimnames(counts)[[3]]))
       ## try re-adjusting levels
       tm1 <- sub("^[[:alpha:]]+( |_|-|\\.)+[[:alpha:]]+","", colnames(abund))  # remove heading text
       if(all(grepl("^[[:digit:]]", tm1))) {

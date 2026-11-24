@@ -16,8 +16,10 @@
   figMarg = c(3.5, 3.5, 3, 1),
   col = "rainbow",
   tit = NULL,
+  dispNcex = 0.7,
   las = NULL,
   cexAxis = 0.8,
+  cexMain = NULL,
   nameSer = NULL,
   cexNameSer = NULL,
   silent = FALSE,
@@ -48,9 +50,14 @@
 
 \item{tit}{(character) custom title}
 
+\item{dispNcex}{(numeric or logical) size of text for display of n of numeric values per series of data; default \code{dispN=0.7}; 
+if \code{dispN=FAlSE} or \code{dispN=0} n will not be displayed}
+
 \item{las}{(integer) indicate orientation of text in axes}
 
 \item{cexAxis}{(numeric) size of numeric axis labels as cex-expansion factor (see also \code{\link[graphics]{par}})}
+
+\item{cexMain}{(numeric) size of title as cex-expansion factor (see also \code{\link[graphics]{par}})}
 
 \item{nameSer}{(character) custom label for data-sets or columns (length must match number of data-sets)}
 

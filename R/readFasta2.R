@@ -78,9 +78,9 @@ readFasta2 <- function(filename, delim="|", databaseSign=c("sp","tr","generic","
   if(debug) {message(fxNa,"rf3"); rf3 <- list(sca=sca,newLi=newLi,filename=filename,delim=delim,databaseSign=databaseSign,removeEntries=removeEntries,tableOut=tableOut,UniprSep=UniprSep,seqs=seqs,useLi=useLi,id0=id0) }
   
   if(isTRUE(tableOut)) {
-    out <- .parseFastaHeader(header=sca[newLi], delim=delim, databaseSign=databaseSign, UniprSep=UniprSep, asList=TRUE, silent=silent, callFrom=fxNa, debug=debug)
-    out <- cbind(out[[1]], sequence=seqs, out[[2]])
-    if(any(c("allNA","emptyColumns") %in% removeEntries)) {
+    out <- .parseFastaHeader(header=sca[newLi], delim=delim, databaseSign=databaseSign, UniprSep=UniprSep, silent=silent, callFrom=fxNa, debug=debug)
+    out <- cbind(out, sequence=seqs)
+    if(any(c("allNA","empty","emptyColumns") %in% removeEntries)) {
       chCol <- colSums(!is.na(out)) ==0
       if(all(chCol)) warning(fxNa,"All columns of file '",filename,"' seem empty !?!")
       if(any(chCol)) out <- out[, chCol, drop=FALSE]
@@ -102,131 +102,152 @@ readFasta2 <- function(filename, delim="|", databaseSign=c("sp","tr","generic","
 #'
 #' Parse fasta header (from \href{https://www.uniprot.org}{UniProt}) to extract different annotation fields
 #'  
+#' @details
+#' Expecting complete or partial of : >db|UniqueIdentifier|EntryName ProteinName OS=OrganismName OX=OrganismIdentifier [GN=GeneName ]PE=ProteinExistence SV=SequenceVersion
+#' 
 #' @param header (character) fasta-header
 #' @param delim (character) delimeter (ie primary separator)
 #' @param databaseSign (character) characters at beginning right after the '>' (typically specifying the data-base-origin), they will be excluded from the sequance-header
 #' @param UniprSep (character) separators for further separating entry-fields if \code{tableOut=TRUE}; with these delimeter fields a space is assumed in addition to the separators;
 #'   see also \href{https://www.uniprot.org/help/fasta-headers}{UniProt-FASTA-headers}
-#' @param asList (logical) if \code{asList=TRUE},the function returns a list with two matrixes, one for primary parsing and 
-#'   another matrix for further parsing (using \code{UniprSep}), otherwise all will be combined in single matrix
 #' @param debug (logical) supplemental messages for debugging
 #' @param silent (logical) suppress messages
 #' @param callFrom (character) allows easier tracking of messages produced
-#' @return This function returns (depending on argument \code{asList}) a)  a matrix with columns: 'db','uniqueIdentifier','entryName','proteinName' and further columns depending on argument \code{UniprSep}
-#'   of b) a list with matrix of primary parsing (argument \code{delim}) and matrix from further parsing (argument \code{UniprSep})
+#' @return This function returns a matrix with columns: 'db','uniqueIdentifier','entryName','proteinName' and further columns depending on argument \code{UniprSep}
 #' @seealso This function is use by  \code{\link{readFasta2}},  \code{\link{writeFasta2}} for writing as fasta; for reading \code{\link[base]{readLines}} or  \code{read.fasta} from the package \href{https://CRAN.R-project.org/package=seqinr}{seqinr}
 #' @examples
 #' .parseFastaHeader(">sp|P00760|TRY1_BOVIN Serine protease 1 OS=Bos taurus OX=9913 GN=PRSS1 PE=1")
 #' @export
-.parseFastaHeader <- function(header, delim="|", databaseSign=c("sp","tr","generic","conta","synt","gi"), UniprSep=c("OS=","OX=","GN=","PE=","SV="), asList=FALSE,
-  silent=FALSE, callFrom=NULL, debug=FALSE) {
+.parseFastaHeader <- function(header, delim="|", databaseSign=c("sp","tr","generic","conta","synt","gi"), UniprSep=c("OS=","OX=","GN=","PE=","SV="), 
+  silent=FALSE, debug=FALSE, callFrom=NULL) {
   ## mine fasta-header (see https://www.uniprot.org/help/fasta-headers)
   fxNa <- wrMisc::.composeCallName(callFrom, newNa=".parseFastaHeader")
   header <- sub("^>","", header)
   
-  hasDBname <- FALSE
-  mat2 <- out2 <- NULL
-  useDel <- wrMisc::protectSpecChar(delim)
+  chSplit <- FALSE    # hasDBname <- 
+  mat2 <- out2 <- splX <- NULL
   ## split by delim
-  spl <- strsplit(header, useDel)
-  chLe <- sapply(spl, length)
-  chLeUni <- sort(unique(chLe))
-  if(length(chLeUni) >1) {            # multiple numbers of separators
-    ## see if those that are shorter don't have databaseSign - if so assume as missing and replace by ''
-    chDBsign <- sapply(spl, function(x) x[1] %in% databaseSign)
-    chDBsum <- sum(chDBsign)
-    if(chDBsum >0 && chDBsum < length(spl)) {
-      hasDBname <- TRUE   
-      spl[which(!chDBsign & chLe==chLeUni[1])] <- lapply(spl[which(!chDBsign & chLe==chLeUni[1])], function(x) c("",x))
-    }
-    ## update
-    chLe <- sapply(spl, length)
-    chLeUni <- sort(unique(chLe))
-    if(length(chLeUni) >1) {  # make all of same number of splitted parts (add empty fields at end)
-      if(!silent) message(fxNa,"Beware, variable number of separators in fasta-headers")
-      spl <- lapply(spl, function(x) {if(length(x) < max(chLeUni)) c(x, rep("", max(chLeUni) -length(x))) else x})  
-      if(debug) {message(fxNa,"rf4"); rf4 <- list(spl=spl,header=header,delim=delim,databaseSign=databaseSign,UniprSep=UniprSep) }
-    }
-  }    
-  spl <- matrix(unlist(spl, use.names=FALSE), nrow=length(spl), byrow=TRUE)        # convert to matrix
-  ## now see if 1st col contains databaseSign
-  chDB <- spl[,1] %in% databaseSign
-  if(any(chDB)) {
-    hasDBname <- TRUE
-    if(sum(!chDB) >0 && !silent) message(fxNa,"Note : ",sum(!chDB)," fasta-headers do not look like having data-base names (missing or not recognized ? check content of argument 'chDB' ?)") 
-  }
-  ## colnames
-  defColNa <- c("database","uniqueIdentifier", "entryName","proteinName","other1")    # UniProt field names
-  if(ncol(spl) > 4) defColNa <- c(defColNa, paste0("other",1+ 1:(ncol(spl) -4)))
-  colnames(spl) <- defColNa[!hasDBname + 1:ncol(spl)]
-  if(debug) {message(fxNa,"rf4b"); rf4b <- list(spl=spl,header=header, delim=delim,databaseSign=databaseSign,UniprSep=UniprSep) }
-  
-  ## Uniprot : split last part further
-  ## check for 'NAME_SPECIES Name bla bla' in 2nd to 4th col
-  if(ncol(spl) >2) {
-    splCol <- 0
-    EntryNameProteinNamePat <- "^ {0,1}[[:upper:]]+([[:digit:]]|[[:upper:]])+_[[:upper:]]+ [[:upper:]]+[[:lower:]]*"   # pattern for EntryName and ProteinName 
-    chUniPr2 <- grepl(EntryNameProteinNamePat, spl[,2])   
-    chUniPr3 <- grepl(EntryNameProteinNamePat, spl[,3])   
-    chUniPr4 <- if(ncol(spl) >3) grepl(EntryNameProteinNamePat, spl[,4]) else rep(FALSE,nrow(spl))
-    if(any(chUniPr2)) splCol <- 2 else {if(any(chUniPr3)) splCol <- 3 else {if(any(chUniPr4)) splCol <- 4 }}       
-    if(debug) {message(fxNa,"rf4c"); rf4c <- list(spl=spl,header=header, delim=delim,databaseSign=databaseSign,UniprSep=UniprSep,splCol=splCol,chUniPr2=chUniPr2,chUniPr3=chUniPr3) }
+                                                 
+  con <- try(textConnection(header), silent=TRUE)  # only those with some XX=
+  if(!inherits(con, "try-error")) {
+    spl <- try(utils::read.table(con, sep = delim, fill = TRUE, as.is = TRUE, row.names = NULL, header=FALSE, check.names = FALSE), silent=TRUE)
+    close(con) } else spl <- FALSE
+  ## inspect 1st (as database-sign or UniqueIdentifier) & 2nd col (as UniqueIdentifier) 
 
-    if(splCol >1) {
-      colnames(spl) <- letters[1:ncol(spl)]                                 # default colnames
-      useLiS <- which(get(paste0("chUniPr",splCol)) )
-      splSec <- sub("^ {0,1}[[:upper:]]([[:upper:]]|[[:digit:]])*_[[:upper:]]+ ","", spl[useLiS, splCol])  # after ' ', ie keep ProteinName (wo ProteinName OS=..)
-      splPri <- sub(" [[:upper:]].+","", sub("^ ","", spl[useLiS, splCol]))              # remove ProteinName OS=...  ie EntryName remains
-      spl[useLiS, splCol] <- sub("^ ","", splPri)
-      if(any(nchar(splSec) >0)) {
-        spl <- cbind(spl, ProteinName=NA) 
-        spl[useLiS, ncol(spl)] <- sub("^ ","", splSec) 
-      }
-      if(any(grepl("^[[:upper:]]+([[:digit:]]|[[:upper:]])+$", spl[,splCol-1]))) colnames(spl)[splCol-1] <- "UniqueIdentifier"
-      if(any(grepl("^[[:upper:]]+([[:digit:]]|[[:upper:]])+_[[:upper:]]+", spl[,splCol]))) colnames(spl)[splCol] <- "EntryName"
-      if(length(databaseSign >0) && any( grep(paste(paste0("(",databaseSign,")"), collapse="|"), spl[,1]) )) colnames(spl)[1] <- "db"        
-      if(debug) {message(fxNa,"rf4d"); rf4d <- list(spl=spl,header=header, delim=delim,databaseSign=databaseSign,UniprSep=UniprSep,useLiS=useLiS,splPri=splPri) }
-        
-      ## further split (for "OS=","OX=" ...)
-      if(length(UniprSep) >0) {
-        UniprSep <- sub("^ ","",sub(" $","", UniprSep))                              # remove heading or tailing space
-        out2 <- matrix(NA_character_, nrow=nrow(spl), ncol=length(UniprSep), dimnames=list(NULL, sub("=$","", UniprSep)))
-        grUni <- lapply(UniprSep, grep, spl[,ncol(spl)])                   # which entires/lines concerned
-        chUni <- which(sapply(grUni, length) >0)              # which separators concerned
-        if(debug) {message(fxNa," rf6b"); rf6b <- list(spl=spl,out2=out2,grUni=grUni,chUni=chUni,header=header, delim=delim,databaseSign=databaseSign,UniprSep=UniprSep) }
-       
-        if(length(chUni) >0) {
-          for(i in chUni) {
-            tmp <- spl[, ncol(spl)] 
-            aftS <- paste(sapply(UniprSep[-1*(1:i)], function(x) paste0("\ ",x,"[[:alnum:]]+[[:print:]]*")),collapse="|")   # regex pattern
-            curS <- paste(sapply(UniprSep[i], function(x) paste0("^[[:print:]]* ",x)),collapse="|")                         # regex pattern
-            out2[grUni[[i]],i] <- sub(aftS,"", sub(curS,"", tmp[grUni[[i]]]))           # extract ith part
-            tmp[grUni[[i]]] <- sub(paste0(" ",UniprSep[i],".*"),"", spl[grUni[[i]], ncol(spl)])                  # all behind ith part
-          }
-
-          aftS <- paste0(" (",paste(sapply(UniprSep, function(x) paste0("(",x,")")),collapse="|"),").+")   # regex pattern          
-          spl[,ncol(spl)] <- sub(aftS,"", spl[,ncol(spl)])
-        }
-        if(debug) {message(fxNa,"rf7"); rf7 <- list(spl=spl,out2=out2,grUni=grUni,chUni=chUni,header=header, delim=delim,databaseSign=databaseSign,UniprSep=UniprSep) }
-        ## last attempt to complete specied based on species-part of EntryName
-        if("EntryName" %in% colnames(spl) && length(out2) >0 && "OS" %in% colnames(out2)){
-          noSpec <- is.na(out2[,"OS"]) & !is.na(spl[,"EntryName"])
-          if(any(noSpec)) {
-            secPart <- sub("^[[:alnum:]]+_","", spl[,"EntryName"])
-            cheLi <- which(nchar(secPart) >1)
-            if(length(cheLi) >0) { newSpec <- .commonSpecies()[match(paste0("_",secPart[cheLi]), .commonSpecies()[,1]), 2]
-              if(any(!is.na(newSpec))) { out2[cheLi,"OS"] <- newSpec
-                if(debug) message(fxNa,"Managed to recuperate ",sum(!is.na(newSpec))," (commonly known) species names (based in EntryName)") } 
-            }
-          }
-        }
-        if(debug) {message(fxNa,"rf8"); rf8 <- list(spl=spl,out2=out2,grUni=grUni,chUni=chUni,header=header, delim=delim,databaseSign=databaseSign,UniprSep=UniprSep) }
+  if(!isFALSE(spl) && !inherits(spl, "try-error")) {  
+    ch1stCo <- cbind(db=if(length(databaseSign) ==0 || all(is.na(databaseSign))) grepl("^[[:lower:]]+$", spl[,1]) else spl[,1] %in% databaseSign , 
+      ui=grepl("^[A-Z][A-Z0-9]+$", spl[,1]), shift=FALSE, seUI= if(ncol(spl) >1) grepl("^[A-Z][A-Z0-9]+$",spl[,2]) else FALSE)  # 2nd UniqueIdentifier
+    if(ncol(spl) >1) ch1stCo[,3] <- ch1stCo[,2] & !ch1stCo[,1] & !ch1stCo[,4]        # test if 1st col is UniqueIdentifier (and not db sign) -> shift
+    
+    if(any(ch1stCo[,3])) {                                                            # mixed, ie some have db sign others don't -> shift row
+      spl[which(ch1stCo[,3]),] <- cbind( rep("", sum(ch1stCo[,3])), spl[which(ch1stCo[,3]),-ncol(spl)])         # replace missing db-sign by ""
+    }   
+                                                                                                                  
+    ## now see if 1st col contains databaseSign
+    chDB <- if(length(databaseSign) !=0 && !all(is.na(databaseSign))) spl[,1] %in% databaseSign else grepl("[a-z]{2,9}", spl[,1])
+    if(any(chDB)) {
+      hasDBname <- TRUE
+      if(sum(!chDB) >0 && !silent) message(fxNa,"Note : ",sum(!chDB)," fasta-headers do not look like having data-base names (missing or not recognized ? check content of argument 'chDB' ?)") 
+    }
+    ## colnames
+    defColNa <- c("database","UniqueIdentifier", "EntryName","ProteinName","other1")    # UniProt field names
+    if(ncol(spl) > 4) defColNa <- c(defColNa, paste0("other",1+ 1:(ncol(spl) -4)))
+    colnames(spl) <- defColNa[!hasDBname + 1:ncol(spl)]
+    if(debug) {message(fxNa,"rf4b"); rf4b <- list(spl=spl,header=header, delim=delim,databaseSign=databaseSign,UniprSep=UniprSep) }
+    
+    ## Uniprot : split last part further
+    ## check for 'NAME_SPECIES Name bla bla' in 2nd to 4th col
+    if(length(UniprSep) !=0 && !isFALSE(UniprSep) && !identical(UniprSep, NA) && ncol(spl) >2) {
+      splCol <- 0
+      #EntryNameProteinNamePat <- "^[A-Z0-9]+(_[A-Z][A-Z0-9_]*)? [[:upper:]][[:alnum:]]"   # pattern for EntryName AND ProteinName (open end)
+      EntryNameProteinNamePat <- "^[A-Z0-9]+(_[A-Z][A-Z0-9_]*)? .+"   # pattern for EntryName AND something (open end) => still worth splitting to separate EntryName
+      #GeneNamePat <- "^[[:alpha:]][[:alnum:]]+? .+"   # pattern for GN= AND something (open end) => still worth splitting to separate EntryName
+      ## try to find out which column should be split (typically 3rd, sometimes 2nd or 4th)
+#      chUniPr2 <- grepl(EntryNameProteinNamePat, spl[,2])   
+#      chUniPr3 <- grepl(EntryNameProteinNamePat, spl[,3])   
+#      chUniPr4 <- if(ncol(spl) >3) grepl(EntryNameProteinNamePat, spl[,4]) else rep(FALSE, nrow(spl))
       
-      }  
-    }    
-  } 
-  if(debug) {message(fxNa," rf9"); rf9 <- list(spl=spl,header=header, delim=delim,databaseSign=databaseSign,UniprSep=UniprSep,mat2=mat2) }
-  out <- if(isTRUE(asList)) list(spl, out2) else {if(length(out2) >0) cbind(spl, out2) else spl}
-  out
-}  
-       
+      chUniPr <- cbind(c2=grepl(EntryNameProteinNamePat, spl[,2]) , c3=grepl(EntryNameProteinNamePat, spl[,3]) ,
+        c4=if(ncol(spl) >3) grepl(EntryNameProteinNamePat, spl[,4]) else rep(FALSE, nrow(spl)) )
+      chSplit <- colSums(chUniPr) >0   
+      
+      #chSplit <- c(c2=any(chUniPr2), c3=any(chUniPr3), c4=any(chUniPr4))            # which column looks like candidate for split (pick 1st possible)
+      if(debug) {message(fxNa," rf5"); rf5 <- list(spl=spl,header=header, delim=delim,databaseSign=databaseSign,UniprSep=UniprSep,chSplit=chSplit) }
+      if(any(chSplit)) {
+        ## continue for searching other
+        tmp <- as.character(spl[, 1 +which.max(chSplit)])   # this col should be further split (XX=xxx)     
+        anySpl <- chUniPr[, which.max(chSplit)]
+
+        hasXX <- if(length(UniprSep) ==0 || all(is.na(UniprSep))) rep(NA_character_, sum(anySpl)) else {
+          if(isTRUE(UniprSep)) grepl("[A-Z]{2,5}=", tmp[which(anySpl)]) else grepl(paste0("(",paste(UniprSep, collapse=")|("),")" ), tmp[which(anySpl)]) }    # length adopted to those which need any split
+
+        ## Need to split 'base-part' (EntryName ProteinName) in all cases (w & wo OS= ...)
+        supl <- sub("^[A-Z0-9]+(_[A-Z][A-Z0-9_]*)? ","", tmp)
+        #entrNa <- substr(tmp[which(!hasXX)], 1, nchar(tmp[which(!hasXX)]) - nchar(supl) -1 )
+        splY <- cbind(EntryName=substr(tmp, 1, nchar(tmp) - nchar(supl) -1 ), ProteinName=supl)   # in some cases ProteinName need to get split further
+          
+        if(any(hasXX)) {
+          ## split off XX=.. part
+          #tmp <- as.character(spl[which(hasXX), 1+which.max(chSplit), drop=FALSE])
+          tmp2 <- tmp[which(hasXX)]
+          partBas <- sub(" [A-Z]{2}=.+", "", tmp2)    # all left part, still need to spearate EntryName AND ProteinName !
+          #protNa <- sub("^[A-Z][A-Z_]+ ","", partBas)
+          
+          
+          partXX <- substring(tmp2, nchar(partBas) +2 )  # only concerned XX= part  ==> SPLIT
+            #cbind(partBas, partXX)
+          maxXX <- max((nchar(partXX) - nchar(gsub("[A-Z]{2}=","", partXX)))/3)     # max number of XX= elements
+          
+          
+      #    spl <- cbind(spl[which(hasXX), which.max(chSplit), drop=FALSE], protNa=sub("^[^ ]* ", "", partBas), entryName=sub(" .*", "", partBas),  matrix(NA_character_, nrow=sum(hasXX), ncol=maxXX))  # wo XX= entries
+          if(debug) {message(fxNa,"rf6"); rf6 <- list(spl=spl,header=header, delim=delim,databaseSign=databaseSign,UniprSep=UniprSep,partBas=partBas,partXX=partXX,maxXX=maxXX,hasXX=hasXX, tmp=tmp,chSplit=chSplit) }           
+    
+          ## now need to fill : split XX= elements
+          con <- textConnection(partXX)  # only those with some XX=
+          splX <- try(utils::read.table(con, sep = "=", fill = TRUE, as.is = TRUE, row.names = NULL, header=FALSE, check.names = FALSE), silent=TRUE)
+          close(con)
+    
+          ## need to extract last 2 caps of all entries (exept 1st col)
+          tmp1 <- as.character(as.matrix(splX[,-1]))
+          tmpEntr <- sub(" [A-Z]{2}$","", tmp1)              ##  left parts
+          chNA <- is.na(tmpEntr)
+          if(any(chNA)) tmpEntr[which(chNA)] <- ""
+    #             matrix(tmpEntr, nr=nrow(splX))         ##  left parts
+    #             matrix(substr(tmp1, nchar(tmpEntr)+2, nchar(tmp1)), nr=nrow(splX))  # right parts
+          if(debug) {message(fxNa,"rf6b"); rf6b <- list(spl=spl,header=header, delim=delim,databaseSign=databaseSign,UniprSep=UniprSep,partBas=partBas,partXX=partXX,maxXX=maxXX,hasXX=hasXX, tmp=tmp,tmp1=tmp1,tmpEntr=tmpEntr,splX=splX,chSplit=chSplit) }           
+    
+          tmpTy <- matrix(substr(tmp1, nchar(tmpEntr) +2, nchar(tmp1)), nrow=nrow(splX))
+          tmpTy <- cbind(splX[,1], tmpTy[,-ncol(tmpTy), drop=FALSE])
+          typesXX <- unique(as.character(tmpTy))        
+          typesXX <- typesXX[which(typesXX != "")][1:maxXX]         #  eg "OS" "GN" "PE" "SV"
+          
+          pos <- rep(1:nrow(tmpTy), length(typesXX)) + (match(tmpTy, typesXX) -1)* sum(hasXX)
+          chNA <- is.na(pos) | tmpEntr %in% ""        
+          if(any(chNA)) { pos <- pos[which(!chNA)]; tmpEntr <- tmpEntr[which(!chNA)]  }
+          if(debug) {message(fxNa,"rf6c"); rf6c <- list(spl=spl,splX=splX,splY=splY, header=header, delim=delim,databaseSign=databaseSign,UniprSep=UniprSep,partBas=partBas,typesXX=typesXX,partXX=partXX,maxXX=maxXX,hasXX=hasXX,tmpTy=tmpTy,tmpEntr=tmpEntr,pos=pos, tmp=tmp,chSplit=chSplit) }           
+    
+          ## fill in to spl2
+          spl2 <- matrix(NA_character_, nrow=sum(hasXX), ncol=length(typesXX), dimnames=list(NULL,typesXX))
+          spl2 <- rep(NA_character_, prod(length(typesXX), sum(hasXX)))    
+          spl2[pos] <- sub("^ ","", tmpEntr)
+          spl2 <-  matrix(spl2, ncol=length(typesXX), dimnames=list(NULL, typesXX))        # OK
+          splX <- cbind(EntryName=splY[which(hasXX),1], ProteinName=substring(partBas, nchar(splY[which(hasXX),1]) +2), spl2)
+          colnames(splX) <- c("EntryName","ProteinName", typesXX )
+        }
+        if(debug) {message(fxNa,"rf7"); rf7 <- list(spl=spl,splY=splY,header=header, delim=delim,databaseSign=databaseSign,UniprSep=UniprSep,partBas=partBas,partXX=partXX,maxXX=maxXX,hasXX=hasXX,splY=splY,splX=splX,chDB=chDB, tmp=tmp,chSplit=chSplit) }           
+        ## combine
+        out <- cbind(spl[,1:+which.max(chSplit), drop=FALSE], splY)
+        colnames(out) <- c(if(any(chDB)) "db","UniqueIdentifier","EntryName","ProteinName")[1:ncol(out)]
+        dimN <- dim(out)
+        if(any(hasXX)) {
+          out <- cbind(out, matrix(NA_character_, nrow=nrow(spl), ncol=ncol(splX) -2, dimnames=list(out[,1], colnames(splX)[-(1:2)])) )
+          out[which(hasXX), (dimN[2]):ncol(out) ] <- splX[,-1]
+        }
+        rownames(out) <- NULL    # duplicate rownames not allowed in matrix  
+      }
+    }     
+    out
+  }  
+}        
+ 
+
